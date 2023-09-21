@@ -1,3 +1,4 @@
+#include <windows.h>
 #include <nano/lib/thread_roles.hpp>
 
 #include <processthreadsapi.h>
