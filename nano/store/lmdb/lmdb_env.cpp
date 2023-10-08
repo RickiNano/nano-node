@@ -50,12 +50,11 @@ void nano::store::lmdb::env::init (bool & error_a, std::filesystem::path const &
 				environment_flags |= MDB_NOMEMINIT;
 			}
 
-			//std::cout << "lmdb environment: " << environment;
-			//std::cout << "lmdb path: " << path_a.string ();
-			//std::cout << "lmdb path c_str: " << path_a.string ().c_str ();
-			//std::cout << "lmdb environment_flags: " << environment_flags;
+			std::cout << ". lmdb environment: " << environment;
+			std::cout << ". lmdb path: " << path_a.string ();
+			std::cout << ". environment_flags: " << environment_flags;
 
-			auto status4 (mdb_env_open (environment, path_a.string ().c_str (), environment_flags, 00600));
+			auto status4 = (mdb_env_open (environment, path_a.string ().c_str (), environment_flags, 00600));
 			if (status4 != 0)
 			{
 				std::cerr << "Could not open lmdb environment: " << status4;
