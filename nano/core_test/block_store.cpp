@@ -628,10 +628,9 @@ TEST (mdb_block_store, supported_version_upgrades)
 		GTEST_SKIP ();
 	}
 	// Check that upgrading from an unsupported version is not supported
-	std::filesystem::path path = (nano::unique_path () / "data.ldb");
+	auto path (nano::unique_path () / "data.ldb");
 	nano::logger_mt logger;
 	{
-		std::cout << "*Check that upgrading from an unsupported version is not supported*";
 		nano::store::lmdb::component store (logger, path, nano::dev::constants);
 		nano::stats stats;
 		nano::ledger ledger (store, stats, nano::dev::constants);
@@ -643,15 +642,13 @@ TEST (mdb_block_store, supported_version_upgrades)
 
 	// Upgrade should fail
 	{
-		std::cout << "*Upgrade should fail*";
 		nano::store::lmdb::component store (logger, path, nano::dev::constants);
 		ASSERT_TRUE (store.init_error ());
 	}
 
-	std::filesystem::path path1 = (nano::unique_path () / "data.ldb");
+	auto path1 (nano::unique_path () / "data.ldb");
 	// Now try with the minimum version
 	{
-		std::cout << "*Now try with the minimum version*";
 		nano::store::lmdb::component store (logger, path1, nano::dev::constants);
 		nano::stats stats;
 		nano::ledger ledger (store, stats, nano::dev::constants);
@@ -663,7 +660,6 @@ TEST (mdb_block_store, supported_version_upgrades)
 
 	// Upgrade should work
 	{
-		std::cout << "*Upgrade should work*";
 		nano::store::lmdb::component store (logger, path1, nano::dev::constants);
 		ASSERT_FALSE (store.init_error ());
 	}
@@ -672,20 +668,19 @@ TEST (mdb_block_store, supported_version_upgrades)
 
 TEST (mdb_block_store, bad_path)
 {
-	GTEST_SKIP ();
-	//if (nano::rocksdb_config::using_rocksdb_in_tests ())
-	//{
-	//	// Don't test this in rocksdb mode
-	//
-	//}
-	//nano::logger_mt logger;
-	//nano::store::lmdb::component store (logger, std::filesystem::path ("///"), nano::dev::constants);
-	//ASSERT_TRUE (store.init_error ());
+	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	{
+		// Don't test this in rocksdb mode
+		GTEST_SKIP ();
+	}
+	nano::logger_mt logger;
+	nano::store::lmdb::component store (logger, std::filesystem::path ("///"), nano::dev::constants);
+	ASSERT_TRUE (store.init_error ());
 }
 
 TEST (block_store, DISABLED_already_open) // File can be shared
 {
-	auto path = (nano::unique_path ());
+	auto path (nano::unique_path ());
 	std::filesystem::create_directories (path.parent_path ());
 	nano::set_secure_perm_directory (path.parent_path ());
 	std::ofstream file;
@@ -1366,7 +1361,7 @@ TEST (mdb_block_store, upgrade_v21_v22)
 		GTEST_SKIP ();
 	}
 
-	auto path = (nano::unique_path () / "data.ldb");
+	auto path (nano::unique_path () / "data.ldb");
 	nano::logger_mt logger;
 	nano::stats stats;
 	auto const check_correct_state = [&] () {
@@ -1449,7 +1444,7 @@ TEST (mdb_block_store, upgrade_backup)
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
 	}
-	auto dir= (nano::unique_path ());
+	auto dir (nano::unique_path ());
 	namespace fs = std::filesystem;
 	fs::create_directory (dir);
 	auto path = dir / "data.ldb";
@@ -1490,7 +1485,7 @@ TEST (block_store, confirmation_height)
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
 	}
-	auto path = (nano::unique_path ());
+	auto path (nano::unique_path ());
 	nano::logger_mt logger;
 	auto store = nano::make_store (logger, path, nano::dev::constants);
 
@@ -1536,7 +1531,7 @@ TEST (block_store, final_vote)
 		// Don't test this in rocksdb mode as deletions cause inaccurate counts
 		GTEST_SKIP ();
 	}
-	auto path = (nano::unique_path ());
+	auto path (nano::unique_path ());
 	nano::logger_mt logger;
 	auto store = nano::make_store (logger, path, nano::dev::constants);
 
@@ -1561,7 +1556,7 @@ TEST (block_store, final_vote)
 // Ledger versions are not forward compatible
 TEST (block_store, incompatible_version)
 {
-	auto path = (nano::unique_path ());
+	auto path (nano::unique_path ());
 	nano::logger_mt logger;
 	{
 		auto store = nano::make_store (logger, path, nano::dev::constants);
