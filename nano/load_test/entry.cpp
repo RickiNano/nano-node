@@ -5,7 +5,6 @@
 #include <nano/boost/beast/http.hpp>
 #include <nano/boost/process/child.hpp>
 #include <nano/lib/thread_runner.hpp>
-#include <nano/lib/threading.hpp>
 #include <nano/lib/tomlconfig.hpp>
 #include <nano/node/daemonconfig.hpp>
 #include <nano/secure/utility.hpp>

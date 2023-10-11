@@ -1,4 +1,7 @@
 #include <nano/test_common/chains.hpp>
+#include <nano/test_common/testutil.hpp>
+
+#include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
 

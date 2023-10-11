@@ -10,7 +10,6 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-#include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <sstream>
