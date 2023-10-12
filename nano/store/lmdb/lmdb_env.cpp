@@ -7,13 +7,15 @@ nano::store::lmdb::env::env (bool & error_a, std::filesystem::path const & path_
 
 void nano::store::lmdb::env::init (bool & error_a, std::filesystem::path const & path_a, nano::store::lmdb::env::options options_a)
 {
-	boost::system::error_code error_mkdir, error_chmod;
+	std::error_code error_mkdir, error_chmod;
+
 	if (path_a.has_parent_path ())
 	{
 		std::filesystem::create_directories (path_a.parent_path (), error_mkdir);
 		nano::set_secure_perm_directory (path_a.parent_path (), error_chmod);
 		if (!error_mkdir)
 		{
+			std::cout << "No error 1" << std::endl;
 			auto status1 (mdb_env_create (&environment));
 			release_assert (status1 == 0);
 			auto status2 (mdb_env_set_maxdbs (environment, options_a.config.max_databases));
@@ -49,10 +51,11 @@ void nano::store::lmdb::env::init (bool & error_a, std::filesystem::path const &
 			{
 				environment_flags |= MDB_NOMEMINIT;
 			}
+			std::cout << "Status 4" << std::endl;
 			auto status4 (mdb_env_open (environment, path_a.string ().c_str (), environment_flags, 00600));
 			if (status4 != 0)
 			{
-				std::cerr << "Could not open lmdb environment: " << status4;
+				std::cout << "Could not open lmdb environment: " << status4;
 				char * error_str (mdb_strerror (status4));
 				if (error_str)
 				{
@@ -60,8 +63,8 @@ void nano::store::lmdb::env::init (bool & error_a, std::filesystem::path const &
 				}
 				std::cerr << std::endl;
 			}
-			release_assert (status4 == 0);
 			error_a = status4 != 0;
+			release_assert (status4 == 0);
 		}
 		else
 		{
