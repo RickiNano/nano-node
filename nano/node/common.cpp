@@ -5,7 +5,6 @@
 #include <nano/node/common.hpp>
 #include <nano/node/election.hpp>
 #include <nano/node/network.hpp>
-#include <nano/node/wallet.hpp>
 
 #include <boost/format.hpp>
 

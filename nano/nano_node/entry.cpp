@@ -15,7 +15,6 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX

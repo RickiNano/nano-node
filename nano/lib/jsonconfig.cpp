@@ -3,8 +3,6 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
-#include <cstddef>
-
 nano::jsonconfig::jsonconfig () :
 	tree (tree_default)
 {

@@ -5,8 +5,6 @@
 #include <boost/asio/signal_set.hpp>
 #include <boost/format.hpp>
 
-#include <iostream>
-
 nano::signal_manager::signal_manager () :
 	work (boost::asio::make_work_guard (ioc))
 {

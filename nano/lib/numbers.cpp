@@ -1,5 +1,4 @@
 #include <nano/crypto/blake2/blake2.h>
-#include <nano/crypto_lib/random_pool.hpp>
 #include <nano/crypto_lib/secure_memory.hpp>
 #include <nano/lib/numbers.hpp>
 #include <nano/lib/utility.hpp>

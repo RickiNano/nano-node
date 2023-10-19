@@ -1,4 +1,3 @@
-#include <nano/boost/asio/bind_executor.hpp>
 #include <nano/lib/rpc_handler_interface.hpp>
 #include <nano/lib/tlsconfig.hpp>
 #include <nano/rpc/rpc.hpp>

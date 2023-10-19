@@ -1,4 +1,3 @@
-#include <nano/boost/asio/bind_executor.hpp>
 #include <nano/node/distributed_work.hpp>
 #include <nano/node/node.hpp>
 #include <nano/node/websocket.hpp>

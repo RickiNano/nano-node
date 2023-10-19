@@ -3,13 +3,9 @@
 #include <nano/lib/locks.hpp>
 
 #include <boost/current_function.hpp>
-#include <boost/preprocessor/facilities/empty.hpp>
 #include <boost/preprocessor/facilities/overload.hpp>
 
-#include <cassert>
 #include <filesystem>
-#include <functional>
-#include <mutex>
 #include <vector>
 
 #include <magic_enum_containers.hpp>

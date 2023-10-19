@@ -3,10 +3,8 @@
 #include <nano/lib/utility.hpp>
 
 #include <boost/asio.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/thread.hpp>
 
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>

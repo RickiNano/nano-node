@@ -2,8 +2,6 @@
 #include <nano/lib/rate_limiting.hpp>
 #include <nano/lib/utility.hpp>
 
-#include <limits>
-
 nano::rate::token_bucket::token_bucket (std::size_t max_token_count_a, std::size_t refill_rate_a)
 {
 	reset (max_token_count_a, refill_rate_a);

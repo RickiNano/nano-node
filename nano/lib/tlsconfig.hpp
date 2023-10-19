@@ -4,7 +4,6 @@
 #include <nano/lib/errors.hpp>
 
 #include <string>
-#include <thread>
 #include <vector>
 
 #ifdef NANO_SECURE_RPC

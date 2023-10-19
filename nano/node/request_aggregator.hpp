@@ -12,7 +12,6 @@
 
 #include <condition_variable>
 #include <thread>
-#include <unordered_map>
 
 namespace mi = boost::multi_index;
 

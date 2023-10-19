@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nano/lib/locks.hpp>
-#include <nano/secure/common.hpp>
 
 #include <deque>
 #include <functional>

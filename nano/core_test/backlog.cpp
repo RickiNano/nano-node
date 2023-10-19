@@ -5,8 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include <numeric>
-
 using namespace std::chrono_literals;
 
 /*

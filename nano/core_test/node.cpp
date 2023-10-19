@@ -13,11 +13,8 @@
 #include <gtest/gtest.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/optional.hpp>
 
 #include <fstream>
-#include <numeric>
 
 using namespace std::chrono_literals;
 

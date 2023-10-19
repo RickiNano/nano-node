@@ -1,17 +1,10 @@
 #pragma once
 
-#include <nano/crypto_lib/random_pool.hpp>
 #include <nano/lib/memory.hpp>
-#include <nano/lib/stream.hpp>
 #include <nano/secure/common.hpp>
 #include <nano/store/tables.hpp>
 #include <nano/store/transaction.hpp>
 #include <nano/store/versioning.hpp>
-
-#include <boost/endian/conversion.hpp>
-#include <boost/polymorphic_cast.hpp>
-
-#include <stack>
 
 namespace nano
 {

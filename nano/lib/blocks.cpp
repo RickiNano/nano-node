@@ -2,7 +2,6 @@
 #include <nano/lib/blocks.hpp>
 #include <nano/lib/memory.hpp>
 #include <nano/lib/numbers.hpp>
-#include <nano/lib/threading.hpp>
 #include <nano/secure/common.hpp>
 
 #include <boost/endian/conversion.hpp>

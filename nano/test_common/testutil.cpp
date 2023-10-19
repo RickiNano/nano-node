@@ -8,7 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cstdlib>
 #include <numeric>
 
 using namespace std::chrono_literals;

@@ -5,7 +5,6 @@
 #include <nano/secure/common.hpp>
 #include <nano/store/block.hpp>
 #include <nano/store/component.hpp>
-#include <nano/store/versioning.hpp>
 
 #include <cstddef>
 

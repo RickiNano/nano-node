@@ -1,12 +1,10 @@
 #pragma once
 
-#include <nano/lib/id_dispenser.hpp>
 #include <nano/lib/lmdbconfig.hpp>
 #include <nano/lib/locks.hpp>
 #include <nano/lib/work.hpp>
 #include <nano/node/openclwork.hpp>
 #include <nano/secure/common.hpp>
-#include <nano/store/component.hpp>
 #include <nano/store/lmdb/lmdb.hpp>
 #include <nano/store/lmdb/wallet_value.hpp>
 

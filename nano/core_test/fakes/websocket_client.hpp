@@ -1,6 +1,5 @@
 #pragma once
 
-#include <nano/boost/asio/connect.hpp>
 #include <nano/boost/asio/ip/tcp.hpp>
 #include <nano/boost/beast/core.hpp>
 #include <nano/boost/beast/websocket.hpp>

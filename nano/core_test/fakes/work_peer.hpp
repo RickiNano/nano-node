@@ -1,19 +1,14 @@
 #pragma once
 
-#include <nano/lib/errors.hpp>
-#include <nano/lib/locks.hpp>
 #include <nano/lib/numbers.hpp>
 #include <nano/lib/work.hpp>
 #include <nano/node/common.hpp>
 
 #include <boost/asio.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-
-#include <unordered_set>
 
 namespace beast = boost::beast;
 namespace http = beast::http;

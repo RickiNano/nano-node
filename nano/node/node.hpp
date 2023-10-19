@@ -12,12 +12,10 @@
 #include <nano/node/block_publisher.hpp>
 #include <nano/node/blockprocessor.hpp>
 #include <nano/node/bootstrap/bootstrap.hpp>
-#include <nano/node/bootstrap/bootstrap_attempt.hpp>
 #include <nano/node/bootstrap/bootstrap_server.hpp>
 #include <nano/node/bootstrap_ascending/service.hpp>
 #include <nano/node/confirmation_height_processor.hpp>
 #include <nano/node/distributed_work_factory.hpp>
-#include <nano/node/election.hpp>
 #include <nano/node/epoch_upgrader.hpp>
 #include <nano/node/gap_cache.hpp>
 #include <nano/node/gap_tracker.hpp>
@@ -39,7 +37,6 @@
 #include <nano/node/websocket.hpp>
 #include <nano/node/write_database_queue.hpp>
 #include <nano/secure/ledger.hpp>
-#include <nano/secure/utility.hpp>
 
 #include <boost/program_options.hpp>
 #include <boost/thread/latch.hpp>

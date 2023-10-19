@@ -3,8 +3,6 @@
 #include <nano/lib/errors.hpp>
 #include <nano/lib/threading.hpp>
 
-#include <thread>
-
 namespace nano
 {
 class tomlconfig;

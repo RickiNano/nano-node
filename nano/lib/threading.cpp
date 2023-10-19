@@ -1,5 +1,4 @@
 #include <nano/lib/config.hpp>
-#include <nano/lib/thread_roles.hpp>
 #include <nano/lib/threading.hpp>
 
 #include <thread>

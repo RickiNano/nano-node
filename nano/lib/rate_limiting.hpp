@@ -1,8 +1,6 @@
 #pragma once
 
-#include <algorithm>
 #include <chrono>
-#include <mutex>
 
 namespace nano
 {

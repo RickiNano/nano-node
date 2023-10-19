@@ -1,10 +1,7 @@
 #pragma once
 
-#include <nano/lib/numbers.hpp>
 #include <nano/store/component.hpp>
 #include <nano/store/iterator.hpp>
-
-#include <functional>
 
 namespace nano
 {
