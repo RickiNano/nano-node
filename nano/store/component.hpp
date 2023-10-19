@@ -6,6 +6,8 @@
 #include <nano/store/transaction.hpp>
 #include <nano/store/versioning.hpp>
 
+#include <boost/polymorphic_cast.hpp>
+
 namespace nano
 {
 namespace store
