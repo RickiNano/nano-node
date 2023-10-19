@@ -1,3 +1,5 @@
+#include "nano/secure/utility.hpp"
+
 #include <nano/lib/rpcconfig.hpp>
 #include <nano/lib/thread_runner.hpp>
 #include <nano/node/bootstrap/bootstrap_server.hpp>

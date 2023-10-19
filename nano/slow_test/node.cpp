@@ -1,3 +1,5 @@
+#include "nano/secure/utility.hpp"
+
 #include <nano/crypto_lib/random_pool.hpp>
 #include <nano/lib/thread_runner.hpp>
 #include <nano/node/election.hpp>
