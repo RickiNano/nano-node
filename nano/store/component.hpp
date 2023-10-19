@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nano/crypto_lib/random_pool.hpp>
 #include <nano/lib/memory.hpp>
 #include <nano/secure/common.hpp>
 #include <nano/store/tables.hpp>
