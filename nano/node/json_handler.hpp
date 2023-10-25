@@ -77,6 +77,7 @@ public:
 	void key_expand ();
 	void ledger ();
 	void mnano_to_raw (nano::uint128_t = nano::Mxrb_ratio);
+	void decimal_nano_to_raw ();
 	void mnano_from_raw (nano::uint128_t = nano::Mxrb_ratio);
 	void nano_to_raw ();
 	void raw_to_nano ();
@@ -160,6 +161,7 @@ public:
 	nano::account account_impl (std::string = "", std::error_code = nano::error_common::bad_account_number);
 	nano::account_info account_info_impl (store::transaction const &, nano::account const &);
 	nano::amount amount_impl ();
+	nano::amount amount_dec_impl ();
 	std::shared_ptr<nano::block> block_impl (bool = true);
 	nano::block_hash hash_impl (std::string = "hash");
 	nano::amount threshold_optional_impl ();

@@ -10,6 +10,7 @@
 #include <nano/node/node_rpc_config.hpp>
 #include <nano/node/telemetry.hpp>
 
+#include <boost/algorithm/string/find.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -131,6 +132,10 @@ void nano::json_handler::process_request (bool unsafe_a)
 			else if (action == "raw_to_nano")
 			{
 				raw_to_nano ();
+			}
+			else if (action == "decimal_nano_to_raw")
+			{
+				decimal_nano_to_raw ();
 			}
 			else if (action == "password_valid")
 			{
@@ -271,6 +276,63 @@ nano::account_info nano::json_handler::account_info_impl (store::transaction con
 		else
 		{
 			result = *info;
+		}
+	}
+	return result;
+}
+
+nano::amount nano::json_handler::amount_dec_impl ()
+{
+	nano::amount result (0);
+	if (!ec)
+	{
+		std::string amount_text (request.get<std::string> ("amount"));
+
+		try
+		{
+			auto validate_number = boost::lexical_cast<long double> (amount_text);
+
+			nano::amount integer_part (0);
+			nano::amount decimal_part (0);
+
+			size_t decimal_point_position = amount_text.find ('.');
+
+			auto integer_string = amount_text.substr (0, decimal_point_position);
+
+			if (integer_part.decode_dec (integer_string))
+			{
+				ec = nano::error_common::invalid_amount;
+			}
+
+			if (decimal_point_position == -1) // no decimal part
+			{
+				result = (integer_part.number () * nano::Mxrb_ratio);
+				return result;
+			}
+
+			auto decimal_string = amount_text.substr (decimal_point_position + 1);
+			if (decimal_string.size () > 30)
+			{
+				ec = nano::error_common::invalid_amount;
+				return result;
+			}
+			auto missing_zeros = 30 - decimal_string.size ();
+			decimal_string.insert (decimal_string.size (), missing_zeros, '0');
+
+			decimal_string.erase (0, decimal_string.find_first_not_of ('0'));
+
+			if (decimal_part.decode_dec (decimal_string))
+			{
+				ec = nano::error_common::invalid_amount;
+			}
+
+			result = (integer_part.number () * nano::Mxrb_ratio) + decimal_part.number ();
+
+			return result;
+		}
+		catch (const boost::bad_lexical_cast & e)
+		{
+			ec = nano::error_common::invalid_amount;
 		}
 	}
 	return result;
@@ -2883,6 +2945,16 @@ void nano::json_handler::mnano_to_raw (nano::uint128_t ratio)
 		{
 			ec = nano::error_common::invalid_amount_big;
 		}
+	}
+	response_errors ();
+}
+
+void nano::json_handler::decimal_nano_to_raw ()
+{
+	auto amount (amount_dec_impl ());
+	if (!ec)
+	{
+		response_l.put ("amount", amount.number ().convert_to<std::string> ());
 	}
 	response_errors ();
 }
