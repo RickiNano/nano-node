@@ -30,7 +30,7 @@ private:
 	{
 	public:
 		nano::block_hash top;
-		boost::optional<nano::block_hash> next;
+		std::optional<nano::block_hash> next;
 		uint64_t next_height;
 	};
 
@@ -76,12 +76,12 @@ private:
 	class receive_chain_details final
 	{
 	public:
-		receive_chain_details (nano::account const &, uint64_t, nano::block_hash const &, nano::block_hash const &, boost::optional<nano::block_hash>, uint64_t, nano::block_hash const &);
+		receive_chain_details (nano::account const &, uint64_t, nano::block_hash const &, nano::block_hash const &, std::optional<nano::block_hash>, uint64_t, nano::block_hash const &);
 		nano::account account;
 		uint64_t height;
 		nano::block_hash hash;
 		nano::block_hash top_level;
-		boost::optional<nano::block_hash> next;
+		std::optional<nano::block_hash> next;
 		uint64_t bottom_height;
 		nano::block_hash bottom_most;
 	};
@@ -98,8 +98,8 @@ private:
 		nano::account const & account;
 		uint64_t bottom_height;
 		nano::block_hash const & bottom_most;
-		boost::optional<receive_chain_details> & receive_details;
-		boost::optional<top_and_next_hash> & next_in_receive_chain;
+		std::optional<receive_chain_details> & receive_details;
+		std::optional<top_and_next_hash> & next_in_receive_chain;
 	};
 
 	class receive_source_pair final
@@ -113,7 +113,7 @@ private:
 
 	nano::timer<std::chrono::milliseconds> timer;
 
-	top_and_next_hash get_next_block (boost::optional<top_and_next_hash> const &, boost::circular_buffer_space_optimized<nano::block_hash> const &, boost::circular_buffer_space_optimized<receive_source_pair> const & receive_source_pairs, boost::optional<receive_chain_details> &, nano::block const & original_block);
+	top_and_next_hash get_next_block (std::optional<top_and_next_hash> const &, boost::circular_buffer_space_optimized<nano::block_hash> const &, boost::circular_buffer_space_optimized<receive_source_pair> const & receive_source_pairs, std::optional<receive_chain_details> &, nano::block const & original_block);
 	nano::block_hash get_least_unconfirmed_hash_from_top_level (store::transaction const &, nano::block_hash const &, nano::account const &, nano::confirmation_height_info const &, uint64_t &);
 	void prepare_iterated_blocks_for_cementing (preparation_data &);
 	bool iterate (store::read_transaction const &, uint64_t, nano::block_hash const &, boost::circular_buffer_space_optimized<nano::block_hash> &, nano::block_hash &, nano::block_hash const &, boost::circular_buffer_space_optimized<receive_source_pair> &, nano::account const &);

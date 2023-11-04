@@ -32,10 +32,10 @@ nano::confirmation_height_bounded::confirmation_height_bounded (nano::ledger & l
 // 3 - The last checkpoint hit.
 // 4 - The hash that was passed in originally. Either all checkpoints were exhausted (this can happen when there are many accounts to genesis)
 //     or all other blocks have been processed.
-nano::confirmation_height_bounded::top_and_next_hash nano::confirmation_height_bounded::get_next_block (boost::optional<top_and_next_hash> const & next_in_receive_chain_a, boost::circular_buffer_space_optimized<nano::block_hash> const & checkpoints_a, boost::circular_buffer_space_optimized<receive_source_pair> const & receive_source_pairs, boost::optional<receive_chain_details> & receive_details_a, nano::block const & original_block)
+nano::confirmation_height_bounded::top_and_next_hash nano::confirmation_height_bounded::get_next_block (std::optional<top_and_next_hash> const & next_in_receive_chain_a, boost::circular_buffer_space_optimized<nano::block_hash> const & checkpoints_a, boost::circular_buffer_space_optimized<receive_source_pair> const & receive_source_pairs, std::optional<receive_chain_details> & receive_details_a, nano::block const & original_block)
 {
 	top_and_next_hash next;
-	if (next_in_receive_chain_a.is_initialized ())
+	if (next_in_receive_chain_a.has_value ())
 	{
 		next = *next_in_receive_chain_a;
 	}
@@ -47,11 +47,11 @@ nano::confirmation_height_bounded::top_and_next_hash nano::confirmation_height_b
 	}
 	else if (!checkpoints_a.empty ())
 	{
-		next = { checkpoints_a.back (), boost::none, 0 };
+		next = { checkpoints_a.back (), std::nullopt, 0 };
 	}
 	else
 	{
-		next = { original_block.hash (), boost::none, 0 };
+		next = { original_block.hash (), std::nullopt, 0 };
 	}
 
 	return next;
@@ -65,7 +65,7 @@ void nano::confirmation_height_bounded::process (std::shared_ptr<nano::block> or
 		timer.restart ();
 	}
 
-	boost::optional<top_and_next_hash> next_in_receive_chain;
+	std::optional<top_and_next_hash> next_in_receive_chain;
 	boost::circular_buffer_space_optimized<nano::block_hash> checkpoints{ max_items };
 	boost::circular_buffer_space_optimized<receive_source_pair> receive_source_pairs{ max_items };
 	nano::block_hash current;
@@ -73,7 +73,7 @@ void nano::confirmation_height_bounded::process (std::shared_ptr<nano::block> or
 	auto transaction (ledger.store.tx_begin_read ());
 	do
 	{
-		boost::optional<receive_chain_details> receive_details;
+		std::optional<receive_chain_details> receive_details;
 		auto hash_to_process = get_next_block (next_in_receive_chain, checkpoints, receive_source_pairs, receive_details, *original_block);
 		current = hash_to_process.top;
 
@@ -144,7 +144,7 @@ void nano::confirmation_height_bounded::process (std::shared_ptr<nano::block> or
 				current = block->previous ();
 				--block_height;
 			}
-			else if (!next_in_receive_chain.is_initialized ())
+			else if (!next_in_receive_chain.has_value ())
 			{
 				current = get_least_unconfirmed_hash_from_top_level (transaction, current, account, confirmation_height_info, block_height);
 			}
@@ -173,8 +173,8 @@ void nano::confirmation_height_bounded::process (std::shared_ptr<nano::block> or
 		}
 
 		// next_in_receive_chain can be modified when writing, so need to cache it here before resetting
-		auto is_set = next_in_receive_chain.is_initialized ();
-		next_in_receive_chain = boost::none;
+		auto is_set = next_in_receive_chain.has_value ();
+		next_in_receive_chain = std::nullopt;
 
 		// Need to also handle the case where we are hitting receives where the sends below should be confirmed
 		if (!hit_receive || (receive_source_pairs.size () == 1 && top_most_non_receive_block_hash != current))
@@ -271,7 +271,7 @@ bool nano::confirmation_height_bounded::iterate (store::read_transaction const &
 			hit_receive = true;
 			reached_target = true;
 			auto const & sideband (block->sideband ());
-			auto next = !sideband.successor.is_zero () && sideband.successor != top_level_hash_a ? boost::optional<nano::block_hash> (sideband.successor) : boost::none;
+			auto next = !sideband.successor.is_zero () && sideband.successor != top_level_hash_a ? std::optional<nano::block_hash> (sideband.successor) : std::nullopt;
 			receive_source_pairs_a.push_back ({ receive_chain_details{ account_a, sideband.height, hash, top_level_hash_a, next, bottom_height_a, bottom_hash_a }, source });
 			// Store a checkpoint every max_items so that we can always traverse a long number of accounts to genesis
 			if (receive_source_pairs_a.size () % max_items == 0)
@@ -347,7 +347,7 @@ void nano::confirmation_height_bounded::prepare_iterated_blocks_for_cementing (p
 			++accounts_confirmed_info_size;
 		}
 
-		if (receive_details->next.is_initialized ())
+		if (receive_details->next.has_value ())
 		{
 			preparation_data_a.next_in_receive_chain = top_and_next_hash{ receive_details->top_level, receive_details->next, receive_details->height + 1 };
 		}
@@ -559,7 +559,7 @@ void nano::confirmation_height_bounded::clear_process_vars ()
 	accounts_confirmed_info_size = 0;
 }
 
-nano::confirmation_height_bounded::receive_chain_details::receive_chain_details (nano::account const & account_a, uint64_t height_a, nano::block_hash const & hash_a, nano::block_hash const & top_level_a, boost::optional<nano::block_hash> next_a, uint64_t bottom_height_a, nano::block_hash const & bottom_most_a) :
+nano::confirmation_height_bounded::receive_chain_details::receive_chain_details (nano::account const & account_a, uint64_t height_a, nano::block_hash const & hash_a, nano::block_hash const & top_level_a, std::optional<nano::block_hash> next_a, uint64_t bottom_height_a, nano::block_hash const & bottom_most_a) :
 	account (account_a),
 	height (height_a),
 	hash (hash_a),

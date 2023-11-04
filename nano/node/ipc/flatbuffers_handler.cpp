@@ -31,14 +31,14 @@ std::string make_error_response (std::string const & error_message)
 }
 
 /**
- * Returns the 'api/flatbuffers' directory, boost::none if not found.
+ * Returns the 'api/flatbuffers' directory, std::nullopt if not found.
  */
-boost::optional<std::filesystem::path> get_api_path ()
+std::optional<std::filesystem::path> get_api_path ()
 {
 	std::filesystem::path const fb_path = "api/flatbuffers";
 	if (!std::filesystem::exists (fb_path))
 	{
-		return boost::none;
+		return std::nullopt;
 	}
 	return fb_path;
 }

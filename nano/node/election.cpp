@@ -374,9 +374,9 @@ void nano::election::confirm_if_quorum (nano::unique_lock<nano::mutex> & lock_a)
 	}
 }
 
-boost::optional<nano::election_status_type> nano::election::try_confirm (nano::block_hash const & hash)
+std::optional<nano::election_status_type> nano::election::try_confirm (nano::block_hash const & hash)
 {
-	boost::optional<nano::election_status_type> status_type;
+	std::optional<nano::election_status_type> status_type;
 	nano::unique_lock<nano::mutex> election_lock{ mutex };
 	auto winner = status.winner;
 	if (winner && winner->hash () == hash)
@@ -394,7 +394,7 @@ boost::optional<nano::election_status_type> nano::election::try_confirm (nano::b
 	}
 	else
 	{
-		status_type = boost::optional<nano::election_status_type>{};
+		status_type = std::optional<nano::election_status_type>{};
 	}
 	return status_type;
 }

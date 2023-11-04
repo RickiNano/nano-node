@@ -441,13 +441,13 @@ nano::opencl_work::~opencl_work ()
 	}
 }
 
-boost::optional<uint64_t> nano::opencl_work::generate_work (nano::work_version const version_a, nano::root const & root_a, uint64_t const difficulty_a)
+std::optional<uint64_t> nano::opencl_work::generate_work (nano::work_version const version_a, nano::root const & root_a, uint64_t const difficulty_a)
 {
 	std::atomic<int> ticket_l{ 0 };
 	return generate_work (version_a, root_a, difficulty_a, ticket_l);
 }
 
-boost::optional<uint64_t> nano::opencl_work::generate_work (nano::work_version const version_a, nano::root const & root_a, uint64_t const difficulty_a, std::atomic<int> & ticket_a)
+std::optional<uint64_t> nano::opencl_work::generate_work (nano::work_version const version_a, nano::root const & root_a, uint64_t const difficulty_a, std::atomic<int> & ticket_a)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
 	bool error (false);
@@ -513,7 +513,7 @@ boost::optional<uint64_t> nano::opencl_work::generate_work (nano::work_version c
 			logger.always_log (boost::str (boost::format ("Error writing attempt %1%") % write_error1));
 		}
 	}
-	boost::optional<uint64_t> value;
+	std::optional<uint64_t> value;
 	if (!error)
 	{
 		value = result;

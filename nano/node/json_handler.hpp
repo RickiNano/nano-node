@@ -91,6 +91,7 @@ public:
 	void receivable ();
 	void receivable_exists ();
 	void populate_backlog ();
+	std::optional<std::string> get_optional_value (boost::property_tree::ptree request, std::string key);
 	void process ();
 	void pruned_exists ();
 	void receive ();
@@ -192,23 +193,10 @@ public:
 	void process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a) override;
 	void process_request_v2 (rpc_handler_request_params const & params_a, std::string const & body_a, std::function<void (std::shared_ptr<std::string> const &)> response_a) override;
 
-	void stop () override
-	{
-		if (rpc)
-		{
-			rpc->stop ();
-		}
-	}
-
-	void rpc_instance (nano::rpc & rpc_a) override
-	{
-		rpc = rpc_a;
-	}
-
 private:
 	nano::node & node;
 	nano::ipc::ipc_server & ipc_server;
-	boost::optional<nano::rpc &> rpc;
+	std::optional<nano::rpc &> rpc;
 	std::function<void ()> stop_callback;
 	nano::node_rpc_config const & node_rpc_config;
 };

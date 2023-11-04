@@ -321,7 +321,7 @@ void nano::rep_crawler::cleanup_reps ()
 	}
 }
 
-std::vector<nano::representative> nano::rep_crawler::representatives (std::size_t count_a, nano::uint128_t const weight_a, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
+std::vector<nano::representative> nano::rep_crawler::representatives (std::size_t count_a, nano::uint128_t const weight_a, std::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
 {
 	auto version_min (opt_version_min_a.value_or (node.network_params.network.protocol_version_min));
 	std::multimap<nano::amount, representative, std::greater<nano::amount>> ordered;
@@ -342,7 +342,7 @@ std::vector<nano::representative> nano::rep_crawler::representatives (std::size_
 	return result;
 }
 
-std::vector<nano::representative> nano::rep_crawler::principal_representatives (std::size_t count_a, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
+std::vector<nano::representative> nano::rep_crawler::principal_representatives (std::size_t count_a, std::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
 {
 	return representatives (count_a, node.minimum_principal_weight (), opt_version_min_a);
 }

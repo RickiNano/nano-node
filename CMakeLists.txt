@@ -64,7 +64,7 @@ endif()
 # Create all libraries and executables in the root binary dir
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "/bin")
 
 set(NANO_GUI
     OFF
@@ -408,7 +408,6 @@ set(BOOST_MODULE_LIBS
     multi_index
     multiprecision
     numeric/conversion
-    optional
     parameter
     phoenix
     pool

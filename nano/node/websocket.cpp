@@ -159,7 +159,7 @@ bool nano::websocket::confirmation_options::update (boost::property_tree::ptree 
 					this->accounts.erase (encoded_l);
 				}
 			}
-			else if (this->logger.is_initialized ())
+			else if (this->logger.has_value ())
 			{
 				this->logger->always_log ("Websocket: invalid account provided for filtering blocks: ", account_l.second.data ());
 			}
@@ -187,7 +187,7 @@ bool nano::websocket::confirmation_options::update (boost::property_tree::ptree 
 void nano::websocket::confirmation_options::check_filter_empty () const
 {
 	// Warn the user if the options resulted in an empty filter
-	if (logger.is_initialized () && has_account_filtering_options && !all_local_accounts && accounts.empty ())
+	if (logger.has_value () && has_account_filtering_options && !all_local_accounts && accounts.empty ())
 	{
 		logger->always_log ("Websocket: provided options resulted in an empty block confirmation filter");
 	}
@@ -641,8 +641,8 @@ void nano::websocket::listener::broadcast_confirmation (std::shared_ptr<nano::bl
 	nano::websocket::message_builder builder;
 
 	nano::lock_guard<nano::mutex> lk (sessions_mutex);
-	boost::optional<nano::websocket::message> msg_with_block;
-	boost::optional<nano::websocket::message> msg_without_block;
+	std::optional<nano::websocket::message> msg_with_block;
+	std::optional<nano::websocket::message> msg_without_block;
 	for (auto & weak_session : sessions)
 	{
 		auto session_ptr (weak_session.lock ());
@@ -668,7 +668,7 @@ void nano::websocket::listener::broadcast_confirmation (std::shared_ptr<nano::bl
 					msg_without_block = builder.block_confirmed (block_a, account_a, amount_a, subtype, include_block, election_status_a, election_votes_a, *conf_options);
 				}
 
-				session_ptr->write (include_block ? msg_with_block.get () : msg_without_block.get ());
+				session_ptr->write (include_block ? msg_with_block.value () : msg_without_block.value ());
 			}
 		}
 	}

@@ -141,7 +141,7 @@ public: // Interface
 	bool publish (std::shared_ptr<nano::block> const & block_a);
 	// Confirm this block if quorum is met
 	void confirm_if_quorum (nano::unique_lock<nano::mutex> &);
-	boost::optional<nano::election_status_type> try_confirm (nano::block_hash const & hash);
+	std::optional<nano::election_status_type> try_confirm (nano::block_hash const & hash);
 	nano::election_status set_status_type (nano::election_status_type status_type);
 
 	/**

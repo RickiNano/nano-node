@@ -87,9 +87,9 @@ void nano::active_transactions::block_cemented_callback (std::shared_ptr<nano::b
 	handle_final_votes_confirmation (block_a, transaction, *status_type);
 }
 
-boost::optional<nano::election_status_type> nano::active_transactions::election_status (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block)
+std::optional<nano::election_status_type> nano::active_transactions::election_status (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block)
 {
-	boost::optional<nano::election_status_type> status_type;
+	std::optional<nano::election_status_type> status_type;
 
 	if (!confirmation_height_processor.is_processing_added_block (block->hash ()))
 	{
@@ -665,7 +665,7 @@ bool nano::active_transactions::publish (std::shared_ptr<nano::block> const & bl
 }
 
 // Returns the type of election status requiring callbacks calling later
-boost::optional<nano::election_status_type> nano::active_transactions::confirm_block (store::transaction const & transaction_a, std::shared_ptr<nano::block> const & block_a)
+std::optional<nano::election_status_type> nano::active_transactions::confirm_block (store::transaction const & transaction_a, std::shared_ptr<nano::block> const & block_a)
 {
 	auto const hash = block_a->hash ();
 	std::shared_ptr<nano::election> election = nullptr;
@@ -678,7 +678,7 @@ boost::optional<nano::election_status_type> nano::active_transactions::confirm_b
 		}
 	}
 
-	boost::optional<nano::election_status_type> status_type;
+	std::optional<nano::election_status_type> status_type;
 	if (election)
 	{
 		status_type = election->try_confirm (hash);
