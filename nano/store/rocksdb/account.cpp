@@ -33,8 +33,7 @@ void nano::store::rocksdb::account::del (store::write_transaction const & transa
 
 bool nano::store::rocksdb::account::exists (store::transaction const & transaction_a, nano::account const & account_a)
 {
-	auto iterator (begin (transaction_a, account_a));
-	return iterator != end () && nano::account (iterator->first) == account_a;
+	return store.exists (transaction_a, tables::accounts, account_a);
 }
 
 size_t nano::store::rocksdb::account::count (store::transaction const & transaction_a)
