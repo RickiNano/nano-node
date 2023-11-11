@@ -311,6 +311,11 @@ void nano::active_transactions::cleanup_election (nano::unique_lock<nano::mutex>
 {
 	debug_assert (!mutex.try_lock ());
 	debug_assert (lock_a.owns_lock ());
+	auto bbb = election->qualified_root;
+	std::cout << "election " << election->confirmed ();
+	std::cout << "qual " << bbb.to_string();
+	std::cout << "election 2 " << recently_confirmed.exists (election->qualified_root);
+
 	debug_assert (election->confirmed () || recently_confirmed.exists (election->qualified_root));
 
 	node.stats.inc (completion_type (*election), nano::to_stat_detail (election->behavior ()));
