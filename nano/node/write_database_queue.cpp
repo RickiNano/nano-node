@@ -3,7 +3,6 @@
 #include <nano/node/write_database_queue.hpp>
 
 #include <algorithm>
-#include <unordered_set>
 
 nano::write_guard::write_guard (std::function<void ()> guard_finish_callback_a) :
 	guard_finish_callback (guard_finish_callback_a)
@@ -27,8 +26,6 @@ nano::write_guard & nano::write_guard::operator= (nano::write_guard && write_gua
 	write_guard_a.guard_finish_callback = nullptr;
 	return *this;
 }
-
-std::unordered_set<nano::writer> writers_set;
 
 nano::write_guard::~write_guard ()
 {
@@ -95,7 +92,7 @@ bool nano::write_database_queue::contains (nano::writer writer)
 {
 	debug_assert (!use_noops);
 	nano::lock_guard<nano::mutex> guard (mutex);
-	return writers_set.find (writer) != writers_set.cend ();
+	return std::find (queue.cbegin (), queue.cend (), writer) != queue.cend ();
 }
 
 bool nano::write_database_queue::process (nano::writer writer)
@@ -118,7 +115,7 @@ bool nano::write_database_queue::process (nano::writer writer)
 		result = (queue.front () == writer);
 	}
 
-	if (!result && queue.empty ())
+	if (!result)
 	{
 		cv.notify_all ();
 	}
