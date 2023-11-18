@@ -26,6 +26,7 @@ public:
 	nano::node &, nano::node_rpc_config const &, std::string const &, std::function<void (std::string const &)> const &, std::function<void ()> stop_callback = [] () {});
 	void process_request (bool unsafe = false);
 	void uptime ();
+	void block_count ();
 	std::string body;
 	nano::node & node;
 	std::function<void (std::string const &)> response;

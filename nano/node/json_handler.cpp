@@ -97,6 +97,20 @@ void nano::json_handler::uptime ()
 	response_errors ();
 }
 
+void nano::json_handler::block_count ()
+{
+	json_response["count"] = std::to_string (node.ledger.cache.block_count);
+	json_response["unchecked"] = std::to_string (node.unchecked.count ());
+	json_response["cemented"] = std::to_string (node.ledger.cache.cemented_count);
+	if (node.flags.enable_pruning)
+	{
+		json_response["full"], std::to_string (node.ledger.cache.block_count - node.ledger.cache.pruned_count);
+		json_response["pruned"] = std::to_string (node.ledger.cache.pruned_count);
+	}
+	response_errors ();
+}
+
+
 void nano::inprocess_rpc_handler::process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a)
 {
 	// Note that if the rpc action is async, the shared_ptr<json_handler> lifetime will be extended by the action handler
@@ -115,6 +129,7 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ()
 {
 	ipc_json_handler_no_arg_func_map no_arg_funcs;
 	no_arg_funcs.emplace ("uptime", &nano::json_handler::uptime);
+	no_arg_funcs.emplace ("block_count", &nano::json_handler::block_count);
 	return no_arg_funcs;
 }
 }
