@@ -2085,6 +2085,7 @@ void nano::json_handler::confirmation_info ()
 				if (contents)
 				{
 					if (json_block_l)
+					if (json_block_l)
 					{
 						boost::property_tree::ptree block_node_l;
 						block->serialize_json (block_node_l);
@@ -2254,6 +2255,25 @@ void nano::json_handler::delegators_count ()
 			}
 		}
 		response_l.put ("count", std::to_string (count));
+	}
+	response_errors ();
+}
+
+void nano::json_handler::keys_create ()
+{
+	for (int i = 0; i < 2000; i++)
+	{
+		nano::keypair pair;
+		nano::raw_key prv = nano::deterministic_key (pair.prv, 0u);
+		nano::public_key pub (nano::pub_key (prv));
+		
+		auto account_address = pub.to_account ();
+		{
+			boost::property_tree::ptree accounts;
+			accounts.put ("private", pair.prv.to_string ());
+			accounts.put ("account", account_address);
+			response_l.add_child ("entry", accounts);
+		}
 	}
 	response_errors ();
 }
@@ -5370,6 +5390,7 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ()
 	no_arg_funcs.emplace ("delegators", &nano::json_handler::delegators);
 	no_arg_funcs.emplace ("delegators_count", &nano::json_handler::delegators_count);
 	no_arg_funcs.emplace ("deterministic_key", &nano::json_handler::deterministic_key);
+	no_arg_funcs.emplace ("keys_create", &nano::json_handler::keys_create);
 	no_arg_funcs.emplace ("epoch_upgrade", &nano::json_handler::epoch_upgrade);
 	no_arg_funcs.emplace ("frontiers", &nano::json_handler::frontiers);
 	no_arg_funcs.emplace ("frontier_count", &nano::json_handler::account_count);
