@@ -17,6 +17,8 @@
 #include <chrono>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 namespace
 {
 void construct_json (nano::container_info_component * component, boost::property_tree::ptree & parent);
@@ -77,7 +79,7 @@ void nano::json_handler::process_request (bool unsafe_a)
 
 void nano::json_handler::response_errors ()
 {
-	if (!ec && response_l.empty ())
+	if (!ec && json_response.empty ())
 	{
 		// Return an error code if no response data was given
 		ec = nano::error_rpc::empty_response;
@@ -92,16 +94,13 @@ void nano::json_handler::response_errors ()
 	}
 	else
 	{
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, response_l);
-		response (ostream.str ());
+		response (json_response.dump());
 	}
 }
 
-
 void nano::json_handler::uptime ()
 {
-	response_l.put ("seconds", std::chrono::duration_cast<std::chrono::seconds> (std::chrono::steady_clock::now () - node.startup_time).count ());
+	json_response["seconds"] = std::chrono::duration_cast<std::chrono::seconds> (std::chrono::steady_clock::now () - node.startup_time).count ();
 	response_errors ();
 }
 
