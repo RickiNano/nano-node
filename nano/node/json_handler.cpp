@@ -110,6 +110,42 @@ void nano::json_handler::block_count ()
 	response_errors ();
 }
 
+void nano::json_handler::confirmation_history ()
+{
+	nlohmann::json elections;
+	nlohmann::json confirmation_stats;
+	std::chrono::milliseconds running_total (0);
+	nano::block_hash hash (0);
+	if (!ec)
+	{
+		for (auto const & status : node.active.recently_cemented.list ())
+		{
+			if (hash.is_zero () || status.winner->hash () == hash)
+			{
+				nlohmann::json election;
+				election["hash"] = status.winner->hash ().to_string ();
+				election["duration"] = status.election_duration.count ();
+				election["time"] = status.election_end.count ();
+				election["tally"] = status.tally.to_string_dec ();
+				election["final"] = status.final_tally.to_string_dec ();
+				election["blocks"] = status.block_count;
+				election["voters"] = status.voter_count;
+				election["request_count"] = status.confirmation_request_count;
+				elections.push_back (election);
+			}
+			running_total += status.election_duration;
+		}
+	}
+	confirmation_stats["count"] = elections.size ();
+	if (elections.size () >= 1)
+	{
+		confirmation_stats["average"] = (running_total.count ()) / elections.size ();
+	}
+
+	json_response["confirmation_stats"] = confirmation_stats;
+	json_response["confirmations"] = elections;
+	response_errors ();
+}
 
 void nano::inprocess_rpc_handler::process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a)
 {
@@ -130,6 +166,7 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ()
 	ipc_json_handler_no_arg_func_map no_arg_funcs;
 	no_arg_funcs.emplace ("uptime", &nano::json_handler::uptime);
 	no_arg_funcs.emplace ("block_count", &nano::json_handler::block_count);
+	no_arg_funcs.emplace ("confirmation_history", &nano::json_handler::confirmation_history);
 	return no_arg_funcs;
 }
 }

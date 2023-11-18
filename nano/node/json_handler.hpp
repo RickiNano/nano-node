@@ -27,6 +27,7 @@ public:
 	void process_request (bool unsafe = false);
 	void uptime ();
 	void block_count ();
+	void confirmation_history ();
 	std::string body;
 	nano::node & node;
 	std::function<void (std::string const &)> response;
