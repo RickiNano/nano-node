@@ -5,8 +5,6 @@
 #include <nano/node/wallet.hpp>
 #include <nano/rpc/rpc.hpp>
 
-#include <boost/property_tree/ptree.hpp>
-
 #include <functional>
 #include <string>
 
@@ -30,7 +28,6 @@ public:
 	void uptime ();
 	std::string body;
 	nano::node & node;
-	boost::property_tree::ptree request;
 	std::function<void (std::string const &)> response;
 	void response_errors ();
 	std::error_code ec;

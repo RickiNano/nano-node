@@ -10,9 +10,6 @@
 #include <nano/node/node_rpc_config.hpp>
 #include <nano/node/telemetry.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-
 #include <algorithm>
 #include <chrono>
 #include <vector>
@@ -84,15 +81,13 @@ void nano::json_handler::response_errors ()
 	}
 	if (ec)
 	{
-		boost::property_tree::ptree response_error;
-		response_error.put ("error", ec.message ());
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, response_error);
-		response (ostream.str ());
+		nlohmann::json error_response;
+		error_response["error"] = ec.message ();
+		response (error_response.dump (4));
 	}
 	else
 	{
-		response (json_response.dump());
+		response (json_response.dump (4));
 	}
 }
 
