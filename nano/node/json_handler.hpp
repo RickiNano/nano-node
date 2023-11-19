@@ -28,6 +28,7 @@ public:
 	void uptime ();
 	void block_count ();
 	void confirmation_history ();
+	void deterministic_key ();
 	void wallet_create ();
 	void wallet_add ();
 	std::shared_ptr<nano::wallet> wallet_impl ();

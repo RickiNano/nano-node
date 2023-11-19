@@ -147,15 +147,44 @@ void nano::json_handler::confirmation_history ()
 	response_errors ();
 }
 
+void nano::json_handler::deterministic_key ()
+{
+	std::string seed_text = json_request["seed"].get<std::string> ();
+	std::string index_text = json_request["index"].get<std::string> ();
+
+	nano::raw_key seed;
+	if (!seed.decode_hex (seed_text))
+	{
+		try
+		{
+			uint32_t index (std::stoul (index_text));
+			nano::raw_key prv = nano::deterministic_key (seed, index);
+			nano::public_key pub (nano::pub_key (prv));
+			json_response["private"] = prv.to_string ();
+			json_response["public"] = pub.to_string ();
+			json_response["account"] = pub.to_account ();
+		}
+		catch (std::logic_error const &)
+		{
+			ec = nano::error_common::invalid_index;
+		}
+	}
+	else
+	{
+		ec = nano::error_common::bad_seed;
+	}
+	response_errors ();
+}
+
 void nano::json_handler::wallet_create ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
 		nano::raw_key seed;
-		
+
 		if (rpc_l->json_request.count ("seed") != 0)
 		{
 			auto seed_text = rpc_l->json_request["seed"].get<std::string> ();
-			if (seed.decode_hex(seed_text))
+			if (seed.decode_hex (seed_text))
 			{
 				rpc_l->ec = nano::error_common::bad_seed;
 			}
@@ -194,12 +223,12 @@ void nano::json_handler::wallet_add ()
 		if (!rpc_l->ec)
 		{
 			std::string key_text = rpc_l->json_request["key"].get<std::string> ();
-			
+
 			nano::raw_key key;
 			if (!key.decode_hex (key_text))
 			{
 				bool generate_work = false;
-				if (rpc_l->json_request.count("work") > 0)
+				if (rpc_l->json_request.count ("work") > 0)
 				{
 					generate_work = rpc_l->json_request["work"].get<bool> ();
 				}
@@ -267,6 +296,7 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ()
 	no_arg_funcs.emplace ("uptime", &nano::json_handler::uptime);
 	no_arg_funcs.emplace ("block_count", &nano::json_handler::block_count);
 	no_arg_funcs.emplace ("confirmation_history", &nano::json_handler::confirmation_history);
+	no_arg_funcs.emplace ("deterministic_key", &nano::json_handler::deterministic_key);
 	no_arg_funcs.emplace ("wallet_create", &nano::json_handler::wallet_create);
 	no_arg_funcs.emplace ("wallet_add", &nano::json_handler::wallet_add);
 	return no_arg_funcs;
