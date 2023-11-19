@@ -28,12 +28,16 @@ public:
 	void uptime ();
 	void block_count ();
 	void confirmation_history ();
+	void wallet_create ();
+	void wallet_add ();
+	std::shared_ptr<nano::wallet> wallet_impl ();
 	std::string body;
 	nano::node & node;
 	std::function<void (std::string const &)> response;
 	void response_errors ();
 	std::error_code ec;
 	std::string action;
+	nlohmann::json json_request;
 	nlohmann::json json_response;
 	bool enable_sign_hash{ false };
 	std::function<void ()> stop_callback;

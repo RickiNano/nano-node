@@ -54,8 +54,8 @@ void nano::json_handler::process_request (bool unsafe_a)
 {
 	try
 	{
-		nlohmann::json request = nlohmann::json::parse (body);
-		action = request["action"].get<std::string> ();
+		json_request = nlohmann::json::parse (body);
+		action = json_request["action"].get<std::string> ();
 		auto no_arg_func_iter = ipc_json_handler_no_arg_funcs.find (action);
 		if (no_arg_func_iter != ipc_json_handler_no_arg_funcs.end ())
 		{
@@ -147,6 +147,106 @@ void nano::json_handler::confirmation_history ()
 	response_errors ();
 }
 
+void nano::json_handler::wallet_create ()
+{
+	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
+		nano::raw_key seed;
+		
+		if (rpc_l->json_request.count ("seed") != 0)
+		{
+			auto seed_text = rpc_l->json_request["seed"].get<std::string> ();
+			if (seed.decode_hex(seed_text))
+			{
+				rpc_l->ec = nano::error_common::bad_seed;
+			}
+		}
+		if (!rpc_l->ec)
+		{
+			auto wallet_id = random_wallet_id ();
+			auto wallet (rpc_l->node.wallets.create (wallet_id));
+			auto existing (rpc_l->node.wallets.items.find (wallet_id));
+			if (existing != rpc_l->node.wallets.items.end ())
+			{
+				rpc_l->json_response["wallet"] = wallet_id.to_string ();
+			}
+			else
+			{
+				rpc_l->ec = nano::error_common::wallet_lmdb_max_dbs;
+			}
+			if (!rpc_l->ec && rpc_l->json_request.count ("seed") != 0)
+			{
+				auto transaction (rpc_l->node.wallets.tx_begin_write ());
+				nano::public_key account (wallet->change_seed (transaction, seed));
+				rpc_l->json_response["last_restored_account"] = account.to_account ();
+				auto index (wallet->store.deterministic_index_get (transaction));
+				debug_assert (index > 0);
+				rpc_l->json_response["restored_count"] = std::to_string (index);
+			}
+		}
+		rpc_l->response_errors ();
+	}));
+}
+
+void nano::json_handler::wallet_add ()
+{
+	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
+		auto wallet (rpc_l->wallet_impl ());
+		if (!rpc_l->ec)
+		{
+			std::string key_text = rpc_l->json_request["key"].get<std::string> ();
+			
+			nano::raw_key key;
+			if (!key.decode_hex (key_text))
+			{
+				bool generate_work = false;
+				if (rpc_l->json_request.count("work") > 0)
+				{
+					generate_work = rpc_l->json_request["work"].get<bool> ();
+				}
+				auto pub (wallet->insert_adhoc (key, generate_work));
+				if (!pub.is_zero ())
+				{
+					rpc_l->json_response["account"] = pub.to_account ();
+				}
+				else
+				{
+					rpc_l->ec = nano::error_common::wallet_locked;
+				}
+			}
+			else
+			{
+				rpc_l->ec = nano::error_common::bad_private_key;
+			}
+		}
+		rpc_l->response_errors ();
+	}));
+}
+
+std::shared_ptr<nano::wallet> nano::json_handler::wallet_impl ()
+{
+	if (!ec)
+	{
+		std::string wallet_text (json_request["wallet"].get<std::string> ());
+		nano::wallet_id wallet;
+		if (!wallet.decode_hex (wallet_text))
+		{
+			if (auto existing = node.wallets.open (wallet); existing != nullptr)
+			{
+				return existing;
+			}
+			else
+			{
+				ec = nano::error_common::wallet_not_found;
+			}
+		}
+		else
+		{
+			ec = nano::error_common::bad_wallet_number;
+		}
+	}
+	return nullptr;
+}
+
 void nano::inprocess_rpc_handler::process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a)
 {
 	// Note that if the rpc action is async, the shared_ptr<json_handler> lifetime will be extended by the action handler
@@ -167,6 +267,8 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ()
 	no_arg_funcs.emplace ("uptime", &nano::json_handler::uptime);
 	no_arg_funcs.emplace ("block_count", &nano::json_handler::block_count);
 	no_arg_funcs.emplace ("confirmation_history", &nano::json_handler::confirmation_history);
+	no_arg_funcs.emplace ("wallet_create", &nano::json_handler::wallet_create);
+	no_arg_funcs.emplace ("wallet_add", &nano::json_handler::wallet_add);
 	return no_arg_funcs;
 }
 }
