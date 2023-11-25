@@ -17,7 +17,7 @@ std::string nano::inactive_cache_information::to_string () const
 	return ss.str ();
 }
 
-std::size_t nano::inactive_cache_information::fill (std::shared_ptr<nano::election> election) const
+std::size_t nano::inactive_cache_information::fill (const std::shared_ptr<nano::election> & election) const
 {
 	std::size_t inserted = 0;
 	for (auto const & [rep, timestamp] : voters)

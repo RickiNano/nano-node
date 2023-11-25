@@ -18,12 +18,12 @@ public:
 	// Add batch_processed observer to block_processor if enabled
 	void connect (nano::block_processor & block_processor);
 	// Mark a block as originating locally
-	void set_local (std::shared_ptr<nano::block> block);
-	void erase (std::shared_ptr<nano::block> block);
+	void set_local (const std::shared_ptr<nano::block> & block);
+	void erase (const std::shared_ptr<nano::block> & block);
 
 private:
 	// Block_processor observer
-	void observe (std::shared_ptr<nano::block> block);
+	void observe (const std::shared_ptr<nano::block> & block);
 
 	nano::network & network;
 	nano::block_arrival & block_arrival;

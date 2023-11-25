@@ -518,7 +518,7 @@ void nano::bootstrap_attempt_lazy::get_information (boost::property_tree::ptree 
 	}
 }
 
-nano::bootstrap_attempt_wallet::bootstrap_attempt_wallet (std::shared_ptr<nano::node> const & node_a, uint64_t incremental_id_a, std::string id_a) :
+nano::bootstrap_attempt_wallet::bootstrap_attempt_wallet (std::shared_ptr<nano::node> const & node_a, uint64_t incremental_id_a, const std::string & id_a) :
 	nano::bootstrap_attempt (node_a, nano::bootstrap_mode::wallet_lazy, incremental_id_a, id_a)
 {
 	node_a->bootstrap_initiator.notify_listeners (true);

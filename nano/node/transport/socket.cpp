@@ -178,7 +178,7 @@ void nano::transport::socket::write_queued_messages ()
 
 	write_in_progress = true;
 	nano::async_write (tcp_socket, next->buffer,
-	boost::asio::bind_executor (strand, [this_s = shared_from_this (), next /* `next` object keeps buffer in scope */] (boost::system::error_code ec, std::size_t size) {
+	boost::asio::bind_executor (strand, [this_s = shared_from_this (), next /* `next` object keeps buffer in scope */] (const boost::system::error_code & ec, std::size_t size) {
 		this_s->write_in_progress = false;
 
 		if (ec)
@@ -374,7 +374,7 @@ nano::transport::socket::write_queue::write_queue (std::size_t max_size_a) :
 {
 }
 
-bool nano::transport::socket::write_queue::insert (const buffer_t & buffer, callback_t callback, nano::transport::traffic_type traffic_type)
+bool nano::transport::socket::write_queue::insert (const buffer_t & buffer, const callback_t & callback, nano::transport::traffic_type traffic_type)
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 	if (queues[traffic_type].size () < 2 * max_size)

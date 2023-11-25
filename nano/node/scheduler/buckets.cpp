@@ -71,7 +71,7 @@ std::size_t nano::scheduler::buckets::index (nano::uint128_t const & balance) co
  * Push a block and its associated time into the prioritization container.
  * The time is given here because sideband might not exist in the case of state blocks.
  */
-void nano::scheduler::buckets::push (uint64_t time, std::shared_ptr<nano::block> block, nano::amount const & priority)
+void nano::scheduler::buckets::push (uint64_t time, const std::shared_ptr<nano::block> & block, nano::amount const & priority)
 {
 	auto was_empty = empty ();
 	auto & bucket = buckets_m[index (priority.number ())];

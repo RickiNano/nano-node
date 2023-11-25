@@ -24,7 +24,7 @@ void nano::bandwidth_limiter::reset (std::size_t limit_a, double burst_ratio_a)
  * outbound_bandwidth_limiter
  */
 
-nano::outbound_bandwidth_limiter::outbound_bandwidth_limiter (nano::outbound_bandwidth_limiter::config config_a) :
+nano::outbound_bandwidth_limiter::outbound_bandwidth_limiter (const nano::outbound_bandwidth_limiter::config & config_a) :
 	config_m{ config_a },
 	limiter_standard (config_m.standard_limit, config_m.standard_burst_ratio),
 	limiter_bootstrap{ config_m.bootstrap_limit, config_m.bootstrap_burst_ratio }

@@ -19,10 +19,10 @@ public:
 	// Stop the observer and trigger broken promise exceptions
 	void stop ();
 	// Block processor observer
-	void observe (nano::process_return const & result, std::shared_ptr<nano::block> block);
+	void observe (nano::process_return const & result, const std::shared_ptr<nano::block> & block);
 	[[nodiscard]] std::future<nano::process_return> insert (std::shared_ptr<nano::block> block);
-	bool exists (std::shared_ptr<nano::block> block);
-	void erase (std::shared_ptr<nano::block> block);
+	bool exists (const std::shared_ptr<nano::block> & block);
+	void erase (const std::shared_ptr<nano::block> & block);
 
 private:
 	std::unordered_multimap<std::shared_ptr<nano::block>, std::promise<nano::process_return>> blocking;

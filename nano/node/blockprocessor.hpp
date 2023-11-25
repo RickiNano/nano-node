@@ -55,7 +55,7 @@ private:
 private:
 	// Roll back block in the ledger that conflicts with 'block'
 	void rollback_competitor (store::write_transaction const & transaction, nano::block const & block);
-	nano::process_return process_one (store::write_transaction const &, std::shared_ptr<nano::block> block, bool const = false);
+	nano::process_return process_one (store::write_transaction const &, const std::shared_ptr<nano::block> & block, bool const = false);
 	void queue_unchecked (store::write_transaction const &, nano::hash_or_account const &);
 	std::deque<processed_t> process_batch (nano::unique_lock<nano::mutex> &);
 	void add_impl (std::shared_ptr<nano::block> block);

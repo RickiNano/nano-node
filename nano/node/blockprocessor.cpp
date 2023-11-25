@@ -258,7 +258,7 @@ auto nano::block_processor::process_batch (nano::unique_lock<nano::mutex> & lock
 	return processed;
 }
 
-nano::process_return nano::block_processor::process_one (store::write_transaction const & transaction_a, std::shared_ptr<nano::block> block, bool const forced_a)
+nano::process_return nano::block_processor::process_one (store::write_transaction const & transaction_a, const std::shared_ptr<nano::block> & block, bool const forced_a)
 {
 	nano::process_return result;
 	auto hash (block->hash ());

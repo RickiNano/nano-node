@@ -29,7 +29,7 @@ namespace bootstrap_ascending
 		peer_scoring (nano::bootstrap_ascending_config & config, nano::network_constants const & network_constants);
 		// Returns true if channel limit has been exceeded
 		bool try_send_message (std::shared_ptr<nano::transport::channel> channel);
-		void received_message (std::shared_ptr<nano::transport::channel> channel);
+		void received_message (const std::shared_ptr<nano::transport::channel> & channel);
 		std::shared_ptr<nano::transport::channel> channel ();
 		[[nodiscard]] std::size_t size () const;
 		// Cleans up scores for closed channels

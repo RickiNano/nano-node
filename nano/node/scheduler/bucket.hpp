@@ -31,7 +31,7 @@ public:
 	~bucket ();
 	std::shared_ptr<nano::block> top () const;
 	void pop ();
-	void push (uint64_t time, std::shared_ptr<nano::block> block);
+	void push (uint64_t time, const std::shared_ptr<nano::block> & block);
 	size_t size () const;
 	bool empty () const;
 	void dump () const;

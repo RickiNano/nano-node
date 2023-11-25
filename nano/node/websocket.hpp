@@ -282,7 +282,7 @@ namespace websocket
 		/** Handle incoming message */
 		void handle_message (boost::property_tree::ptree const & message_a);
 		/** Acknowledge incoming message */
-		void send_ack (std::string action_a, std::string id_a);
+		void send_ack (const std::string & action_a, const std::string & id_a);
 		/** Send all queued messages. This must be called from the write strand. */
 		void write_queued_messages ();
 	};
@@ -291,12 +291,12 @@ namespace websocket
 	class listener final : public std::enable_shared_from_this<listener>
 	{
 	public:
-		listener (std::shared_ptr<nano::tls_config> const & tls_config_a, nano::logger_mt & logger_a, nano::wallets & wallets_a, boost::asio::io_context & io_ctx_a, boost::asio::ip::tcp::endpoint endpoint_a);
+		listener (std::shared_ptr<nano::tls_config> const & tls_config_a, nano::logger_mt & logger_a, nano::wallets & wallets_a, boost::asio::io_context & io_ctx_a, const boost::asio::ip::tcp::endpoint & endpoint_a);
 
 		/** Start accepting connections */
 		void run ();
 		void accept ();
-		void on_accept (boost::system::error_code ec_a);
+		void on_accept (const boost::system::error_code & ec_a);
 
 		/** Close all websocket sessions and stop listening for new connections */
 		void stop ();
@@ -305,7 +305,7 @@ namespace websocket
 		void broadcast_confirmation (std::shared_ptr<nano::block> const & block_a, nano::account const & account_a, nano::amount const & amount_a, std::string const & subtype, nano::election_status const & election_status_a, std::vector<nano::vote_with_weight_info> const & election_votes_a);
 
 		/** Broadcast \p message to all session subscribing to the message topic. */
-		void broadcast (nano::websocket::message message_a);
+		void broadcast (const nano::websocket::message & message_a);
 
 		nano::logger_mt & get_logger () const
 		{

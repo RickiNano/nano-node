@@ -48,7 +48,7 @@ public: // Config
 	};
 
 public:
-	explicit outbound_bandwidth_limiter (config);
+	explicit outbound_bandwidth_limiter (const config &);
 
 	/**
 	 * Check whether packet falls withing bandwidth limits and should be allowed

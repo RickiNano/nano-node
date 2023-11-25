@@ -60,9 +60,9 @@ private:
 	 * Blocks response
 	 */
 	nano::asc_pull_ack process (store::transaction const &, nano::asc_pull_req::id_t id, nano::asc_pull_req::blocks_payload const & request);
-	nano::asc_pull_ack prepare_response (store::transaction const &, nano::asc_pull_req::id_t id, nano::block_hash start_block, std::size_t count);
+	nano::asc_pull_ack prepare_response (store::transaction const &, nano::asc_pull_req::id_t id, const nano::block_hash & start_block, std::size_t count);
 	nano::asc_pull_ack prepare_empty_blocks_response (nano::asc_pull_req::id_t id);
-	std::vector<std::shared_ptr<nano::block>> prepare_blocks (store::transaction const &, nano::block_hash start_block, std::size_t count) const;
+	std::vector<std::shared_ptr<nano::block>> prepare_blocks (store::transaction const &, const nano::block_hash & start_block, std::size_t count) const;
 
 	/*
 	 * Account info response
