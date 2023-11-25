@@ -57,7 +57,7 @@ nano::confirmation_height_bounded::top_and_next_hash nano::confirmation_height_b
 	return next;
 }
 
-void nano::confirmation_height_bounded::process (std::shared_ptr<nano::block> original_block)
+void nano::confirmation_height_bounded::process (const std::shared_ptr<nano::block> & original_block)
 {
 	if (pending_empty ())
 	{
@@ -559,7 +559,7 @@ void nano::confirmation_height_bounded::clear_process_vars ()
 	accounts_confirmed_info_size = 0;
 }
 
-nano::confirmation_height_bounded::receive_chain_details::receive_chain_details (nano::account const & account_a, uint64_t height_a, nano::block_hash const & hash_a, nano::block_hash const & top_level_a, boost::optional<nano::block_hash> next_a, uint64_t bottom_height_a, nano::block_hash const & bottom_most_a) :
+nano::confirmation_height_bounded::receive_chain_details::receive_chain_details (nano::account const & account_a, uint64_t height_a, nano::block_hash const & hash_a, nano::block_hash const & top_level_a, const boost::optional<nano::block_hash> & next_a, uint64_t bottom_height_a, nano::block_hash const & bottom_most_a) :
 	account (account_a),
 	height (height_a),
 	hash (hash_a),

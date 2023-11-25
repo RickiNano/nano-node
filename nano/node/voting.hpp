@@ -128,7 +128,8 @@ public:
 	void add (nano::root const &, nano::block_hash const &);
 	/** Queue blocks for vote generation, returning the number of successful candidates.*/
 	std::size_t generate (std::vector<std::shared_ptr<nano::block>> const & blocks_a, std::shared_ptr<nano::transport::channel> const & channel_a);
-	void set_reply_action (std::function<void (std::shared_ptr<nano::vote> const &, std::shared_ptr<nano::transport::channel> const &)>);
+	void set_reply_action (const std::function<void (std::shared_ptr<nano::vote> const &, std::shared_ptr<nano::transport::channel> const &)>
+		&);
 
 	void start ();
 	void stop ();

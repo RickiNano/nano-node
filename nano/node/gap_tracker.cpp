@@ -23,7 +23,7 @@ void nano::gap_tracker::connect (nano::block_processor & block_processor)
 	});
 }
 
-void nano::gap_tracker::observe (std::shared_ptr<nano::block> block)
+void nano::gap_tracker::observe (const std::shared_ptr<nano::block> & block)
 {
 	gap_cache.add (block->hash ());
 }

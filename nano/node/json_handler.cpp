@@ -27,7 +27,7 @@ bool block_confirmed (nano::node & node, nano::store::transaction & transaction,
 char const * epoch_as_string (nano::epoch);
 }
 
-nano::json_handler::json_handler (nano::node & node_a, nano::node_rpc_config const & node_rpc_config_a, std::string const & body_a, std::function<void (std::string const &)> const & response_a, std::function<void ()> stop_callback_a) :
+nano::json_handler::json_handler (nano::node & node_a, nano::node_rpc_config const & node_rpc_config_a, std::string const & body_a, std::function<void (std::string const &)> const & response_a, const std::function<void ()> & stop_callback_a) :
 	body (body_a),
 	node (node_a),
 	response (response_a),
@@ -331,7 +331,7 @@ std::shared_ptr<nano::block> nano::json_handler::block_impl (bool signature_work
 	return result;
 }
 
-nano::block_hash nano::json_handler::hash_impl (std::string search_text)
+nano::block_hash nano::json_handler::hash_impl (const std::string & search_text)
 {
 	nano::block_hash result (0);
 	if (!ec)

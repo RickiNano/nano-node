@@ -198,7 +198,7 @@ void nano::network::flood_vote_pr (std::shared_ptr<nano::vote> const & vote_a)
 	}
 }
 
-void nano::network::flood_block_many (std::deque<std::shared_ptr<nano::block>> blocks_a, std::function<void ()> callback_a, unsigned delay_a)
+void nano::network::flood_block_many (std::deque<std::shared_ptr<nano::block>> blocks_a, const std::function<void ()> & callback_a, unsigned delay_a)
 {
 	if (!blocks_a.empty ())
 	{
@@ -286,7 +286,8 @@ void nano::network::broadcast_confirm_req_base (std::shared_ptr<nano::block> con
 	}
 }
 
-void nano::network::broadcast_confirm_req_batched_many (std::unordered_map<std::shared_ptr<nano::transport::channel>, std::deque<std::pair<nano::block_hash, nano::root>>> request_bundle_a, std::function<void ()> callback_a, unsigned delay_a, bool resumption_a)
+void nano::network::broadcast_confirm_req_batched_many (std::unordered_map<std::shared_ptr<nano::transport::channel>, std::deque<std::pair<nano::block_hash, nano::root>>> request_bundle_a,
+const std::function<void ()> & callback_a, unsigned delay_a, bool resumption_a)
 {
 	if (!resumption_a && node.config.logging.network_logging ())
 	{
@@ -330,7 +331,8 @@ void nano::network::broadcast_confirm_req_batched_many (std::unordered_map<std::
 	}
 }
 
-void nano::network::broadcast_confirm_req_many (std::deque<std::pair<std::shared_ptr<nano::block>, std::shared_ptr<std::vector<std::shared_ptr<nano::transport::channel>>>>> requests_a, std::function<void ()> callback_a, unsigned delay_a)
+void nano::network::broadcast_confirm_req_many (std::deque<std::pair<std::shared_ptr<nano::block>, std::shared_ptr<std::vector<std::shared_ptr<nano::transport::channel>>>>> requests_a,
+                                                const std::function<void ()> & callback_a, unsigned delay_a)
 {
 	auto pair_l (requests_a.front ());
 	requests_a.pop_front ();

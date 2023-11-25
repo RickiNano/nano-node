@@ -3,9 +3,10 @@
 #include <nano/node/write_database_queue.hpp>
 
 #include <algorithm>
+#include <utility>
 
 nano::write_guard::write_guard (std::function<void ()> guard_finish_callback_a) :
-	guard_finish_callback (guard_finish_callback_a)
+	guard_finish_callback (std::move (guard_finish_callback_a))
 {
 }
 

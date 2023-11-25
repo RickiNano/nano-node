@@ -1,6 +1,6 @@
 #include <nano/node/inactive_cache_status.hpp>
 
-bool nano::inactive_cache_status::operator!= (inactive_cache_status const other) const
+bool nano::inactive_cache_status::operator!= (inactive_cache_status const & other) const
 {
 	return bootstrap_started != other.bootstrap_started
 	|| election_started != other.election_started

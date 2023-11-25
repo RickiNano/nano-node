@@ -76,7 +76,7 @@ public:
 class bootstrap_attempts final
 {
 public:
-	void add (std::shared_ptr<nano::bootstrap_attempt>);
+	void add (const std::shared_ptr<nano::bootstrap_attempt> &);
 	void remove (uint64_t);
 	void clear ();
 	std::shared_ptr<nano::bootstrap_attempt> find (uint64_t);
@@ -110,7 +110,7 @@ public:
 	std::shared_ptr<nano::bootstrap_connections> connections;
 	std::shared_ptr<nano::bootstrap_attempt> new_attempt ();
 	bool has_new_attempts ();
-	void remove_attempt (std::shared_ptr<nano::bootstrap_attempt>);
+	void remove_attempt (const std::shared_ptr<nano::bootstrap_attempt> &);
 	std::shared_ptr<nano::bootstrap_attempt> current_attempt ();
 	std::shared_ptr<nano::bootstrap_attempt_lazy> current_lazy_attempt ();
 	std::shared_ptr<nano::bootstrap_attempt_wallet> current_wallet_attempt ();

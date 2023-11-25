@@ -73,7 +73,7 @@ bool nano::bootstrap_server::verify (const nano::asc_pull_req & message) const
 	return std::visit (verify_visitor{}, message.payload);
 }
 
-bool nano::bootstrap_server::request (nano::asc_pull_req const & message, std::shared_ptr<nano::transport::channel> channel)
+bool nano::bootstrap_server::request (nano::asc_pull_req const & message, const std::shared_ptr<nano::transport::channel> & channel)
 {
 	if (!verify (message))
 	{

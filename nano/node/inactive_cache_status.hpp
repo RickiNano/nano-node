@@ -18,7 +18,7 @@ public:
 	/** Last votes tally for block */
 	nano::uint128_t tally{ 0 };
 
-	bool operator!= (inactive_cache_status const other) const;
+	bool operator!= (inactive_cache_status const & other) const;
 
 	std::string to_string () const;
 };

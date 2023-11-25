@@ -137,7 +137,7 @@ private:
 	public:
 		explicit write_queue (std::size_t max_size);
 
-		bool insert (buffer_t const &, callback_t, nano::transport::traffic_type);
+		bool insert (buffer_t const &, const callback_t &, nano::transport::traffic_type);
 		std::optional<entry> pop ();
 		void clear ();
 		std::size_t size (nano::transport::traffic_type) const;

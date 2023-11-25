@@ -26,7 +26,7 @@ nano::confirmation_height_unbounded::confirmation_height_unbounded (nano::ledger
 {
 }
 
-void nano::confirmation_height_unbounded::process (std::shared_ptr<nano::block> original_block)
+void nano::confirmation_height_unbounded::process (const std::shared_ptr<nano::block> & original_block)
 {
 	if (pending_empty ())
 	{
@@ -193,7 +193,7 @@ void nano::confirmation_height_unbounded::process (std::shared_ptr<nano::block> 
 	} while ((!receive_source_pairs.empty () || current != original_block->hash ()) && !stopped);
 }
 
-void nano::confirmation_height_unbounded::collect_unconfirmed_receive_and_sources_for_account (uint64_t block_height_a, uint64_t confirmation_height_a, std::shared_ptr<nano::block> const & block_a, nano::block_hash const & hash_a, nano::account const & account_a, store::read_transaction const & transaction_a, std::vector<receive_source_pair> & receive_source_pairs_a, std::vector<nano::block_hash> & block_callback_data_a, std::vector<nano::block_hash> & orig_block_callback_data_a, std::shared_ptr<nano::block> original_block)
+void nano::confirmation_height_unbounded::collect_unconfirmed_receive_and_sources_for_account (uint64_t block_height_a, uint64_t confirmation_height_a, std::shared_ptr<nano::block> const & block_a, nano::block_hash const & hash_a, nano::account const & account_a, store::read_transaction const & transaction_a, std::vector<receive_source_pair> & receive_source_pairs_a, std::vector<nano::block_hash> & block_callback_data_a, std::vector<nano::block_hash> & orig_block_callback_data_a, const std::shared_ptr<nano::block> & original_block)
 {
 	debug_assert (block_a->hash () == hash_a);
 	auto hash (hash_a);

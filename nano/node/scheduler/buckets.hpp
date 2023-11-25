@@ -45,7 +45,7 @@ class buckets final
 public:
 	buckets (uint64_t maximum = 250000u);
 	~buckets ();
-	void push (uint64_t time, std::shared_ptr<nano::block> block, nano::amount const & priority);
+	void push (uint64_t time, const std::shared_ptr<nano::block> & block, nano::amount const & priority);
 	std::shared_ptr<nano::block> top () const;
 	void pop ();
 	std::size_t size () const;

@@ -22,7 +22,7 @@ public:
 	confirmation_height_bounded (nano::ledger &, nano::write_database_queue &, std::chrono::milliseconds batch_separate_pending_min_time, nano::logging const &, nano::logger_mt &, std::atomic<bool> & stopped, uint64_t & batch_write_size, std::function<void (std::vector<std::shared_ptr<nano::block>> const &)> const & cemented_callback, std::function<void (nano::block_hash const &)> const & already_cemented_callback, std::function<uint64_t ()> const & awaiting_processing_size_query);
 	bool pending_empty () const;
 	void clear_process_vars ();
-	void process (std::shared_ptr<nano::block> original_block);
+	void process (const std::shared_ptr<nano::block> & original_block);
 	void cement_blocks (nano::write_guard & scoped_write_guard_a);
 
 private:
@@ -76,7 +76,7 @@ private:
 	class receive_chain_details final
 	{
 	public:
-		receive_chain_details (nano::account const &, uint64_t, nano::block_hash const &, nano::block_hash const &, boost::optional<nano::block_hash>, uint64_t, nano::block_hash const &);
+		receive_chain_details (nano::account const &, uint64_t, nano::block_hash const &, nano::block_hash const &, const boost::optional<nano::block_hash> &, uint64_t, nano::block_hash const &);
 		nano::account account;
 		uint64_t height;
 		nano::block_hash hash;

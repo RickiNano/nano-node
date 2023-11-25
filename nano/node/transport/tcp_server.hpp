@@ -44,7 +44,7 @@ std::unique_ptr<container_info_component> collect_container_info (tcp_listener &
 class tcp_server final : public std::enable_shared_from_this<tcp_server>
 {
 public:
-	tcp_server (std::shared_ptr<nano::transport::socket>, std::shared_ptr<nano::node>, bool allow_bootstrap = true);
+	tcp_server (std::shared_ptr<nano::transport::socket>, const std::shared_ptr<nano::node> &, bool allow_bootstrap = true);
 	~tcp_server ();
 
 	void start ();

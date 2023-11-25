@@ -23,7 +23,7 @@ public:
 	confirmation_height_unbounded (nano::ledger &, nano::write_database_queue &, std::chrono::milliseconds batch_separate_pending_min_time, nano::logging const &, nano::logger_mt &, std::atomic<bool> & stopped, uint64_t & batch_write_size, std::function<void (std::vector<std::shared_ptr<nano::block>> const &)> const & cemented_callback, std::function<void (nano::block_hash const &)> const & already_cemented_callback, std::function<uint64_t ()> const & awaiting_processing_size_query);
 	bool pending_empty () const;
 	void clear_process_vars ();
-	void process (std::shared_ptr<nano::block> original_block);
+	void process (const std::shared_ptr<nano::block> & original_block);
 	void cement_blocks (nano::write_guard &);
 	bool has_iterated_over_block (nano::block_hash const &) const;
 
@@ -92,7 +92,7 @@ private:
 		std::vector<nano::block_hash> const & orig_block_callback_data;
 	};
 
-	void collect_unconfirmed_receive_and_sources_for_account (uint64_t, uint64_t, std::shared_ptr<nano::block> const &, nano::block_hash const &, nano::account const &, store::read_transaction const &, std::vector<receive_source_pair> &, std::vector<nano::block_hash> &, std::vector<nano::block_hash> &, std::shared_ptr<nano::block> original_block);
+	void collect_unconfirmed_receive_and_sources_for_account (uint64_t, uint64_t, std::shared_ptr<nano::block> const &, nano::block_hash const &, nano::account const &, store::read_transaction const &, std::vector<receive_source_pair> &, std::vector<nano::block_hash> &, std::vector<nano::block_hash> &, const std::shared_ptr<nano::block> & original_block);
 	void prepare_iterated_blocks_for_cementing (preparation_data &);
 
 	nano::ledger & ledger;

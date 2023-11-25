@@ -7,6 +7,7 @@
 #include <nano/node/transport/tcp.hpp>
 
 #include <boost/format.hpp>
+#include <utility>
 
 nano::pull_info::pull_info (nano::hash_or_account const & account_or_head_a, nano::block_hash const & head_a, nano::block_hash const & end_a, uint64_t bootstrap_id_a, count_t count_a, unsigned retry_limit_a) :
 	account_or_head (account_or_head_a),
@@ -140,12 +141,12 @@ void nano::bulk_pull_client::throttled_receive_block ()
 
 void nano::bulk_pull_client::receive_block ()
 {
-	block_deserializer->read (*connection->socket, [this_l = shared_from_this ()] (boost::system::error_code ec, std::shared_ptr<nano::block> block) {
-		this_l->received_block (ec, block);
+	block_deserializer->read (*connection->socket, [this_l = shared_from_this ()] (boost::system::error_code ec, const std::shared_ptr<nano::block> & block) {
+		this_l->received_block (ec, std::move (block));
 	});
 }
 
-void nano::bulk_pull_client::received_block (boost::system::error_code ec, std::shared_ptr<nano::block> block)
+void nano::bulk_pull_client::received_block (boost::system::error_code ec, const std::shared_ptr<nano::block> & block)
 {
 	auto node = connection->node.lock ();
 	if (!node)

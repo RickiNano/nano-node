@@ -17,7 +17,7 @@ public:
 
 private:
 	// Block_processor observer
-	void observe (std::shared_ptr<nano::block> block);
+	void observe (const std::shared_ptr<nano::block> & block);
 
 	nano::active_transactions & active;
 };

@@ -23,7 +23,7 @@ class json_handler : public std::enable_shared_from_this<nano::json_handler>
 {
 public:
 	json_handler (
-	nano::node &, nano::node_rpc_config const &, std::string const &, std::function<void (std::string const &)> const &, std::function<void ()> stop_callback = [] () {});
+	nano::node &, nano::node_rpc_config const &, std::string const &, std::function<void (std::string const &)> const &, const std::function<void ()> & stop_callback = [] () {});
 	void process_request (bool unsafe = false);
 	void account_balance ();
 	void account_block_count ();
@@ -161,7 +161,7 @@ public:
 	nano::account_info account_info_impl (store::transaction const &, nano::account const &);
 	nano::amount amount_impl ();
 	std::shared_ptr<nano::block> block_impl (bool = true);
-	nano::block_hash hash_impl (std::string = "hash");
+	nano::block_hash hash_impl (const std::string & = "hash");
 	nano::amount threshold_optional_impl ();
 	uint64_t work_optional_impl ();
 	uint64_t count_impl ();

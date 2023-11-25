@@ -18,7 +18,7 @@ void nano::blocking_observer::stop ()
 	discard.clear (); // ~promise future_error
 }
 
-void nano::blocking_observer::observe (nano::process_return const & result, std::shared_ptr<nano::block> block)
+void nano::blocking_observer::observe (nano::process_return const & result, const std::shared_ptr<nano::block> & block)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	auto existing = blocking.find (block);
@@ -32,7 +32,7 @@ void nano::blocking_observer::observe (nano::process_return const & result, std:
 	}
 }
 
-std::future<nano::process_return> nano::blocking_observer::insert (std::shared_ptr<nano::block> block)
+std::future<nano::process_return> nano::blocking_observer::insert (const std::shared_ptr<nano::block> & block)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
 	if (stopped)
@@ -44,14 +44,14 @@ std::future<nano::process_return> nano::blocking_observer::insert (std::shared_p
 	return iterator->second.get_future ();
 }
 
-bool nano::blocking_observer::exists (std::shared_ptr<nano::block> block)
+bool nano::blocking_observer::exists (const std::shared_ptr<nano::block> & block)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
 	auto existing = blocking.find (block);
 	return existing != blocking.end ();
 }
 
-void nano::blocking_observer::erase (std::shared_ptr<nano::block> block)
+void nano::blocking_observer::erase (const std::shared_ptr<nano::block> & block)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
 	auto existing = blocking.find (block);

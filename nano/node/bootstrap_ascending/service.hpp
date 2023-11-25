@@ -47,7 +47,7 @@ namespace bootstrap_ascending
 		/**
 		 * Process `asc_pull_ack` message coming from network
 		 */
-		void process (nano::asc_pull_ack const & message, std::shared_ptr<nano::transport::channel> channel);
+		void process (nano::asc_pull_ack const & message, const std::shared_ptr<nano::transport::channel> & channel);
 
 	public: // Container info
 		std::unique_ptr<nano::container_info_component> collect_container_info (std::string const & name);

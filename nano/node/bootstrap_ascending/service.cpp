@@ -79,7 +79,7 @@ void nano::bootstrap_ascending::service::stop ()
 	nano::join_or_pass (timeout_thread);
 }
 
-void nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::channel> channel, async_tag tag)
+auto nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::channel> channel, async_tag tag) -> void
 {
 	debug_assert (tag.type == async_tag::query_type::blocks_by_hash || tag.type == async_tag::query_type::blocks_by_account);
 
@@ -349,7 +349,7 @@ void nano::bootstrap_ascending::service::run_timeouts ()
 	}
 }
 
-void nano::bootstrap_ascending::service::process (nano::asc_pull_ack const & message, std::shared_ptr<nano::transport::channel> channel)
+void nano::bootstrap_ascending::service::process (nano::asc_pull_ack const & message, const std::shared_ptr<nano::transport::channel> & channel)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 

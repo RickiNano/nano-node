@@ -322,7 +322,7 @@ nano::node::node (boost::asio::io_context & io_ctx_a, std::filesystem::path cons
 		observers.endpoint.add ([this] (std::shared_ptr<nano::transport::channel> const & channel_a) {
 			this->network.send_keepalive_self (channel_a);
 		});
-		observers.vote.add ([this] (std::shared_ptr<nano::vote> vote_a, std::shared_ptr<nano::transport::channel> const & channel_a, nano::vote_code code_a) {
+		observers.vote.add ([this] (const std::shared_ptr<nano::vote> & vote_a, std::shared_ptr<nano::transport::channel> const & channel_a, nano::vote_code code_a) {
 			debug_assert (code_a != nano::vote_code::invalid);
 			// The vote_code::vote is handled inside the election
 			if (code_a == nano::vote_code::indeterminate)
@@ -1194,7 +1194,7 @@ boost::optional<uint64_t> nano::node::work_generate_blocking (nano::block & bloc
 	return opt_work_l;
 }
 
-void nano::node::work_generate (nano::work_version const version_a, nano::root const & root_a, uint64_t difficulty_a, std::function<void (boost::optional<uint64_t>)> callback_a, boost::optional<nano::account> const & account_a, bool secondary_work_peers_a)
+void nano::node::work_generate (nano::work_version const version_a, nano::root const & root_a, uint64_t difficulty_a, const std::function<void (boost::optional<uint64_t>)> & callback_a, boost::optional<nano::account> const & account_a, bool secondary_work_peers_a)
 {
 	auto const & peers_l (secondary_work_peers_a ? config.secondary_work_peers : config.work_peers);
 	if (distributed_work.make (version_a, root_a, peers_l, difficulty_a, callback_a, account_a))

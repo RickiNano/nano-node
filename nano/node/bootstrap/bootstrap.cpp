@@ -187,7 +187,7 @@ std::shared_ptr<nano::bootstrap_attempt> nano::bootstrap_initiator::find_attempt
 	return nullptr;
 }
 
-void nano::bootstrap_initiator::remove_attempt (std::shared_ptr<nano::bootstrap_attempt> attempt_a)
+void nano::bootstrap_initiator::remove_attempt (const std::shared_ptr<nano::bootstrap_attempt> & attempt_a)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	auto attempt (std::find (attempts_list.begin (), attempts_list.end (), attempt_a));
@@ -359,7 +359,7 @@ void nano::pulls_cache::remove (nano::pull_info const & pull_a)
 	cache.get<account_head_tag> ().erase (head_512);
 }
 
-void nano::bootstrap_attempts::add (std::shared_ptr<nano::bootstrap_attempt> attempt_a)
+void nano::bootstrap_attempts::add (const std::shared_ptr<nano::bootstrap_attempt> & attempt_a)
 {
 	nano::lock_guard<nano::mutex> lock{ bootstrap_attempts_mutex };
 	attempts.emplace (attempt_a->incremental_id, attempt_a);

@@ -44,7 +44,7 @@ public:
 	 * Process `asc_pull_req` message coming from network.
 	 * Reply will be sent back over passed in `channel`
 	 */
-	bool request (nano::asc_pull_req const & message, std::shared_ptr<nano::transport::channel> channel);
+	bool request (nano::asc_pull_req const & message, const std::shared_ptr<nano::transport::channel> & channel);
 
 public: // Events
 	nano::observer_set<nano::asc_pull_ack &, std::shared_ptr<nano::transport::channel> &> on_response;

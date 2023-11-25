@@ -33,7 +33,7 @@ void nano::scheduler::bucket::pop ()
 	queue.erase (queue.begin ());
 }
 
-void nano::scheduler::bucket::push (uint64_t time, std::shared_ptr<nano::block> block)
+void nano::scheduler::bucket::push (uint64_t time, const std::shared_ptr<nano::block> & block)
 {
 	queue.insert ({ time, block });
 	if (queue.size () > maximum)

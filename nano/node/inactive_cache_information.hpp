@@ -11,7 +11,7 @@ class inactive_cache_information final
 {
 public:
 	inactive_cache_information () = default;
-	inactive_cache_information (std::chrono::steady_clock::time_point arrival, nano::block_hash hash, nano::account initial_rep_a, uint64_t initial_timestamp_a, nano::inactive_cache_status status) :
+	inactive_cache_information (std::chrono::steady_clock::time_point arrival, nano::block_hash hash, nano::account initial_rep_a, uint64_t initial_timestamp_a, const nano::inactive_cache_status & status) :
 		arrival (arrival),
 		hash (hash),
 		status (status)
@@ -36,7 +36,7 @@ public:
 	 * Inserts votes stored in this entry into an election
 	 * @return number of votes inserted
 	 */
-	std::size_t fill (std::shared_ptr<nano::election> election) const;
+	std::size_t fill (const std::shared_ptr<nano::election> & election) const;
 };
 
 }
