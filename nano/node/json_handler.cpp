@@ -216,6 +216,112 @@ void nano::json_handler::wallet_create ()
 	}));
 }
 
+void nano::json_handler::account_info ()
+{
+	auto account (account_impl ());
+	if (!ec)
+	{
+		bool const representative = false; //json_request["representative"].get<bool> ();
+		bool const weight = false; // json_request["weight"].get<bool> ();
+		bool const pending = false; // json_request["pending"].get<bool> ();
+		bool const receivable = false; // json_request["receivable"].get<bool> ();
+		bool const include_confirmed = false; // json_request["include_confirmed"].get<bool> ();
+		auto transaction (node.store.tx_begin_read ());
+		auto info (account_info_impl (transaction, account));
+		nano::confirmation_height_info confirmation_height_info;
+		node.store.confirmation_height.get (transaction, account, confirmation_height_info);
+		if (!ec)
+		{
+			json_response["frontier"] = info.head.to_string ();
+			json_response["open_block"] = info.open_block.to_string ();
+			json_response["representative_block"] = node.ledger.representative (transaction, info.head).to_string ();
+			nano::amount balance_l (info.balance);
+			std::string balance;
+			balance_l.encode_dec (balance);
+
+			json_response["balance"] = balance;
+
+			nano::amount confirmed_balance_l;
+			if (include_confirmed)
+			{
+				if (info.block_count != confirmation_height_info.height)
+				{
+					confirmed_balance_l = node.ledger.balance (transaction, confirmation_height_info.frontier);
+				}
+				else
+				{
+					// block_height and confirmed height are the same, so can just reuse balance
+					confirmed_balance_l = balance_l;
+				}
+				std::string confirmed_balance;
+				confirmed_balance_l.encode_dec (confirmed_balance);
+				json_response["confirmed_balance"] = confirmed_balance;
+			}
+
+			json_response["modified_timestamp"] = std::to_string (info.modified);
+			json_response["block_count"] = std::to_string (info.block_count);
+			json_response["epoch_as_string"] = info.epoch ();
+			auto confirmed_frontier = confirmation_height_info.frontier.to_string ();
+			if (include_confirmed)
+			{
+				json_response["confirmed_height"] = std::to_string (confirmation_height_info.height);
+				json_response["confirmed_frontier"] = confirmed_frontier;
+			}
+			else
+			{
+				// For backwards compatibility purposes
+				json_response["confirmation_height"] = std::to_string (confirmation_height_info.height);
+				json_response["confirmation_height_frontier"] = confirmed_frontier;
+			}
+
+			std::shared_ptr<nano::block> confirmed_frontier_block;
+			if (include_confirmed && confirmation_height_info.height > 0)
+			{
+				confirmed_frontier_block = node.store.block.get (transaction, confirmation_height_info.frontier);
+			}
+
+			if (representative)
+			{
+				json_response["representative"] = info.representative.to_account ();
+				if (include_confirmed)
+				{
+					nano::account confirmed_representative{};
+					if (confirmed_frontier_block)
+					{
+						confirmed_representative = confirmed_frontier_block->representative ();
+						if (confirmed_representative.is_zero ())
+						{
+							confirmed_representative = node.store.block.get (transaction, node.ledger.representative (transaction, confirmation_height_info.frontier))->representative ();
+						}
+					}
+
+					json_response["confirmed_representative"] = confirmed_representative.to_account ();
+				}
+			}
+			if (weight)
+			{
+				auto account_weight (node.ledger.weight (account));
+				json_response["weight"] = account_weight.convert_to<std::string> ();
+			}
+			if (receivable)
+			{
+				auto account_receivable = node.ledger.account_receivable (transaction, account);
+				json_response["pending"] = account_receivable.convert_to<std::string> ();
+				json_response["receivable"] = account_receivable.convert_to<std::string> ();
+
+				if (include_confirmed)
+				{
+					auto account_receivable = node.ledger.account_receivable (transaction, account, true);
+					json_response["confirmed_pending"] = account_receivable.convert_to<std::string> ();
+					json_response["confirmed_receivable"] = account_receivable.convert_to<std::string> ();
+				}
+			}
+		}
+	}
+	response_errors ();
+}
+
+
 void nano::json_handler::wallet_add ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
@@ -276,6 +382,48 @@ std::shared_ptr<nano::wallet> nano::json_handler::wallet_impl ()
 	return nullptr;
 }
 
+nano::account nano::json_handler::account_impl (std::string account_text, std::error_code ec_a)
+{
+	nano::account result{};
+	if (!ec)
+	{
+		if (account_text.empty ())
+		{
+			account_text = (json_request["account"].get<std::string> ());
+		}
+		if (result.decode_account (account_text))
+		{
+			ec = ec_a;
+		}
+		else if (account_text[3] == '-' || account_text[4] == '-')
+		{
+			// nano- and xrb- prefixes are deprecated
+			json_response["deprecated_account_format"] = "1";
+		}
+	}
+	return result;
+}
+
+nano::account_info nano::json_handler::account_info_impl (store::transaction const & transaction_a, nano::account const & account_a)
+{
+	nano::account_info result;
+	if (!ec)
+	{
+		auto info = node.ledger.account_info (transaction_a, account_a);
+		if (!info)
+		{
+			ec = nano::error_common::account_not_found;
+			node.bootstrap_initiator.bootstrap_lazy (account_a, false, account_a.to_account ());
+		}
+		else
+		{
+			result = *info;
+		}
+	}
+	return result;
+}
+
+
 void nano::inprocess_rpc_handler::process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a)
 {
 	// Note that if the rpc action is async, the shared_ptr<json_handler> lifetime will be extended by the action handler
@@ -299,6 +447,7 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ()
 	no_arg_funcs.emplace ("deterministic_key", &nano::json_handler::deterministic_key);
 	no_arg_funcs.emplace ("wallet_create", &nano::json_handler::wallet_create);
 	no_arg_funcs.emplace ("wallet_add", &nano::json_handler::wallet_add);
+	no_arg_funcs.emplace ("account_info", &nano::json_handler::account_info);
 	return no_arg_funcs;
 }
 }

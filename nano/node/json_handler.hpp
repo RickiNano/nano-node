@@ -29,8 +29,11 @@ public:
 	void block_count ();
 	void confirmation_history ();
 	void deterministic_key ();
+	void account_info ();
 	void wallet_create ();
 	void wallet_add ();
+	nano::account account_impl (std::string = "", std::error_code = nano::error_common::bad_account_number);
+	nano::account_info account_info_impl (store::transaction const &, nano::account const &);
 	std::shared_ptr<nano::wallet> wallet_impl ();
 	std::string body;
 	nano::node & node;
@@ -39,7 +42,7 @@ public:
 	std::error_code ec;
 	std::string action;
 	nlohmann::json json_request;
-	nlohmann::json json_response;
+	nlohmann::ordered_json json_response;
 	bool enable_sign_hash{ false };
 	std::function<void ()> stop_callback;
 	nano::node_rpc_config const & node_rpc_config;
