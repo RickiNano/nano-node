@@ -23,7 +23,7 @@ class json_handler : public std::enable_shared_from_this<nano::json_handler>
 {
 public:
 	json_handler (
-	nano::node &, nano::node_rpc_config const &, std::string const &, std::function<void (std::string const &)> const &, std::function<void ()> stop_callback = [] () {});
+	nano::node &, nano::node_rpc_config const &, std::string const &, std::function<void (std::string const &)> const &, const std::function<void ()> & stop_callback = [] () {});
 	void process_request (bool unsafe = false);
 	void account_balance ();
 	void account_block_count ();
@@ -76,8 +76,8 @@ public:
 	void key_create ();
 	void key_expand ();
 	void ledger ();
-	void mnano_to_raw (nano::uint128_t = nano::Mxrb_ratio);
-	void mnano_from_raw (nano::uint128_t = nano::Mxrb_ratio);
+	void mnano_to_raw (const nano::uint128_t & = nano::Mxrb_ratio);
+	void mnano_from_raw (const nano::uint128_t & = nano::Mxrb_ratio);
 	void nano_to_raw ();
 	void raw_to_nano ();
 	void node_id ();
@@ -161,7 +161,7 @@ public:
 	nano::account_info account_info_impl (store::transaction const &, nano::account const &);
 	nano::amount amount_impl ();
 	std::shared_ptr<nano::block> block_impl (bool = true);
-	nano::block_hash hash_impl (std::string = "hash");
+	nano::block_hash hash_impl (const std::string & = "hash");
 	nano::amount threshold_optional_impl ();
 	uint64_t work_optional_impl ();
 	uint64_t count_impl ();
@@ -181,7 +181,7 @@ class inprocess_rpc_handler final : public nano::rpc_handler_interface
 {
 public:
 	inprocess_rpc_handler (
-	nano::node & node_a, nano::ipc::ipc_server & ipc_server_a, nano::node_rpc_config const & node_rpc_config_a, std::function<void ()> stop_callback_a = [] () {}) :
+	nano::node & node_a, nano::ipc::ipc_server & ipc_server_a, nano::node_rpc_config const & node_rpc_config_a, const std::function<void ()> & stop_callback_a = [] () {}) :
 		node (node_a),
 		ipc_server (ipc_server_a),
 		stop_callback (stop_callback_a),

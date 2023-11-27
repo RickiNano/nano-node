@@ -27,7 +27,7 @@ class representative
 {
 public:
 	representative () = default;
-	representative (nano::account account_a, std::shared_ptr<nano::transport::channel> const & channel_a) :
+	representative (const nano::account & account_a, std::shared_ptr<nano::transport::channel> const & channel_a) :
 		account (account_a), channel (channel_a)
 	{
 		debug_assert (channel != nullptr);
@@ -103,7 +103,7 @@ public:
 	nano::uint128_t total_weight () const;
 
 	/** Request a list of the top \p count_a known representatives in descending order of weight, with at least \p weight_a voting weight, and optionally with a minimum version \p opt_version_min_a */
-	std::vector<representative> representatives (std::size_t count_a = std::numeric_limits<std::size_t>::max (), nano::uint128_t const weight_a = 0, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a = boost::none);
+	std::vector<representative> representatives (std::size_t count_a = std::numeric_limits<std::size_t>::max (), nano::uint128_t const & weight_a = 0, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a = boost::none);
 
 	/** Request a list of the top \p count_a known principal representatives in descending order of weight, optionally with a minimum version \p opt_version_min_a */
 	std::vector<representative> principal_representatives (std::size_t count_a = std::numeric_limits<std::size_t>::max (), boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a = boost::none);
@@ -130,7 +130,7 @@ private:
 	void ongoing_crawl ();
 
 	/** Returns a list of endpoints to crawl. The total weight is passed in to avoid computing it twice. */
-	std::vector<std::shared_ptr<nano::transport::channel>> get_crawl_targets (nano::uint128_t total_weight_a);
+	std::vector<std::shared_ptr<nano::transport::channel>> get_crawl_targets (const nano::uint128_t & total_weight_a);
 
 	/** When a rep request is made, this is called to update the last-request timestamp. */
 	void on_rep_request (std::shared_ptr<nano::transport::channel> const & channel_a);

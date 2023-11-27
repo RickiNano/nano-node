@@ -150,7 +150,7 @@ public: // Interface
 	 */
 	void broadcast_vote ();
 	nano::vote_info get_last_vote (nano::account const & account);
-	void set_last_vote (nano::account const & account, nano::vote_info vote_info);
+	void set_last_vote (nano::account const & account, const nano::vote_info & vote_info);
 	nano::election_status get_status () const;
 
 private: // Dependencies
@@ -181,7 +181,7 @@ private:
 	/**
 	 * Calculates minimum time delay between subsequent votes when processing non-final votes
 	 */
-	std::chrono::seconds cooldown_time (nano::uint128_t weight) const;
+	std::chrono::seconds cooldown_time (const nano::uint128_t & weight) const;
 	/**
 	 * Calculates time delay between broadcasting confirmation requests
 	 */

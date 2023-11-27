@@ -621,7 +621,7 @@ void nano::transport::tcp_channels::start_tcp_receive_node_id (std::shared_ptr<n
 	};
 
 	auto message_deserializer = std::make_shared<nano::transport::message_deserializer> (node.network_params.network, node.network.publish_filter, node.block_uniquer, node.vote_uniquer,
-	[socket_l] (std::shared_ptr<std::vector<uint8_t>> const & data_a, size_t size_a, std::function<void (boost::system::error_code const &, std::size_t)> callback_a) {
+	[socket_l] (std::shared_ptr<std::vector<uint8_t>> const & data_a, size_t size_a, const std::function<void (boost::system::error_code const &, std::size_t)> & callback_a) {
 		debug_assert (socket_l != nullptr);
 		socket_l->read_impl (data_a, size_a, callback_a);
 	});

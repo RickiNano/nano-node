@@ -130,7 +130,7 @@ void nano::rep_crawler::ongoing_crawl ()
 	});
 }
 
-std::vector<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::get_crawl_targets (nano::uint128_t total_weight_a)
+std::vector<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::get_crawl_targets (const nano::uint128_t & total_weight_a)
 {
 	constexpr std::size_t conservative_count = 10;
 	constexpr std::size_t aggressive_count = 40;
@@ -321,7 +321,7 @@ void nano::rep_crawler::cleanup_reps ()
 	}
 }
 
-std::vector<nano::representative> nano::rep_crawler::representatives (std::size_t count_a, nano::uint128_t const weight_a, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
+std::vector<nano::representative> nano::rep_crawler::representatives (std::size_t count_a, nano::uint128_t const & weight_a, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
 {
 	auto version_min (opt_version_min_a.value_or (node.network_params.network.protocol_version_min));
 	std::multimap<nano::amount, representative, std::greater<nano::amount>> ordered;

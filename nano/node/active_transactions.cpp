@@ -131,7 +131,7 @@ void nano::active_transactions::process_active_confirmation (nano::store::read_t
 	}
 }
 
-void nano::active_transactions::handle_confirmation (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block, std::shared_ptr<nano::election> election, nano::election_status_type status_type)
+void nano::active_transactions::handle_confirmation (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block, const std::shared_ptr<nano::election> & election, nano::election_status_type status_type)
 {
 	nano::block_hash hash = block->hash ();
 	recently_cemented.put (election->get_status ());
@@ -156,7 +156,7 @@ void nano::active_transactions::handle_block_confirmation (nano::store::read_tra
 	node.process_confirmed_data (transaction, block, hash, account, amount, is_state_send, is_state_epoch, pending_account);
 }
 
-void nano::active_transactions::notify_observers (nano::election_status const & status, std::vector<nano::vote_with_weight_info> const & votes, nano::account const & account, nano::uint128_t amount, bool is_state_send, bool is_state_epoch, nano::account const & pending_account)
+void nano::active_transactions::notify_observers (nano::election_status const & status, std::vector<nano::vote_with_weight_info> const & votes, nano::account const & account, const nano::uint128_t & amount, bool is_state_send, bool is_state_epoch, nano::account const & pending_account)
 {
 	node.observers.blocks.notify (status, votes, account, amount, is_state_send, is_state_epoch);
 
@@ -307,7 +307,7 @@ void nano::active_transactions::request_confirm (nano::unique_lock<nano::mutex> 
 	}
 }
 
-void nano::active_transactions::cleanup_election (nano::unique_lock<nano::mutex> & lock_a, std::shared_ptr<nano::election> election)
+void nano::active_transactions::cleanup_election (nano::unique_lock<nano::mutex> & lock_a, const std::shared_ptr<nano::election> & election)
 {
 	debug_assert (!mutex.try_lock ());
 	debug_assert (lock_a.owns_lock ());
@@ -691,7 +691,7 @@ boost::optional<nano::election_status_type> nano::active_transactions::confirm_b
 	return status_type;
 }
 
-void nano::active_transactions::add_vote_cache (nano::block_hash const & hash, std::shared_ptr<nano::vote> const vote)
+void nano::active_transactions::add_vote_cache (nano::block_hash const & hash, std::shared_ptr<nano::vote> const & vote)
 {
 	if (node.ledger.weight (vote->account) > node.minimum_principal_weight ())
 	{

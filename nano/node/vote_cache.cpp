@@ -118,7 +118,7 @@ nano::vote_cache::vote_cache (vote_cache_config const & config_a, nano::stats & 
 {
 }
 
-void nano::vote_cache::vote (const nano::block_hash & hash, const std::shared_ptr<nano::vote> vote)
+void nano::vote_cache::vote (const nano::block_hash & hash, const std::shared_ptr<nano::vote> & vote)
 {
 	// Assert that supplied hash corresponds to a one of the hashes stored in vote
 	debug_assert (std::find (vote->hashes.begin (), vote->hashes.end (), hash) != vote->hashes.end ());

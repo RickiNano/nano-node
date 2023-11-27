@@ -201,7 +201,7 @@ nano::asc_pull_ack nano::bootstrap_server::process (store::transaction const & t
 	return prepare_empty_blocks_response (id);
 }
 
-nano::asc_pull_ack nano::bootstrap_server::prepare_response (store::transaction const & transaction, nano::asc_pull_req::id_t id, nano::block_hash start_block, std::size_t count)
+nano::asc_pull_ack nano::bootstrap_server::prepare_response (store::transaction const & transaction, nano::asc_pull_req::id_t id, const nano::block_hash & start_block, std::size_t count)
 {
 	debug_assert (count <= max_blocks);
 
@@ -233,7 +233,7 @@ nano::asc_pull_ack nano::bootstrap_server::prepare_empty_blocks_response (nano::
 	return response;
 }
 
-std::vector<std::shared_ptr<nano::block>> nano::bootstrap_server::prepare_blocks (store::transaction const & transaction, nano::block_hash start_block, std::size_t count) const
+std::vector<std::shared_ptr<nano::block>> nano::bootstrap_server::prepare_blocks (store::transaction const & transaction, const nano::block_hash & start_block, std::size_t count) const
 {
 	debug_assert (count <= max_blocks);
 

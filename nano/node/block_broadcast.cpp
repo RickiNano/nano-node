@@ -29,7 +29,7 @@ void nano::block_broadcast::connect (nano::block_processor & block_processor)
 	});
 }
 
-void nano::block_broadcast::observe (std::shared_ptr<nano::block> block)
+void nano::block_broadcast::observe (const std::shared_ptr<nano::block> & block)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	auto existing = local.find (block);
@@ -56,7 +56,7 @@ void nano::block_broadcast::observe (std::shared_ptr<nano::block> block)
 	}
 }
 
-void nano::block_broadcast::set_local (std::shared_ptr<nano::block> block)
+void nano::block_broadcast::set_local (const std::shared_ptr<nano::block> & block)
 {
 	if (!enabled)
 	{
@@ -66,7 +66,7 @@ void nano::block_broadcast::set_local (std::shared_ptr<nano::block> block)
 	local.insert (block);
 }
 
-void nano::block_broadcast::erase (std::shared_ptr<nano::block> block)
+void nano::block_broadcast::erase (const std::shared_ptr<nano::block> & block)
 {
 	if (!enabled)
 	{

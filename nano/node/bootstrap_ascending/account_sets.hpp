@@ -73,7 +73,7 @@ namespace bootstrap_ascending
 			nano::millis_t timestamp{ 0 };
 			nano::bootstrap_ascending::id_t id{ 0 }; // Uniformly distributed, used for random querying
 
-			priority_entry (nano::account account, float priority);
+			priority_entry (const nano::account & account, float priority);
 		};
 
 		struct blocking_entry

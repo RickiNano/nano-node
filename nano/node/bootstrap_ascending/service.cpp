@@ -349,7 +349,7 @@ void nano::bootstrap_ascending::service::run_timeouts ()
 	}
 }
 
-void nano::bootstrap_ascending::service::process (nano::asc_pull_ack const & message, std::shared_ptr<nano::transport::channel> channel)
+void nano::bootstrap_ascending::service::process (nano::asc_pull_ack const & message, const std::shared_ptr<nano::transport::channel> & channel)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 

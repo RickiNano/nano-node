@@ -140,12 +140,12 @@ void nano::bulk_pull_client::throttled_receive_block ()
 
 void nano::bulk_pull_client::receive_block ()
 {
-	block_deserializer->read (*connection->socket, [this_l = shared_from_this ()] (boost::system::error_code ec, std::shared_ptr<nano::block> block) {
+	block_deserializer->read (*connection->socket, [this_l = shared_from_this ()] (const boost::system::error_code & ec, const std::shared_ptr<nano::block> & block) {
 		this_l->received_block (ec, block);
 	});
 }
 
-void nano::bulk_pull_client::received_block (boost::system::error_code ec, std::shared_ptr<nano::block> block)
+void nano::bulk_pull_client::received_block (const boost::system::error_code & ec, const std::shared_ptr<nano::block> & block)
 {
 	auto node = connection->node.lock ();
 	if (!node)

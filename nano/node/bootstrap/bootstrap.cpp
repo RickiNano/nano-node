@@ -187,7 +187,7 @@ std::shared_ptr<nano::bootstrap_attempt> nano::bootstrap_initiator::find_attempt
 	return nullptr;
 }
 
-void nano::bootstrap_initiator::remove_attempt (std::shared_ptr<nano::bootstrap_attempt> attempt_a)
+void nano::bootstrap_initiator::remove_attempt (const std::shared_ptr<nano::bootstrap_attempt> & attempt_a)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	auto attempt (std::find (attempts_list.begin (), attempts_list.end (), attempt_a));

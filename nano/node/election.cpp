@@ -194,7 +194,7 @@ nano::vote_info nano::election::get_last_vote (nano::account const & account)
 	return last_votes[account];
 }
 
-void nano::election::set_last_vote (nano::account const & account, nano::vote_info vote_info)
+void nano::election::set_last_vote (nano::account const & account, const nano::vote_info & vote_info)
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 	last_votes[account] = vote_info;
@@ -264,7 +264,7 @@ std::chrono::milliseconds nano::election::time_to_live () const
 	return {};
 }
 
-std::chrono::seconds nano::election::cooldown_time (nano::uint128_t weight) const
+std::chrono::seconds nano::election::cooldown_time (const nano::uint128_t & weight) const
 {
 	auto online_stake = node.online_reps.trended ();
 	if (weight > online_stake / 20) // Reps with more than 5% weight

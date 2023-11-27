@@ -76,7 +76,7 @@ private:
 	class receive_chain_details final
 	{
 	public:
-		receive_chain_details (nano::account const &, uint64_t, nano::block_hash const &, nano::block_hash const &, boost::optional<nano::block_hash>, uint64_t, nano::block_hash const &);
+		receive_chain_details (nano::account const &, uint64_t, nano::block_hash const &, nano::block_hash const &, const boost::optional<nano::block_hash> &, uint64_t, nano::block_hash const &);
 		nano::account account;
 		uint64_t height;
 		nano::block_hash hash;

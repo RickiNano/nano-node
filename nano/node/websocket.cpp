@@ -320,7 +320,7 @@ void nano::websocket::session::write_queued_messages ()
 	auto this_l (shared_from_this ());
 
 	ws.async_write (nano::shared_const_buffer (msg),
-	[this_l] (boost::system::error_code ec, std::size_t bytes_transferred) {
+	[this_l] (const boost::system::error_code & ec, std::size_t bytes_transferred) {
 		this_l->send_queue.pop_front ();
 		if (!ec)
 		{
@@ -338,7 +338,7 @@ void nano::websocket::session::read ()
 
 	boost::asio::post (ws.get_strand (), [this_l] () {
 		this_l->ws.async_read (this_l->read_buffer,
-		[this_l] (boost::system::error_code ec, std::size_t bytes_transferred) {
+		[this_l] (const boost::system::error_code & ec, std::size_t bytes_transferred) {
 			if (!ec)
 			{
 				std::stringstream os;
@@ -457,7 +457,7 @@ std::string from_topic (nano::websocket::topic topic_a)
 }
 }
 
-void nano::websocket::session::send_ack (std::string action_a, std::string id_a)
+void nano::websocket::session::send_ack (const std::string & action_a, const std::string & id_a)
 {
 	nano::websocket::message msg (nano::websocket::topic::ack);
 	boost::property_tree::ptree & message_l = msg.contents;
@@ -560,7 +560,7 @@ void nano::websocket::listener::stop ()
 	sessions.clear ();
 }
 
-nano::websocket::listener::listener (std::shared_ptr<nano::tls_config> const & tls_config_a, nano::logger_mt & logger_a, nano::wallets & wallets_a, boost::asio::io_context & io_ctx_a, boost::asio::ip::tcp::endpoint endpoint_a) :
+nano::websocket::listener::listener (std::shared_ptr<nano::tls_config> const & tls_config_a, nano::logger_mt & logger_a, nano::wallets & wallets_a, boost::asio::io_context & io_ctx_a, const boost::asio::ip::tcp::endpoint & endpoint_a) :
 	tls_config (tls_config_a),
 	logger (logger_a),
 	wallets (wallets_a),
@@ -601,7 +601,7 @@ void nano::websocket::listener::accept ()
 	});
 }
 
-void nano::websocket::listener::on_accept (boost::system::error_code ec)
+void nano::websocket::listener::on_accept (const boost::system::error_code & ec)
 {
 	if (ec)
 	{
@@ -674,7 +674,7 @@ void nano::websocket::listener::broadcast_confirmation (std::shared_ptr<nano::bl
 	}
 }
 
-void nano::websocket::listener::broadcast (nano::websocket::message message_a)
+void nano::websocket::listener::broadcast (const nano::websocket::message & message_a)
 {
 	nano::lock_guard<nano::mutex> lk (sessions_mutex);
 	for (auto & weak_session : sessions)
@@ -1040,7 +1040,7 @@ nano::websocket_server::websocket_server (nano::websocket::config & config_a, na
 		}
 	});
 
-	observers.vote.add ([this] (std::shared_ptr<nano::vote> vote_a, std::shared_ptr<nano::transport::channel> const & channel_a, nano::vote_code code_a) {
+	observers.vote.add ([this] (const std::shared_ptr<nano::vote> & vote_a, std::shared_ptr<nano::transport::channel> const & channel_a, nano::vote_code code_a) {
 		if (server->any_subscriber (nano::websocket::topic::vote))
 		{
 			nano::websocket::message_builder builder;

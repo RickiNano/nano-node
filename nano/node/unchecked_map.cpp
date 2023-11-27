@@ -30,7 +30,7 @@ void nano::unchecked_map::put (nano::hash_or_account const & dependency, nano::u
 	stats.inc (nano::stat::type::unchecked, nano::stat::detail::put);
 }
 
-void nano::unchecked_map::for_each (std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> action, std::function<bool ()> predicate)
+void nano::unchecked_map::for_each (const std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> & action, const std::function<bool ()> & predicate)
 {
 	nano::lock_guard<std::recursive_mutex> lock{ entries_mutex };
 	for (auto i = entries.begin (), n = entries.end (); predicate () && i != n; ++i)
@@ -39,7 +39,7 @@ void nano::unchecked_map::for_each (std::function<void (nano::unchecked_key cons
 	}
 }
 
-void nano::unchecked_map::for_each (nano::hash_or_account const & dependency, std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> action, std::function<bool ()> predicate)
+void nano::unchecked_map::for_each (nano::hash_or_account const & dependency, const std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> & action, const std::function<bool ()> & predicate)
 {
 	nano::lock_guard<std::recursive_mutex> lock{ entries_mutex };
 	for (auto i = entries.template get<tag_root> ().lower_bound (nano::unchecked_key{ dependency, 0 }), n = entries.template get<tag_root> ().end (); predicate () && i != n && i->key.key () == dependency.as_block_hash (); ++i)

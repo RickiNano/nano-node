@@ -137,7 +137,7 @@ nano::transport::tcp_server::tcp_server (std::shared_ptr<nano::transport::socket
 	allow_bootstrap{ allow_bootstrap_a },
 	message_deserializer{
 		std::make_shared<nano::transport::message_deserializer> (node_a->network_params.network, node_a->network.publish_filter, node_a->block_uniquer, node_a->vote_uniquer,
-		[socket_l = socket] (std::shared_ptr<std::vector<uint8_t>> const & data_a, size_t size_a, std::function<void (boost::system::error_code const &, std::size_t)> callback_a) {
+		[socket_l = socket] (std::shared_ptr<std::vector<uint8_t>> const & data_a, size_t size_a, const std::function<void (boost::system::error_code const &, std::size_t)> & callback_a) {
 			debug_assert (socket_l != nullptr);
 			socket_l->read_impl (data_a, size_a, callback_a);
 		})
@@ -207,7 +207,7 @@ void nano::transport::tcp_server::receive_message ()
 		return;
 	}
 
-	message_deserializer->read ([this_l = shared_from_this ()] (boost::system::error_code ec, std::unique_ptr<nano::message> message) {
+	message_deserializer->read ([this_l = shared_from_this ()] (const boost::system::error_code & ec, std::unique_ptr<nano::message> message) {
 		auto node = this_l->node.lock ();
 		if (!node)
 		{

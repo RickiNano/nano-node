@@ -6,7 +6,7 @@
 namespace
 {
 /** Convert string to permission */
-nano::ipc::access_permission from_string (std::string permission)
+nano::ipc::access_permission from_string (const std::string & permission)
 {
 	if (permission == "unrestricted")
 		return nano::ipc::access_permission::unrestricted;

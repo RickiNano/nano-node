@@ -38,7 +38,7 @@ bool nano::bootstrap_ascending::peer_scoring::try_send_message (std::shared_ptr<
 	return false;
 }
 
-void nano::bootstrap_ascending::peer_scoring::received_message (std::shared_ptr<nano::transport::channel> channel)
+void nano::bootstrap_ascending::peer_scoring::received_message (const std::shared_ptr<nano::transport::channel> & channel)
 {
 	auto & index = scoring.get<tag_channel> ();
 	auto existing = index.find (channel.get ());

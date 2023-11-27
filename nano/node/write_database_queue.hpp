@@ -20,7 +20,7 @@ enum class writer
 class write_guard final
 {
 public:
-	write_guard (std::function<void ()> guard_finish_callback_a);
+	write_guard (const std::function<void ()> & guard_finish_callback_a);
 	void release ();
 	~write_guard ();
 	write_guard (write_guard const &) = delete;

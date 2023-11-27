@@ -246,7 +246,7 @@ std::unique_ptr<nano::container_info_component> nano::bootstrap_ascending::accou
  * priority_entry
  */
 
-nano::bootstrap_ascending::account_sets::priority_entry::priority_entry (nano::account account_a, float priority_a) :
+nano::bootstrap_ascending::account_sets::priority_entry::priority_entry (const nano::account & account_a, float priority_a) :
 	account{ account_a },
 	priority{ priority_a }
 {

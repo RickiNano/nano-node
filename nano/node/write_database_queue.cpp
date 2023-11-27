@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-nano::write_guard::write_guard (std::function<void ()> guard_finish_callback_a) :
+nano::write_guard::write_guard (const std::function<void ()> & guard_finish_callback_a) :
 	guard_finish_callback (guard_finish_callback_a)
 {
 }

@@ -21,7 +21,7 @@ void nano::block_publisher::connect (nano::block_processor & block_processor)
 	});
 }
 
-void nano::block_publisher::observe (std::shared_ptr<nano::block> block)
+void nano::block_publisher::observe (const std::shared_ptr<nano::block> & block)
 {
 	active.publish (block);
 }

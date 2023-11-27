@@ -294,7 +294,7 @@ nano::error nano::node_config::deserialize_toml (nano::tomlconfig & toml)
 		if (toml.has_key (preconfigured_peers_key))
 		{
 			preconfigured_peers.clear ();
-			toml.array_entries_required<std::string> (preconfigured_peers_key, [this] (std::string entry) {
+			toml.array_entries_required<std::string> (preconfigured_peers_key, [this] (const std::string & entry) {
 				preconfigured_peers.push_back (entry);
 			});
 		}
@@ -302,7 +302,7 @@ nano::error nano::node_config::deserialize_toml (nano::tomlconfig & toml)
 		if (toml.has_key ("preconfigured_representatives"))
 		{
 			preconfigured_representatives.clear ();
-			toml.array_entries_required<std::string> ("preconfigured_representatives", [this, &toml] (std::string entry) {
+			toml.array_entries_required<std::string> ("preconfigured_representatives", [this, &toml] (const std::string & entry) {
 				nano::account representative{};
 				if (representative.decode_account (entry))
 				{

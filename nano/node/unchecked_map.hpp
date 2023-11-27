@@ -27,9 +27,9 @@ public:
 
 	void put (nano::hash_or_account const & dependency, nano::unchecked_info const & info);
 	void for_each (
-	std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> action, std::function<bool ()> predicate = [] () { return true; });
+		const std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> & action, const std::function<bool ()> & predicate = [] () { return true; });
 	void for_each (
-	nano::hash_or_account const & dependency, std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> action, std::function<bool ()> predicate = [] () { return true; });
+	nano::hash_or_account const & dependency, const std::function<void (nano::unchecked_key const &, nano::unchecked_info const &)> & action, const std::function<bool ()> & predicate = [] () { return true; });
 	std::vector<nano::unchecked_info> get (nano::block_hash const &);
 	bool exists (nano::unchecked_key const & key) const;
 	void del (nano::unchecked_key const & key);
