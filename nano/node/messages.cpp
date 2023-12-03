@@ -165,11 +165,11 @@ nano::stat::detail nano::to_stat_detail (nano::message_type type)
 std::string nano::message_header::to_string () const
 {
 	// Cast to uint16_t to get integer value since uint8_t is treated as an unsigned char in string formatting.
-	uint16_t type_l = static_cast<uint16_t> (type);
-	uint16_t version_max_l = static_cast<uint16_t> (version_max);
-	uint16_t version_using_l = static_cast<uint16_t> (version_using);
-	uint16_t version_min_l = static_cast<uint16_t> (version_min);
-	std::string type_text = nano::to_string (type);
+	const uint16_t type_l = static_cast<uint16_t> (type);
+	const uint16_t version_max_l = static_cast<uint16_t> (version_max);
+	const uint16_t version_using_l = static_cast<uint16_t> (version_using);
+	const uint16_t version_min_l = static_cast<uint16_t> (version_min);
+	const std::string type_text = nano::to_string (type);
 
 	std::stringstream stream;
 
@@ -378,7 +378,7 @@ nano::message_type nano::message::type () const
 nano::keepalive::keepalive (nano::network_constants const & constants) :
 	message (constants, nano::message_type::keepalive)
 {
-	nano::endpoint endpoint (boost::asio::ip::address_v6{}, 0);
+	const nano::endpoint endpoint (boost::asio::ip::address_v6{}, 0);
 	for (auto i (peers.begin ()), n (peers.end ()); i != n; ++i)
 	{
 		*i = endpoint;
@@ -483,7 +483,7 @@ bool nano::publish::deserialize (nano::stream & stream_a, nano::block_uniquer * 
 {
 	debug_assert (header.type == nano::message_type::publish);
 	block = nano::deserialize_block (stream_a, header.block_type (), uniquer_a);
-	auto result (block == nullptr);
+	const auto result (block == nullptr);
 	return result;
 }
 
@@ -654,7 +654,7 @@ void nano::confirm_ack::serialize (nano::stream & stream_a) const
 
 bool nano::confirm_ack::operator== (nano::confirm_ack const & other_a) const
 {
-	auto result (*vote == *other_a.vote);
+	const auto result (*vote == *other_a.vote);
 	return result;
 }
 
@@ -665,7 +665,7 @@ void nano::confirm_ack::visit (nano::message_visitor & visitor_a) const
 
 std::size_t nano::confirm_ack::size (std::size_t count)
 {
-	std::size_t result = sizeof (nano::account) + sizeof (nano::signature) + sizeof (uint64_t) + count * sizeof (nano::block_hash);
+	const std::size_t result = sizeof (nano::account) + sizeof (nano::signature) + sizeof (uint64_t) + count * sizeof (nano::block_hash);
 	return result;
 }
 
@@ -1217,10 +1217,10 @@ nano::error nano::telemetry_data::deserialize_json (nano::jsonconfig & json, boo
 	json.get ("patch_version", patch_version);
 	json.get ("pre_release_version", pre_release_version);
 	json.get ("maker", maker);
-	auto timestamp_l = json.get<uint64_t> ("timestamp");
+	const auto timestamp_l = json.get<uint64_t> ("timestamp");
 	timestamp = std::chrono::system_clock::time_point (std::chrono::milliseconds (timestamp_l));
-	auto current_active_difficulty_text = json.get<std::string> ("active_difficulty");
-	auto ec = nano::from_string_hex (current_active_difficulty_text, active_difficulty);
+	const auto current_active_difficulty_text = json.get<std::string> ("active_difficulty");
+	const auto ec = nano::from_string_hex (current_active_difficulty_text, active_difficulty);
 	debug_assert (!ec);
 	return json.get_error ();
 }
@@ -1337,21 +1337,21 @@ bool nano::node_id_handshake::deserialize (nano::stream & stream)
 bool nano::node_id_handshake::is_query (nano::message_header const & header)
 {
 	debug_assert (header.type == nano::message_type::node_id_handshake);
-	bool result = header.extensions.test (query_flag);
+	const bool result = header.extensions.test (query_flag);
 	return result;
 }
 
 bool nano::node_id_handshake::is_response (nano::message_header const & header)
 {
 	debug_assert (header.type == nano::message_type::node_id_handshake);
-	bool result = header.extensions.test (response_flag);
+	const bool result = header.extensions.test (response_flag);
 	return result;
 }
 
 bool nano::node_id_handshake::is_v2 (nano::message_header const & header)
 {
 	debug_assert (header.type == nano::message_type::node_id_handshake);
-	bool result = header.extensions.test (v2_flag);
+	const bool result = header.extensions.test (v2_flag);
 	return result;
 }
 
@@ -1481,14 +1481,14 @@ std::vector<uint8_t> nano::node_id_handshake::response_payload::data_to_sign (co
 void nano::node_id_handshake::response_payload::sign (const nano::uint256_union & cookie, nano::keypair const & key)
 {
 	debug_assert (key.pub == node_id);
-	auto data = data_to_sign (cookie);
+	const auto data = data_to_sign (cookie);
 	signature = nano::sign_message (key.prv, key.pub, data.data (), data.size ());
 	debug_assert (validate (cookie));
 }
 
 bool nano::node_id_handshake::response_payload::validate (const nano::uint256_union & cookie) const
 {
-	auto data = data_to_sign (cookie);
+	const auto data = data_to_sign (cookie);
 	if (nano::validate_message (node_id, data.data (), data.size (), signature)) // true => error
 	{
 		return false; // Fail
@@ -1595,7 +1595,7 @@ void nano::asc_pull_req::update_header ()
 
 std::size_t nano::asc_pull_req::size (const nano::message_header & header)
 {
-	uint16_t payload_length = nano::narrow_cast<uint16_t> (header.extensions.to_ulong ());
+	const uint16_t payload_length = nano::narrow_cast<uint16_t> (header.extensions.to_ulong ());
 	return partial_size + payload_length;
 }
 
@@ -1805,7 +1805,7 @@ void nano::asc_pull_ack::update_header ()
 
 std::size_t nano::asc_pull_ack::size (const nano::message_header & header)
 {
-	uint16_t payload_length = nano::narrow_cast<uint16_t> (header.extensions.to_ulong ());
+	const uint16_t payload_length = nano::narrow_cast<uint16_t> (header.extensions.to_ulong ());
 	return partial_size + payload_length;
 }
 

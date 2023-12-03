@@ -147,7 +147,7 @@ void nano::bootstrap_server::respond (nano::asc_pull_ack & response, std::shared
 
 void nano::bootstrap_server::process_batch (std::deque<request_t> & batch)
 {
-	auto transaction = store.tx_begin_read ();
+	const auto transaction = store.tx_begin_read ();
 
 	for (auto & [request, channel] : batch)
 	{
@@ -200,7 +200,7 @@ nano::asc_pull_ack nano::bootstrap_server::process (store::transaction const & t
 		break;
 		case asc_pull_req::hash_type::account:
 		{
-			auto info = ledger.account_info (transaction, request.start.as_account ());
+			const auto info = ledger.account_info (transaction, request.start.as_account ());
 			if (info)
 			{
 				// Start from open block if pulling by account
@@ -218,7 +218,7 @@ nano::asc_pull_ack nano::bootstrap_server::prepare_response (store::transaction 
 {
 	debug_assert (count <= max_blocks); // Should be filtered out earlier
 
-	auto blocks = prepare_blocks (transaction, start_block, count);
+	const auto blocks = prepare_blocks (transaction, start_block, count);
 	debug_assert (blocks.size () <= count);
 
 	nano::asc_pull_ack response{ network_constants };

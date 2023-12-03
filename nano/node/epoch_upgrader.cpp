@@ -45,8 +45,8 @@ void nano::epoch_upgrader::upgrade_impl (nano::raw_key const & prv_a, nano::epoc
 	nano::thread_role::set (nano::thread_role::name::epoch_upgrader);
 	auto upgrader_process = [this] (std::atomic<uint64_t> & counter, std::shared_ptr<nano::block> const & epoch, uint64_t difficulty, nano::public_key const & signer_a, nano::root const & root_a, nano::account const & account_a) {
 		epoch->block_work_set (node.work_generate_blocking (nano::work_version::work_1, root_a, difficulty).value_or (0));
-		bool valid_signature (!nano::validate_message (signer_a, epoch->hash (), epoch->block_signature ()));
-		bool valid_work (node.network_params.work.difficulty (*epoch) >= difficulty);
+		const bool valid_signature (!nano::validate_message (signer_a, epoch->hash (), epoch->block_signature ()));
+		const bool valid_work (node.network_params.work.difficulty (*epoch) >= difficulty);
 		nano::process_result result (nano::process_result::old);
 		if (valid_signature && valid_work)
 		{
@@ -58,7 +58,7 @@ void nano::epoch_upgrader::upgrade_impl (nano::raw_key const & prv_a, nano::epoc
 		}
 		else
 		{
-			bool fork (result == nano::process_result::fork);
+			const bool fork (result == nano::process_result::fork);
 			logger.always_log (boost::str (boost::format ("Failed to upgrade account %1%. Valid signature: %2%. Valid work: %3%. Block processor fork: %4%") % account_a.to_account () % valid_signature % valid_work % fork));
 		}
 	};

@@ -451,10 +451,10 @@ boost::optional<uint64_t> nano::opencl_work::generate_work (nano::work_version c
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
 	bool error (false);
-	int ticket_l (ticket_a);
+	const int ticket_l (ticket_a);
 	uint64_t result (0);
-	unsigned thread_count (config.threads);
-	std::size_t work_size[] = { thread_count, 0, 0 };
+	const unsigned thread_count (config.threads);
+	const std::size_t work_size[] = { thread_count, 0, 0 };
 	while (work.difficulty (version_a, root_a, result) < difficulty_a && !error && ticket_a == ticket_l)
 	{
 		result = rand.next ();

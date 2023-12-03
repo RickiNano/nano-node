@@ -214,7 +214,7 @@ std::shared_ptr<nano::transport::channel> nano::bootstrap_ascending::service::wa
 nano::account nano::bootstrap_ascending::service::available_account ()
 {
 	{
-		auto account = accounts.next ();
+		const auto account = accounts.next ();
 		if (!account.is_zero ())
 		{
 			stats.inc (nano::stat::type::bootstrap_ascending, nano::stat::detail::next_priority);
@@ -224,7 +224,7 @@ nano::account nano::bootstrap_ascending::service::available_account ()
 
 	if (database_limiter.should_pass (1))
 	{
-		auto account = iterator.next ();
+		const auto account = iterator.next ();
 		if (!account.is_zero ())
 		{
 			stats.inc (nano::stat::type::bootstrap_ascending, nano::stat::detail::next_database);
@@ -302,7 +302,7 @@ bool nano::bootstrap_ascending::service::run_one ()
 		return false;
 	}
 
-	bool success = request (account, channel);
+	const bool success = request (account, channel);
 	return success;
 }
 
@@ -357,7 +357,7 @@ void nano::bootstrap_ascending::service::process (nano::asc_pull_ack const & mes
 	auto & tags_by_id = tags.get<tag_id> ();
 	if (tags_by_id.count (message.id) > 0)
 	{
-		auto iterator = tags_by_id.find (message.id);
+		const auto iterator = tags_by_id.find (message.id);
 		auto tag = *iterator;
 		tags_by_id.erase (iterator);
 		scoring.received_message (channel);
@@ -379,7 +379,7 @@ void nano::bootstrap_ascending::service::process (const nano::asc_pull_ack::bloc
 {
 	stats.inc (nano::stat::type::bootstrap_ascending, nano::stat::detail::reply);
 
-	auto result = verify (response, tag);
+	const auto result = verify (response, tag);
 	switch (result)
 	{
 		case verify_result::ok:
@@ -502,7 +502,7 @@ std::size_t nano::bootstrap_ascending::service::compute_throttle_size () const
 {
 	// Scales logarithmically with ledger block
 	// Returns: config.throttle_coefficient * sqrt(block_count)
-	std::size_t size_new = config.bootstrap_ascending.throttle_coefficient * std::sqrt (ledger.cache.block_count.load ());
+	const std::size_t size_new = config.bootstrap_ascending.throttle_coefficient * std::sqrt (ledger.cache.block_count.load ());
 	return size_new == 0 ? 16 : size_new;
 }
 

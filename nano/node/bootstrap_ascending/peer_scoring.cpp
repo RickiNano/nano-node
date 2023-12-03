@@ -15,7 +15,7 @@ nano::bootstrap_ascending::peer_scoring::peer_scoring (nano::bootstrap_ascending
 bool nano::bootstrap_ascending::peer_scoring::try_send_message (std::shared_ptr<nano::transport::channel> channel)
 {
 	auto & index = scoring.get<tag_channel> ();
-	auto existing = index.find (channel.get ());
+	const auto existing = index.find (channel.get ());
 	if (existing == index.end ())
 	{
 		index.emplace (channel, 1, 1, 0);
@@ -24,7 +24,7 @@ bool nano::bootstrap_ascending::peer_scoring::try_send_message (std::shared_ptr<
 	{
 		if (existing->outstanding < config.requests_limit)
 		{
-			[[maybe_unused]] auto success = index.modify (existing, [] (auto & score) {
+			[[maybe_unused]] const auto success = index.modify (existing, [] (auto & score) {
 				++score.outstanding;
 				++score.request_count_total;
 			});
@@ -41,12 +41,12 @@ bool nano::bootstrap_ascending::peer_scoring::try_send_message (std::shared_ptr<
 void nano::bootstrap_ascending::peer_scoring::received_message (std::shared_ptr<nano::transport::channel> channel)
 {
 	auto & index = scoring.get<tag_channel> ();
-	auto existing = index.find (channel.get ());
+	const auto existing = index.find (channel.get ());
 	if (existing != index.end ())
 	{
 		if (existing->outstanding > 1)
 		{
-			[[maybe_unused]] auto success = index.modify (existing, [] (auto & score) {
+			[[maybe_unused]] const auto success = index.modify (existing, [] (auto & score) {
 				--score.outstanding;
 				++score.response_count_total;
 			});
@@ -84,7 +84,7 @@ void nano::bootstrap_ascending::peer_scoring::timeout ()
 	auto & index = scoring.get<tag_channel> ();
 	for (auto score = index.begin (), n = index.end (); score != n;)
 	{
-		if (auto channel = score->shared ())
+		if (const auto channel = score->shared ())
 		{
 			if (channel->alive ())
 			{

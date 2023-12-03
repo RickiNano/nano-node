@@ -170,7 +170,7 @@ struct hash<::nano::transport::channel>
 {
 	std::size_t operator() (::nano::transport::channel const & channel_a) const
 	{
-		std::hash<::nano::transport::channel> hash;
+		const std::hash<::nano::transport::channel> hash;
 		return hash (channel_a);
 	}
 };
@@ -179,7 +179,7 @@ struct hash<std::reference_wrapper<::nano::transport::channel const>>
 {
 	std::size_t operator() (std::reference_wrapper<::nano::transport::channel const> const & channel_a) const
 	{
-		std::hash<::nano::transport::channel> hash;
+		const std::hash<::nano::transport::channel> hash;
 		return hash (channel_a.get ());
 	}
 };

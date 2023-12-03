@@ -131,7 +131,7 @@ std::string nano::thread_role::get_string ()
 
 void nano::thread_role::set (nano::thread_role::name role)
 {
-	auto thread_role_name_string (get_string (role));
+	const auto thread_role_name_string (get_string (role));
 
 	nano::thread_role::set_os_name (thread_role_name_string);
 

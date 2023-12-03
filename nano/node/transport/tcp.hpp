@@ -75,7 +75,7 @@ namespace transport
 		virtual bool max (nano::transport::traffic_type traffic_type) override
 		{
 			bool result = true;
-			if (auto socket_l = socket.lock ())
+			if (const auto socket_l = socket.lock ())
 			{
 				result = socket_l->max (traffic_type);
 			}
@@ -84,7 +84,7 @@ namespace transport
 
 		virtual bool alive () const override
 		{
-			if (auto socket_l = socket.lock ())
+			if (const auto socket_l = socket.lock ())
 			{
 				return socket_l->alive ();
 			}
@@ -194,7 +194,7 @@ namespace transport
 			}
 			nano::account node_id () const
 			{
-				auto node_id (channel->get_node_id ());
+				const auto node_id (channel->get_node_id ());
 				return node_id;
 			}
 			uint8_t network_version () const

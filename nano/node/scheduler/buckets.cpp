@@ -33,7 +33,7 @@ nano::scheduler::buckets::buckets (uint64_t maximum) :
 	maximum{ maximum }
 {
 	auto build_region = [this] (uint128_t const & begin, uint128_t const & end, size_t count) {
-		auto width = (end - begin) / count;
+		const auto width = (end - begin) / count;
 		for (auto i = 0; i < count; ++i)
 		{
 			minimums.push_back (begin + i * width);
@@ -63,7 +63,7 @@ nano::scheduler::buckets::~buckets ()
 
 std::size_t nano::scheduler::buckets::index (nano::uint128_t const & balance) const
 {
-	auto index = std::upper_bound (minimums.begin (), minimums.end (), balance) - minimums.begin () - 1;
+	const auto index = std::upper_bound (minimums.begin (), minimums.end (), balance) - minimums.begin () - 1;
 	return index;
 }
 
@@ -73,8 +73,8 @@ std::size_t nano::scheduler::buckets::index (nano::uint128_t const & balance) co
  */
 void nano::scheduler::buckets::push (uint64_t time, std::shared_ptr<nano::block> block, nano::amount const & priority)
 {
-	auto was_empty = empty ();
-	auto & bucket = buckets_m[index (priority.number ())];
+	const auto was_empty = empty ();
+	const auto & bucket = buckets_m[index (priority.number ())];
 	bucket->push (time, block);
 	if (was_empty)
 	{

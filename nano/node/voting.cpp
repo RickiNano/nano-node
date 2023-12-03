@@ -32,7 +32,7 @@ void nano::vote_spacing::flag (nano::root const & root_a, nano::block_hash const
 {
 	trim ();
 	auto now = std::chrono::steady_clock::now ();
-	auto existing = recent.get<tag_root> ().find (root_a);
+	const auto existing = recent.get<tag_root> ().find (root_a);
 	if (existing != recent.end ())
 	{
 		recent.get<tag_root> ().modify (existing, [now] (entry & entry) {
@@ -55,13 +55,13 @@ bool nano::local_vote_history::consistency_check (nano::root const & root_a) con
 	auto & history_by_root (history.get<tag_root> ());
 	auto const range (history_by_root.equal_range (root_a));
 	// All cached votes for a root must be for the same hash, this is actively enforced in local_vote_history::add
-	auto consistent_same = std::all_of (range.first, range.second, [hash = range.first->hash] (auto const & info_a) { return info_a.hash == hash; });
+	const auto consistent_same = std::all_of (range.first, range.second, [hash = range.first->hash] (auto const & info_a) { return info_a.hash == hash; });
 	std::vector<nano::account> accounts;
 	std::transform (range.first, range.second, std::back_inserter (accounts), [] (auto const & info_a) { return info_a.vote->account; });
 	std::sort (accounts.begin (), accounts.end ());
 	// All cached votes must be unique by account, this is actively enforced in local_vote_history::add
-	auto consistent_unique = accounts.size () == std::unique (accounts.begin (), accounts.end ()) - accounts.begin ();
-	auto result = consistent_same && consistent_unique;
+	const auto consistent_unique = accounts.size () == std::unique (accounts.begin (), accounts.end ()) - accounts.begin ();
+	const auto result = consistent_same && consistent_unique;
 	debug_assert (result);
 	return result;
 }
@@ -73,7 +73,7 @@ void nano::local_vote_history::add (nano::root const & root_a, nano::block_hash 
 	auto add_vote (true);
 	auto & history_by_root (history.get<tag_root> ());
 	// Erase any vote that is not for this hash, or duplicate by account, and if new timestamp is higher
-	auto range (history_by_root.equal_range (root_a));
+	const auto range (history_by_root.equal_range (root_a));
 	for (auto i (range.first); i != range.second;)
 	{
 		if (i->hash != hash_a || (vote_a->account == i->vote->account && i->vote->timestamp () <= vote_a->timestamp ()))
@@ -93,7 +93,7 @@ void nano::local_vote_history::add (nano::root const & root_a, nano::block_hash 
 	// Do not add new vote to cache if representative account is same and timestamp is lower
 	if (add_vote)
 	{
-		auto result (history_by_root.emplace (root_a, hash_a, vote_a));
+		const auto result (history_by_root.emplace (root_a, hash_a, vote_a));
 		(void)result;
 		debug_assert (result.second);
 	}
@@ -104,7 +104,7 @@ void nano::local_vote_history::erase (nano::root const & root_a)
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 	auto & history_by_root (history.get<tag_root> ());
-	auto range (history_by_root.equal_range (root_a));
+	const auto range (history_by_root.equal_range (root_a));
 	history_by_root.erase (range.first, range.second);
 }
 
@@ -112,7 +112,7 @@ std::vector<std::shared_ptr<nano::vote>> nano::local_vote_history::votes (nano::
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 	std::vector<std::shared_ptr<nano::vote>> result;
-	auto range (history.get<tag_root> ().equal_range (root_a));
+	const auto range (history.get<tag_root> ().equal_range (root_a));
 	std::transform (range.first, range.second, std::back_inserter (result), [] (auto const & entry) { return entry.vote; });
 	return result;
 }
@@ -121,7 +121,7 @@ std::vector<std::shared_ptr<nano::vote>> nano::local_vote_history::votes (nano::
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 	std::vector<std::shared_ptr<nano::vote>> result;
-	auto range (history.get<tag_root> ().equal_range (root_a));
+	const auto range (history.get<tag_root> ().equal_range (root_a));
 	// clang-format off
 	nano::transform_if (range.first, range.second, std::back_inserter (result),
 		[&hash_a, is_final_a](auto const & entry) { return entry.hash == hash_a && (!is_final_a || entry.vote->timestamp () == std::numeric_limits<uint64_t>::max ()); },
@@ -154,8 +154,8 @@ std::size_t nano::local_vote_history::size () const
 
 std::unique_ptr<nano::container_info_component> nano::collect_container_info (nano::local_vote_history & history, std::string const & name)
 {
-	std::size_t history_count = history.size ();
-	auto sizeof_element = sizeof (decltype (history.history)::value_type);
+	const std::size_t history_count = history.size ();
+	const auto sizeof_element = sizeof (decltype (history.history)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	/* This does not currently loop over each element inside the cache to get the sizes of the votes inside history*/
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "history", history_count, sizeof_element }));
@@ -189,13 +189,13 @@ bool nano::vote_generator::should_vote (store::write_transaction const & transac
 	bool should_vote = false;
 	if (is_final)
 	{
-		auto block (ledger.store.block.get (transaction, hash_a));
+		const auto block (ledger.store.block.get (transaction, hash_a));
 		should_vote = block != nullptr && ledger.dependents_confirmed (transaction, *block) && ledger.store.final_vote.put (transaction, block->qualified_root (), hash_a);
 		debug_assert (block == nullptr || root_a == block->root ());
 	}
 	else
 	{
-		auto block (ledger.store.block.get (transaction, hash_a));
+		const auto block (ledger.store.block.get (transaction, hash_a));
 		should_vote = block != nullptr && ledger.dependents_confirmed (transaction, *block);
 	}
 	return should_vote;
@@ -234,7 +234,7 @@ void nano::vote_generator::process_batch (std::deque<queue_entry_t> & batch)
 {
 	std::deque<candidate_t> candidates_new;
 	{
-		auto transaction = ledger.store.tx_begin_write ({ tables::final_votes });
+		const auto transaction = ledger.store.tx_begin_write ({ tables::final_votes });
 
 		for (auto & [root, hash] : batch)
 		{
@@ -328,7 +328,7 @@ void nano::vote_generator::reply (nano::unique_lock<nano::mutex> & lock_a, reque
 {
 	lock_a.unlock ();
 	auto i (request_a.first.cbegin ());
-	auto n (request_a.first.cend ());
+	const auto n (request_a.first.cend ());
 	while (i != n && !stopped)
 	{
 		std::vector<nano::block_hash> hashes;
@@ -431,8 +431,8 @@ std::unique_ptr<nano::container_info_component> nano::collect_container_info (na
 		candidates_count = vote_generator.candidates.size ();
 		requests_count = vote_generator.requests.size ();
 	}
-	auto sizeof_candidate_element = sizeof (decltype (vote_generator.candidates)::value_type);
-	auto sizeof_request_element = sizeof (decltype (vote_generator.requests)::value_type);
+	const auto sizeof_candidate_element = sizeof (decltype (vote_generator.candidates)::value_type);
+	const auto sizeof_request_element = sizeof (decltype (vote_generator.requests)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "candidates", candidates_count, sizeof_candidate_element }));
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "requests", requests_count, sizeof_request_element }));

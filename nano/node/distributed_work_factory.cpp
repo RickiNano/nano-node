@@ -40,7 +40,7 @@ bool nano::distributed_work_factory::make (std::chrono::seconds const & backoff_
 void nano::distributed_work_factory::cancel (nano::root const & root_a)
 {
 	nano::lock_guard<nano::mutex> guard_l (mutex);
-	auto root_items_l = items.equal_range (root_a);
+	const auto root_items_l = items.equal_range (root_a);
 	std::for_each (root_items_l.first, root_items_l.second, [] (auto item_l) {
 		if (auto distributed_l = item_l.second.lock ())
 		{
@@ -65,7 +65,7 @@ void nano::distributed_work_factory::stop ()
 		nano::lock_guard<nano::mutex> guard (mutex);
 		for (auto & item_l : items)
 		{
-			if (auto distributed_l = item_l.second.lock ())
+			if (const auto distributed_l = item_l.second.lock ())
 			{
 				distributed_l->cancel ();
 			}
@@ -82,8 +82,8 @@ std::size_t nano::distributed_work_factory::size () const
 
 std::unique_ptr<nano::container_info_component> nano::collect_container_info (distributed_work_factory & distributed_work, std::string const & name)
 {
-	auto item_count = distributed_work.size ();
-	auto sizeof_item_element = sizeof (decltype (nano::distributed_work_factory::items)::value_type);
+	const auto item_count = distributed_work.size ();
+	const auto sizeof_item_element = sizeof (decltype (nano::distributed_work_factory::items)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "items", item_count, sizeof_item_element }));
 	return composite;

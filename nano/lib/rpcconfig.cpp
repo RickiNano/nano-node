@@ -68,7 +68,7 @@ nano::error nano::rpc_config::deserialize_toml (nano::tomlconfig & toml)
 {
 	if (!toml.empty ())
 	{
-		auto rpc_secure_l (toml.get_optional_child ("secure"));
+		const auto rpc_secure_l (toml.get_optional_child ("secure"));
 		if (rpc_secure_l)
 		{
 			return nano::error ("The RPC secure configuration has moved to config-tls.toml. Please update the configuration.");
@@ -114,7 +114,7 @@ namespace nano
 nano::error read_rpc_config_toml (std::filesystem::path const & data_path_a, nano::rpc_config & config_a, std::vector<std::string> const & config_overrides)
 {
 	nano::error error;
-	auto toml_config_path = nano::get_rpc_toml_config_path (data_path_a);
+	const auto toml_config_path = nano::get_rpc_toml_config_path (data_path_a);
 
 	// Parse and deserialize
 	nano::tomlconfig toml;
@@ -150,7 +150,7 @@ nano::error read_rpc_config_toml (std::filesystem::path const & data_path_a, nan
 std::string get_default_rpc_filepath ()
 {
 	boost::system::error_code err;
-	auto running_executable_filepath = boost::dll::program_location (err);
+	const auto running_executable_filepath = boost::dll::program_location (err);
 
 	// Construct the nano_rpc executable file path based on where the currently running executable is found.
 	auto rpc_filepath = running_executable_filepath.parent_path () / "nano_rpc";

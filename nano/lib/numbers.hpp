@@ -378,7 +378,7 @@ struct hash<std::reference_wrapper<::nano::block_hash const>>
 {
 	size_t operator() (std::reference_wrapper<::nano::block_hash const> const & hash_a) const
 	{
-		std::hash<::nano::block_hash> hash;
+		const std::hash<::nano::block_hash> hash;
 		return hash (hash_a);
 	}
 };

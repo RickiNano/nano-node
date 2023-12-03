@@ -242,7 +242,7 @@ public:
 	 */
 	void disable_sampling (stat::type type, stat::detail detail, stat::dir dir)
 	{
-		auto entry = get_entry (key_of (type, detail, dir));
+		const auto entry = get_entry (key_of (type, detail, dir));
 		entry->sample_interval = 0;
 	}
 
@@ -324,7 +324,7 @@ public:
 		}
 
 		constexpr uint32_t no_detail_mask = 0xffff00ff;
-		uint32_t key = key_of (type, detail, dir);
+		const uint32_t key = key_of (type, detail, dir);
 
 		update (key, value);
 

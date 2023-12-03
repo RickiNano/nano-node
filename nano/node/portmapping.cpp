@@ -59,7 +59,7 @@ void nano::port_mapping::refresh_devices ()
 		upnp_l.devices = upnpDiscover (2000, nullptr, nullptr, UPNP_LOCAL_PORT_ANY, false, 2, &discover_error_l);
 		std::array<char, 64> local_address_l;
 		local_address_l.fill (0);
-		auto igd_error_l (UPNP_GetValidIGD (upnp_l.devices, &upnp_l.urls, &upnp_l.data, local_address_l.data (), sizeof (local_address_l)));
+		const auto igd_error_l (UPNP_GetValidIGD (upnp_l.devices, &upnp_l.urls, &upnp_l.data, local_address_l.data (), sizeof (local_address_l)));
 		if (check_count % 15 == 0 || node.config.logging.upnp_details_logging ())
 		{
 			node.logger.always_log (boost::str (boost::format ("UPnP local address: %1%, discovery: %2%, IGD search: %3%") % local_address_l.data () % discover_error_l % igd_error_l));
@@ -133,8 +133,8 @@ bool nano::port_mapping::check_lost_or_old_mapping ()
 	debug_assert (!node.network_params.network.is_dev_network ());
 	bool result_l (false);
 	nano::lock_guard<nano::mutex> guard_l (mutex);
-	auto node_port_l (std::to_string (node.network.endpoint ().port ()));
-	auto config_port_l (get_config_port (node_port_l));
+	const auto node_port_l (std::to_string (node.network.endpoint ().port ()));
+	const auto config_port_l (get_config_port (node_port_l));
 	for (auto & protocol : protocols | boost::adaptors::filtered ([] (auto const & p) { return p.enabled; }))
 	{
 		std::array<char, 64> int_client_l;
@@ -145,7 +145,7 @@ bool nano::port_mapping::check_lost_or_old_mapping ()
 		auto remaining_from_port_mapping = std::atoi (remaining_mapping_duration_l.data ());
 		auto lease_duration = node.network_params.portmapping.lease_duration.count ();
 		auto lease_duration_divided_by_two = (lease_duration / 2);
-		auto recent_lease = (remaining_from_port_mapping >= lease_duration_divided_by_two);
+		const auto recent_lease = (remaining_from_port_mapping >= lease_duration_divided_by_two);
 		if (verify_port_mapping_error_l != UPNPCOMMAND_SUCCESS)
 		{
 			result_l = true;
@@ -180,7 +180,7 @@ bool nano::port_mapping::check_lost_or_old_mapping ()
 
 void nano::port_mapping::check_mapping_loop ()
 {
-	auto health_check_period = node.network_params.portmapping.health_check_period;
+	const auto health_check_period = node.network_params.portmapping.health_check_period;
 
 	refresh_devices ();
 
@@ -239,7 +239,7 @@ std::string nano::upnp_state::to_string ()
 {
 	std::stringstream ss;
 	ss << "Discovered UPnP devices:" << std::endl;
-	for (UPNPDev * p = devices; p; p = p->pNext)
+	for (const UPNPDev * p = devices; p; p = p->pNext)
 	{
 		debug_assert (p->descURL);
 		debug_assert (p->st);

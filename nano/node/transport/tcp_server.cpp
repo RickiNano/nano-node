@@ -91,7 +91,7 @@ void nano::transport::tcp_listener::accept_action (boost::system::error_code con
 {
 	if (!node.network.excluded_peers.check (socket_a->remote_endpoint ()))
 	{
-		auto server = std::make_shared<nano::transport::tcp_server> (socket_a, node.shared (), true);
+		const auto server = std::make_shared<nano::transport::tcp_server> (socket_a, node.shared (), true);
 		nano::lock_guard<nano::mutex> lock{ mutex };
 		connections[server.get ()] = server;
 		server->start ();
@@ -121,7 +121,7 @@ boost::asio::ip::tcp::endpoint nano::transport::tcp_listener::endpoint ()
 
 std::unique_ptr<nano::container_info_component> nano::transport::collect_container_info (nano::transport::tcp_listener & bootstrap_listener, std::string const & name)
 {
-	auto sizeof_element = sizeof (decltype (bootstrap_listener.connections)::value_type);
+	const auto sizeof_element = sizeof (decltype (bootstrap_listener.connections)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "connections", bootstrap_listener.connection_count (), sizeof_element }));
 	return composite;
@@ -148,7 +148,7 @@ nano::transport::tcp_server::tcp_server (std::shared_ptr<nano::transport::socket
 
 nano::transport::tcp_server::~tcp_server ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -167,7 +167,7 @@ nano::transport::tcp_server::~tcp_server ()
 		--node->tcp_listener.realtime_count;
 
 		// Clear temporary channel
-		auto exisiting_response_channel (node->network.tcp_channels.find_channel (remote_endpoint));
+		const auto exisiting_response_channel (node->network.tcp_channels.find_channel (remote_endpoint));
 		if (exisiting_response_channel != nullptr)
 		{
 			exisiting_response_channel->temporary = false;
@@ -208,7 +208,7 @@ void nano::transport::tcp_server::receive_message ()
 	}
 
 	message_deserializer->read ([this_l = shared_from_this ()] (boost::system::error_code ec, std::unique_ptr<nano::message> message) {
-		auto node = this_l->node.lock ();
+		const auto node = this_l->node.lock ();
 		if (!node)
 		{
 			return;
@@ -228,7 +228,7 @@ void nano::transport::tcp_server::receive_message ()
 
 void nano::transport::tcp_server::received_message (std::unique_ptr<nano::message> message)
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -257,7 +257,7 @@ void nano::transport::tcp_server::received_message (std::unique_ptr<nano::messag
 
 bool nano::transport::tcp_server::process_message (std::unique_ptr<nano::message> message)
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return false;
@@ -323,7 +323,7 @@ bool nano::transport::tcp_server::process_message (std::unique_ptr<nano::message
 
 void nano::transport::tcp_server::queue_realtime (std::unique_ptr<nano::message> message)
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -342,7 +342,7 @@ nano::transport::tcp_server::handshake_message_visitor::handshake_message_visito
 
 void nano::transport::tcp_server::handshake_message_visitor::node_id_handshake (nano::node_id_handshake const & message)
 {
-	auto node = server->node.lock ();
+	const auto node = server->node.lock ();
 	if (!node)
 	{
 		return;
@@ -411,7 +411,7 @@ void nano::transport::tcp_server::send_handshake_response (nano::node_id_handsha
 	// TODO: Use channel
 	auto shared_const_buffer = handshake_response.to_shared_const_buffer ();
 	socket->async_write (shared_const_buffer, [this_l = shared_from_this ()] (boost::system::error_code const & ec, std::size_t size_a) {
-		auto node = this_l->node.lock ();
+		const auto node = this_l->node.lock ();
 		if (!node)
 		{
 			return;
@@ -488,7 +488,7 @@ void nano::transport::tcp_server::realtime_message_visitor::frontier_req (const 
 
 void nano::transport::tcp_server::realtime_message_visitor::telemetry_req (const nano::telemetry_req & message)
 {
-	auto node = server.node.lock ();
+	const auto node = server.node.lock ();
 	if (!node)
 	{
 		return;
@@ -531,7 +531,7 @@ nano::transport::tcp_server::bootstrap_message_visitor::bootstrap_message_visito
 
 void nano::transport::tcp_server::bootstrap_message_visitor::bulk_pull (const nano::bulk_pull & message)
 {
-	auto node = server->node.lock ();
+	const auto node = server->node.lock ();
 	if (!node)
 	{
 		return;
@@ -549,7 +549,7 @@ void nano::transport::tcp_server::bootstrap_message_visitor::bulk_pull (const na
 	node->bootstrap_workers.push_task ([server = server, message = message] () {
 		// TODO: Add completion callback to bulk pull server
 		// TODO: There should be no need to re-copy message as unique pointer, refactor those bulk/frontier pull/push servers
-		auto bulk_pull_server = std::make_shared<nano::bulk_pull_server> (server, std::make_unique<nano::bulk_pull> (message));
+		const auto bulk_pull_server = std::make_shared<nano::bulk_pull_server> (server, std::make_unique<nano::bulk_pull> (message));
 		bulk_pull_server->send_next ();
 	});
 
@@ -558,7 +558,7 @@ void nano::transport::tcp_server::bootstrap_message_visitor::bulk_pull (const na
 
 void nano::transport::tcp_server::bootstrap_message_visitor::bulk_pull_account (const nano::bulk_pull_account & message)
 {
-	auto node = server->node.lock ();
+	const auto node = server->node.lock ();
 	if (!node)
 	{
 		return;
@@ -576,7 +576,7 @@ void nano::transport::tcp_server::bootstrap_message_visitor::bulk_pull_account (
 	node->bootstrap_workers.push_task ([server = server, message = message] () {
 		// TODO: Add completion callback to bulk pull server
 		// TODO: There should be no need to re-copy message as unique pointer, refactor those bulk/frontier pull/push servers
-		auto bulk_pull_account_server = std::make_shared<nano::bulk_pull_account_server> (server, std::make_unique<nano::bulk_pull_account> (message));
+		const auto bulk_pull_account_server = std::make_shared<nano::bulk_pull_account_server> (server, std::make_unique<nano::bulk_pull_account> (message));
 		bulk_pull_account_server->send_frontier ();
 	});
 
@@ -585,14 +585,14 @@ void nano::transport::tcp_server::bootstrap_message_visitor::bulk_pull_account (
 
 void nano::transport::tcp_server::bootstrap_message_visitor::bulk_push (const nano::bulk_push &)
 {
-	auto node = server->node.lock ();
+	const auto node = server->node.lock ();
 	if (!node)
 	{
 		return;
 	}
 	node->bootstrap_workers.push_task ([server = server] () {
 		// TODO: Add completion callback to bulk pull server
-		auto bulk_push_server = std::make_shared<nano::bulk_push_server> (server);
+		const auto bulk_push_server = std::make_shared<nano::bulk_push_server> (server);
 		bulk_push_server->throttled_receive ();
 	});
 
@@ -601,7 +601,7 @@ void nano::transport::tcp_server::bootstrap_message_visitor::bulk_push (const na
 
 void nano::transport::tcp_server::bootstrap_message_visitor::frontier_req (const nano::frontier_req & message)
 {
-	auto node = server->node.lock ();
+	const auto node = server->node.lock ();
 	if (!node)
 	{
 		return;
@@ -613,7 +613,7 @@ void nano::transport::tcp_server::bootstrap_message_visitor::frontier_req (const
 
 	node->bootstrap_workers.push_task ([server = server, message = message] () {
 		// TODO: There should be no need to re-copy message as unique pointer, refactor those bulk/frontier pull/push servers
-		auto response = std::make_shared<nano::frontier_req_server> (server, std::make_unique<nano::frontier_req> (message));
+		const auto response = std::make_shared<nano::frontier_req_server> (server, std::make_unique<nano::frontier_req> (message));
 		response->send_next ();
 	});
 
@@ -624,7 +624,7 @@ void nano::transport::tcp_server::bootstrap_message_visitor::frontier_req (const
 //  and since we only ever store tcp_server as weak_ptr, socket timeout will automatically trigger tcp_server cleanup
 void nano::transport::tcp_server::timeout ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -645,7 +645,7 @@ void nano::transport::tcp_server::timeout ()
 
 bool nano::transport::tcp_server::to_bootstrap_connection ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return false;
@@ -674,7 +674,7 @@ bool nano::transport::tcp_server::to_bootstrap_connection ()
 
 bool nano::transport::tcp_server::to_realtime_connection (nano::account const & node_id)
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return false;

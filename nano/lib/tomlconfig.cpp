@@ -154,7 +154,7 @@ std::shared_ptr<cpptoml::array> nano::tomlconfig::create_array (std::string cons
 {
 	if (!has_key (key))
 	{
-		auto arr = cpptoml::make_array ();
+		const auto arr = cpptoml::make_array ();
 		tree->insert (key, arr);
 		if (documentation_a)
 		{
@@ -170,7 +170,7 @@ std::shared_ptr<cpptoml::array> nano::tomlconfig::create_array (std::string cons
 	 */
 void nano::tomlconfig::erase_default_values (tomlconfig & defaults_a)
 {
-	std::shared_ptr<cpptoml::table> clone = std::dynamic_pointer_cast<cpptoml::table> (tree->clone ());
+	const std::shared_ptr<cpptoml::table> clone = std::dynamic_pointer_cast<cpptoml::table> (tree->clone ());
 	tomlconfig self (clone);
 
 	// The toml library doesn't offer a general way to compare values, so let the diff run on a stringified parse
@@ -219,7 +219,7 @@ nano::tomlconfig & nano::tomlconfig::get_config (bool optional, std::string cons
 		if (tree->contains_qualified (key))
 		{
 			int64_t tmp;
-			auto val (tree->get_qualified_as<std::string> (key));
+			const auto val (tree->get_qualified_as<std::string> (key));
 			if (!boost::conversion::try_lexical_convert<int64_t> (*val, tmp) || tmp < 0 || tmp > 255)
 			{
 				conditionally_set_error<uint8_t> (nano::error_config::invalid_value, optional, key);
@@ -266,7 +266,7 @@ nano::tomlconfig & nano::tomlconfig::get_config (bool optional, std::string cons
 	{
 		if (tree->contains_qualified (key))
 		{
-			auto val (tree->get_qualified_as<std::string> (key));
+			const auto val (tree->get_qualified_as<std::string> (key));
 			bool_conv (*val);
 		}
 		else if (!optional)
@@ -295,7 +295,7 @@ void nano::tomlconfig::erase_defaults (std::shared_ptr<cpptoml::table> const & b
 		std::string const & key = item.first;
 		if (other->contains (key) && base->contains (key))
 		{
-			auto value = item.second;
+			const auto value = item.second;
 			if (value->is_table ())
 			{
 				auto child_base = base->get_table (key);
@@ -314,10 +314,10 @@ void nano::tomlconfig::erase_defaults (std::shared_ptr<cpptoml::table> const & b
 
 				if (arr_other.size () == arr_base.size ())
 				{
-					bool equal = std::equal (arr_other.begin (), arr_other.end (), arr_base.begin (),
-					[] (auto const & item1, auto const & item2) -> bool {
-						return (item1->template as<std::string> ()->get () == item2->template as<std::string> ()->get ());
-					});
+					const bool equal = std::equal (arr_other.begin (), arr_other.end (), arr_base.begin (),
+					                               [] (auto const & item1, auto const & item2) -> bool {
+						                               return (item1->template as<std::string> ()->get () == item2->template as<std::string> ()->get ());
+					                               });
 
 					if (equal)
 					{
@@ -327,8 +327,8 @@ void nano::tomlconfig::erase_defaults (std::shared_ptr<cpptoml::table> const & b
 			}
 			else if (value->is_value ())
 			{
-				auto val_other = std::dynamic_pointer_cast<cpptoml::value<std::string>> (other->get (key));
-				auto val_base = std::dynamic_pointer_cast<cpptoml::value<std::string>> (base->get (key));
+				const auto val_other = std::dynamic_pointer_cast<cpptoml::value<std::string>> (other->get (key));
+				const auto val_base = std::dynamic_pointer_cast<cpptoml::value<std::string>> (base->get (key));
 
 				if (val_other->get () == val_base->get ())
 				{
@@ -349,7 +349,7 @@ nano::tomlconfig & nano::tomlconfig::get_config (bool optional, std::string key,
 	{
 		if (tree->contains_qualified (key))
 		{
-			auto address_l (tree->get_qualified_as<std::string> (key));
+			const auto address_l (tree->get_qualified_as<std::string> (key));
 			boost::system::error_code bec;
 			target = boost::asio::ip::make_address_v6 (address_l.value_or (""), bec);
 			if (bec)

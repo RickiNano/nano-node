@@ -143,7 +143,7 @@ double nano::work_thresholds::normalized_multiplier (double const multiplier_a, 
 	*/
 	if (threshold_a == epoch_1 || threshold_a == epoch_2_receive)
 	{
-		auto ratio (nano::difficulty::to_multiplier (epoch_2, threshold_a));
+		const auto ratio (nano::difficulty::to_multiplier (epoch_2, threshold_a));
 		debug_assert (ratio >= 1);
 		multiplier = (multiplier + (ratio - 1.0)) / ratio;
 		debug_assert (multiplier >= 1);
@@ -157,7 +157,7 @@ double nano::work_thresholds::denormalized_multiplier (double const multiplier_a
 	auto multiplier (multiplier_a);
 	if (threshold_a == epoch_1 || threshold_a == epoch_2_receive)
 	{
-		auto ratio (nano::difficulty::to_multiplier (epoch_2, threshold_a));
+		const auto ratio (nano::difficulty::to_multiplier (epoch_2, threshold_a));
 		debug_assert (ratio >= 1);
 		multiplier = multiplier * ratio + 1.0 - ratio;
 		debug_assert (multiplier >= 1);
@@ -237,22 +237,22 @@ uint64_t get_env_threshold_or_default (char const * variable_name, uint64_t cons
 
 uint16_t test_node_port ()
 {
-	auto test_env = nano::get_env_or_default ("NANO_TEST_NODE_PORT", "17075");
+	const auto test_env = nano::get_env_or_default ("NANO_TEST_NODE_PORT", "17075");
 	return boost::lexical_cast<uint16_t> (test_env);
 }
 uint16_t test_rpc_port ()
 {
-	auto test_env = nano::get_env_or_default ("NANO_TEST_RPC_PORT", "17076");
+	const auto test_env = nano::get_env_or_default ("NANO_TEST_RPC_PORT", "17076");
 	return boost::lexical_cast<uint16_t> (test_env);
 }
 uint16_t test_ipc_port ()
 {
-	auto test_env = nano::get_env_or_default ("NANO_TEST_IPC_PORT", "17077");
+	const auto test_env = nano::get_env_or_default ("NANO_TEST_IPC_PORT", "17077");
 	return boost::lexical_cast<uint16_t> (test_env);
 }
 uint16_t test_websocket_port ()
 {
-	auto test_env = nano::get_env_or_default ("NANO_TEST_WEBSOCKET_PORT", "17078");
+	const auto test_env = nano::get_env_or_default ("NANO_TEST_WEBSOCKET_PORT", "17078");
 	return boost::lexical_cast<uint16_t> (test_env);
 }
 
@@ -327,13 +327,13 @@ std::optional<std::string> nano::get_env (const char * variable_name)
 
 std::string nano::get_env_or_default (char const * variable_name, std::string default_value)
 {
-	auto value = nano::get_env (variable_name);
+	const auto value = nano::get_env (variable_name);
 	return value ? *value : default_value;
 }
 
 int nano::get_env_int_or_default (const char * variable_name, const int default_value)
 {
-	auto value = nano::get_env (variable_name);
+	const auto value = nano::get_env (variable_name);
 	if (value)
 	{
 		try
@@ -352,6 +352,6 @@ int nano::get_env_int_or_default (const char * variable_name, const int default_
 
 uint32_t nano::test_scan_wallet_reps_delay ()
 {
-	auto test_env = nano::get_env_or_default ("NANO_TEST_WALLET_SCAN_REPS_DELAY", "900000"); // 15 minutes by default
+	const auto test_env = nano::get_env_or_default ("NANO_TEST_WALLET_SCAN_REPS_DELAY", "900000"); // 15 minutes by default
 	return boost::lexical_cast<uint32_t> (test_env);
 }

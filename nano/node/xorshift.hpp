@@ -10,8 +10,8 @@ public:
 	unsigned p{ 0 };
 	uint64_t next ()
 	{
-		auto p_l (p);
-		auto pn ((p_l + 1) & 15);
+		const auto p_l (p);
+		const auto pn ((p_l + 1) & 15);
 		p = pn;
 		uint64_t s0 = s[p_l];
 		uint64_t s1 = s[pn];

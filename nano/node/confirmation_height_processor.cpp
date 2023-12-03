@@ -67,11 +67,11 @@ void nano::confirmation_height_processor::run (confirmation_height_mode mode_a)
 			set_next_hash ();
 
 			auto const num_blocks_to_use_unbounded = confirmation_height::unbounded_cutoff;
-			auto blocks_within_automatic_unbounded_selection = (ledger.cache.block_count < num_blocks_to_use_unbounded || ledger.cache.block_count - num_blocks_to_use_unbounded < ledger.cache.cemented_count);
+			const auto blocks_within_automatic_unbounded_selection = (ledger.cache.block_count < num_blocks_to_use_unbounded || ledger.cache.block_count - num_blocks_to_use_unbounded < ledger.cache.cemented_count);
 
 			// Don't want to mix up pending writes across different processors
-			auto valid_unbounded = (mode_a == confirmation_height_mode::automatic && blocks_within_automatic_unbounded_selection && bounded_processor.pending_empty ());
-			auto force_unbounded = (!unbounded_processor.pending_empty () || mode_a == confirmation_height_mode::unbounded);
+			const auto valid_unbounded = (mode_a == confirmation_height_mode::automatic && blocks_within_automatic_unbounded_selection && bounded_processor.pending_empty ());
+			const auto force_unbounded = (!unbounded_processor.pending_empty () || mode_a == confirmation_height_mode::unbounded);
 			if (force_unbounded || valid_unbounded)
 			{
 				debug_assert (bounded_processor.pending_empty ());
@@ -208,8 +208,8 @@ std::unique_ptr<nano::container_info_component> nano::collect_container_info (co
 {
 	auto composite = std::make_unique<container_info_composite> (name_a);
 
-	std::size_t cemented_observers_count = confirmation_height_processor_a.cemented_observers.size ();
-	std::size_t block_already_cemented_observers_count = confirmation_height_processor_a.block_already_cemented_observers.size ();
+	const std::size_t cemented_observers_count = confirmation_height_processor_a.cemented_observers.size ();
+	const std::size_t block_already_cemented_observers_count = confirmation_height_processor_a.block_already_cemented_observers.size ();
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "cemented_observers", cemented_observers_count, sizeof (decltype (confirmation_height_processor_a.cemented_observers)::value_type) }));
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "block_already_cemented_observers", block_already_cemented_observers_count, sizeof (decltype (confirmation_height_processor_a.block_already_cemented_observers)::value_type) }));
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "awaiting_processing", confirmation_height_processor_a.awaiting_processing_size (), sizeof (decltype (confirmation_height_processor_a.awaiting_processing)::value_type) }));

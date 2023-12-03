@@ -231,7 +231,7 @@ nano::block_hash nano::confirmation_height_bounded::get_least_unconfirmed_hash_f
 	{
 		if (block_height_a > confirmation_height_info_a.height)
 		{
-			auto block (ledger.store.block.get (transaction_a, confirmation_height_info_a.frontier));
+			const auto block (ledger.store.block.get (transaction_a, confirmation_height_info_a.frontier));
 			release_assert (block != nullptr);
 			least_unconfirmed_hash = block->sideband ().successor;
 			block_height_a = block->sideband ().height + 1;
@@ -240,7 +240,7 @@ nano::block_hash nano::confirmation_height_bounded::get_least_unconfirmed_hash_f
 	else
 	{
 		// No blocks have been confirmed, so the first block will be the open block
-		auto info = ledger.account_info (transaction_a, account_a);
+		const auto info = ledger.account_info (transaction_a, account_a);
 		release_assert (info);
 		least_unconfirmed_hash = info->open_block;
 		block_height_a = 1;
@@ -259,7 +259,7 @@ bool nano::confirmation_height_bounded::iterate (store::read_transaction const &
 		// Keep iterating upwards until we either reach the desired block or the second receive.
 		// Once a receive is cemented, we can cement all blocks above it until the next receive, so store those details for later.
 		++num_blocks;
-		auto block = ledger.store.block.get (transaction_a, hash);
+		const auto block = ledger.store.block.get (transaction_a, hash);
 		auto source (block->source ());
 		if (source.is_zero ())
 		{
@@ -271,7 +271,7 @@ bool nano::confirmation_height_bounded::iterate (store::read_transaction const &
 			hit_receive = true;
 			reached_target = true;
 			auto const & sideband (block->sideband ());
-			auto next = !sideband.successor.is_zero () && sideband.successor != top_level_hash_a ? boost::optional<nano::block_hash> (sideband.successor) : boost::none;
+			const auto next = !sideband.successor.is_zero () && sideband.successor != top_level_hash_a ? boost::optional<nano::block_hash> (sideband.successor) : boost::none;
 			receive_source_pairs_a.push_back ({ receive_chain_details{ account_a, sideband.height, hash, top_level_hash_a, next, bottom_height_a, bottom_hash_a }, source });
 			// Store a checkpoint every max_items so that we can always traverse a long number of accounts to genesis
 			if (receive_source_pairs_a.size () % max_items == 0)
@@ -334,7 +334,7 @@ void nano::confirmation_height_bounded::prepare_iterated_blocks_for_cementing (p
 	auto & receive_details = preparation_data_a.receive_details;
 	if (receive_details)
 	{
-		auto receive_confirmed_info_it = accounts_confirmed_info.find (receive_details->account);
+		const auto receive_confirmed_info_it = accounts_confirmed_info.find (receive_details->account);
 		if (receive_confirmed_info_it != accounts_confirmed_info.cend ())
 		{
 			auto & receive_confirmed_info = receive_confirmed_info_it->second;
@@ -388,7 +388,7 @@ void nano::confirmation_height_bounded::cement_blocks (nano::write_guard & scope
 				// Extra debug checks
 				nano::confirmation_height_info confirmation_height_info;
 				ledger.store.confirmation_height.get (transaction, account, confirmation_height_info);
-				auto block (ledger.store.block.get (transaction, confirmed_frontier));
+				const auto block (ledger.store.block.get (transaction, confirmed_frontier));
 				debug_assert (block != nullptr);
 				debug_assert (block->sideband ().height == confirmation_height_info.height + num_blocks_cemented);
 #endif

@@ -28,7 +28,7 @@ void nano::transport::fake::channel::send_buffer (nano::shared_const_buffer cons
 
 std::size_t nano::transport::fake::channel::hash_code () const
 {
-	std::hash<::nano::endpoint> hash;
+	const std::hash<::nano::endpoint> hash;
 	return hash (endpoint);
 }
 

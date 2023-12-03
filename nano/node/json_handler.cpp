@@ -66,7 +66,7 @@ void nano::json_handler::process_request (bool unsafe_a)
 			node_rpc_config.request_callback (request);
 		}
 		action = request.get<std::string> ("action");
-		auto no_arg_func_iter = ipc_json_handler_no_arg_funcs.find (action);
+		const auto no_arg_func_iter = ipc_json_handler_no_arg_funcs.find (action);
 		if (no_arg_func_iter != ipc_json_handler_no_arg_funcs.cend ())
 		{
 			// First try the map of options with no arguments
@@ -183,7 +183,7 @@ std::shared_ptr<nano::wallet> nano::json_handler::wallet_impl ()
 {
 	if (!ec)
 	{
-		std::string wallet_text (request.get<std::string> ("wallet"));
+		const std::string wallet_text (request.get<std::string> ("wallet"));
 		nano::wallet_id wallet;
 		if (!wallet.decode_hex (wallet_text))
 		{
@@ -281,7 +281,7 @@ nano::amount nano::json_handler::amount_impl ()
 	nano::amount result (0);
 	if (!ec)
 	{
-		std::string amount_text (request.get<std::string> ("amount"));
+		const std::string amount_text (request.get<std::string> ("amount"));
 		if (result.decode_dec (amount_text))
 		{
 			ec = nano::error_common::invalid_amount;
@@ -303,7 +303,7 @@ std::shared_ptr<nano::block> nano::json_handler::block_impl (bool signature_work
 		}
 		else
 		{
-			std::string block_text (request.get<std::string> ("block"));
+			const std::string block_text (request.get<std::string> ("block"));
 			std::stringstream block_stream (block_text);
 			try
 			{
@@ -336,7 +336,7 @@ nano::block_hash nano::json_handler::hash_impl (std::string search_text)
 	nano::block_hash result (0);
 	if (!ec)
 	{
-		std::string hash_text (request.get<std::string> (search_text));
+		const std::string hash_text (request.get<std::string> (search_text));
 		if (result.decode_hex (hash_text))
 		{
 			ec = nano::error_blocks::invalid_block_hash;
@@ -391,10 +391,10 @@ uint64_t nano::json_handler::difficulty_ledger (nano::block const & block_a)
 {
 	nano::block_details details (nano::epoch::epoch_0, false, false, false);
 	bool details_found (false);
-	auto transaction (node.store.tx_begin_read ());
+	const auto transaction (node.store.tx_begin_read ());
 	// Previous block find
 	std::shared_ptr<nano::block> block_previous (nullptr);
-	auto previous (block_a.previous ());
+	const auto previous (block_a.previous ());
 	if (!previous.is_zero ())
 	{
 		block_previous = node.store.block.get (transaction, previous);
@@ -410,10 +410,10 @@ uint64_t nano::json_handler::difficulty_ledger (nano::block const & block_a)
 	{
 		details.epoch = block_previous->sideband ().details.epoch;
 	}
-	auto link (block_a.link ());
+	const auto link (block_a.link ());
 	if (!link.is_zero () && !details.is_send)
 	{
-		auto block_link (node.store.block.get (transaction, link.as_block_hash ()));
+		const auto block_link (node.store.block.get (transaction, link.as_block_hash ()));
 		if (block_link != nullptr && node.store.pending.exists (transaction, nano::pending_key (block_a.account (), link.as_block_hash ())))
 		{
 			details.epoch = std::max (details.epoch, block_link->sideband ().details.epoch);
@@ -430,7 +430,7 @@ double nano::json_handler::multiplier_optional_impl (nano::work_version const ve
 	boost::optional<std::string> multiplier_text (request.get_optional<std::string> ("multiplier"));
 	if (!ec && multiplier_text.is_initialized ())
 	{
-		auto success = boost::conversion::try_lexical_convert<double> (multiplier_text.get (), multiplier);
+		const auto success = boost::conversion::try_lexical_convert<double> (multiplier_text.get (), multiplier);
 		if (success && multiplier > 0.)
 		{
 			difficulty = nano::difficulty::from_multiplier (multiplier, node.default_difficulty (version_a));
@@ -490,7 +490,7 @@ uint64_t nano::json_handler::count_impl ()
 	uint64_t result (0);
 	if (!ec)
 	{
-		std::string count_text (request.get<std::string> ("count"));
+		const std::string count_text (request.get<std::string> ("count"));
 		if (decode_unsigned (count_text, result) || result == 0)
 		{
 			ec = nano::error_common::invalid_count;
@@ -527,11 +527,11 @@ uint64_t nano::json_handler::offset_optional_impl (uint64_t result)
 
 void nano::json_handler::account_balance ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
 		bool const include_only_confirmed = request.get<bool> ("include_only_confirmed", true);
-		auto balance (node.balance_pending (account, include_only_confirmed));
+		const auto balance (node.balance_pending (account, include_only_confirmed));
 		response_l.put ("balance", balance.first.convert_to<std::string> ());
 		response_l.put ("pending", balance.second.convert_to<std::string> ());
 		response_l.put ("receivable", balance.second.convert_to<std::string> ());
@@ -541,11 +541,11 @@ void nano::json_handler::account_balance ()
 
 void nano::json_handler::account_block_count ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
-		auto info (account_info_impl (transaction, account));
+		const auto transaction (node.store.tx_begin_read ());
+		const auto info (account_info_impl (transaction, account));
 		if (!ec)
 		{
 			response_l.put ("block_count", std::to_string (info.block_count));
@@ -557,7 +557,7 @@ void nano::json_handler::account_block_count ()
 void nano::json_handler::account_create ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
 			bool const generate_work = rpc_l->request.get<bool> ("work", true);
@@ -598,7 +598,7 @@ void nano::json_handler::account_create ()
 
 void nano::json_handler::account_get ()
 {
-	std::string key_text (request.get<std::string> ("key"));
+	const std::string key_text (request.get<std::string> ("key"));
 	nano::public_key pub;
 	if (!pub.decode_hex (key_text))
 	{
@@ -718,7 +718,7 @@ void nano::json_handler::account_info ()
 
 void nano::json_handler::account_key ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
 		response_l.put ("key", account.to_string ());
@@ -747,26 +747,26 @@ void nano::json_handler::account_list ()
 void nano::json_handler::account_move ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string source_text (rpc_l->request.get<std::string> ("source"));
+			const std::string source_text (rpc_l->request.get<std::string> ("source"));
 			auto accounts_text (rpc_l->request.get_child ("accounts"));
 			nano::wallet_id source;
 			if (!source.decode_hex (source_text))
 			{
-				auto existing (rpc_l->node.wallets.items.find (source));
+				const auto existing (rpc_l->node.wallets.items.find (source));
 				if (existing != rpc_l->node.wallets.items.end ())
 				{
-					auto source (existing->second);
+					const auto source (existing->second);
 					std::vector<nano::public_key> accounts;
 					for (auto i (accounts_text.begin ()), n (accounts_text.end ()); i != n; ++i)
 					{
 						auto account (rpc_l->account_impl (i->second.get<std::string> ("")));
 						accounts.push_back (account);
 					}
-					auto transaction (rpc_l->node.wallets.tx_begin_write ());
-					auto error (wallet->store.move (transaction, source->store, accounts));
+					const auto transaction (rpc_l->node.wallets.tx_begin_write ());
+					const auto error (wallet->store.move (transaction, source->store, accounts));
 					rpc_l->response_l.put ("moved", error ? "0" : "1");
 				}
 				else
@@ -786,11 +786,11 @@ void nano::json_handler::account_move ()
 void nano::json_handler::account_remove ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
-		auto account (rpc_l->account_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
+		const auto account (rpc_l->account_impl ());
 		if (!rpc_l->ec)
 		{
-			auto transaction (rpc_l->node.wallets.tx_begin_write ());
+			const auto transaction (rpc_l->node.wallets.tx_begin_write ());
 			rpc_l->wallet_locked_impl (transaction, wallet);
 			rpc_l->wallet_account_impl (transaction, wallet, account);
 			if (!rpc_l->ec)
@@ -805,11 +805,11 @@ void nano::json_handler::account_remove ()
 
 void nano::json_handler::account_representative ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
-		auto info (account_info_impl (transaction, account));
+		const auto transaction (node.store.tx_begin_read ());
+		const auto info (account_info_impl (transaction, account));
 		if (!ec)
 		{
 			response_l.put ("representative", info.representative.to_account ());
@@ -886,10 +886,10 @@ void nano::json_handler::account_representative_set ()
 
 void nano::json_handler::account_weight ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
-		auto balance (node.weight (account));
+		const auto balance (node.weight (account));
 		response_l.put ("weight", balance.convert_to<std::string> ());
 	}
 	response_errors ();
@@ -933,7 +933,7 @@ void nano::json_handler::accounts_representatives ()
 {
 	boost::property_tree::ptree representatives;
 	boost::property_tree::ptree errors;
-	auto transaction = node.store.tx_begin_read ();
+	const auto transaction = node.store.tx_begin_read ();
 	for (auto & account_from_request : request.get_child ("accounts"))
 	{
 		auto account = account_impl (account_from_request.second.data ());
@@ -964,8 +964,8 @@ void nano::json_handler::accounts_representatives ()
 void nano::json_handler::accounts_create ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
-		auto count (rpc_l->count_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
+		const auto count (rpc_l->count_impl ());
 		if (!rpc_l->ec)
 		{
 			bool const generate_work = rpc_l->request.get<bool> ("work", false);
@@ -990,7 +990,7 @@ void nano::json_handler::accounts_frontiers ()
 {
 	boost::property_tree::ptree frontiers;
 	boost::property_tree::ptree errors;
-	auto transaction = node.store.tx_begin_read ();
+	const auto transaction = node.store.tx_begin_read ();
 	for (auto & account_from_request : request.get_child ("accounts"))
 	{
 		auto account = account_impl (account_from_request.second.data ());
@@ -1103,7 +1103,7 @@ void nano::json_handler::accounts_receivable ()
 
 void nano::json_handler::active_difficulty ()
 {
-	auto include_trend (request.get<bool> ("include_trend", false));
+	const auto include_trend (request.get<bool> ("include_trend", false));
 	auto const multiplier_active = 1.0;
 	auto const default_difficulty (node.default_difficulty (nano::work_version::work_1));
 	auto const default_receive_difficulty (node.default_receive_difficulty (nano::work_version::work_1));
@@ -1130,41 +1130,41 @@ void nano::json_handler::active_difficulty ()
 
 void nano::json_handler::available_supply ()
 {
-	auto genesis_balance (node.balance (node.network_params.ledger.genesis->account ())); // Cold storage genesis
-	auto landing_balance (node.balance (nano::account ("059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5"))); // Active unavailable account
-	auto faucet_balance (node.balance (nano::account ("8E319CE6F3025E5B2DF66DA7AB1467FE48F1679C13DD43BFDB29FA2E9FC40D3B"))); // Faucet account
-	auto burned_balance ((node.balance_pending (nano::account{}, false)).second); // Burning 0 account
-	auto available (nano::dev::constants.genesis_amount - genesis_balance - landing_balance - faucet_balance - burned_balance);
+	const auto genesis_balance (node.balance (node.network_params.ledger.genesis->account ())); // Cold storage genesis
+	const auto landing_balance (node.balance (nano::account ("059F68AAB29DE0D3A27443625C7EA9CDDB6517A8B76FE37727EF6A4D76832AD5"))); // Active unavailable account
+	const auto faucet_balance (node.balance (nano::account ("8E319CE6F3025E5B2DF66DA7AB1467FE48F1679C13DD43BFDB29FA2E9FC40D3B"))); // Faucet account
+	const auto burned_balance ((node.balance_pending (nano::account{}, false)).second); // Burning 0 account
+	const auto available (nano::dev::constants.genesis_amount - genesis_balance - landing_balance - faucet_balance - burned_balance);
 	response_l.put ("available", available.convert_to<std::string> ());
 	response_errors ();
 }
 
 void nano::json_handler::block_info ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
-		auto block (node.store.block.get (transaction, hash));
+		const auto transaction (node.store.tx_begin_read ());
+		const auto block (node.store.block.get (transaction, hash));
 		if (block != nullptr)
 		{
-			nano::account account (block->account ().is_zero () ? block->sideband ().account : block->account ());
+			const nano::account account (block->account ().is_zero () ? block->sideband ().account : block->account ());
 			response_l.put ("block_account", account.to_account ());
 			bool error_or_pruned (false);
-			auto amount (node.ledger.amount_safe (transaction, hash, error_or_pruned));
+			const auto amount (node.ledger.amount_safe (transaction, hash, error_or_pruned));
 			if (!error_or_pruned)
 			{
 				response_l.put ("amount", amount.convert_to<std::string> ());
 			}
-			auto balance (node.ledger.balance (transaction, hash));
+			const auto balance (node.ledger.balance (transaction, hash));
 			response_l.put ("balance", balance.convert_to<std::string> ());
 			response_l.put ("height", std::to_string (block->sideband ().height));
 			response_l.put ("local_timestamp", std::to_string (block->sideband ().timestamp));
 			response_l.put ("successor", block->sideband ().successor.to_string ());
-			auto confirmed (node.ledger.block_confirmed (transaction, hash));
+			const auto confirmed (node.ledger.block_confirmed (transaction, hash));
 			response_l.put ("confirmed", confirmed);
 
-			bool json_block_l = request.get<bool> ("json_block", false);
+			const bool json_block_l = request.get<bool> ("json_block", false);
 			if (json_block_l)
 			{
 				boost::property_tree::ptree block_node_l;
@@ -1179,7 +1179,7 @@ void nano::json_handler::block_info ()
 			}
 			if (block->type () == nano::block_type::state)
 			{
-				auto subtype (nano::state_subtype (block->sideband ().details));
+				const auto subtype (nano::state_subtype (block->sideband ().details));
 				response_l.put ("subtype", subtype);
 			}
 		}
@@ -1193,10 +1193,10 @@ void nano::json_handler::block_info ()
 
 void nano::json_handler::block_confirm ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		auto block_l (node.store.block.get (transaction, hash));
 		if (block_l != nullptr)
 		{
@@ -1211,18 +1211,18 @@ void nano::json_handler::block_confirm ()
 			else
 			{
 				// Add record in confirmation history for confirmed block
-				nano::election_status status{ block_l, 0, 0, std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now ().time_since_epoch ()), std::chrono::duration_values<std::chrono::milliseconds>::zero (), 0, 1, 0, nano::election_status_type::active_confirmation_height };
+				const nano::election_status status{ block_l, 0, 0, std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now ().time_since_epoch ()), std::chrono::duration_values<std::chrono::milliseconds>::zero (), 0, 1, 0, nano::election_status_type::active_confirmation_height };
 				node.active.recently_cemented.put (status);
 				// Trigger callback for confirmed block
 				node.block_arrival.add (hash);
-				auto account (node.ledger.account (transaction, hash));
+				const auto account (node.ledger.account (transaction, hash));
 				bool error_or_pruned (false);
-				auto amount (node.ledger.amount_safe (transaction, hash, error_or_pruned));
+				const auto amount (node.ledger.amount_safe (transaction, hash, error_or_pruned));
 				bool is_state_send (false);
 				bool is_state_epoch (false);
 				if (!error_or_pruned)
 				{
-					if (auto state = dynamic_cast<nano::state_block *> (block_l.get ()))
+					if (const auto state = dynamic_cast<nano::state_block *> (block_l.get ()))
 					{
 						is_state_send = node.ledger.is_send (transaction, *state);
 						is_state_epoch = amount == 0 && node.ledger.is_epoch_link (state->link ());
@@ -1244,7 +1244,7 @@ void nano::json_handler::blocks ()
 {
 	bool const json_block_l = request.get<bool> ("json_block", false);
 	boost::property_tree::ptree blocks;
-	auto transaction (node.store.tx_begin_read ());
+	const auto transaction (node.store.tx_begin_read ());
 	for (boost::property_tree::ptree::value_type & hashes : request.get_child ("hashes"))
 	{
 		if (!ec)
@@ -1429,13 +1429,13 @@ void nano::json_handler::blocks_info ()
 
 void nano::json_handler::block_account ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		if (node.store.block.exists (transaction, hash))
 		{
-			auto account (node.ledger.account (transaction, hash));
+			const auto account (node.ledger.account (transaction, hash));
 			response_l.put ("account", account.to_account ());
 		}
 		else
@@ -1596,7 +1596,7 @@ void nano::json_handler::block_create ()
 			boost::property_tree::ptree response_l;
 			response_l.put ("hash", block_a.hash ().to_string ());
 			response_l.put ("difficulty", nano::to_string_hex (rpc_l->node.network_params.work.difficulty (block_a)));
-			bool json_block_l = request.get<bool> ("json_block", false);
+			const bool json_block_l = request.get<bool> ("json_block", false);
 			if (json_block_l)
 			{
 				boost::property_tree::ptree block_node_l;
@@ -1805,7 +1805,7 @@ void nano::json_handler::block_create ()
 
 void nano::json_handler::block_hash ()
 {
-	auto block (block_impl (true));
+	const auto block (block_impl (true));
 
 	if (!ec)
 	{
@@ -1816,10 +1816,10 @@ void nano::json_handler::block_hash ()
 
 void nano::json_handler::bootstrap ()
 {
-	std::string address_text = request.get<std::string> ("address");
-	std::string port_text = request.get<std::string> ("port");
+	const std::string address_text = request.get<std::string> ("address");
+	const std::string port_text = request.get<std::string> ("port");
 	boost::system::error_code address_ec;
-	auto address (boost::asio::ip::make_address_v6 (address_text, address_ec));
+	const auto address (boost::asio::ip::make_address_v6 (address_text, address_ec));
 	if (!address_ec)
 	{
 		uint16_t port;
@@ -1827,7 +1827,7 @@ void nano::json_handler::bootstrap ()
 		{
 			if (!node.flags.disable_legacy_bootstrap)
 			{
-				std::string bootstrap_id (request.get<std::string> ("id", ""));
+				const std::string bootstrap_id (request.get<std::string> ("id", ""));
 				node.bootstrap_initiator.bootstrap (nano::endpoint (address, port), true, bootstrap_id);
 				response_l.put ("success", "");
 			}
@@ -1859,7 +1859,7 @@ void nano::json_handler::bootstrap_any ()
 		{
 			start_account = account_impl (account_text.get ());
 		}
-		std::string bootstrap_id (request.get<std::string> ("id", ""));
+		const std::string bootstrap_id (request.get<std::string> ("id", ""));
 		node.bootstrap_initiator.bootstrap (force, bootstrap_id, std::numeric_limits<uint32_t>::max (), start_account);
 		response_l.put ("success", "");
 	}
@@ -1872,16 +1872,16 @@ void nano::json_handler::bootstrap_any ()
 
 void nano::json_handler::bootstrap_lazy ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	bool const force = request.get<bool> ("force", false);
 	if (!ec)
 	{
 		if (!node.flags.disable_lazy_bootstrap)
 		{
-			auto existed (node.bootstrap_initiator.current_lazy_attempt () != nullptr);
-			std::string bootstrap_id (request.get<std::string> ("id", ""));
-			auto key_inserted (node.bootstrap_initiator.bootstrap_lazy (hash, force, bootstrap_id));
-			bool started = !existed && key_inserted;
+			const auto existed (node.bootstrap_initiator.current_lazy_attempt () != nullptr);
+			const std::string bootstrap_id (request.get<std::string> ("id", ""));
+			const auto key_inserted (node.bootstrap_initiator.bootstrap_lazy (hash, force, bootstrap_id));
+			const bool started = !existed && key_inserted;
 			response_l.put ("started", started ? "1" : "0");
 			response_l.put ("key_inserted", key_inserted ? "1" : "0");
 		}
@@ -1898,7 +1898,7 @@ void nano::json_handler::bootstrap_lazy ()
  */
 void nano::json_handler::bootstrap_status ()
 {
-	auto attempts_count (node.bootstrap_initiator.attempts.size ());
+	const auto attempts_count (node.bootstrap_initiator.attempts.size ());
 	response_l.put ("bootstrap_threads", std::to_string (node.config.bootstrap_initiator_threads));
 	response_l.put ("running_attempts_count", std::to_string (attempts_count));
 	response_l.put ("total_attempts_count", std::to_string (node.bootstrap_initiator.attempts.incremental));
@@ -1918,7 +1918,7 @@ void nano::json_handler::bootstrap_status ()
 		for (auto i : node.bootstrap_initiator.attempts.attempts)
 		{
 			boost::property_tree::ptree entry;
-			auto & attempt (i.second);
+			const auto & attempt (i.second);
 			entry.put ("id", attempt->id);
 			entry.put ("mode", attempt->mode_text ());
 			entry.put ("started", static_cast<bool> (attempt->started));
@@ -1938,12 +1938,12 @@ void nano::json_handler::chain (bool successors)
 {
 	successors = successors != request.get<bool> ("reverse", false);
 	auto hash (hash_impl ("block"));
-	auto count (count_impl ());
+	const auto count (count_impl ());
 	auto offset (offset_optional_impl (0));
 	if (!ec)
 	{
 		boost::property_tree::ptree blocks;
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		while (!hash.is_zero () && blocks.size () < count)
 		{
 			auto block_l (node.store.block.get (transaction, hash));
@@ -1981,7 +1981,7 @@ void nano::json_handler::confirmation_active ()
 		announcements = strtoul (announcements_text.get ().c_str (), NULL, 10);
 	}
 	boost::property_tree::ptree elections;
-	auto active_elections = node.active.list_active ();
+	const auto active_elections = node.active.list_active ();
 	for (auto const & election : active_elections)
 	{
 		if (election->confirmation_request_count >= announcements)
@@ -2006,7 +2006,7 @@ void nano::json_handler::confirmation_active ()
 
 void nano::json_handler::confirmation_height_currently_processing ()
 {
-	auto hash = node.confirmation_height_processor.current ();
+	const auto hash = node.confirmation_height_processor.current ();
 	if (!hash.is_zero ())
 	{
 		response_l.put ("hash", hash.to_string ());
@@ -2024,7 +2024,7 @@ void nano::json_handler::confirmation_history ()
 	boost::property_tree::ptree confirmation_stats;
 	std::chrono::milliseconds running_total (0);
 	nano::block_hash hash (0);
-	boost::optional<std::string> hash_text (request.get_optional<std::string> ("hash"));
+	const boost::optional<std::string> hash_text (request.get_optional<std::string> ("hash"));
 	if (hash_text.is_initialized ())
 	{
 		hash = hash_impl ();
@@ -2167,7 +2167,7 @@ void nano::json_handler::database_txn_tracker ()
 		boost::optional<std::string> min_read_time_text (request.get_optional<std::string> ("min_read_time"));
 		if (min_read_time_text.is_initialized ())
 		{
-			auto success = boost::conversion::try_lexical_convert<unsigned> (*min_read_time_text, min_read_time_milliseconds);
+			const auto success = boost::conversion::try_lexical_convert<unsigned> (*min_read_time_text, min_read_time_milliseconds);
 			if (!success)
 			{
 				ec = nano::error_common::invalid_amount;
@@ -2180,7 +2180,7 @@ void nano::json_handler::database_txn_tracker ()
 			boost::optional<std::string> min_write_time_text (request.get_optional<std::string> ("min_write_time"));
 			if (min_write_time_text.is_initialized ())
 			{
-				auto success = boost::conversion::try_lexical_convert<unsigned> (*min_write_time_text, min_write_time_milliseconds);
+				const auto success = boost::conversion::try_lexical_convert<unsigned> (*min_write_time_text, min_write_time_milliseconds);
 				if (!success)
 				{
 					ec = nano::error_common::invalid_amount;
@@ -2204,9 +2204,9 @@ void nano::json_handler::database_txn_tracker ()
 
 void nano::json_handler::delegators ()
 {
-	auto representative (account_impl ());
-	auto count (count_optional_impl (1024));
-	auto threshold (threshold_optional_impl ());
+	const auto representative (account_impl ());
+	const auto count (count_optional_impl (1024));
+	const auto threshold (threshold_optional_impl ());
 	auto start_account_text (request.get_optional<std::string> ("start"));
 
 	nano::account start_account{};
@@ -2217,7 +2217,7 @@ void nano::json_handler::delegators ()
 
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		boost::property_tree::ptree delegators;
 		for (auto i (node.store.account.begin (transaction, start_account.number () + 1)), n (node.store.account.end ()); i != n && delegators.size () < count; ++i)
 		{
@@ -2240,11 +2240,11 @@ void nano::json_handler::delegators ()
 
 void nano::json_handler::delegators_count ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
 		uint64_t count (0);
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		for (auto i (node.store.account.begin (transaction)), n (node.store.account.end ()); i != n; ++i)
 		{
 			nano::account_info const & info (i->second);
@@ -2260,16 +2260,16 @@ void nano::json_handler::delegators_count ()
 
 void nano::json_handler::deterministic_key ()
 {
-	std::string seed_text (request.get<std::string> ("seed"));
-	std::string index_text (request.get<std::string> ("index"));
+	const std::string seed_text (request.get<std::string> ("seed"));
+	const std::string index_text (request.get<std::string> ("index"));
 	nano::raw_key seed;
 	if (!seed.decode_hex (seed_text))
 	{
 		try
 		{
-			uint32_t index (std::stoul (index_text));
-			nano::raw_key prv = nano::deterministic_key (seed, index);
-			nano::public_key pub (nano::pub_key (prv));
+			const uint32_t index (std::stoul (index_text));
+			const nano::raw_key prv = nano::deterministic_key (seed, index);
+			const nano::public_key pub (nano::pub_key (prv));
 			response_l.put ("private", prv.to_string ());
 			response_l.put ("public", pub.to_string ());
 			response_l.put ("account", pub.to_account ());
@@ -2292,7 +2292,7 @@ void nano::json_handler::deterministic_key ()
 void nano::json_handler::epoch_upgrade ()
 {
 	nano::epoch epoch (nano::epoch::invalid);
-	uint8_t epoch_int (request.get<uint8_t> ("epoch"));
+	const uint8_t epoch_int (request.get<uint8_t> ("epoch"));
 	switch (epoch_int)
 	{
 		case 1:
@@ -2306,7 +2306,7 @@ void nano::json_handler::epoch_upgrade ()
 	}
 	if (epoch != nano::epoch::invalid)
 	{
-		uint64_t count_limit (count_optional_impl ());
+		const uint64_t count_limit (count_optional_impl ());
 		uint64_t threads (0);
 		boost::optional<std::string> threads_text (request.get_optional<std::string> ("threads"));
 		if (!ec && threads_text.is_initialized ())
@@ -2316,7 +2316,7 @@ void nano::json_handler::epoch_upgrade ()
 				ec = nano::error_rpc::invalid_threads_count;
 			}
 		}
-		std::string key_text (request.get<std::string> ("key"));
+		const std::string key_text (request.get<std::string> ("key"));
 		nano::raw_key prv;
 		if (!prv.decode_hex (key_text))
 		{
@@ -2350,12 +2350,12 @@ void nano::json_handler::epoch_upgrade ()
 
 void nano::json_handler::frontiers ()
 {
-	auto start (account_impl ());
-	auto count (count_impl ());
+	const auto start (account_impl ());
+	const auto count (count_impl ());
 	if (!ec)
 	{
 		boost::property_tree::ptree frontiers;
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		for (auto i (node.store.account.begin (transaction, start)), n (node.store.account.end ()); i != n && frontiers.size () < count; ++i)
 		{
 			frontiers.put (i->first.to_account (), i->second.head.to_string ());
@@ -2367,7 +2367,7 @@ void nano::json_handler::frontiers ()
 
 void nano::json_handler::account_count ()
 {
-	auto size (node.ledger.cache.account_count.load ());
+	const auto size (node.ledger.cache.account_count.load ());
 	response_l.put ("count", std::to_string (size));
 	response_errors ();
 }
@@ -2394,10 +2394,10 @@ public:
 			return;
 		}
 		tree.put ("type", "send");
-		auto account (block_a.hashables.destination.to_account ());
+		const auto account (block_a.hashables.destination.to_account ());
 		tree.put ("account", account);
 		bool error_or_pruned (false);
-		auto amount (handler.node.ledger.amount_safe (transaction, hash, error_or_pruned).convert_to<std::string> ());
+		const auto amount (handler.node.ledger.amount_safe (transaction, hash, error_or_pruned).convert_to<std::string> ());
 		if (!error_or_pruned)
 		{
 			tree.put ("amount", amount);
@@ -2413,10 +2413,10 @@ public:
 	{
 		tree.put ("type", "receive");
 		bool error_or_pruned (false);
-		auto amount (handler.node.ledger.amount_safe (transaction, hash, error_or_pruned).convert_to<std::string> ());
+		const auto amount (handler.node.ledger.amount_safe (transaction, hash, error_or_pruned).convert_to<std::string> ());
 		if (!error_or_pruned)
 		{
-			auto source_account (handler.node.ledger.account_safe (transaction, block_a.hashables.source, error_or_pruned));
+			const auto source_account (handler.node.ledger.account_safe (transaction, block_a.hashables.source, error_or_pruned));
 			if (!error_or_pruned)
 			{
 				tree.put ("account", source_account.to_account ());
@@ -2446,10 +2446,10 @@ public:
 		if (block_a.hashables.source != handler.node.ledger.constants.genesis->account ())
 		{
 			bool error_or_pruned (false);
-			auto amount (handler.node.ledger.amount_safe (transaction, hash, error_or_pruned).convert_to<std::string> ());
+			const auto amount (handler.node.ledger.amount_safe (transaction, hash, error_or_pruned).convert_to<std::string> ());
 			if (!error_or_pruned)
 			{
-				auto source_account (handler.node.ledger.account_safe (transaction, block_a.hashables.source, error_or_pruned));
+				const auto source_account (handler.node.ledger.account_safe (transaction, block_a.hashables.source, error_or_pruned));
 				if (!error_or_pruned)
 				{
 					tree.put ("account", source_account.to_account ());
@@ -2482,9 +2482,9 @@ public:
 			tree.put ("balance", block_a.hashables.balance.to_string_dec ());
 			tree.put ("previous", block_a.hashables.previous.to_string ());
 		}
-		auto balance (block_a.hashables.balance.number ());
+		const auto balance (block_a.hashables.balance.number ());
 		bool error_or_pruned (false);
-		auto previous_balance (handler.node.ledger.balance_safe (transaction, block_a.hashables.previous, error_or_pruned));
+		const auto previous_balance (handler.node.ledger.balance_safe (transaction, block_a.hashables.previous, error_or_pruned));
 		if (error_or_pruned)
 		{
 			if (raw)
@@ -2533,7 +2533,7 @@ public:
 			}
 			else
 			{
-				auto source_account (handler.node.ledger.account_safe (transaction, block_a.hashables.link.as_block_hash (), error_or_pruned));
+				const auto source_account (handler.node.ledger.account_safe (transaction, block_a.hashables.link.as_block_hash (), error_or_pruned));
 				if (!error_or_pruned && should_ignore_account (source_account))
 				{
 					tree.clear ();
@@ -2687,8 +2687,8 @@ void nano::json_handler::keepalive ()
 {
 	if (!ec)
 	{
-		std::string address_text (request.get<std::string> ("address"));
-		std::string port_text (request.get<std::string> ("port"));
+		const std::string address_text (request.get<std::string> ("address"));
+		const std::string port_text (request.get<std::string> ("port"));
 		uint16_t port;
 		if (!nano::parse_port (port_text, port))
 		{
@@ -2705,7 +2705,7 @@ void nano::json_handler::keepalive ()
 
 void nano::json_handler::key_create ()
 {
-	nano::keypair pair;
+	const nano::keypair pair;
 	response_l.put ("private", pair.prv.to_string ());
 	response_l.put ("public", pair.pub.to_string ());
 	response_l.put ("account", pair.pub.to_account ());
@@ -2714,11 +2714,11 @@ void nano::json_handler::key_create ()
 
 void nano::json_handler::key_expand ()
 {
-	std::string key_text (request.get<std::string> ("key"));
+	const std::string key_text (request.get<std::string> ("key"));
 	nano::raw_key prv;
 	if (!prv.decode_hex (key_text))
 	{
-		nano::public_key pub (nano::pub_key (prv));
+		const nano::public_key pub (nano::pub_key (prv));
 		response_l.put ("private", prv.to_string ());
 		response_l.put ("public", pub.to_string ());
 		response_l.put ("account", pub.to_account ());
@@ -2858,11 +2858,11 @@ void nano::json_handler::ledger ()
 
 void nano::json_handler::mnano_from_raw (nano::uint128_t ratio)
 {
-	auto amount (amount_impl ());
+	const auto amount (amount_impl ());
 	response_l.put ("deprecated", "1");
 	if (!ec)
 	{
-		auto result (amount.number () / ratio);
+		const auto result (amount.number () / ratio);
 		response_l.put ("amount", result.convert_to<std::string> ());
 	}
 	response_errors ();
@@ -2870,11 +2870,11 @@ void nano::json_handler::mnano_from_raw (nano::uint128_t ratio)
 
 void nano::json_handler::mnano_to_raw (nano::uint128_t ratio)
 {
-	auto amount (amount_impl ());
+	const auto amount (amount_impl ());
 	response_l.put ("deprecated", "1");
 	if (!ec)
 	{
-		auto result (amount.number () * ratio);
+		const auto result (amount.number () * ratio);
 		if (result > amount.number ())
 		{
 			response_l.put ("amount", result.convert_to<std::string> ());
@@ -2889,10 +2889,10 @@ void nano::json_handler::mnano_to_raw (nano::uint128_t ratio)
 
 void nano::json_handler::nano_to_raw ()
 {
-	auto amount (amount_impl ());
+	const auto amount (amount_impl ());
 	if (!ec)
 	{
-		auto result (amount.number () * nano::Mxrb_ratio);
+		const auto result (amount.number () * nano::Mxrb_ratio);
 		if (result > amount.number ())
 		{
 			response_l.put ("amount", result.convert_to<std::string> ());
@@ -2907,10 +2907,10 @@ void nano::json_handler::nano_to_raw ()
 
 void nano::json_handler::raw_to_nano ()
 {
-	auto amount (amount_impl ());
+	const auto amount (amount_impl ());
 	if (!ec)
 	{
-		auto result (amount.number () / nano::Mxrb_ratio);
+		const auto result (amount.number () / nano::Mxrb_ratio);
 		response_l.put ("amount", result.convert_to<std::string> ());
 	}
 	response_errors ();
@@ -2943,15 +2943,15 @@ void nano::json_handler::node_id_delete ()
 void nano::json_handler::password_change ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			auto transaction (rpc_l->node.wallets.tx_begin_write ());
+			const auto transaction (rpc_l->node.wallets.tx_begin_write ());
 			rpc_l->wallet_locked_impl (transaction, wallet);
 			if (!rpc_l->ec)
 			{
-				std::string password_text (rpc_l->request.get<std::string> ("password"));
-				bool error (wallet->store.rekey (transaction, password_text));
+				const std::string password_text (rpc_l->request.get<std::string> ("password"));
+				const bool error (wallet->store.rekey (transaction, password_text));
 				rpc_l->response_l.put ("changed", error ? "0" : "1");
 				if (!error)
 				{
@@ -2966,12 +2966,12 @@ void nano::json_handler::password_change ()
 void nano::json_handler::password_enter ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string password_text (rpc_l->request.get<std::string> ("password"));
-			auto transaction (wallet->wallets.tx_begin_write ());
-			auto error (wallet->enter_password (transaction, password_text));
+			const std::string password_text (rpc_l->request.get<std::string> ("password"));
+			const auto transaction (wallet->wallets.tx_begin_write ());
+			const auto error (wallet->enter_password (transaction, password_text));
 			rpc_l->response_l.put ("valid", error ? "0" : "1");
 		}
 		rpc_l->response_errors ();
@@ -2980,11 +2980,11 @@ void nano::json_handler::password_enter ()
 
 void nano::json_handler::password_valid (bool wallet_locked)
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
-		auto valid (wallet->store.valid_password (transaction));
+		const auto transaction (node.wallets.tx_begin_read ());
+		const auto valid (wallet->store.valid_password (transaction));
 		if (!wallet_locked)
 		{
 			response_l.put ("valid", valid ? "1" : "0");
@@ -3008,7 +3008,7 @@ void nano::json_handler::peers ()
 	for (auto i (peers_list.begin ()), n (peers_list.end ()); i != n; ++i)
 	{
 		std::stringstream text;
-		auto channel (*i);
+		const auto channel (*i);
 		text << channel->to_string ();
 		if (peer_details)
 		{
@@ -3159,17 +3159,17 @@ void nano::json_handler::pending_exists ()
 
 void nano::json_handler::receivable_exists ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	bool const include_active = request.get<bool> ("include_active", false);
 	bool const include_only_confirmed = request.get<bool> ("include_only_confirmed", true);
 	if (!ec)
 	{
 		auto transaction (node.store.tx_begin_read ());
-		auto block (node.store.block.get (transaction, hash));
+		const auto block (node.store.block.get (transaction, hash));
 		if (block != nullptr)
 		{
 			auto exists (false);
-			auto destination (node.ledger.block_destination (transaction, *block));
+			const auto destination (node.ledger.block_destination (transaction, *block));
 			if (!destination.is_zero ())
 			{
 				exists = node.store.pending.exists (transaction, nano::pending_key (destination, hash));
@@ -3189,23 +3189,23 @@ void nano::json_handler::process ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
 		bool const is_async = rpc_l->request.get<bool> ("async", false);
-		auto block (rpc_l->block_impl (true));
+		const auto block (rpc_l->block_impl (true));
 
 		// State blocks subtype check
 		if (!rpc_l->ec && block->type () == nano::block_type::state)
 		{
-			std::string subtype_text (rpc_l->request.get<std::string> ("subtype", ""));
+			const std::string subtype_text (rpc_l->request.get<std::string> ("subtype", ""));
 			if (!subtype_text.empty ())
 			{
-				std::shared_ptr<nano::state_block> block_state (std::static_pointer_cast<nano::state_block> (block));
-				auto transaction (rpc_l->node.store.tx_begin_read ());
+				const std::shared_ptr<nano::state_block> block_state (std::static_pointer_cast<nano::state_block> (block));
+				const auto transaction (rpc_l->node.store.tx_begin_read ());
 				if (!block_state->hashables.previous.is_zero () && !rpc_l->node.store.block.exists (transaction, block_state->hashables.previous))
 				{
 					rpc_l->ec = nano::error_process::gap_previous;
 				}
 				else
 				{
-					auto balance (rpc_l->node.ledger.account_balance (transaction, block_state->hashables.account));
+					const auto balance (rpc_l->node.ledger.account_balance (transaction, block_state->hashables.account));
 					if (subtype_text == "send")
 					{
 						if (balance <= block_state->hashables.balance.number ())
@@ -3264,7 +3264,7 @@ void nano::json_handler::process ()
 			{
 				if (!is_async)
 				{
-					auto result_maybe = rpc_l->node.process_local (block);
+					const auto result_maybe = rpc_l->node.process_local (block);
 					if (!result_maybe)
 					{
 						rpc_l->ec = nano::error_rpc::stopped;
@@ -3380,13 +3380,13 @@ void nano::json_handler::process ()
 
 void nano::json_handler::pruned_exists ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	if (!ec)
 	{
-		auto transaction (node.store.tx_begin_read ());
+		const auto transaction (node.store.tx_begin_read ());
 		if (node.ledger.pruning)
 		{
-			auto exists (node.store.pruned.exists (transaction, hash));
+			const auto exists (node.store.pruned.exists (transaction, hash));
 			response_l.put ("exists", exists ? "1" : "0");
 		}
 		else
@@ -3498,7 +3498,7 @@ void nano::json_handler::receive_minimum ()
 
 void nano::json_handler::receive_minimum_set ()
 {
-	auto amount (amount_impl ());
+	const auto amount (amount_impl ());
 	if (!ec)
 	{
 		node.config.receive_minimum = amount;
@@ -3509,7 +3509,7 @@ void nano::json_handler::receive_minimum_set ()
 
 void nano::json_handler::representatives ()
 {
-	auto count (count_optional_impl ());
+	const auto count (count_optional_impl ());
 	if (!ec)
 	{
 		bool const sorting = request.get<bool> ("sorting", false);
@@ -3575,7 +3575,7 @@ void nano::json_handler::representatives_online ()
 	if (!ec)
 	{
 		boost::property_tree::ptree representatives;
-		auto reps (node.online_reps.list ());
+		const auto reps (node.online_reps.list ());
 		for (auto & i : reps)
 		{
 			if (accounts_node.is_initialized ())
@@ -3728,10 +3728,10 @@ void nano::json_handler::search_pending ()
 
 void nano::json_handler::search_receivable ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto error (wallet->search_receivable (wallet->wallets.tx_begin_read ()));
+		const auto error (wallet->search_receivable (wallet->wallets.tx_begin_read ()));
 		response_l.put ("started", !error);
 	}
 	response_errors ();
@@ -3817,7 +3817,7 @@ void nano::json_handler::send ()
 					}
 					else
 					{
-						std::error_code ec (nano::error_common::insufficient_balance);
+						const std::error_code ec (nano::error_common::insufficient_balance);
 						json_error_response (response_a, ec.message ());
 					}
 				}
@@ -3931,8 +3931,8 @@ void nano::json_handler::sign ()
 
 void nano::json_handler::stats ()
 {
-	auto sink = node.stats.log_sink_json ();
-	std::string type (request.get<std::string> ("type", ""));
+	const auto sink = node.stats.log_sink_json ();
+	const std::string type (request.get<std::string> ("type", ""));
 	bool use_sink = false;
 	if (type == "counters")
 	{
@@ -4171,7 +4171,7 @@ void nano::json_handler::unchecked_clear ()
 void nano::json_handler::unchecked_get ()
 {
 	bool const json_block_l = request.get<bool> ("json_block", false);
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	if (!ec)
 	{
 		bool done = false;
@@ -4325,7 +4325,7 @@ void nano::json_handler::version ()
 
 void nano::json_handler::validate_account_number ()
 {
-	auto account (account_impl ());
+	const auto account (account_impl ());
 	(void)account;
 	response_l.put ("valid", ec ? "0" : "1");
 	ec = std::error_code (); // error is just invalid account
@@ -4335,15 +4335,15 @@ void nano::json_handler::validate_account_number ()
 void nano::json_handler::wallet_add ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string key_text (rpc_l->request.get<std::string> ("key"));
+			const std::string key_text (rpc_l->request.get<std::string> ("key"));
 			nano::raw_key key;
 			if (!key.decode_hex (key_text))
 			{
 				bool const generate_work = rpc_l->request.get<bool> ("work", true);
-				auto pub (wallet->insert_adhoc (key, generate_work));
+				const auto pub (wallet->insert_adhoc (key, generate_work));
 				if (!pub.is_zero ())
 				{
 					rpc_l->response_l.put ("account", pub.to_account ());
@@ -4365,10 +4365,10 @@ void nano::json_handler::wallet_add ()
 void nano::json_handler::wallet_add_watch ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			auto transaction (rpc_l->node.wallets.tx_begin_write ());
+			const auto transaction (rpc_l->node.wallets.tx_begin_write ());
 			if (wallet->store.valid_password (transaction))
 			{
 				for (auto & accounts : rpc_l->request.get_child ("accounts"))
@@ -4489,21 +4489,21 @@ void nano::json_handler::wallet_balances ()
 void nano::json_handler::wallet_change_seed ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string seed_text (rpc_l->request.get<std::string> ("seed"));
+			const std::string seed_text (rpc_l->request.get<std::string> ("seed"));
 			nano::raw_key seed;
 			if (!seed.decode_hex (seed_text))
 			{
-				auto count (static_cast<uint32_t> (rpc_l->count_optional_impl (0)));
-				auto transaction (rpc_l->node.wallets.tx_begin_write ());
+				const auto count (static_cast<uint32_t> (rpc_l->count_optional_impl (0)));
+				const auto transaction (rpc_l->node.wallets.tx_begin_write ());
 				if (wallet->store.valid_password (transaction))
 				{
-					nano::public_key account (wallet->change_seed (transaction, seed, count));
+					const nano::public_key account (wallet->change_seed (transaction, seed, count));
 					rpc_l->response_l.put ("success", "");
 					rpc_l->response_l.put ("last_restored_account", account.to_account ());
-					auto index (wallet->store.deterministic_index_get (transaction));
+					const auto index (wallet->store.deterministic_index_get (transaction));
 					debug_assert (index > 0);
 					rpc_l->response_l.put ("restored_count", std::to_string (index));
 				}
@@ -4523,12 +4523,12 @@ void nano::json_handler::wallet_change_seed ()
 
 void nano::json_handler::wallet_contains ()
 {
-	auto account (account_impl ());
-	auto wallet (wallet_impl ());
+	const auto account (account_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
-		auto exists (wallet->store.find (transaction, account) != wallet->store.end ());
+		const auto transaction (node.wallets.tx_begin_read ());
+		const auto exists (wallet->store.find (transaction, account) != wallet->store.end ());
 		response_l.put ("exists", exists ? "1" : "0");
 	}
 	response_errors ();
@@ -4545,9 +4545,9 @@ void nano::json_handler::wallet_create ()
 		}
 		if (!rpc_l->ec)
 		{
-			auto wallet_id = random_wallet_id ();
-			auto wallet (rpc_l->node.wallets.create (wallet_id));
-			auto existing (rpc_l->node.wallets.items.find (wallet_id));
+			const auto wallet_id = random_wallet_id ();
+			const auto wallet (rpc_l->node.wallets.create (wallet_id));
+			const auto existing (rpc_l->node.wallets.items.find (wallet_id));
 			if (existing != rpc_l->node.wallets.items.end ())
 			{
 				rpc_l->response_l.put ("wallet", wallet_id.to_string ());
@@ -4558,10 +4558,10 @@ void nano::json_handler::wallet_create ()
 			}
 			if (!rpc_l->ec && seed_text.is_initialized ())
 			{
-				auto transaction (rpc_l->node.wallets.tx_begin_write ());
-				nano::public_key account (wallet->change_seed (transaction, seed));
+				const auto transaction (rpc_l->node.wallets.tx_begin_write ());
+				const nano::public_key account (wallet->change_seed (transaction, seed));
 				rpc_l->response_l.put ("last_restored_account", account.to_account ());
-				auto index (wallet->store.deterministic_index_get (transaction));
+				const auto index (wallet->store.deterministic_index_get (transaction));
 				debug_assert (index > 0);
 				rpc_l->response_l.put ("restored_count", std::to_string (index));
 			}
@@ -4573,15 +4573,15 @@ void nano::json_handler::wallet_create ()
 void nano::json_handler::wallet_destroy ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		std::string wallet_text (rpc_l->request.get<std::string> ("wallet"));
+		const std::string wallet_text (rpc_l->request.get<std::string> ("wallet"));
 		nano::wallet_id wallet;
 		if (!wallet.decode_hex (wallet_text))
 		{
-			auto existing (rpc_l->node.wallets.items.find (wallet));
+			const auto existing (rpc_l->node.wallets.items.find (wallet));
 			if (existing != rpc_l->node.wallets.items.end ())
 			{
 				rpc_l->node.wallets.destroy (wallet);
-				bool destroyed (rpc_l->node.wallets.items.find (wallet) == rpc_l->node.wallets.items.end ());
+				const bool destroyed (rpc_l->node.wallets.items.find (wallet) == rpc_l->node.wallets.items.end ());
 				rpc_l->response_l.put ("destroyed", destroyed ? "1" : "0");
 			}
 			else
@@ -4599,10 +4599,10 @@ void nano::json_handler::wallet_destroy ()
 
 void nano::json_handler::wallet_export ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
+		const auto transaction (node.wallets.tx_begin_read ());
 		std::string json;
 		wallet->store.serialize_json (transaction, json);
 		response_l.put ("json", json);
@@ -4695,11 +4695,11 @@ void nano::json_handler::wallet_history ()
 
 void nano::json_handler::wallet_key_valid ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
-		auto valid (wallet->store.valid_password (transaction));
+		const auto transaction (node.wallets.tx_begin_read ());
+		const auto valid (wallet->store.valid_password (transaction));
 		response_l.put ("valid", valid ? "1" : "0");
 	}
 	response_errors ();
@@ -4766,7 +4766,7 @@ void nano::json_handler::wallet_ledger ()
 
 void nano::json_handler::wallet_lock ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
 		nano::raw_key empty;
@@ -4852,10 +4852,10 @@ void nano::json_handler::wallet_receivable ()
 
 void nano::json_handler::wallet_representative ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
+		const auto transaction (node.wallets.tx_begin_read ());
 		response_l.put ("representative", wallet->store.representative (transaction).to_account ());
 	}
 	response_errors ();
@@ -4960,10 +4960,10 @@ void nano::json_handler::wallet_republish ()
 
 void nano::json_handler::wallet_seed ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
+		const auto transaction (node.wallets.tx_begin_read ());
 		if (wallet->store.valid_password (transaction))
 		{
 			nano::raw_key seed;
@@ -4980,16 +4980,16 @@ void nano::json_handler::wallet_seed ()
 
 void nano::json_handler::wallet_work_get ()
 {
-	auto wallet (wallet_impl ());
+	const auto wallet (wallet_impl ());
 	if (!ec)
 	{
 		boost::property_tree::ptree works;
-		auto transaction (node.wallets.tx_begin_read ());
+		const auto transaction (node.wallets.tx_begin_read ());
 		for (auto i (wallet->store.begin (transaction)), n (wallet->store.end ()); i != n; ++i)
 		{
 			nano::account const & account (i->first);
 			uint64_t work (0);
-			auto error_work (wallet->store.work_get (transaction, account, work));
+			const auto error_work (wallet->store.work_get (transaction, account, work));
 			(void)error_work;
 			works.put (account.to_account (), nano::to_string_hex (work));
 		}
@@ -5050,19 +5050,19 @@ void nano::json_handler::work_generate ()
 		}
 		if (!ec && response_l.empty ())
 		{
-			auto use_peers (request.get<bool> ("use_peers", false));
+			const auto use_peers (request.get<bool> ("use_peers", false));
 			auto rpc_l (shared_from_this ());
 			auto callback = [rpc_l, hash, work_version, this] (boost::optional<uint64_t> const & work_a) {
 				if (work_a)
 				{
 					boost::property_tree::ptree response_l;
 					response_l.put ("hash", hash.to_string ());
-					uint64_t work (work_a.value ());
+					const uint64_t work (work_a.value ());
 					response_l.put ("work", nano::to_string_hex (work));
 					std::stringstream ostream;
-					auto result_difficulty (rpc_l->node.network_params.work.difficulty (work_version, hash, work));
+					const auto result_difficulty (rpc_l->node.network_params.work.difficulty (work_version, hash, work));
 					response_l.put ("difficulty", nano::to_string_hex (result_difficulty));
-					auto result_multiplier = nano::difficulty::to_multiplier (result_difficulty, node.default_difficulty (work_version));
+					const auto result_multiplier = nano::difficulty::to_multiplier (result_difficulty, node.default_difficulty (work_version));
 					response_l.put ("multiplier", nano::to_string (result_multiplier));
 					boost::property_tree::write_json (ostream, response_l);
 					rpc_l->response (ostream.str ());
@@ -5076,7 +5076,7 @@ void nano::json_handler::work_generate ()
 			{
 				if (node.local_work_generation_enabled ())
 				{
-					auto error = node.distributed_work.make (work_version, hash, {}, difficulty, callback, {});
+					const auto error = node.distributed_work.make (work_version, hash, {}, difficulty, callback, {});
 					if (error)
 					{
 						ec = nano::error_common::failure_work_generation;
@@ -5092,13 +5092,13 @@ void nano::json_handler::work_generate ()
 				if (!account_opt.is_initialized ())
 				{
 					// Fetch account from block if not given
-					auto transaction_l (node.store.tx_begin_read ());
+					const auto transaction_l (node.store.tx_begin_read ());
 					if (node.store.block.exists (transaction_l, hash))
 					{
 						account = node.ledger.account (transaction_l, hash);
 					}
 				}
-				auto secondary_work_peers_l (request.get<bool> ("secondary_work_peers", false));
+				const auto secondary_work_peers_l (request.get<bool> ("secondary_work_peers", false));
 				auto const & peers_l (secondary_work_peers_l ? node.config.secondary_work_peers : node.config.work_peers);
 				if (node.work_generation_enabled (peers_l))
 				{
@@ -5120,7 +5120,7 @@ void nano::json_handler::work_generate ()
 
 void nano::json_handler::work_cancel ()
 {
-	auto hash (hash_impl ());
+	const auto hash (hash_impl ());
 	if (!ec)
 	{
 		node.observers.work_cancel.notify (hash);
@@ -5131,16 +5131,16 @@ void nano::json_handler::work_cancel ()
 
 void nano::json_handler::work_get ()
 {
-	auto wallet (wallet_impl ());
-	auto account (account_impl ());
+	const auto wallet (wallet_impl ());
+	const auto account (account_impl ());
 	if (!ec)
 	{
-		auto transaction (node.wallets.tx_begin_read ());
+		const auto transaction (node.wallets.tx_begin_read ());
 		wallet_account_impl (transaction, wallet, account);
 		if (!ec)
 		{
 			uint64_t work (0);
-			auto error_work (wallet->store.work_get (transaction, account, work));
+			const auto error_work (wallet->store.work_get (transaction, account, work));
 			(void)error_work;
 			response_l.put ("work", nano::to_string_hex (work));
 		}
@@ -5151,12 +5151,12 @@ void nano::json_handler::work_get ()
 void nano::json_handler::work_set ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		auto wallet (rpc_l->wallet_impl ());
-		auto account (rpc_l->account_impl ());
-		auto work (rpc_l->work_optional_impl ());
+		const auto wallet (rpc_l->wallet_impl ());
+		const auto account (rpc_l->account_impl ());
+		const auto work (rpc_l->work_optional_impl ());
 		if (!rpc_l->ec)
 		{
-			auto transaction (rpc_l->node.wallets.tx_begin_write ());
+			const auto transaction (rpc_l->node.wallets.tx_begin_write ());
 			rpc_l->wallet_account_impl (transaction, wallet, account);
 			if (!rpc_l->ec)
 			{
@@ -5170,10 +5170,10 @@ void nano::json_handler::work_set ()
 
 void nano::json_handler::work_validate ()
 {
-	auto hash (hash_impl ());
-	auto work (work_optional_impl ());
+	const auto hash (hash_impl ());
+	const auto work (work_optional_impl ());
 	// Default to work_1 if not specified
-	auto work_version (work_version_optional_impl (nano::work_version::work_1));
+	const auto work_version (work_version_optional_impl (nano::work_version::work_1));
 	auto difficulty (difficulty_optional_impl (work_version));
 	multiplier_optional_impl (work_version, difficulty);
 	if (!ec)
@@ -5186,7 +5186,7 @@ void nano::json_handler::work_validate ()
 		 * * valid_receive: the work is valid for a receive block in an epoch_2 upgraded account
 		 */
 
-		auto result_difficulty (node.network_params.work.difficulty (work_version, hash, work));
+		const auto result_difficulty (node.network_params.work.difficulty (work_version, hash, work));
 		if (request.count ("difficulty"))
 		{
 			response_l.put ("valid", (result_difficulty >= difficulty) ? "1" : "0");
@@ -5194,7 +5194,7 @@ void nano::json_handler::work_validate ()
 		response_l.put ("valid_all", (result_difficulty >= node.default_difficulty (work_version)) ? "1" : "0");
 		response_l.put ("valid_receive", (result_difficulty >= node.network_params.work.threshold (work_version, nano::block_details (nano::epoch::epoch_2, false, true, false))) ? "1" : "0");
 		response_l.put ("difficulty", nano::to_string_hex (result_difficulty));
-		auto result_multiplier = nano::difficulty::to_multiplier (result_difficulty, node.default_difficulty (work_version));
+		const auto result_multiplier = nano::difficulty::to_multiplier (result_difficulty, node.default_difficulty (work_version));
 		response_l.put ("multiplier", nano::to_string (result_multiplier));
 	}
 	response_errors ();
@@ -5203,7 +5203,7 @@ void nano::json_handler::work_validate ()
 void nano::json_handler::work_peer_add ()
 {
 	std::string address_text = request.get<std::string> ("address");
-	std::string port_text = request.get<std::string> ("port");
+	const std::string port_text = request.get<std::string> ("port");
 	uint16_t port;
 	if (!nano::parse_port (port_text, port))
 	{
@@ -5281,7 +5281,7 @@ void nano::json_handler::debug_bootstrap_priority_info ()
 void nano::inprocess_rpc_handler::process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a)
 {
 	// Note that if the rpc action is async, the shared_ptr<json_handler> lifetime will be extended by the action handler
-	auto handler (std::make_shared<nano::json_handler> (node, node_rpc_config, body_a, response_a, [this] () {
+	const auto handler (std::make_shared<nano::json_handler> (node, node_rpc_config, body_a, response_a, [this] () {
 		this->stop_callback ();
 		this->stop ();
 	}));
@@ -5290,8 +5290,8 @@ void nano::inprocess_rpc_handler::process_request (std::string const &, std::str
 
 void nano::inprocess_rpc_handler::process_request_v2 (rpc_handler_request_params const & params_a, std::string const & body_a, std::function<void (std::shared_ptr<std::string> const &)> response_a)
 {
-	std::string body_l = params_a.json_envelope (body_a);
-	auto handler (std::make_shared<nano::ipc::flatbuffers_handler> (node, ipc_server, nullptr, node.config.ipc_config));
+	const std::string body_l = params_a.json_envelope (body_a);
+	const auto handler (std::make_shared<nano::ipc::flatbuffers_handler> (node, ipc_server, nullptr, node.config.ipc_config));
 	handler->process_json (reinterpret_cast<uint8_t const *> (body_l.data ()), body_l.size (), response_a);
 }
 
@@ -5310,7 +5310,7 @@ void construct_json (nano::container_info_component * component, boost::property
 		return;
 	}
 
-	auto composite = static_cast<nano::container_info_composite *> (component);
+	const auto composite = static_cast<nano::container_info_composite *> (component);
 
 	boost::property_tree::ptree current;
 	for (auto & child : composite->get_children ())
@@ -5463,7 +5463,7 @@ bool block_confirmed (nano::node & node, nano::store::transaction & transaction,
 	// This just checks it's not currently undergoing an active transaction
 	else if (!include_only_confirmed)
 	{
-		auto block (node.store.block.get (transaction, hash));
+		const auto block (node.store.block.get (transaction, hash));
 		is_confirmed = (block != nullptr && !node.active.active (*block));
 	}
 

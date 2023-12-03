@@ -30,7 +30,7 @@ nano::bootstrap_client::bootstrap_client (std::shared_ptr<nano::node> const & no
 
 nano::bootstrap_client::~bootstrap_client ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -40,7 +40,7 @@ nano::bootstrap_client::~bootstrap_client ()
 
 double nano::bootstrap_client::sample_block_rate ()
 {
-	auto elapsed = std::max (elapsed_seconds (), nano::bootstrap_limits::bootstrap_minimum_elapsed_seconds_blockrate);
+	const auto elapsed = std::max (elapsed_seconds (), nano::bootstrap_limits::bootstrap_minimum_elapsed_seconds_blockrate);
 	block_rate = static_cast<double> (block_count.load ()) / elapsed;
 	return block_rate;
 }
@@ -161,7 +161,7 @@ void nano::bootstrap_connections::connect_client (nano::tcp_endpoint const & end
 			{
 				this_l->node.logger.try_log (boost::str (boost::format ("Connection established to %1%") % endpoint_a));
 			}
-			auto client (std::make_shared<nano::bootstrap_client> (this_l->node.shared (), std::make_shared<nano::transport::channel_tcp> (*this_l->node.shared (), socket), socket));
+			const auto client (std::make_shared<nano::bootstrap_client> (this_l->node.shared (), std::make_shared<nano::transport::channel_tcp> (*this_l->node.shared (), socket), socket));
 			this_l->pool_connection (client, true, push_front);
 		}
 		else
@@ -195,8 +195,8 @@ unsigned nano::bootstrap_connections::target_connections (std::size_t pulls_rema
 	}
 
 	// Only scale up to bootstrap_connections_max for large pulls.
-	double step_scale = std::min (1.0, std::max (0.0, (double)pulls_remaining / nano::bootstrap_limits::bootstrap_connection_scale_target_blocks));
-	double target = (double)attempts_factor + (double)(node.config.bootstrap_connections_max - attempts_factor) * step_scale;
+	const double step_scale = std::min (1.0, std::max (0.0, (double)pulls_remaining / nano::bootstrap_limits::bootstrap_connection_scale_target_blocks));
+	const double target = (double)attempts_factor + (double)(node.config.bootstrap_connections_max - attempts_factor) * step_scale;
 	return std::max (1U, (unsigned)(target + 0.5f));
 }
 
@@ -312,7 +312,7 @@ void nano::bootstrap_connections::populate_connections (bool repeat)
 	{
 		std::weak_ptr<nano::bootstrap_connections> this_w (shared_from_this ());
 		node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::seconds (1), [this_w] () {
-			if (auto this_l = this_w.lock ())
+			if (const auto this_l = this_w.lock ())
 			{
 				this_l->populate_connections ();
 			}
@@ -355,7 +355,7 @@ void nano::bootstrap_connections::request_pull (nano::unique_lock<nano::mutex> &
 			pulls.pop_front ();
 			attempt_l = node.bootstrap_initiator.attempts.find (pull.bootstrap_id);
 			// Check if lazy pull is obsolete (head was processed or head is 0 for destinations requests)
-			if (auto lazy = std::dynamic_pointer_cast<nano::bootstrap_attempt_lazy> (attempt_l))
+			if (const auto lazy = std::dynamic_pointer_cast<nano::bootstrap_attempt_lazy> (attempt_l))
 			{
 				if (!pull.head.is_zero () && lazy->lazy_processed_or_exists (pull.head))
 				{
@@ -369,7 +369,7 @@ void nano::bootstrap_connections::request_pull (nano::unique_lock<nano::mutex> &
 			// The bulk_pull_client destructor attempt to requeue_pull which can cause a deadlock if this is the last reference
 			// Dispatch request in an external thread in case it needs to be destroyed
 			node.background ([connection_l, attempt_l, pull] () {
-				auto client (std::make_shared<nano::bulk_pull_client> (connection_l, attempt_l, pull));
+				const auto client (std::make_shared<nano::bulk_pull_client> (connection_l, attempt_l, pull));
 				client->request ();
 			});
 		}
@@ -390,10 +390,10 @@ void nano::bootstrap_connections::requeue_pull (nano::pull_info const & pull_a, 
 	{
 		++pull.attempts;
 	}
-	auto attempt_l (node.bootstrap_initiator.attempts.find (pull.bootstrap_id));
+	const auto attempt_l (node.bootstrap_initiator.attempts.find (pull.bootstrap_id));
 	if (attempt_l != nullptr)
 	{
-		auto lazy = std::dynamic_pointer_cast<nano::bootstrap_attempt_lazy> (attempt_l);
+		const auto lazy = std::dynamic_pointer_cast<nano::bootstrap_attempt_lazy> (attempt_l);
 		++attempt_l->requeued_pulls;
 		if (lazy)
 		{
@@ -490,7 +490,7 @@ void nano::bootstrap_connections::stop ()
 	lock.lock ();
 	for (auto const & i : clients)
 	{
-		if (auto client = i.lock ())
+		if (const auto client = i.lock ())
 		{
 			client->socket->close ();
 		}

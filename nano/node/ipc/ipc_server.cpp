@@ -77,7 +77,7 @@ public:
 					session_l->queued_write (buffers, [broadcast_completion_handler_a, big_endian_length] (boost::system::error_code const & ec_a, std::size_t size_a) {
 						if (broadcast_completion_handler_a)
 						{
-							nano::error error_l (ec_a);
+							const nano::error error_l (ec_a);
 							broadcast_completion_handler_a (error_l);
 						}
 					});
@@ -142,7 +142,7 @@ public:
 	{
 		auto this_l (this->shared_from_this ());
 		boost::asio::post (strand, boost::asio::bind_executor (strand, [buffers, callback_a, this_l] () {
-			bool write_in_progress = !this_l->send_queue.empty ();
+			const bool write_in_progress = !this_l->send_queue.empty ();
 			auto queue_size = this_l->send_queue.size ();
 			if (queue_size < this_l->queue_size_max)
 			{
@@ -169,7 +169,7 @@ public:
 	{
 		auto this_l (this->shared_from_this ());
 		boost::asio::post (strand, boost::asio::bind_executor (strand, [buffer_a, callback_a, this_l] () {
-			bool write_in_progress = !this_l->send_queue.empty ();
+			const bool write_in_progress = !this_l->send_queue.empty ();
 			auto queue_size = this_l->send_queue.size ();
 			if (queue_size < this_l->queue_size_max)
 			{
@@ -511,7 +511,7 @@ public:
 
 		std::weak_ptr<nano::node> nano_weak = server.node.shared ();
 		acceptor->async_accept (new_session->get_socket (), [this, new_session, nano_weak] (boost::system::error_code const & ec) {
-			auto node = nano_weak.lock ();
+			const auto node = nano_weak.lock ();
 			if (!node)
 			{
 				return;
@@ -590,7 +590,7 @@ void await_hup_signal (std::shared_ptr<boost::asio::signal_set> const & signals,
 		if (ec != boost::asio::error::operation_aborted)
 		{
 			std::cout << "Reloading access configuration..." << std::endl;
-			auto error (server_a.reload_access_config ());
+			const auto error (server_a.reload_access_config ());
 			if (!error)
 			{
 				std::cout << "Reloaded access configuration successfully" << std::endl;
@@ -607,7 +607,7 @@ nano::ipc::ipc_server::ipc_server (nano::node & node_a, nano::node_rpc_config co
 {
 	try
 	{
-		nano::error access_config_error (reload_access_config ());
+		const nano::error access_config_error (reload_access_config ());
 		if (access_config_error)
 		{
 			std::exit (1);
@@ -655,7 +655,7 @@ nano::ipc::ipc_server::~ipc_server ()
 
 void nano::ipc::ipc_server::stop ()
 {
-	for (auto & transport : transports)
+	for (const auto & transport : transports)
 	{
 		transport->stop ();
 	}

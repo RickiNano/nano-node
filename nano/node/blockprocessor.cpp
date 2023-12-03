@@ -88,7 +88,7 @@ std::optional<nano::process_return> nano::block_processor::add_blocking (std::sh
 	std::optional<nano::process_return> result;
 	try
 	{
-		auto status = future.wait_for (node.config.block_process_timeout);
+		const auto status = future.wait_for (node.config.block_process_timeout);
 		debug_assert (status != std::future_status::deferred);
 		if (status == std::future_status::ready)
 		{
@@ -107,8 +107,8 @@ std::optional<nano::process_return> nano::block_processor::add_blocking (std::sh
 
 void nano::block_processor::rollback_competitor (store::write_transaction const & transaction, nano::block const & block)
 {
-	auto hash = block.hash ();
-	auto successor = node.ledger.successor (transaction, block.qualified_root ());
+	const auto hash = block.hash ();
+	const auto successor = node.ledger.successor (transaction, block.qualified_root ());
 	if (successor != nullptr && successor->hash () != hash)
 	{
 		// Replace our block with the winner and roll back any dependent blocks
@@ -173,7 +173,7 @@ void nano::block_processor::process_blocks ()
 bool nano::block_processor::should_log ()
 {
 	auto result (false);
-	auto now (std::chrono::steady_clock::now ());
+	const auto now (std::chrono::steady_clock::now ());
 	if (next_log < now)
 	{
 		next_log = now + (node.config.logging.timing_logging () ? std::chrono::seconds (2) : std::chrono::seconds (15));
@@ -207,7 +207,7 @@ auto nano::block_processor::process_batch (nano::unique_lock<nano::mutex> & lock
 {
 	std::deque<processed_t> processed;
 	auto scoped_write_guard = write_database_queue.wait (nano::writer::process_batch);
-	auto transaction (node.store.tx_begin_write ({ tables::accounts, tables::blocks, tables::frontiers, tables::pending }));
+	const auto transaction (node.store.tx_begin_write ({ tables::accounts, tables::blocks, tables::frontiers, tables::pending }));
 	nano::timer<std::chrono::milliseconds> timer_l;
 	lock_a.lock ();
 	timer_l.start ();
@@ -261,7 +261,7 @@ auto nano::block_processor::process_batch (nano::unique_lock<nano::mutex> & lock
 nano::process_return nano::block_processor::process_one (store::write_transaction const & transaction_a, std::shared_ptr<nano::block> block, bool const forced_a)
 {
 	nano::process_return result;
-	auto hash (block->hash ());
+	const auto hash (block->hash ());
 	result = node.ledger.process (transaction_a, *block);
 	switch (result.code)
 	{

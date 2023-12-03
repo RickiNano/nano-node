@@ -66,23 +66,23 @@ void nano::ipc::action_handler::on_topic_confirmation (nanoapi::Envelope const &
 {
 	auto confirmationTopic (get_message<nanoapi::TopicConfirmation> (envelope_a));
 	ipc_server.get_broker ()->subscribe (subscriber, std::move (confirmationTopic));
-	nanoapi::EventAckT ack;
+	const nanoapi::EventAckT ack;
 	create_response (ack);
 }
 
 void nano::ipc::action_handler::on_service_register (nanoapi::Envelope const & envelope_a)
 {
 	require_oneof (envelope_a, { nano::ipc::access_permission::api_service_register, nano::ipc::access_permission::service });
-	auto query (get_message<nanoapi::ServiceRegister> (envelope_a));
+	const auto query (get_message<nanoapi::ServiceRegister> (envelope_a));
 	ipc_server.get_broker ()->service_register (query->service_name, this->subscriber);
-	nanoapi::SuccessT success;
+	const nanoapi::SuccessT success;
 	create_response (success);
 }
 
 void nano::ipc::action_handler::on_service_stop (nanoapi::Envelope const & envelope_a)
 {
 	require_oneof (envelope_a, { nano::ipc::access_permission::api_service_stop, nano::ipc::access_permission::service });
-	auto query (get_message<nanoapi::ServiceStop> (envelope_a));
+	const auto query (get_message<nanoapi::ServiceStop> (envelope_a));
 	if (query->service_name == "node")
 	{
 		ipc_server.node.stop ();
@@ -91,7 +91,7 @@ void nano::ipc::action_handler::on_service_stop (nanoapi::Envelope const & envel
 	{
 		ipc_server.get_broker ()->service_stop (query->service_name);
 	}
-	nanoapi::SuccessT success;
+	const nanoapi::SuccessT success;
 	create_response (success);
 }
 
@@ -99,7 +99,7 @@ void nano::ipc::action_handler::on_topic_service_stop (nanoapi::Envelope const &
 {
 	auto topic (get_message<nanoapi::TopicServiceStop> (envelope_a));
 	ipc_server.get_broker ()->subscribe (subscriber, std::move (topic));
-	nanoapi::EventAckT ack;
+	const nanoapi::EventAckT ack;
 	create_response (ack);
 }
 
@@ -107,8 +107,8 @@ void nano::ipc::action_handler::on_account_weight (nanoapi::Envelope const & env
 {
 	require_oneof (envelope_a, { nano::ipc::access_permission::api_account_weight, nano::ipc::access_permission::account_query });
 	bool is_deprecated_format{ false };
-	auto query (get_message<nanoapi::AccountWeight> (envelope_a));
-	auto balance (node.weight (parse_account (query->account, is_deprecated_format)));
+	const auto query (get_message<nanoapi::AccountWeight> (envelope_a));
+	const auto balance (node.weight (parse_account (query->account, is_deprecated_format)));
 
 	nanoapi::AccountWeightResponseT response;
 	response.voting_weight = balance.str ();
@@ -117,7 +117,7 @@ void nano::ipc::action_handler::on_account_weight (nanoapi::Envelope const & env
 
 void nano::ipc::action_handler::on_is_alive (nanoapi::Envelope const & envelope)
 {
-	nanoapi::IsAliveT alive;
+	const nanoapi::IsAliveT alive;
 	create_response (alive);
 }
 

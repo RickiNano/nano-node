@@ -74,7 +74,7 @@ nano::write_guard nano::write_database_queue::wait (nano::writer writer)
 
 	nano::unique_lock<nano::mutex> lk (mutex);
 	// Add writer to the end of the queue if it's not already waiting
-	auto exists = std::find (queue.cbegin (), queue.cend (), writer) != queue.cend ();
+	const auto exists = std::find (queue.cbegin (), queue.cend (), writer) != queue.cend ();
 	if (!exists)
 	{
 		queue.push_back (writer);
@@ -106,7 +106,7 @@ bool nano::write_database_queue::process (nano::writer writer)
 	{
 		nano::lock_guard<nano::mutex> guard (mutex);
 		// Add writer to the end of the queue if it's not already waiting
-		auto exists = std::find (queue.cbegin (), queue.cend (), writer) != queue.cend ();
+		const auto exists = std::find (queue.cbegin (), queue.cend (), writer) != queue.cend ();
 		if (!exists)
 		{
 			queue.push_back (writer);

@@ -16,7 +16,7 @@ nano::transport::inproc::channel::channel (nano::node & node, nano::node & desti
 
 std::size_t nano::transport::inproc::channel::hash_code () const
 {
-	std::hash<::nano::endpoint> hash;
+	const std::hash<::nano::endpoint> hash;
 	return hash (endpoint);
 }
 
@@ -74,7 +74,7 @@ void nano::transport::inproc::channel::send_buffer (nano::shared_const_buffer co
 		}
 
 		// we create a temporary channel for the reply path, in case the receiver of the message wants to reply
-		auto remote_channel = std::make_shared<nano::transport::inproc::channel> (destination, node);
+		const auto remote_channel = std::make_shared<nano::transport::inproc::channel> (destination, node);
 
 		// process message
 		{

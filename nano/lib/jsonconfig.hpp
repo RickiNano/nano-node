@@ -148,7 +148,7 @@ protected:
 	{
 		try
 		{
-			auto val (tree.get<std::string> (key));
+			const auto val (tree.get<std::string> (key));
 			if (!boost::conversion::try_lexical_convert<T> (val, target))
 			{
 				conditionally_set_error<T> (nano::error_config::invalid_value, optional, key);

@@ -20,11 +20,11 @@ void nano::online_reps::observe (nano::account const & rep_a)
 	if (ledger.weight (rep_a) > 0)
 	{
 		nano::lock_guard<nano::mutex> lock{ mutex };
-		auto now = std::chrono::steady_clock::now ();
-		auto new_insert = reps.get<tag_account> ().erase (rep_a) == 0;
+		const auto now = std::chrono::steady_clock::now ();
+		const auto new_insert = reps.get<tag_account> ().erase (rep_a) == 0;
 		reps.insert ({ now, rep_a });
-		auto cutoff = reps.get<tag_time> ().lower_bound (now - std::chrono::seconds (config.network_params.node.weight_period));
-		auto trimmed = reps.get<tag_time> ().begin () != cutoff;
+		const auto cutoff = reps.get<tag_time> ().lower_bound (now - std::chrono::seconds (config.network_params.node.weight_period));
+		const auto trimmed = reps.get<tag_time> ().begin () != cutoff;
 		reps.get<tag_time> ().erase (reps.get<tag_time> ().begin (), cutoff);
 		if (new_insert || trimmed)
 		{
@@ -36,7 +36,7 @@ void nano::online_reps::observe (nano::account const & rep_a)
 void nano::online_reps::sample ()
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	nano::uint128_t online_l = online_m;
+	const nano::uint128_t online_l = online_m;
 	lock.unlock ();
 	nano::uint128_t trend_l;
 	{
@@ -76,7 +76,7 @@ nano::uint128_t nano::online_reps::calculate_trend (store::transaction & transac
 	}
 	nano::uint128_t result;
 	// Pick median value for our target vote weight
-	auto median_idx = items.size () / 2;
+	const auto median_idx = items.size () / 2;
 	nth_element (items.begin (), items.begin () + median_idx, items.end ());
 	result = items[median_idx];
 	return result;
@@ -98,7 +98,7 @@ nano::uint128_t nano::online_reps::delta () const
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
 	// Using a larger container to ensure maximum precision
-	auto weight = static_cast<nano::uint256_t> (std::max ({ online_m, trended_m, config.online_weight_minimum.number () }));
+	const auto weight = static_cast<nano::uint256_t> (std::max ({ online_m, trended_m, config.online_weight_minimum.number () }));
 	return ((weight * online_weight_quorum) / 100).convert_to<nano::uint128_t> ();
 }
 
@@ -125,7 +125,7 @@ std::unique_ptr<nano::container_info_component> nano::collect_container_info (on
 		count = online_reps.reps.size ();
 	}
 
-	auto sizeof_element = sizeof (decltype (online_reps.reps)::value_type);
+	const auto sizeof_element = sizeof (decltype (online_reps.reps)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "reps", count, sizeof_element }));
 	return composite;

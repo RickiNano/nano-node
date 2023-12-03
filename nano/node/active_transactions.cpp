@@ -67,7 +67,7 @@ void nano::active_transactions::stop ()
 
 void nano::active_transactions::block_cemented_callback (std::shared_ptr<nano::block> const & block_a)
 {
-	auto transaction = node.store.tx_begin_read ();
+	const auto transaction = node.store.tx_begin_read ();
 	auto status_type = election_status (transaction, block_a);
 
 	if (!status_type)
@@ -116,12 +116,12 @@ void nano::active_transactions::process_inactive_confirmation (nano::store::read
 
 void nano::active_transactions::process_active_confirmation (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block, nano::election_status_type status_type)
 {
-	auto hash (block->hash ());
+	const auto hash (block->hash ());
 	nano::unique_lock<nano::mutex> election_winners_lk{ election_winner_details_mutex };
-	auto existing = election_winner_details.find (hash);
+	const auto existing = election_winner_details.find (hash);
 	if (existing != election_winner_details.end ())
 	{
-		auto election = existing->second;
+		const auto election = existing->second;
 		election_winner_details.erase (hash);
 		election_winners_lk.unlock ();
 		if (election->confirmed () && election->winner ()->hash () == hash)
@@ -133,7 +133,7 @@ void nano::active_transactions::process_active_confirmation (nano::store::read_t
 
 void nano::active_transactions::handle_confirmation (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block, std::shared_ptr<nano::election> election, nano::election_status_type status_type)
 {
-	nano::block_hash hash = block->hash ();
+	const nano::block_hash hash = block->hash ();
 	recently_cemented.put (election->get_status ());
 
 	nano::account account;
@@ -144,14 +144,14 @@ void nano::active_transactions::handle_confirmation (nano::store::read_transacti
 
 	handle_block_confirmation (transaction, block, hash, account, amount, is_state_send, is_state_epoch, pending_account);
 
-	auto status = election->set_status_type (status_type);
-	auto votes = election->votes_with_weight ();
+	const auto status = election->set_status_type (status_type);
+	const auto votes = election->votes_with_weight ();
 	notify_observers (status, votes, account, amount, is_state_send, is_state_epoch, pending_account);
 }
 
 void nano::active_transactions::handle_block_confirmation (nano::store::read_transaction const & transaction, std::shared_ptr<nano::block> const & block, nano::block_hash const & hash, nano::account & account, nano::uint128_t & amount, bool & is_state_send, bool & is_state_epoch, nano::account & pending_account)
 {
-	auto destination = block->link ().is_zero () ? block->destination () : block->link ().as_account ();
+	const auto destination = block->link ().is_zero () ? block->destination () : block->link ().as_account ();
 	node.receive_confirmed (transaction, hash, destination);
 	node.process_confirmed_data (transaction, block, hash, account, amount, is_state_send, is_state_epoch, pending_account);
 }
@@ -174,17 +174,17 @@ void nano::active_transactions::handle_final_votes_confirmation (std::shared_ptr
 {
 	auto const & account = !block->account ().is_zero () ? block->account () : block->sideband ().account;
 
-	bool is_canary_not_set = !node.ledger.cache.final_votes_confirmation_canary.load ();
-	bool is_canary_account = account == node.network_params.ledger.final_votes_canary_account;
-	bool is_height_above_threshold = block->sideband ().height >= node.network_params.ledger.final_votes_canary_height;
+	const bool is_canary_not_set = !node.ledger.cache.final_votes_confirmation_canary.load ();
+	const bool is_canary_account = account == node.network_params.ledger.final_votes_canary_account;
+	const bool is_height_above_threshold = block->sideband ().height >= node.network_params.ledger.final_votes_canary_height;
 
 	if (is_canary_not_set && is_canary_account && is_height_above_threshold)
 	{
 		node.ledger.cache.final_votes_confirmation_canary.store (true);
 	}
 
-	bool cemented_bootstrap_count_reached = node.ledger.cache.cemented_count >= node.ledger.bootstrap_weight_max_blocks;
-	bool was_active = status == nano::election_status_type::active_confirmed_quorum || status == nano::election_status_type::active_confirmation_height;
+	const bool cemented_bootstrap_count_reached = node.ledger.cache.cemented_count >= node.ledger.bootstrap_weight_max_blocks;
+	const bool was_active = status == nano::election_status_type::active_confirmed_quorum || status == nano::election_status_type::active_confirmation_height;
 
 	// Next-block activations are only done for blocks with previously active elections
 	if (cemented_bootstrap_count_reached && was_active)
@@ -320,7 +320,7 @@ void nano::active_transactions::cleanup_election (nano::unique_lock<nano::mutex>
 	auto blocks_l = election->blocks ();
 	for (auto const & [hash, block] : blocks_l)
 	{
-		auto erased (blocks.erase (hash));
+		const auto erased (blocks.erase (hash));
 		(void)erased;
 		debug_assert (erased == 1);
 	}
@@ -436,8 +436,8 @@ nano::election_insertion_result nano::active_transactions::insert_impl (nano::un
 	nano::election_insertion_result result;
 	if (!stopped)
 	{
-		auto root (block_a->qualified_root ());
-		auto existing (roots.get<tag_root> ().find (root));
+		const auto root (block_a->qualified_root ());
+		const auto existing (roots.get<tag_root> ().find (root));
 		if (existing == roots.get<tag_root> ().end ())
 		{
 			if (!recently_confirmed.exists (root))
@@ -573,7 +573,7 @@ std::shared_ptr<nano::election> nano::active_transactions::election (nano::quali
 {
 	std::shared_ptr<nano::election> result;
 	nano::lock_guard<nano::mutex> lock{ mutex };
-	auto existing = roots.get<tag_root> ().find (root_a);
+	const auto existing = roots.get<tag_root> ().find (root_a);
 	if (existing != roots.get<tag_root> ().end ())
 	{
 		result = existing->election;
@@ -585,10 +585,10 @@ std::shared_ptr<nano::block> nano::active_transactions::winner (nano::block_hash
 {
 	std::shared_ptr<nano::block> result;
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	auto existing = blocks.find (hash_a);
+	const auto existing = blocks.find (hash_a);
 	if (existing != blocks.end ())
 	{
-		auto election = existing->second;
+		const auto election = existing->second;
 		lock.unlock ();
 		result = election->winner ();
 	}
@@ -603,7 +603,7 @@ void nano::active_transactions::erase (nano::block const & block_a)
 void nano::active_transactions::erase (nano::qualified_root const & root_a)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	auto root_it (roots.get<tag_root> ().find (root_a));
+	const auto root_it (roots.get<tag_root> ().find (root_a));
 	if (root_it != roots.get<tag_root> ().end ())
 	{
 		cleanup_election (lock, root_it->election);
@@ -613,7 +613,7 @@ void nano::active_transactions::erase (nano::qualified_root const & root_a)
 void nano::active_transactions::erase_hash (nano::block_hash const & hash_a)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	[[maybe_unused]] auto erased (blocks.erase (hash_a));
+	[[maybe_unused]] const auto erased (blocks.erase (hash_a));
 	debug_assert (erased == 1);
 }
 
@@ -622,7 +622,7 @@ void nano::active_transactions::erase_oldest ()
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	if (!roots.empty ())
 	{
-		auto item = roots.get<tag_sequenced> ().front ();
+		const auto item = roots.get<tag_sequenced> ().front ();
 		cleanup_election (lock, item.election);
 	}
 }
@@ -642,7 +642,7 @@ std::size_t nano::active_transactions::size () const
 bool nano::active_transactions::publish (std::shared_ptr<nano::block> const & block_a)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	auto existing (roots.get<tag_root> ().find (block_a->qualified_root ()));
+	const auto existing (roots.get<tag_root> ().find (block_a->qualified_root ()));
 	auto result (true);
 	if (existing != roots.get<tag_root> ().end ())
 	{
@@ -671,7 +671,7 @@ boost::optional<nano::election_status_type> nano::active_transactions::confirm_b
 	std::shared_ptr<nano::election> election = nullptr;
 	{
 		nano::lock_guard<nano::mutex> guard{ mutex };
-		auto existing = blocks.find (hash);
+		const auto existing = blocks.find (hash);
 		if (existing != blocks.end ())
 		{
 			election = existing->second;

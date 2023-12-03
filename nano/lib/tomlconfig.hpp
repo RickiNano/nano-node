@@ -71,10 +71,10 @@ public:
 	{
 		if (!has_key (key))
 		{
-			auto arr = cpptoml::make_array ();
+			const auto arr = cpptoml::make_array ();
 			tree->insert (key, arr);
 		}
-		auto arr = tree->get_qualified (key)->as_array ();
+		const auto arr = tree->get_qualified (key)->as_array ();
 		arr->push_back (value);
 		return *this;
 	}
@@ -179,7 +179,7 @@ protected:
 		{
 			if (tree->contains_qualified (key))
 			{
-				auto val (tree->get_qualified_as<std::string> (key));
+				const auto val (tree->get_qualified_as<std::string> (key));
 				if (!boost::conversion::try_lexical_convert<T> (*val, target))
 				{
 					conditionally_set_error<T> (nano::error_config::invalid_value, optional, key);

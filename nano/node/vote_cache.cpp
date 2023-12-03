@@ -13,7 +13,7 @@ nano::vote_cache::entry::entry (const nano::block_hash & hash) :
 
 bool nano::vote_cache::entry::vote (const nano::account & representative, const uint64_t & timestamp, const nano::uint128_t & rep_weight, std::size_t max_voters)
 {
-	bool updated = vote_impl (representative, timestamp, rep_weight, max_voters);
+	const bool updated = vote_impl (representative, timestamp, rep_weight, max_voters);
 	if (updated)
 	{
 		last_vote_m = std::chrono::steady_clock::now ();
@@ -23,7 +23,7 @@ bool nano::vote_cache::entry::vote (const nano::account & representative, const 
 
 bool nano::vote_cache::entry::vote_impl (const nano::account & representative, const uint64_t & timestamp, const nano::uint128_t & rep_weight, std::size_t max_voters)
 {
-	auto existing = std::find_if (voters_m.begin (), voters_m.end (), [&representative] (auto const & item) { return item.representative == representative; });
+	const auto existing = std::find_if (voters_m.begin (), voters_m.end (), [&representative] (auto const & item) { return item.representative == representative; });
 	if (existing != voters_m.end ())
 	{
 		// We already have a vote from this rep
@@ -130,7 +130,7 @@ void nano::vote_cache::vote (const nano::block_hash & hash, const std::shared_pt
 	nano::unique_lock<nano::mutex> lock{ mutex };
 
 	auto & cache_by_hash = cache.get<tag_hash> ();
-	if (auto existing = cache_by_hash.find (hash); existing != cache_by_hash.end ())
+	if (const auto existing = cache_by_hash.find (hash); existing != cache_by_hash.end ())
 	{
 		stats.inc (nano::stat::type::vote_cache, nano::stat::detail::update);
 
@@ -172,7 +172,7 @@ std::optional<nano::vote_cache::entry> nano::vote_cache::find (const nano::block
 	nano::lock_guard<nano::mutex> lock{ mutex };
 
 	auto & cache_by_hash = cache.get<tag_hash> ();
-	if (auto existing = cache_by_hash.find (hash); existing != cache_by_hash.end ())
+	if (const auto existing = cache_by_hash.find (hash); existing != cache_by_hash.end ())
 	{
 		return *existing;
 	}
@@ -185,7 +185,7 @@ bool nano::vote_cache::erase (const nano::block_hash & hash)
 
 	bool result = false;
 	auto & cache_by_hash = cache.get<tag_hash> ();
-	if (auto existing = cache_by_hash.find (hash); existing != cache_by_hash.end ())
+	if (const auto existing = cache_by_hash.find (hash); existing != cache_by_hash.end ())
 	{
 		cache_by_hash.erase (existing);
 		result = true;

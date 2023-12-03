@@ -11,7 +11,7 @@ void nano::dump_crash_stacktrace ()
 
 std::string nano::generate_stacktrace ()
 {
-	auto stacktrace = boost::stacktrace::stacktrace ();
+	const auto stacktrace = boost::stacktrace::stacktrace ();
 	std::stringstream ss;
 	ss << stacktrace;
 	return ss.str ();

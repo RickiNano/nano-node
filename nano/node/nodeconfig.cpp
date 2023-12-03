@@ -547,11 +547,11 @@ nano::frontiers_confirmation_mode nano::node_config::deserialize_frontiers_confi
 
 void nano::node_config::deserialize_address (std::string const & entry_a, std::vector<std::pair<std::string, uint16_t>> & container_a) const
 {
-	auto port_position (entry_a.rfind (':'));
+	const auto port_position (entry_a.rfind (':'));
 	bool result = (port_position == -1);
 	if (!result)
 	{
-		auto port_str (entry_a.substr (port_position + 1));
+		const auto port_str (entry_a.substr (port_position + 1));
 		uint16_t port;
 		result |= parse_port (port_str, port);
 		if (!result)
@@ -565,7 +565,7 @@ void nano::node_config::deserialize_address (std::string const & entry_a, std::v
 nano::account nano::node_config::random_representative () const
 {
 	debug_assert (!preconfigured_representatives.empty ());
-	std::size_t index (nano::random_pool::generate_word32 (0, static_cast<CryptoPP::word32> (preconfigured_representatives.size () - 1)));
-	auto result (preconfigured_representatives[index]);
+	const std::size_t index (nano::random_pool::generate_word32 (0, static_cast<CryptoPP::word32> (preconfigured_representatives.size () - 1)));
+	const auto result (preconfigured_representatives[index]);
 	return result;
 }

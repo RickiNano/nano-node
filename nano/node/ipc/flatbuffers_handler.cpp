@@ -71,7 +71,7 @@ std::shared_ptr<flatbuffers::Parser> nano::ipc::flatbuffers_handler::make_flatbu
 		throw nano::error ("Internal IPC error: unable to load schema file");
 	}
 
-	auto parse_success = parser->Parse (schemafile.c_str (), include_directories);
+	const auto parse_success = parser->Parse (schemafile.c_str (), include_directories);
 	if (!parse_success)
 	{
 		std::string parser_error = "Internal IPC error: unable to parse schema file: ";
@@ -98,7 +98,7 @@ std::function<void (std::shared_ptr<std::string> const &)> const & response_hand
 		{
 			process (parser->builder_.GetBufferPointer (), parser->builder_.GetSize (), [parser = parser, response_handler] (std::shared_ptr<flatbuffers::FlatBufferBuilder> const & fbb) {
 				// Convert response to JSON
-				auto json (std::make_shared<std::string> ());
+				const auto json (std::make_shared<std::string> ());
 				if (!flatbuffers::GenerateText (*parser, fbb->GetBufferPointer (), json.get ()))
 				{
 					throw nano::error ("Couldn't serialize response to JSON");
@@ -135,7 +135,7 @@ void nano::ipc::flatbuffers_handler::process (uint8_t const * message_buffer_a, 
 std::function<void (std::shared_ptr<flatbuffers::FlatBufferBuilder> const &)> const & response_handler)
 {
 	auto buffer_l (std::make_shared<flatbuffers::FlatBufferBuilder> ());
-	auto actionhandler (std::make_shared<action_handler> (node, ipc_server, subscriber, buffer_l));
+	const auto actionhandler (std::make_shared<action_handler> (node, ipc_server, subscriber, buffer_l));
 	std::string correlationId = "";
 
 	// Find and call the action handler
@@ -152,16 +152,16 @@ std::function<void (std::shared_ptr<flatbuffers::FlatBufferBuilder> const &)> co
 			}
 		}
 
-		auto incoming = nanoapi::GetEnvelope (message_buffer_a);
+		const auto incoming = nanoapi::GetEnvelope (message_buffer_a);
 		if (incoming == nullptr)
 		{
-			nano::error err ("Invalid message");
+			const nano::error err ("Invalid message");
 			actionhandler->make_error (err.error_code_as_int (), err.get_message ());
 			response_handler (buffer_l);
 			return;
 		}
 
-		auto handler_method = handler_map.find (incoming->message_type ());
+		const auto handler_method = handler_map.find (incoming->message_type ());
 		if (handler_method != handler_map.end ())
 		{
 			if (incoming->correlation_id ())
@@ -172,7 +172,7 @@ std::function<void (std::shared_ptr<flatbuffers::FlatBufferBuilder> const &)> co
 		}
 		else
 		{
-			nano::error err ("Unknown message type");
+			const nano::error err ("Unknown message type");
 			actionhandler->make_error (err.error_code_as_int (), err.get_message ());
 		}
 	}

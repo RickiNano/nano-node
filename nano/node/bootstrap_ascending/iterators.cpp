@@ -26,7 +26,7 @@ void nano::bootstrap_ascending::database_iterator::next (store::transaction & tx
 	{
 		case table_type::account:
 		{
-			auto i = current.number () + 1;
+			const auto i = current.number () + 1;
 			auto item = store.account.begin (tx, i);
 			if (item != store.account.end ())
 			{
@@ -40,7 +40,7 @@ void nano::bootstrap_ascending::database_iterator::next (store::transaction & tx
 		}
 		case table_type::pending:
 		{
-			auto i = current.number () + 1;
+			const auto i = current.number () + 1;
 			auto item = store.pending.begin (tx, nano::pending_key{ i, 0 });
 			if (item != store.pending.end ())
 			{

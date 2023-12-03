@@ -31,7 +31,7 @@ nano::bootstrap_attempt::bootstrap_attempt (std::shared_ptr<nano::node> const & 
 
 nano::bootstrap_attempt::~bootstrap_attempt ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -49,7 +49,7 @@ bool nano::bootstrap_attempt::should_log ()
 {
 	nano::lock_guard<nano::mutex> guard{ next_log_mutex };
 	auto result (false);
-	auto now (std::chrono::steady_clock::now ());
+	const auto now (std::chrono::steady_clock::now ());
 	if (next_log < now)
 	{
 		result = true;
@@ -61,8 +61,8 @@ bool nano::bootstrap_attempt::should_log ()
 bool nano::bootstrap_attempt::still_pulling ()
 {
 	debug_assert (!mutex.try_lock ());
-	auto running (!stopped);
-	auto still_pulling (pulling > 0);
+	const auto running (!stopped);
+	const auto still_pulling (pulling > 0);
 	return running && still_pulling;
 }
 
@@ -91,7 +91,7 @@ void nano::bootstrap_attempt::stop ()
 		stopped = true;
 	}
 	condition.notify_all ();
-	auto node_l = node.lock ();
+	const auto node_l = node.lock ();
 	if (!node_l)
 	{
 		return;
@@ -117,7 +117,7 @@ char const * nano::bootstrap_attempt::mode_text ()
 
 bool nano::bootstrap_attempt::process_block (std::shared_ptr<nano::block> const & block_a, nano::account const & known_account_a, uint64_t pull_blocks_processed, nano::bulk_pull::count_t max_blocks, bool block_expected, unsigned retry_limit)
 {
-	auto node_l = node.lock ();
+	const auto node_l = node.lock ();
 	if (!node_l)
 	{
 		return true;

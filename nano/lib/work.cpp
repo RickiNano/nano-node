@@ -67,10 +67,10 @@ void nano::work_pool::loop (uint64_t thread)
 	blake2b_state hash;
 	blake2b_init (&hash, sizeof (output));
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	auto pow_sleep = pow_rate_limiter;
+	const auto pow_sleep = pow_rate_limiter;
 	while (!done)
 	{
-		auto empty (pending.empty ());
+		const auto empty (pending.empty ());
 		if (thread == 0)
 		{
 			// Only work thread 0 notifies work observers
@@ -79,7 +79,7 @@ void nano::work_pool::loop (uint64_t thread)
 		if (!empty)
 		{
 			auto current_l (pending.front ());
-			int ticket_l (ticket);
+			const int ticket_l (ticket);
 			lock.unlock ();
 			output = 0;
 			boost::optional<uint64_t> opt_work;
@@ -238,7 +238,7 @@ std::unique_ptr<nano::container_info_component> nano::collect_container_info (wo
 		nano::lock_guard<nano::mutex> guard{ work_pool.mutex };
 		count = work_pool.pending.size ();
 	}
-	auto sizeof_element = sizeof (decltype (work_pool.pending)::value_type);
+	const auto sizeof_element = sizeof (decltype (work_pool.pending)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "pending", count, sizeof_element }));
 	composite->add_component (work_pool.work_observers.collect_container_info ("work_observers"));

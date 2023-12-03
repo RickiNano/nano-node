@@ -41,7 +41,7 @@ public:
 		nano::unique_lock<nano::mutex> lock{ mutex };
 		auto count = observers.size ();
 		lock.unlock ();
-		auto sizeof_element = sizeof (typename decltype (observers)::value_type);
+		const auto sizeof_element = sizeof (typename decltype (observers)::value_type);
 		auto composite = std::make_unique<container_info_composite> (name);
 		composite->add_component (std::make_unique<container_info_leaf> (container_info{ "observers", count, sizeof_element }));
 		return composite;

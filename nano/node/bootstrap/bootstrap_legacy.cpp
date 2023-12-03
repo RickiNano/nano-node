@@ -29,7 +29,7 @@ bool nano::bootstrap_attempt_legacy::consume_future (std::future<bool> & future_
 
 void nano::bootstrap_attempt_legacy::stop ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -39,7 +39,7 @@ void nano::bootstrap_attempt_legacy::stop ()
 	lock.unlock ();
 	condition.notify_all ();
 	lock.lock ();
-	if (auto i = frontiers.lock ())
+	if (const auto i = frontiers.lock ())
 	{
 		try
 		{
@@ -49,7 +49,7 @@ void nano::bootstrap_attempt_legacy::stop ()
 		{
 		}
 	}
-	if (auto i = push.lock ())
+	if (const auto i = push.lock ())
 	{
 		try
 		{
@@ -65,7 +65,7 @@ void nano::bootstrap_attempt_legacy::stop ()
 
 void nano::bootstrap_attempt_legacy::request_push (nano::unique_lock<nano::mutex> & lock_a)
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;
@@ -79,7 +79,7 @@ void nano::bootstrap_attempt_legacy::request_push (nano::unique_lock<nano::mutex
 		std::future<bool> future;
 		{
 			auto this_l = std::dynamic_pointer_cast<nano::bootstrap_attempt_legacy> (shared_from_this ());
-			auto client = std::make_shared<nano::bulk_push_client> (connection_l, this_l);
+			const auto client = std::make_shared<nano::bulk_push_client> (connection_l, this_l);
 			client->start ();
 			push = client;
 			future = client->promise.get_future ();
@@ -117,7 +117,7 @@ void nano::bootstrap_attempt_legacy::add_bulk_push_target (nano::block_hash cons
 bool nano::bootstrap_attempt_legacy::request_bulk_push_target (std::pair<nano::block_hash, nano::block_hash> & current_target_a)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
-	auto empty (bulk_push_targets.empty ());
+	const auto empty (bulk_push_targets.empty ());
 	if (!empty)
 	{
 		current_target_a = bulk_push_targets.back ();
@@ -135,7 +135,7 @@ void nano::bootstrap_attempt_legacy::set_start_account (nano::account const & st
 
 bool nano::bootstrap_attempt_legacy::request_frontier (nano::unique_lock<nano::mutex> & lock_a, bool first_attempt)
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return true;
@@ -150,7 +150,7 @@ bool nano::bootstrap_attempt_legacy::request_frontier (nano::unique_lock<nano::m
 		std::future<bool> future;
 		{
 			auto this_l = std::dynamic_pointer_cast<nano::bootstrap_attempt_legacy> (shared_from_this ());
-			auto client = std::make_shared<nano::frontier_req_client> (connection_l, this_l);
+			const auto client = std::make_shared<nano::frontier_req_client> (connection_l, this_l);
 			client->run (start_account, frontiers_age, node->config.bootstrap_frontier_request_count);
 			frontiers = client;
 			future = client->promise.get_future ();
@@ -171,7 +171,7 @@ bool nano::bootstrap_attempt_legacy::request_frontier (nano::unique_lock<nano::m
 			{
 				for (auto i = static_cast<CryptoPP::word32> (frontier_pulls.size () - 1); i > 0; --i)
 				{
-					auto k = nano::random_pool::generate_word32 (0, i);
+					const auto k = nano::random_pool::generate_word32 (0, i);
 					std::swap (frontier_pulls[i], frontier_pulls[k]);
 				}
 			}
@@ -216,7 +216,7 @@ void nano::bootstrap_attempt_legacy::run_start (nano::unique_lock<nano::mutex> &
 
 void nano::bootstrap_attempt_legacy::run ()
 {
-	auto node = this->node.lock ();
+	const auto node = this->node.lock ();
 	if (!node)
 	{
 		return;

@@ -100,7 +100,7 @@ nano::error nano::ipc::access::deserialize_toml (nano::tomlconfig & toml)
 	{
 		auto get_role = [this] (std::shared_ptr<cpptoml::table> const & role_a) {
 			nano::ipc::access_role role;
-			std::string id_l (role_a->get_as<std::string> ("id").value_or (""));
+			const std::string id_l (role_a->get_as<std::string> ("id").value_or (""));
 			role.id = id_l;
 			set_effective_permissions (role, role_a);
 			return role;
@@ -140,7 +140,7 @@ nano::error nano::ipc::access::deserialize_toml (nano::tomlconfig & toml)
 			nano::ipc::access_user user;
 			user.id = user_a->get_as<std::string> ("id").value_or ("");
 			// Check bare flag. The tomlconfig parser stringifies values, so we must retrieve as string.
-			bool is_bare = user_a->get_as<std::string> ("bare").value_or ("false") == "true";
+			const bool is_bare = user_a->get_as<std::string> ("bare").value_or ("false") == "true";
 
 			// Adopt all permissions from the roles. This must be done before setting user permissions, since
 			// the user config may add deny-entries.
@@ -210,7 +210,7 @@ bool nano::ipc::access::has_access (std::string const & credentials_a, nano::ipc
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	bool permitted = false;
-	auto user = users.find (credentials_a);
+	const auto user = users.find (credentials_a);
 	if (user != users.end ())
 	{
 		permitted = user->second.permissions.find (permssion_a) != user->second.permissions.end ();
@@ -226,7 +226,7 @@ bool nano::ipc::access::has_access_to_all (std::string const & credentials_a, st
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	bool permitted = false;
-	auto user = users.find (credentials_a);
+	const auto user = users.find (credentials_a);
 	if (user != users.end ())
 	{
 		for (auto permission : permissions_a)
@@ -245,7 +245,7 @@ bool nano::ipc::access::has_access_to_oneof (std::string const & credentials_a, 
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	bool permitted = false;
-	auto user = users.find (credentials_a);
+	const auto user = users.find (credentials_a);
 	if (user != users.end ())
 	{
 		for (auto permission : permissions_a)
@@ -282,7 +282,7 @@ namespace ipc
 	nano::error read_access_config_toml (std::filesystem::path const & data_path_a, nano::ipc::access & config_a)
 	{
 		nano::error error;
-		auto toml_config_path = nano::get_access_toml_config_path (data_path_a);
+		const auto toml_config_path = nano::get_access_toml_config_path (data_path_a);
 
 		nano::tomlconfig toml;
 		if (std::filesystem::exists (toml_config_path))

@@ -59,10 +59,10 @@ bool nano::parse_address (std::string const & address_text_a, boost::asio::ip::a
 bool nano::parse_address_port (std::string const & string, boost::asio::ip::address & address_a, uint16_t & port_a)
 {
 	auto result (false);
-	auto port_position (string.rfind (':'));
+	const auto port_position (string.rfind (':'));
 	if (port_position != std::string::npos && port_position > 0)
 	{
-		std::string port_string (string.substr (port_position + 1));
+		const std::string port_string (string.substr (port_position + 1));
 		try
 		{
 			uint16_t port;
@@ -70,7 +70,7 @@ bool nano::parse_address_port (std::string const & string, boost::asio::ip::addr
 			if (!result)
 			{
 				boost::system::error_code ec;
-				auto address (boost::asio::ip::make_address_v6 (string.substr (0, port_position), ec));
+				const auto address (boost::asio::ip::make_address_v6 (string.substr (0, port_position), ec));
 				if (!ec)
 				{
 					address_a = address;
@@ -102,7 +102,7 @@ bool nano::parse_endpoint (std::string const & string, nano::endpoint & endpoint
 {
 	boost::asio::ip::address address;
 	uint16_t port;
-	auto result (parse_address_port (string, address, port));
+	const auto result (parse_address_port (string, address, port));
 	if (!result)
 	{
 		endpoint_a = nano::endpoint (address, port);
@@ -124,7 +124,7 @@ bool nano::parse_tcp_endpoint (std::string const & string, nano::tcp_endpoint & 
 {
 	boost::asio::ip::address address;
 	uint16_t port;
-	auto result (parse_address_port (string, address, port));
+	const auto result (parse_address_port (string, address, port));
 	if (!result)
 	{
 		endpoint_a = nano::tcp_endpoint (address, port);

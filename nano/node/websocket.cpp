@@ -31,7 +31,7 @@ nano::websocket::confirmation_options::confirmation_options (boost::property_tre
 	include_sideband_info = options_a.get<bool> ("include_sideband_info", false);
 
 	confirmation_types = 0;
-	auto type_l (options_a.get<std::string> ("confirmation_type", "all"));
+	const auto type_l (options_a.get<std::string> ("confirmation_type", "all"));
 
 	if (boost::iequals (type_l, "active"))
 	{
@@ -66,7 +66,7 @@ nano::websocket::confirmation_options::confirmation_options (boost::property_tre
 			logger_a.always_log ("Websocket: Filtering option \"all_local_accounts\" requires that \"include_block\" is set to true to be effective");
 		}
 	}
-	auto accounts_l (options_a.get_child_optional ("accounts"));
+	const auto accounts_l (options_a.get_child_optional ("accounts"));
 	if (accounts_l)
 	{
 		has_account_filtering_options = true;
@@ -96,7 +96,7 @@ bool nano::websocket::confirmation_options::should_filter (nano::websocket::mess
 {
 	bool should_filter_conf_type_l (true);
 
-	auto type_text_l (message_a.contents.get<std::string> ("message.confirmation_type"));
+	const auto type_text_l (message_a.contents.get<std::string> ("message.confirmation_type"));
 	if (type_text_l == "active_quorum" && confirmation_types & type_active_quorum)
 	{
 		should_filter_conf_type_l = false;
@@ -114,14 +114,14 @@ bool nano::websocket::confirmation_options::should_filter (nano::websocket::mess
 	auto destination_opt_l (message_a.contents.get_optional<std::string> ("message.block.link_as_account"));
 	if (destination_opt_l)
 	{
-		auto source_text_l (message_a.contents.get<std::string> ("message.account"));
+		const auto source_text_l (message_a.contents.get<std::string> ("message.account"));
 		if (all_local_accounts)
 		{
-			auto transaction_l (wallets.tx_begin_read ());
+			const auto transaction_l (wallets.tx_begin_read ());
 			nano::account source_l{};
 			nano::account destination_l{};
-			auto decode_source_ok_l (!source_l.decode_account (source_text_l));
-			auto decode_destination_ok_l (!destination_l.decode_account (destination_opt_l.get ()));
+			const auto decode_source_ok_l (!source_l.decode_account (source_text_l));
+			const auto decode_destination_ok_l (!destination_l.decode_account (destination_opt_l.get ()));
 			(void)decode_source_ok_l;
 			(void)decode_destination_ok_l;
 			debug_assert (decode_source_ok_l && decode_destination_ok_l);
@@ -167,14 +167,14 @@ bool nano::websocket::confirmation_options::update (boost::property_tree::ptree 
 	};
 
 	// Adding accounts as filter exceptions
-	auto accounts_add_l (options_a.get_child_optional ("accounts_add"));
+	const auto accounts_add_l (options_a.get_child_optional ("accounts_add"));
 	if (accounts_add_l)
 	{
 		update_accounts (*accounts_add_l, true);
 	}
 
 	// Removing accounts as filter exceptions
-	auto accounts_del_l (options_a.get_child_optional ("accounts_del"));
+	const auto accounts_del_l (options_a.get_child_optional ("accounts_del"));
 	if (accounts_del_l)
 	{
 		update_accounts (*accounts_del_l, false);
@@ -197,7 +197,7 @@ nano::websocket::vote_options::vote_options (boost::property_tree::ptree const &
 {
 	include_replays = options_a.get<bool> ("include_replays", false);
 	include_indeterminate = options_a.get<bool> ("include_indeterminate", false);
-	auto representatives_l (options_a.get_child_optional ("representatives"));
+	const auto representatives_l (options_a.get_child_optional ("representatives"));
 	if (representatives_l)
 	{
 		for (auto representative_l : *representatives_l)
@@ -223,11 +223,11 @@ nano::websocket::vote_options::vote_options (boost::property_tree::ptree const &
 
 bool nano::websocket::vote_options::should_filter (nano::websocket::message const & message_a) const
 {
-	auto type (message_a.contents.get<std::string> ("message.type"));
+	const auto type (message_a.contents.get<std::string> ("message.type"));
 	bool should_filter_l = (!include_replays && type == "replay") || (!include_indeterminate && type == "indeterminate");
 	if (!should_filter_l && !representatives.empty ())
 	{
-		auto representative_text_l (message_a.contents.get<std::string> ("message.account"));
+		const auto representative_text_l (message_a.contents.get<std::string> ("message.account"));
 		if (representatives.find (representative_text_l) == representatives.end ())
 		{
 			should_filter_l = true;
@@ -297,14 +297,14 @@ void nano::websocket::session::close ()
 void nano::websocket::session::write (nano::websocket::message message_a)
 {
 	nano::unique_lock<nano::mutex> lk (subscriptions_mutex);
-	auto subscription (subscriptions.find (message_a.topic));
+	const auto subscription (subscriptions.find (message_a.topic));
 	if (message_a.topic == nano::websocket::topic::ack || (subscription != subscriptions.end () && !subscription->second->should_filter (message_a)))
 	{
 		lk.unlock ();
 		auto this_l (shared_from_this ());
 		boost::asio::post (ws.get_strand (),
 		[message_a, this_l] () {
-			bool write_in_progress = !this_l->send_queue.empty ();
+			const bool write_in_progress = !this_l->send_queue.empty ();
 			this_l->send_queue.emplace_back (message_a);
 			if (!write_in_progress)
 			{
@@ -316,7 +316,7 @@ void nano::websocket::session::write (nano::websocket::message message_a)
 
 void nano::websocket::session::write_queued_messages ()
 {
-	auto msg (send_queue.front ().to_string ());
+	const auto msg (send_queue.front ().to_string ());
 	auto this_l (shared_from_this ());
 
 	ws.async_write (nano::shared_const_buffer (msg),
@@ -475,11 +475,11 @@ void nano::websocket::session::handle_message (boost::property_tree::ptree const
 	std::string action (message_a.get<std::string> ("action", ""));
 	auto topic_l (to_topic (message_a.get<std::string> ("topic", "")));
 	auto ack_l (message_a.get<bool> ("ack", false));
-	auto id_l (message_a.get<std::string> ("id", ""));
+	const auto id_l (message_a.get<std::string> ("id", ""));
 	auto action_succeeded (false);
 	if (action == "subscribe" && topic_l != nano::websocket::topic::invalid)
 	{
-		auto options_text_l (message_a.get_child_optional ("options"));
+		const auto options_text_l (message_a.get_child_optional ("options"));
 		nano::lock_guard<nano::mutex> lk (subscriptions_mutex);
 		std::unique_ptr<nano::websocket::options> options_l{ nullptr };
 		if (options_text_l && topic_l == nano::websocket::topic::confirmation)
@@ -494,7 +494,7 @@ void nano::websocket::session::handle_message (boost::property_tree::ptree const
 		{
 			options_l = std::make_unique<nano::websocket::options> ();
 		}
-		auto existing (subscriptions.find (topic_l));
+		const auto existing (subscriptions.find (topic_l));
 		if (existing != subscriptions.end ())
 		{
 			existing->second = std::move (options_l);
@@ -511,10 +511,10 @@ void nano::websocket::session::handle_message (boost::property_tree::ptree const
 	else if (action == "update")
 	{
 		nano::lock_guard<nano::mutex> lk (subscriptions_mutex);
-		auto existing (subscriptions.find (topic_l));
+		const auto existing (subscriptions.find (topic_l));
 		if (existing != subscriptions.end ())
 		{
-			auto options_text_l (message_a.get_child_optional ("options"));
+			const auto options_text_l (message_a.get_child_optional ("options"));
 			if (options_text_l.is_initialized () && !existing->second->update (*options_text_l))
 			{
 				action_succeeded = true;
@@ -657,7 +657,7 @@ void nano::websocket::listener::broadcast_confirmation (std::shared_ptr<nano::bl
 				{
 					conf_options = &default_options;
 				}
-				auto include_block (conf_options == nullptr ? true : conf_options->get_include_block ());
+				const auto include_block (conf_options == nullptr ? true : conf_options->get_include_block ());
 
 				if (include_block && !msg_with_block)
 				{
@@ -849,7 +849,7 @@ nano::websocket::message nano::websocket::message_builder::work_generation (nano
 	request_l.put ("version", nano::to_string (version_a));
 	request_l.put ("hash", root_a.to_string ());
 	request_l.put ("difficulty", nano::to_string_hex (difficulty_a));
-	auto request_multiplier_l (nano::difficulty::to_multiplier (difficulty_a, publish_threshold_a));
+	const auto request_multiplier_l (nano::difficulty::to_multiplier (difficulty_a, publish_threshold_a));
 	request_l.put ("multiplier", nano::to_string (request_multiplier_l));
 	work_l.add_child ("request", request_l);
 
@@ -858,9 +858,9 @@ nano::websocket::message nano::websocket::message_builder::work_generation (nano
 		boost::property_tree::ptree result_l;
 		result_l.put ("source", peer_a);
 		result_l.put ("work", nano::to_string_hex (work_a));
-		auto result_difficulty_l (nano::dev::network_params.work.difficulty (version_a, root_a, work_a));
+		const auto result_difficulty_l (nano::dev::network_params.work.difficulty (version_a, root_a, work_a));
 		result_l.put ("difficulty", nano::to_string_hex (result_difficulty_l));
-		auto result_multiplier_l (nano::difficulty::to_multiplier (result_difficulty_l, publish_threshold_a));
+		const auto result_multiplier_l (nano::difficulty::to_multiplier (result_difficulty_l, publish_threshold_a));
 		result_l.put ("multiplier", nano::to_string (result_multiplier_l));
 		work_l.add_child ("result", result_l);
 	}
@@ -942,7 +942,7 @@ nano::websocket::message nano::websocket::message_builder::new_block_arrived (na
 
 	boost::property_tree::ptree block_l;
 	block_a.serialize_json (block_l);
-	auto subtype (nano::state_subtype (block_a.sideband ().details));
+	const auto subtype (nano::state_subtype (block_a.sideband ().details));
 	block_l.put ("subtype", subtype);
 
 	message_l.contents.add_child ("message", block_l);
@@ -989,7 +989,7 @@ nano::websocket_server::websocket_server (nano::websocket::config & config_a, na
 
 		if (server->any_subscriber (nano::websocket::topic::confirmation))
 		{
-			auto block_a = status_a.winner;
+			const auto block_a = status_a.winner;
 			std::string subtype;
 			if (is_state_send_a)
 			{
@@ -1044,7 +1044,7 @@ nano::websocket_server::websocket_server (nano::websocket::config & config_a, na
 		if (server->any_subscriber (nano::websocket::topic::vote))
 		{
 			nano::websocket::message_builder builder;
-			auto msg{ builder.vote_received (vote_a, code_a) };
+			const auto msg{ builder.vote_received (vote_a, code_a) };
 			server->broadcast (msg);
 		}
 	});

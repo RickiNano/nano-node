@@ -40,7 +40,7 @@ void nano::bootstrap_initiator::bootstrap (bool force, std::string id_a, uint32_
 	if (!stopped && find_attempt (nano::bootstrap_mode::legacy) == nullptr)
 	{
 		node.stats.inc (nano::stat::type::bootstrap, frontiers_age_a == std::numeric_limits<uint32_t>::max () ? nano::stat::detail::initiate : nano::stat::detail::initiate_legacy_age, nano::stat::dir::out);
-		auto legacy_attempt (std::make_shared<nano::bootstrap_attempt_legacy> (node.shared (), attempts.incremental++, id_a, frontiers_age_a, start_account_a));
+		const auto legacy_attempt (std::make_shared<nano::bootstrap_attempt_legacy> (node.shared (), attempts.incremental++, id_a, frontiers_age_a, start_account_a));
 		attempts_list.push_back (legacy_attempt);
 		attempts.add (legacy_attempt);
 		lock.unlock ();
@@ -62,7 +62,7 @@ void nano::bootstrap_initiator::bootstrap (nano::endpoint const & endpoint_a, bo
 		stop_attempts ();
 		node.stats.inc (nano::stat::type::bootstrap, nano::stat::detail::initiate, nano::stat::dir::out);
 		nano::lock_guard<nano::mutex> lock{ mutex };
-		auto legacy_attempt (std::make_shared<nano::bootstrap_attempt_legacy> (node.shared (), attempts.incremental++, id_a, std::numeric_limits<uint32_t>::max (), 0));
+		const auto legacy_attempt (std::make_shared<nano::bootstrap_attempt_legacy> (node.shared (), attempts.incremental++, id_a, std::numeric_limits<uint32_t>::max (), 0));
 		attempts_list.push_back (legacy_attempt);
 		attempts.add (legacy_attempt);
 		if (!node.network.excluded_peers.check (nano::transport::map_endpoint_to_tcp (endpoint_a)))
@@ -147,7 +147,7 @@ void nano::bootstrap_initiator::run_bootstrap ()
 
 void nano::bootstrap_initiator::lazy_requeue (nano::block_hash const & hash_a, nano::block_hash const & previous_a)
 {
-	auto lazy_attempt (current_lazy_attempt ());
+	const auto lazy_attempt (current_lazy_attempt ());
 	if (lazy_attempt != nullptr)
 	{
 		lazy_attempt->lazy_requeue (hash_a, previous_a);
@@ -169,7 +169,7 @@ bool nano::bootstrap_initiator::in_progress ()
 void nano::bootstrap_initiator::block_processed (store::transaction const & tx, nano::process_return const & result, nano::block const & block)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
-	for (auto & i : attempts_list)
+	for (const auto & i : attempts_list)
 	{
 		i->block_processed (tx, result, block);
 	}
@@ -190,10 +190,10 @@ std::shared_ptr<nano::bootstrap_attempt> nano::bootstrap_initiator::find_attempt
 void nano::bootstrap_initiator::remove_attempt (std::shared_ptr<nano::bootstrap_attempt> attempt_a)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	auto attempt (std::find (attempts_list.begin (), attempts_list.end (), attempt_a));
+	const auto attempt (std::find (attempts_list.begin (), attempts_list.end (), attempt_a));
 	if (attempt != attempts_list.end ())
 	{
-		auto attempt_ptr (*attempt);
+		const auto attempt_ptr (*attempt);
 		attempts.remove (attempt_ptr->incremental_id);
 		attempts_list.erase (attempt);
 		debug_assert (attempts.size () == attempts_list.size ());
@@ -221,7 +221,7 @@ std::shared_ptr<nano::bootstrap_attempt> nano::bootstrap_initiator::new_attempt 
 
 bool nano::bootstrap_initiator::has_new_attempts ()
 {
-	for (auto & i : attempts_list)
+	for (const auto & i : attempts_list)
 	{
 		if (!i->started)
 		{
@@ -256,7 +256,7 @@ void nano::bootstrap_initiator::stop_attempts ()
 	copy_attempts.swap (attempts_list);
 	attempts.clear ();
 	lock.unlock ();
-	for (auto & i : copy_attempts)
+	for (const auto & i : copy_attempts)
 	{
 		i->stop ();
 	}
@@ -302,8 +302,8 @@ std::unique_ptr<nano::container_info_component> nano::collect_container_info (bo
 		cache_count = bootstrap_initiator.cache.cache.size ();
 	}
 
-	auto sizeof_element = sizeof (decltype (bootstrap_initiator.observers)::value_type);
-	auto sizeof_cache_element = sizeof (decltype (bootstrap_initiator.cache.cache)::value_type);
+	const auto sizeof_element = sizeof (decltype (bootstrap_initiator.observers)::value_type);
+	const auto sizeof_cache_element = sizeof (decltype (bootstrap_initiator.cache.cache)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "observers", count, sizeof_element }));
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "pulls_cache", cache_count, sizeof_cache_element }));
@@ -321,12 +321,12 @@ void nano::pulls_cache::add (nano::pull_info const & pull_a)
 			cache.erase (cache.begin ());
 		}
 		debug_assert (cache.size () <= cache_size_max);
-		nano::uint512_union head_512 (pull_a.account_or_head, pull_a.head_original);
-		auto existing (cache.get<account_head_tag> ().find (head_512));
+		const nano::uint512_union head_512 (pull_a.account_or_head, pull_a.head_original);
+		const auto existing (cache.get<account_head_tag> ().find (head_512));
 		if (existing == cache.get<account_head_tag> ().end ())
 		{
 			// Insert new pull
-			auto inserted (cache.emplace (nano::cached_pulls{ std::chrono::steady_clock::now (), head_512, pull_a.head }));
+			const auto inserted (cache.emplace (nano::cached_pulls{ std::chrono::steady_clock::now (), head_512, pull_a.head }));
 			(void)inserted;
 			debug_assert (inserted.second);
 		}
@@ -344,8 +344,8 @@ void nano::pulls_cache::add (nano::pull_info const & pull_a)
 void nano::pulls_cache::update_pull (nano::pull_info & pull_a)
 {
 	nano::lock_guard<nano::mutex> guard{ pulls_cache_mutex };
-	nano::uint512_union head_512 (pull_a.account_or_head, pull_a.head_original);
-	auto existing (cache.get<account_head_tag> ().find (head_512));
+	const nano::uint512_union head_512 (pull_a.account_or_head, pull_a.head_original);
+	const auto existing (cache.get<account_head_tag> ().find (head_512));
 	if (existing != cache.get<account_head_tag> ().end ())
 	{
 		pull_a.head = existing->new_head;
@@ -355,7 +355,7 @@ void nano::pulls_cache::update_pull (nano::pull_info & pull_a)
 void nano::pulls_cache::remove (nano::pull_info const & pull_a)
 {
 	nano::lock_guard<nano::mutex> guard{ pulls_cache_mutex };
-	nano::uint512_union head_512 (pull_a.account_or_head, pull_a.head_original);
+	const nano::uint512_union head_512 (pull_a.account_or_head, pull_a.head_original);
 	cache.get<account_head_tag> ().erase (head_512);
 }
 
@@ -380,7 +380,7 @@ void nano::bootstrap_attempts::clear ()
 std::shared_ptr<nano::bootstrap_attempt> nano::bootstrap_attempts::find (uint64_t incremental_id_a)
 {
 	nano::lock_guard<nano::mutex> lock{ bootstrap_attempts_mutex };
-	auto find_attempt (attempts.find (incremental_id_a));
+	const auto find_attempt (attempts.find (incremental_id_a));
 	if (find_attempt != attempts.end ())
 	{
 		return find_attempt->second;

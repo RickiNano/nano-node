@@ -36,7 +36,7 @@ nano::error & nano::jsonconfig::read (std::filesystem::path const & path_a)
 		}
 		catch (std::runtime_error const & ex)
 		{
-			auto pos (stream.tellg ());
+			const auto pos (stream.tellg ());
 			if (pos != std::streampos (0))
 			{
 				*error = ex;
@@ -82,15 +82,15 @@ void nano::jsonconfig::open_or_create (std::fstream & stream_a, std::string cons
 /** Takes a filepath, appends '_backup_<timestamp>' to the end (but before any extension) and saves that file in the same directory */
 void nano::jsonconfig::create_backup_file (std::filesystem::path const & filepath_a)
 {
-	auto extension = filepath_a.extension ();
-	auto filename_without_extension = filepath_a.filename ().replace_extension ("");
+	const auto extension = filepath_a.extension ();
+	const auto filename_without_extension = filepath_a.filename ().replace_extension ("");
 	auto orig_filepath = filepath_a;
-	auto & backup_path = orig_filepath.remove_filename ();
+	const auto & backup_path = orig_filepath.remove_filename ();
 	auto backup_filename = filename_without_extension;
 	backup_filename += "_backup_";
 	backup_filename += std::to_string (std::chrono::system_clock::now ().time_since_epoch ().count ());
 	backup_filename += extension;
-	auto backup_filepath = backup_path / backup_filename;
+	const auto backup_filepath = backup_path / backup_filename;
 
 	std::filesystem::copy_file (filepath_a, backup_filepath);
 }
@@ -110,7 +110,7 @@ bool nano::jsonconfig::empty () const
 boost::optional<nano::jsonconfig> nano::jsonconfig::get_optional_child (std::string const & key_a)
 {
 	boost::optional<jsonconfig> child_config;
-	auto child = tree.get_child_optional (key_a);
+	const auto child = tree.get_child_optional (key_a);
 	if (child)
 	{
 		return jsonconfig (child.get (), error);
@@ -120,7 +120,7 @@ boost::optional<nano::jsonconfig> nano::jsonconfig::get_optional_child (std::str
 
 nano::jsonconfig nano::jsonconfig::get_required_child (std::string const & key_a)
 {
-	auto child = tree.get_child_optional (key_a);
+	const auto child = tree.get_child_optional (key_a);
 	if (!child)
 	{
 		*error = nano::error_config::missing_value;
@@ -161,7 +161,7 @@ nano::jsonconfig & nano::jsonconfig::get_config (bool optional, std::string key,
 	int64_t tmp;
 	try
 	{
-		auto val (tree.get<std::string> (key));
+		const auto val (tree.get<std::string> (key));
 		if (!boost::conversion::try_lexical_convert<int64_t> (val, tmp) || tmp < 0 || tmp > 255)
 		{
 			conditionally_set_error<uint8_t> (nano::error_config::invalid_value, optional, key);
@@ -207,7 +207,7 @@ nano::jsonconfig & nano::jsonconfig::get_config (bool optional, std::string key,
 	};
 	try
 	{
-		auto val (tree.get<std::string> (key));
+		const auto val (tree.get<std::string> (key));
 		bool_conv (val);
 	}
 	catch (boost::property_tree::ptree_bad_path const &)
@@ -232,7 +232,7 @@ nano::jsonconfig & nano::jsonconfig::get_config (bool optional, std::string key,
 {
 	try
 	{
-		auto address_l (tree.get<std::string> (key));
+		const auto address_l (tree.get<std::string> (key));
 		boost::system::error_code bec;
 		target = boost::asio::ip::make_address_v6 (address_l, bec);
 		if (bec)

@@ -60,7 +60,7 @@ bool nano::transport::is_ipv4_or_v4_mapped_address (boost::asio::ip::address con
 bool nano::transport::reserved_address (nano::endpoint const & endpoint_a, bool allow_local_peers)
 {
 	debug_assert (endpoint_a.address ().is_v6 ());
-	auto bytes (endpoint_a.address ().to_v6 ());
+	const auto bytes (endpoint_a.address ().to_v6 ());
 	auto result (false);
 	static auto const rfc1700_min (mapped_from_v4_bytes (0x00000000ul));
 	static auto const rfc1700_max (mapped_from_v4_bytes (0x00fffffful));

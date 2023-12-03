@@ -10,7 +10,7 @@ uint64_t nano::peer_exclusion::add (nano::tcp_endpoint const & endpoint)
 	uint64_t result = 0;
 	nano::lock_guard<nano::mutex> guard{ mutex };
 
-	if (auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing == peers.get<tag_endpoint> ().end ())
+	if (const auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing == peers.get<tag_endpoint> ().end ())
 	{
 		// Clean old excluded peers
 		while (peers.size () > 1 && peers.size () >= max_size)
@@ -20,7 +20,7 @@ uint64_t nano::peer_exclusion::add (nano::tcp_endpoint const & endpoint)
 		debug_assert (peers.size () <= max_size);
 
 		// Insert new endpoint
-		auto inserted = peers.insert (peer_exclusion::item{ std::chrono::steady_clock::steady_clock::now () + exclude_time_hours, endpoint.address (), 1 });
+		const auto inserted = peers.insert (peer_exclusion::item{ std::chrono::steady_clock::steady_clock::now () + exclude_time_hours, endpoint.address (), 1 });
 		(void)inserted;
 		debug_assert (inserted.second);
 		result = 1;
@@ -48,7 +48,7 @@ uint64_t nano::peer_exclusion::score (const nano::tcp_endpoint & endpoint) const
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 
-	if (auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing != peers.get<tag_endpoint> ().end ())
+	if (const auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing != peers.get<tag_endpoint> ().end ())
 	{
 		return existing->score;
 	}
@@ -59,7 +59,7 @@ std::chrono::steady_clock::time_point nano::peer_exclusion::until (const nano::t
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 
-	if (auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing != peers.get<tag_endpoint> ().end ())
+	if (const auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing != peers.get<tag_endpoint> ().end ())
 	{
 		return existing->exclude_until;
 	}
@@ -70,7 +70,7 @@ bool nano::peer_exclusion::check (nano::tcp_endpoint const & endpoint) const
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 
-	if (auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing != peers.get<tag_endpoint> ().end ())
+	if (const auto existing = peers.get<tag_endpoint> ().find (endpoint.address ()); existing != peers.get<tag_endpoint> ().end ())
 	{
 		if (existing->score >= score_limit && existing->exclude_until > std::chrono::steady_clock::now ())
 		{

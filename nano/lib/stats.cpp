@@ -83,7 +83,7 @@ public:
 
 	void write_header (std::string const & header, std::chrono::system_clock::time_point & walltime) override
 	{
-		std::time_t now = std::chrono::system_clock::to_time_t (walltime);
+		const std::time_t now = std::chrono::system_clock::to_time_t (walltime);
 		tm tm = *localtime (&now);
 		tree.put ("type", header);
 		tree.put ("created", tm_to_string (tm));
@@ -160,8 +160,8 @@ public:
 
 	void write_header (std::string const & header, std::chrono::system_clock::time_point & walltime) override
 	{
-		std::time_t now = std::chrono::system_clock::to_time_t (walltime);
-		tm tm = *localtime (&now);
+		const std::time_t now = std::chrono::system_clock::to_time_t (walltime);
+		const tm tm = *localtime (&now);
 		log << header << "," << boost::format ("%04d.%02d.%02d %02d:%02d:%02d") % (1900 + tm.tm_year) % (tm.tm_mon + 1) % tm.tm_mday % tm.tm_hour % tm.tm_min % tm.tm_sec << std::endl;
 	}
 
@@ -194,12 +194,12 @@ nano::stat_histogram::stat_histogram (std::initializer_list<uint64_t> intervals_
 	else
 	{
 		debug_assert (intervals_a.size () == 2);
-		uint64_t min_inclusive_l = *intervals_a.begin ();
-		uint64_t max_exclusive_l = *std::next (intervals_a.begin ());
+		const uint64_t min_inclusive_l = *intervals_a.begin ();
+		const uint64_t max_exclusive_l = *std::next (intervals_a.begin ());
 
-		auto domain_l = (max_exclusive_l - min_inclusive_l);
-		auto bin_size_l = (domain_l + bin_count_a - 1) / bin_count_a;
-		auto last_bin_size_l = (domain_l % bin_size_l);
+		const auto domain_l = (max_exclusive_l - min_inclusive_l);
+		const auto bin_size_l = (domain_l + bin_count_a - 1) / bin_count_a;
+		const auto last_bin_size_l = (domain_l % bin_size_l);
 		auto next_start_l = min_inclusive_l;
 
 		for (size_t i = 0; i < bin_count_a; i++, next_start_l += bin_size_l)
@@ -275,7 +275,7 @@ std::shared_ptr<nano::stat_entry> nano::stats::get_entry (uint32_t key, size_t i
 std::shared_ptr<nano::stat_entry> nano::stats::get_entry_impl (uint32_t key, size_t interval, size_t capacity)
 {
 	std::shared_ptr<nano::stat_entry> res;
-	auto entry = entries.find (key);
+	const auto entry = entries.find (key);
 	if (entry == entries.end ())
 	{
 		res = entries.emplace (key, std::make_shared<nano::stat_entry> (capacity, interval)).first->second;
@@ -313,12 +313,12 @@ void nano::stats::log_counters_impl (stat_log_sink & sink)
 		sink.write_header ("counters", walltime);
 	}
 
-	for (auto & it : entries)
+	for (const auto & it : entries)
 	{
 		std::time_t time = std::chrono::system_clock::to_time_t (it.second->counter.get_timestamp ());
 		tm local_tm = *localtime (&time);
 
-		auto key = it.first;
+		const auto key = it.first;
 		std::string type = type_to_string (key);
 		std::string detail = detail_to_string (key);
 		std::string dir = dir_to_string (key);
@@ -348,9 +348,9 @@ void nano::stats::log_samples_impl (stat_log_sink & sink)
 		sink.write_header ("samples", walltime);
 	}
 
-	for (auto & it : entries)
+	for (const auto & it : entries)
 	{
-		auto key = it.first;
+		const auto key = it.first;
 		std::string type = type_to_string (key);
 		std::string detail = detail_to_string (key);
 		std::string dir = dir_to_string (key);
@@ -368,20 +368,20 @@ void nano::stats::log_samples_impl (stat_log_sink & sink)
 
 void nano::stats::define_histogram (stat::type type, stat::detail detail, stat::dir dir, std::initializer_list<uint64_t> intervals_a, size_t bin_count_a /*=0*/)
 {
-	auto entry (get_entry (key_of (type, detail, dir)));
+	const auto entry (get_entry (key_of (type, detail, dir)));
 	entry->histogram = std::make_unique<nano::stat_histogram> (intervals_a, bin_count_a);
 }
 
 void nano::stats::update_histogram (stat::type type, stat::detail detail, stat::dir dir, uint64_t index_a, uint64_t addend_a)
 {
-	auto entry (get_entry (key_of (type, detail, dir)));
+	const auto entry (get_entry (key_of (type, detail, dir)));
 	debug_assert (entry->histogram != nullptr);
 	entry->histogram->add (index_a, addend_a);
 }
 
 nano::stat_histogram * nano::stats::get_histogram (stat::type type, stat::detail detail, stat::dir dir)
 {
-	auto entry (get_entry (key_of (type, detail, dir)));
+	const auto entry (get_entry (key_of (type, detail, dir)));
 	debug_assert (entry->histogram != nullptr);
 	return entry->histogram.get ();
 }
@@ -394,7 +394,7 @@ void nano::stats::update (uint32_t key_a, uint64_t value)
 	nano::unique_lock<nano::mutex> lock{ stat_mutex };
 	if (!stopped)
 	{
-		auto entry (get_entry_impl (key_a, config.interval, config.capacity));
+		const auto entry (get_entry_impl (key_a, config.interval, config.capacity));
 		auto has_interval_counter = [&] () {
 			return config.log_interval_counters > 0;
 		};
@@ -403,15 +403,15 @@ void nano::stats::update (uint32_t key_a, uint64_t value)
 		};
 
 		// Counters
-		auto old (entry->counter.get_value ());
+		const auto old (entry->counter.get_value ());
 		entry->counter.add (value, has_sampling ()); // Only update timestamp when sampling is enabled as this has a performance impact
 		entry->count_observers.notify (old, entry->counter.get_value ());
 		if (has_interval_counter () || has_sampling ())
 		{
-			auto now = std::chrono::steady_clock::now (); // Only sample clock if necessary as this impacts node performance due to frequent usage
+			const auto now = std::chrono::steady_clock::now (); // Only sample clock if necessary as this impacts node performance due to frequent usage
 			if (has_interval_counter ())
 			{
-				std::chrono::duration<double, std::milli> duration = now - log_last_count_writeout;
+				const std::chrono::duration<double, std::milli> duration = now - log_last_count_writeout;
 				if (duration.count () > config.log_interval_counters)
 				{
 					log_counters_impl (log_count);
@@ -456,7 +456,7 @@ void nano::stats::update (uint32_t key_a, uint64_t value)
 std::chrono::seconds nano::stats::last_reset ()
 {
 	nano::unique_lock<nano::mutex> lock{ stat_mutex };
-	auto now (std::chrono::steady_clock::now ());
+	const auto now (std::chrono::steady_clock::now ());
 	return std::chrono::duration_cast<std::chrono::seconds> (now - timestamp);
 }
 
@@ -468,7 +468,7 @@ void nano::stats::stop ()
 
 std::string nano::stats::to_string (std::string type)
 {
-	auto sink = log_sink_json ();
+	const auto sink = log_sink_json ();
 	if (type == "counters")
 	{
 		log_counters (*sink);
@@ -494,19 +494,19 @@ void nano::stats::clear ()
 
 std::string nano::stats::type_to_string (uint32_t key)
 {
-	auto type = static_cast<stat::type> (key >> 16 & 0x000000ff);
+	const auto type = static_cast<stat::type> (key >> 16 & 0x000000ff);
 	return std::string{ nano::to_string (type) };
 }
 
 std::string nano::stats::detail_to_string (uint32_t key)
 {
-	auto detail = static_cast<stat::detail> (key >> 8 & 0x000000ff);
+	const auto detail = static_cast<stat::detail> (key >> 8 & 0x000000ff);
 	return std::string{ nano::to_string (detail) };
 }
 
 std::string nano::stats::dir_to_string (uint32_t key)
 {
-	auto dir = static_cast<stat::dir> (key & 0x000000ff);
+	const auto dir = static_cast<stat::dir> (key & 0x000000ff);
 	return std::string{ nano::to_string (dir) };
 }
 

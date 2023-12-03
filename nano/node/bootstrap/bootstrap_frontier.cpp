@@ -15,7 +15,7 @@ constexpr std::size_t nano::frontier_req_client::size_frontier;
 
 void nano::frontier_req_client::run (nano::account const & start_account_a, uint32_t const frontiers_age_a, uint32_t const count_a)
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -31,7 +31,7 @@ void nano::frontier_req_client::run (nano::account const & start_account_a, uint
 	auto this_l (shared_from_this ());
 	connection->channel->send (
 	request, [this_l] (boost::system::error_code const & ec, std::size_t size_a) {
-		auto node = this_l->connection->node.lock ();
+		const auto node = this_l->connection->node.lock ();
 		if (!node)
 		{
 			return;
@@ -63,7 +63,7 @@ void nano::frontier_req_client::receive_frontier ()
 {
 	auto this_l (shared_from_this ());
 	connection->socket->async_read (connection->receive_buffer, nano::frontier_req_client::size_frontier, [this_l] (boost::system::error_code const & ec, std::size_t size_a) {
-		auto node = this_l->connection->node.lock ();
+		const auto node = this_l->connection->node.lock ();
 		if (!node)
 		{
 			return;
@@ -107,7 +107,7 @@ void nano::frontier_req_client::unsynced (nano::block_hash const & head, nano::b
 
 void nano::frontier_req_client::received_frontier (boost::system::error_code const & ec, std::size_t size_a)
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -117,12 +117,12 @@ void nano::frontier_req_client::received_frontier (boost::system::error_code con
 		debug_assert (size_a == nano::frontier_req_client::size_frontier);
 		nano::account account;
 		nano::bufferstream account_stream (connection->receive_buffer->data (), sizeof (account));
-		auto error1 (nano::try_read (account_stream, account));
+		const auto error1 (nano::try_read (account_stream, account));
 		(void)error1;
 		debug_assert (!error1);
 		nano::block_hash latest;
 		nano::bufferstream latest_stream (connection->receive_buffer->data () + sizeof (account), sizeof (latest));
-		auto error2 (nano::try_read (latest_stream, latest));
+		const auto error2 (nano::try_read (latest_stream, latest));
 		(void)error2;
 		debug_assert (!error2);
 		if (count == 0)
@@ -130,11 +130,11 @@ void nano::frontier_req_client::received_frontier (boost::system::error_code con
 			start_time = std::chrono::steady_clock::now ();
 		}
 		++count;
-		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>> (std::chrono::steady_clock::now () - start_time);
+		const std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>> (std::chrono::steady_clock::now () - start_time);
 
-		double elapsed_sec = std::max (time_span.count (), nano::bootstrap_limits::bootstrap_minimum_elapsed_seconds_blockrate);
-		double blocks_per_sec = static_cast<double> (count) / elapsed_sec;
-		double age_factor = (frontiers_age == std::numeric_limits<decltype (frontiers_age)>::max ()) ? 1.0 : 1.5; // Allow slower frontiers receive for requests with age
+		const double elapsed_sec = std::max (time_span.count (), nano::bootstrap_limits::bootstrap_minimum_elapsed_seconds_blockrate);
+		const double blocks_per_sec = static_cast<double> (count) / elapsed_sec;
+		const double age_factor = (frontiers_age == std::numeric_limits<decltype (frontiers_age)>::max ()) ? 1.0 : 1.5; // Allow slower frontiers receive for requests with age
 		if (elapsed_sec > nano::bootstrap_limits::bootstrap_connection_warmup_time_sec && blocks_per_sec * age_factor < nano::bootstrap_limits::bootstrap_minimum_frontier_blocks_per_sec)
 		{
 			node->logger.try_log (boost::str (boost::format ("Aborting frontier req because it was too slow: %1% frontiers per second, last %2%") % blocks_per_sec % account.to_account ()));
@@ -234,7 +234,7 @@ void nano::frontier_req_client::received_frontier (boost::system::error_code con
 
 void nano::frontier_req_client::next ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -242,8 +242,8 @@ void nano::frontier_req_client::next ()
 	// Filling accounts deque to prevent often read transactions
 	if (accounts.empty ())
 	{
-		std::size_t max_size (128);
-		auto transaction (node->store.tx_begin_read ());
+		const std::size_t max_size (128);
+		const auto transaction (node->store.tx_begin_read ());
 		for (auto i (node->store.account.begin (transaction, current.number () + 1)), n (node->store.account.end ()); i != n && accounts.size () != max_size; ++i)
 		{
 			nano::account_info const & info (i->second);
@@ -276,7 +276,7 @@ nano::frontier_req_server::frontier_req_server (std::shared_ptr<nano::transport:
 
 void nano::frontier_req_server::send_next ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -309,7 +309,7 @@ void nano::frontier_req_server::send_next ()
 
 void nano::frontier_req_server::send_finished ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -317,7 +317,7 @@ void nano::frontier_req_server::send_finished ()
 	std::vector<uint8_t> send_buffer;
 	{
 		nano::vectorstream stream (send_buffer);
-		nano::uint256_union zero (0);
+		const nano::uint256_union zero (0);
 		write (stream, zero.bytes);
 		write (stream, zero.bytes);
 	}
@@ -333,7 +333,7 @@ void nano::frontier_req_server::send_finished ()
 
 void nano::frontier_req_server::no_block_sent (boost::system::error_code const & ec, std::size_t size_a)
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -353,7 +353,7 @@ void nano::frontier_req_server::no_block_sent (boost::system::error_code const &
 
 void nano::frontier_req_server::sent_action (boost::system::error_code const & ec, std::size_t size_a)
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -377,7 +377,7 @@ void nano::frontier_req_server::sent_action (boost::system::error_code const & e
 
 void nano::frontier_req_server::next ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -385,10 +385,10 @@ void nano::frontier_req_server::next ()
 	// Filling accounts deque to prevent often read transactions
 	if (accounts.empty ())
 	{
-		auto now (nano::seconds_since_epoch ());
-		bool disable_age_filter (request->age == std::numeric_limits<decltype (request->age)>::max ());
-		std::size_t max_size (128);
-		auto transaction (node->store.tx_begin_read ());
+		const auto now (nano::seconds_since_epoch ());
+		const bool disable_age_filter (request->age == std::numeric_limits<decltype (request->age)>::max ());
+		const std::size_t max_size (128);
+		const auto transaction (node->store.tx_begin_read ());
 		if (!send_confirmed ())
 		{
 			for (auto i (node->store.account.begin (transaction, current.number () + 1)), n (node->store.account.end ()); i != n && accounts.size () != max_size; ++i)

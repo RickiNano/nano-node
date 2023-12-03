@@ -97,7 +97,7 @@ void nano::telemetry::process (const nano::telemetry_ack & telemetry, const std:
 
 	const auto endpoint = channel->get_endpoint ();
 
-	if (auto it = telemetries.get<tag_endpoint> ().find (endpoint); it != telemetries.get<tag_endpoint> ().end ())
+	if (const auto it = telemetries.get<tag_endpoint> ().find (endpoint); it != telemetries.get<tag_endpoint> ().end ())
 	{
 		stats.inc (nano::stat::type::telemetry, nano::stat::detail::update);
 
@@ -221,7 +221,7 @@ void nano::telemetry::request (std::shared_ptr<nano::transport::channel> & chann
 
 void nano::telemetry::run_broadcasts ()
 {
-	auto telemetry = node.local_telemetry ();
+	const auto telemetry = node.local_telemetry ();
 	auto peers = network.list ();
 
 	for (auto & channel : peers)
@@ -263,7 +263,7 @@ std::optional<nano::telemetry_data> nano::telemetry::get_telemetry (const nano::
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
 
-	if (auto it = telemetries.get<tag_endpoint> ().find (endpoint); it != telemetries.get<tag_endpoint> ().end ())
+	if (const auto it = telemetries.get<tag_endpoint> ().find (endpoint); it != telemetries.get<tag_endpoint> ().end ())
 	{
 		if (check_timeout (*it))
 		{

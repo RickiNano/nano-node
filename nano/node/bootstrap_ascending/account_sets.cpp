@@ -23,7 +23,7 @@ void nano::bootstrap_ascending::account_sets::priority_up (nano::account const &
 	{
 		stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::prioritize);
 
-		auto iter = priorities.get<tag_account> ().find (account);
+		const auto iter = priorities.get<tag_account> ().find (account);
 		if (iter != priorities.get<tag_account> ().end ())
 		{
 			priorities.get<tag_account> ().modify (iter, [] (auto & val) {
@@ -46,7 +46,7 @@ void nano::bootstrap_ascending::account_sets::priority_up (nano::account const &
 
 void nano::bootstrap_ascending::account_sets::priority_down (nano::account const & account)
 {
-	auto iter = priorities.get<tag_account> ().find (account);
+	const auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
 		stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::deprioritize);
@@ -74,8 +74,8 @@ void nano::bootstrap_ascending::account_sets::block (nano::account const & accou
 {
 	stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::block);
 
-	auto existing = priorities.get<tag_account> ().find (account);
-	auto entry = existing == priorities.get<tag_account> ().end () ? priority_entry{ 0, 0 } : *existing;
+	const auto existing = priorities.get<tag_account> ().find (account);
+	const auto entry = existing == priorities.get<tag_account> ().end () ? priority_entry{ 0, 0 } : *existing;
 
 	priorities.get<tag_account> ().erase (account);
 	stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::priority_erase_block);
@@ -89,7 +89,7 @@ void nano::bootstrap_ascending::account_sets::block (nano::account const & accou
 void nano::bootstrap_ascending::account_sets::unblock (nano::account const & account, std::optional<nano::block_hash> const & hash)
 {
 	// Unblock only if the dependency is fulfilled
-	auto existing = blocking.get<tag_account> ().find (account);
+	const auto existing = blocking.get<tag_account> ().find (account);
 	if (existing != blocking.get<tag_account> ().end () && (!hash || existing->dependency == *hash))
 	{
 		stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::unblock);
@@ -118,7 +118,7 @@ void nano::bootstrap_ascending::account_sets::timestamp (const nano::account & a
 {
 	const nano::millis_t tstamp = reset ? 0 : nano::milliseconds_since_epoch ();
 
-	auto iter = priorities.get<tag_account> ().find (account);
+	const auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
 		priorities.get<tag_account> ().modify (iter, [tstamp] (auto & entry) {
@@ -129,7 +129,7 @@ void nano::bootstrap_ascending::account_sets::timestamp (const nano::account & a
 
 bool nano::bootstrap_ascending::account_sets::check_timestamp (const nano::account & account) const
 {
-	auto iter = priorities.get<tag_account> ().find (account);
+	const auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
 		if (nano::milliseconds_since_epoch () - iter->timestamp < config.cooldown)
@@ -194,9 +194,9 @@ nano::account nano::bootstrap_ascending::account_sets::next ()
 	}
 
 	std::discrete_distribution dist{ weights.begin (), weights.end () };
-	auto selection = dist (rng);
+	const auto selection = dist (rng);
 	debug_assert (!weights.empty () && selection < weights.size ());
-	auto result = candidates[selection];
+	const auto result = candidates[selection];
 	return result;
 }
 
@@ -221,7 +221,7 @@ float nano::bootstrap_ascending::account_sets::priority (nano::account const & a
 	{
 		return 0.0f;
 	}
-	auto existing = priorities.get<tag_account> ().find (account);
+	const auto existing = priorities.get<tag_account> ().find (account);
 	if (existing != priorities.get<tag_account> ().end ())
 	{
 		return existing->priority;

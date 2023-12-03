@@ -101,7 +101,7 @@ void nano::scheduler::hinted::activate (const nano::store::read_transaction & tr
 			}
 
 			// Try to insert it into AEC as hinted election
-			auto result = node.active.insert (block, nano::election_behavior::hinted);
+			const auto result = node.active.insert (block, nano::election_behavior::hinted);
 			stats.inc (nano::stat::type::hinting, result.inserted ? nano::stat::detail::insert : nano::stat::detail::insert_failed);
 		}
 		else
@@ -119,9 +119,9 @@ void nano::scheduler::hinted::run_iterative ()
 	const auto minimum_final_tally = final_tally_threshold ();
 
 	// Get the list before db transaction starts to avoid unnecessary slowdowns
-	auto tops = vote_cache.top (minimum_tally);
+	const auto tops = vote_cache.top (minimum_tally);
 
-	auto transaction = node.store.tx_begin_read ();
+	const auto transaction = node.store.tx_begin_read ();
 
 	for (auto const & entry : tops)
 	{
@@ -196,7 +196,7 @@ bool nano::scheduler::hinted::cooldown (const nano::block_hash & hash)
 
 	// Check if the hash is still in the cooldown period using the hashed index
 	auto const & hashed_index = cooldowns_m.get<tag_hash> ();
-	if (auto it = hashed_index.find (hash); it != hashed_index.end ())
+	if (const auto it = hashed_index.find (hash); it != hashed_index.end ())
 	{
 		if (it->timeout > now)
 		{

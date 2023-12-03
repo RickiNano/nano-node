@@ -31,7 +31,7 @@ struct hash<::nano::epoch>
 {
 	std::size_t operator() (::nano::epoch const & epoch_a) const
 	{
-		std::hash<std::underlying_type_t<::nano::epoch>> hash;
+		const std::hash<std::underlying_type_t<::nano::epoch>> hash;
 		return hash (static_cast<std::underlying_type_t<::nano::epoch>> (epoch_a));
 	}
 };

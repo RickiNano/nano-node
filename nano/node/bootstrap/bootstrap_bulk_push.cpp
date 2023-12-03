@@ -18,7 +18,7 @@ nano::bulk_push_client::~bulk_push_client ()
 
 void nano::bulk_push_client::start ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -27,7 +27,7 @@ void nano::bulk_push_client::start ()
 	auto this_l (shared_from_this ());
 	connection->channel->send (
 	message, [this_l] (boost::system::error_code const & ec, std::size_t size_a) {
-		auto node = this_l->connection->node.lock ();
+		const auto node = this_l->connection->node.lock ();
 		if (!node)
 		{
 			return;
@@ -49,7 +49,7 @@ void nano::bulk_push_client::start ()
 
 void nano::bulk_push_client::push ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -91,7 +91,7 @@ void nano::bulk_push_client::push ()
 
 void nano::bulk_push_client::send_finished ()
 {
-	nano::shared_const_buffer buffer (static_cast<uint8_t> (nano::block_type::not_a_block));
+	const nano::shared_const_buffer buffer (static_cast<uint8_t> (nano::block_type::not_a_block));
 	auto this_l (shared_from_this ());
 	connection->channel->send_buffer (buffer, [this_l] (boost::system::error_code const & ec, std::size_t size_a) {
 		try
@@ -113,7 +113,7 @@ void nano::bulk_push_client::push_block (nano::block const & block_a)
 	}
 	auto this_l (shared_from_this ());
 	connection->channel->send_buffer (nano::shared_const_buffer (std::move (buffer)), [this_l] (boost::system::error_code const & ec, std::size_t size_a) {
-		auto node = this_l->connection->node.lock ();
+		const auto node = this_l->connection->node.lock ();
 		if (!node)
 		{
 			return;
@@ -141,7 +141,7 @@ nano::bulk_push_server::bulk_push_server (std::shared_ptr<nano::transport::tcp_s
 
 void nano::bulk_push_server::throttled_receive ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -164,7 +164,7 @@ void nano::bulk_push_server::throttled_receive ()
 
 void nano::bulk_push_server::receive ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -180,7 +180,7 @@ void nano::bulk_push_server::receive ()
 	{
 		auto this_l (shared_from_this ());
 		connection->socket->async_read (receive_buffer, 1, [this_l] (boost::system::error_code const & ec, std::size_t size_a) {
-			auto node = this_l->connection->node.lock ();
+			const auto node = this_l->connection->node.lock ();
 			if (!node)
 			{
 				return;
@@ -202,7 +202,7 @@ void nano::bulk_push_server::receive ()
 
 void nano::bulk_push_server::received_type ()
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;
@@ -269,7 +269,7 @@ void nano::bulk_push_server::received_type ()
 
 void nano::bulk_push_server::received_block (boost::system::error_code const & ec, std::size_t size_a, nano::block_type type_a)
 {
-	auto node = connection->node.lock ();
+	const auto node = connection->node.lock ();
 	if (!node)
 	{
 		return;

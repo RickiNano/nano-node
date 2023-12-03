@@ -56,7 +56,7 @@ void nano::request_aggregator::add (std::shared_ptr<nano::transport::channel> co
 			if (pool_a.hashes_roots.size () + hashes_roots_a.size () <= this->max_channel_requests)
 			{
 				error = false;
-				auto new_deadline (std::min (pool_a.start + this->max_delay, std::chrono::steady_clock::now () + this->small_delay));
+				const auto new_deadline (std::min (pool_a.start + this->max_delay, std::chrono::steady_clock::now () + this->small_delay));
 				pool_a.deadline = new_deadline;
 				pool_a.hashes_roots.insert (pool_a.hashes_roots.begin (), hashes_roots_a.begin (), hashes_roots_a.end ());
 			}
@@ -83,7 +83,7 @@ void nano::request_aggregator::run ()
 		if (!requests.empty ())
 		{
 			auto & requests_by_deadline (requests.get<tag_deadline> ());
-			auto front (requests_by_deadline.begin ());
+			const auto front (requests_by_deadline.begin ());
 			if (front->deadline < std::chrono::steady_clock::now ())
 			{
 				// Store the channel and requests for processing after erasing this pool
@@ -312,8 +312,8 @@ std::pair<std::vector<std::shared_ptr<nano::block>>, std::vector<std::shared_ptr
 
 std::unique_ptr<nano::container_info_component> nano::collect_container_info (nano::request_aggregator & aggregator, std::string const & name)
 {
-	auto pools_count = aggregator.size ();
-	auto sizeof_element = sizeof (decltype (aggregator.requests)::value_type);
+	const auto pools_count = aggregator.size ();
+	const auto sizeof_element = sizeof (decltype (aggregator.requests)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "pools", pools_count, sizeof_element }));
 	return composite;

@@ -126,9 +126,9 @@ nano::block_hash nano::block::full_hash () const
 	blake2b_state state;
 	blake2b_init (&state, sizeof (result.bytes));
 	blake2b_update (&state, hash ().bytes.data (), sizeof (hash ()));
-	auto signature (block_signature ());
+	const auto signature (block_signature ());
 	blake2b_update (&state, signature.bytes.data (), sizeof (signature));
-	auto work (block_work ());
+	const auto work (block_work ());
 	blake2b_update (&state, &work, sizeof (work));
 	blake2b_final (&state, result.bytes.data (), sizeof (result.bytes));
 	return result;
@@ -241,9 +241,9 @@ nano::send_hashables::send_hashables (bool & error_a, boost::property_tree::ptre
 {
 	try
 	{
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto destination_l (tree_a.get<std::string> ("destination"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto destination_l (tree_a.get<std::string> ("destination"));
+		const auto balance_l (tree_a.get<std::string> ("balance"));
 		error_a = previous.decode_hex (previous_l);
 		if (!error_a)
 		{
@@ -329,11 +329,11 @@ bool nano::send_block::deserialize_json (boost::property_tree::ptree const & tre
 	try
 	{
 		debug_assert (tree_a.get<std::string> ("type") == "send");
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto destination_l (tree_a.get<std::string> ("destination"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto destination_l (tree_a.get<std::string> ("destination"));
+		const auto balance_l (tree_a.get<std::string> ("balance"));
+		const auto work_l (tree_a.get<std::string> ("work"));
+		const auto signature_l (tree_a.get<std::string> ("signature"));
 		error = hashables.previous.decode_hex (previous_l);
 		if (!error)
 		{
@@ -392,8 +392,8 @@ nano::send_block::send_block (bool & error_a, boost::property_tree::ptree const 
 	{
 		try
 		{
-			auto signature_l (tree_a.get<std::string> ("signature"));
-			auto work_l (tree_a.get<std::string> ("work"));
+			const auto signature_l (tree_a.get<std::string> ("signature"));
+			const auto work_l (tree_a.get<std::string> ("work"));
 			error_a = signature.decode_hex (signature_l);
 			if (!error_a)
 			{
@@ -437,7 +437,7 @@ nano::block_type nano::send_block::type () const
 
 bool nano::send_block::operator== (nano::send_block const & other_a) const
 {
-	auto result (hashables.destination == other_a.hashables.destination && hashables.previous == other_a.hashables.previous && hashables.balance == other_a.hashables.balance && work == other_a.work && signature == other_a.signature);
+	const auto result (hashables.destination == other_a.hashables.destination && hashables.previous == other_a.hashables.previous && hashables.balance == other_a.hashables.balance && work == other_a.work && signature == other_a.signature);
 	return result;
 }
 
@@ -496,9 +496,9 @@ nano::open_hashables::open_hashables (bool & error_a, boost::property_tree::ptre
 {
 	try
 	{
-		auto source_l (tree_a.get<std::string> ("source"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto account_l (tree_a.get<std::string> ("account"));
+		const auto source_l (tree_a.get<std::string> ("source"));
+		const auto representative_l (tree_a.get<std::string> ("representative"));
+		const auto account_l (tree_a.get<std::string> ("account"));
 		error_a = source.decode_hex (source_l);
 		if (!error_a)
 		{
@@ -566,8 +566,8 @@ nano::open_block::open_block (bool & error_a, boost::property_tree::ptree const 
 	{
 		try
 		{
-			auto work_l (tree_a.get<std::string> ("work"));
-			auto signature_l (tree_a.get<std::string> ("signature"));
+			const auto work_l (tree_a.get<std::string> ("work"));
+			const auto signature_l (tree_a.get<std::string> ("signature"));
 			error_a = nano::from_string_hex (work_l, work);
 			if (!error_a)
 			{
@@ -662,11 +662,11 @@ bool nano::open_block::deserialize_json (boost::property_tree::ptree const & tre
 	try
 	{
 		debug_assert (tree_a.get<std::string> ("type") == "open");
-		auto source_l (tree_a.get<std::string> ("source"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto account_l (tree_a.get<std::string> ("account"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		const auto source_l (tree_a.get<std::string> ("source"));
+		const auto representative_l (tree_a.get<std::string> ("representative"));
+		const auto account_l (tree_a.get<std::string> ("account"));
+		const auto work_l (tree_a.get<std::string> ("work"));
+		const auto signature_l (tree_a.get<std::string> ("signature"));
 		error = hashables.source.decode_hex (source_l);
 		if (!error)
 		{
@@ -770,8 +770,8 @@ nano::change_hashables::change_hashables (bool & error_a, boost::property_tree::
 {
 	try
 	{
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto representative_l (tree_a.get<std::string> ("representative"));
 		error_a = previous.decode_hex (previous_l);
 		if (!error_a)
 		{
@@ -823,8 +823,8 @@ nano::change_block::change_block (bool & error_a, boost::property_tree::ptree co
 	{
 		try
 		{
-			auto work_l (tree_a.get<std::string> ("work"));
-			auto signature_l (tree_a.get<std::string> ("signature"));
+			const auto work_l (tree_a.get<std::string> ("work"));
+			const auto signature_l (tree_a.get<std::string> ("signature"));
 			error_a = nano::from_string_hex (work_l, work);
 			if (!error_a)
 			{
@@ -910,10 +910,10 @@ bool nano::change_block::deserialize_json (boost::property_tree::ptree const & t
 	try
 	{
 		debug_assert (tree_a.get<std::string> ("type") == "change");
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto representative_l (tree_a.get<std::string> ("representative"));
+		const auto work_l (tree_a.get<std::string> ("work"));
+		const auto signature_l (tree_a.get<std::string> ("signature"));
 		error = hashables.previous.decode_hex (previous_l);
 		if (!error)
 		{
@@ -1101,9 +1101,9 @@ nano::state_block::state_block (bool & error_a, boost::property_tree::ptree cons
 	{
 		try
 		{
-			auto type_l (tree_a.get<std::string> ("type"));
-			auto signature_l (tree_a.get<std::string> ("signature"));
-			auto work_l (tree_a.get<std::string> ("work"));
+			const auto type_l (tree_a.get<std::string> ("type"));
+			const auto signature_l (tree_a.get<std::string> ("signature"));
+			const auto work_l (tree_a.get<std::string> ("work"));
 			error_a = type_l != "state";
 			if (!error_a)
 			{
@@ -1123,7 +1123,7 @@ nano::state_block::state_block (bool & error_a, boost::property_tree::ptree cons
 
 void nano::state_block::hash (blake2b_state & hash_a) const
 {
-	nano::uint256_union preamble (static_cast<uint64_t> (nano::block_type::state));
+	const nano::uint256_union preamble (static_cast<uint64_t> (nano::block_type::state));
 	blake2b_update (&hash_a, preamble.bytes.data (), preamble.bytes.size ());
 	hashables.hash (hash_a);
 }
@@ -1211,13 +1211,13 @@ bool nano::state_block::deserialize_json (boost::property_tree::ptree const & tr
 	try
 	{
 		debug_assert (tree_a.get<std::string> ("type") == "state");
-		auto account_l (tree_a.get<std::string> ("account"));
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
-		auto link_l (tree_a.get<std::string> ("link"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		const auto account_l (tree_a.get<std::string> ("account"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto representative_l (tree_a.get<std::string> ("representative"));
+		const auto balance_l (tree_a.get<std::string> ("balance"));
+		const auto link_l (tree_a.get<std::string> ("link"));
+		const auto work_l (tree_a.get<std::string> ("work"));
+		const auto signature_l (tree_a.get<std::string> ("signature"));
 		error = hashables.account.decode_account (account_l);
 		if (!error)
 		{
@@ -1323,7 +1323,7 @@ std::shared_ptr<nano::block> nano::deserialize_block_json (boost::property_tree:
 	std::shared_ptr<nano::block> result;
 	try
 	{
-		auto type (tree_a.get<std::string> ("type"));
+		const auto type (tree_a.get<std::string> ("type"));
 		bool error (false);
 		std::unique_ptr<nano::block> obj;
 		if (type == "receive")
@@ -1376,7 +1376,7 @@ void nano::serialize_block (nano::stream & stream_a, nano::block const & block_a
 std::shared_ptr<nano::block> nano::deserialize_block (nano::stream & stream_a)
 {
 	nano::block_type type;
-	auto error (try_read (stream_a, type));
+	const auto error (try_read (stream_a, type));
 	std::shared_ptr<nano::block> result;
 	if (!error)
 	{
@@ -1439,7 +1439,7 @@ void nano::receive_block::visit (nano::mutable_block_visitor & visitor_a)
 
 bool nano::receive_block::operator== (nano::receive_block const & other_a) const
 {
-	auto result (hashables.previous == other_a.hashables.previous && hashables.source == other_a.hashables.source && work == other_a.work && signature == other_a.signature);
+	const auto result (hashables.previous == other_a.hashables.previous && hashables.source == other_a.hashables.source && work == other_a.work && signature == other_a.signature);
 	return result;
 }
 
@@ -1499,10 +1499,10 @@ bool nano::receive_block::deserialize_json (boost::property_tree::ptree const & 
 	try
 	{
 		debug_assert (tree_a.get<std::string> ("type") == "receive");
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto source_l (tree_a.get<std::string> ("source"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto source_l (tree_a.get<std::string> ("source"));
+		const auto work_l (tree_a.get<std::string> ("work"));
+		const auto signature_l (tree_a.get<std::string> ("signature"));
 		error = hashables.previous.decode_hex (previous_l);
 		if (!error)
 		{
@@ -1556,8 +1556,8 @@ nano::receive_block::receive_block (bool & error_a, boost::property_tree::ptree 
 	{
 		try
 		{
-			auto signature_l (tree_a.get<std::string> ("signature"));
-			auto work_l (tree_a.get<std::string> ("work"));
+			const auto signature_l (tree_a.get<std::string> ("signature"));
+			const auto work_l (tree_a.get<std::string> ("work"));
 			error_a = signature.decode_hex (signature_l);
 			if (!error_a)
 			{
@@ -1662,8 +1662,8 @@ nano::receive_hashables::receive_hashables (bool & error_a, boost::property_tree
 {
 	try
 	{
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto source_l (tree_a.get<std::string> ("source"));
+		const auto previous_l (tree_a.get<std::string> ("previous"));
+		const auto source_l (tree_a.get<std::string> ("source"));
 		error_a = previous.decode_hex (previous_l);
 		if (!error_a)
 		{
@@ -1704,7 +1704,7 @@ uint8_t nano::block_details::packed () const
 void nano::block_details::unpack (uint8_t details_a)
 {
 	constexpr std::bitset<8> epoch_mask{ 0b00011111 };
-	auto as_bitset = static_cast<std::bitset<8>> (details_a);
+	const auto as_bitset = static_cast<std::bitset<8>> (details_a);
 	is_send = as_bitset.test (7);
 	is_receive = as_bitset.test (6);
 	is_epoch = as_bitset.test (5);

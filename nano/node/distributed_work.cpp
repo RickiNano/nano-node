@@ -10,7 +10,7 @@ std::shared_ptr<request_type> nano::distributed_work::peer_request::get_prepared
 	auto http_request = std::make_shared<request_type> ();
 	http_request->method (boost::beast::http::verb::post);
 	http_request->set (boost::beast::http::field::content_type, "application/json");
-	auto address_string = boost::algorithm::erase_first_copy (endpoint.address ().to_string (), "::ffff:");
+	const auto address_string = boost::algorithm::erase_first_copy (endpoint.address ().to_string (), "::ffff:");
 	http_request->set (boost::beast::http::field::host, address_string);
 	http_request->target ("/");
 	http_request->version (11);
@@ -35,7 +35,7 @@ nano::distributed_work::distributed_work (nano::node & node_a, nano::work_reques
 nano::distributed_work::~distributed_work ()
 {
 	debug_assert (status != work_generation_status::ongoing);
-	if (auto node_l = node_w.lock ())
+	if (const auto node_l = node_w.lock ())
 	{
 		if (!node_l->stopped && node_l->websocket.server && node_l->websocket.server->any_subscriber (nano::websocket::topic::work))
 		{
@@ -234,7 +234,7 @@ void nano::distributed_work::success (std::string const & body_a, nano::tcp_endp
 		std::stringstream istream (body_a);
 		boost::property_tree::ptree result;
 		boost::property_tree::read_json (istream, result);
-		auto work_text (result.get<std::string> ("work"));
+		const auto work_text (result.get<std::string> ("work"));
 		uint64_t work;
 		if (!nano::from_string_hex (work_text, work))
 		{
@@ -320,7 +320,7 @@ void nano::distributed_work::set_once (uint64_t const work_a, std::string const 
 		if (node.config.logging.work_generation_time ())
 		{
 			boost::format unformatted_l ("Work generation for %1%, with a threshold difficulty of %2% (multiplier %3%x) complete: %4% ms");
-			auto multiplier_text_l (nano::to_string (nano::difficulty::to_multiplier (request.difficulty, node.default_difficulty (request.version)), 2));
+			const auto multiplier_text_l (nano::to_string (nano::difficulty::to_multiplier (request.difficulty, node.default_difficulty (request.version)), 2));
 			node.logger.try_log (boost::str (unformatted_l % request.root.to_string () % nano::to_string_hex (request.difficulty) % multiplier_text_l % elapsed.value ().count ()));
 		}
 	}
@@ -364,12 +364,12 @@ void nano::distributed_work::handle_failure ()
 			{
 				node.logger.always_log ("Work peer(s) failed to generate work for root ", request.root.to_string (), ", retrying...");
 			}
-			auto now (std::chrono::steady_clock::now ());
+			const auto now (std::chrono::steady_clock::now ());
 			std::weak_ptr<nano::node> node_weak (node.shared ());
 			auto next_backoff (std::min (backoff * 2, std::chrono::seconds (5 * 60)));
 			node.workers.add_timed_task (now + std::chrono::seconds (backoff), [node_weak, request_l = request, next_backoff] {
 				bool error_l{ true };
-				if (auto node_l = node_weak.lock ())
+				if (const auto node_l = node_weak.lock ())
 				{
 					error_l = node_l->distributed_work.make (next_backoff, request_l);
 				}

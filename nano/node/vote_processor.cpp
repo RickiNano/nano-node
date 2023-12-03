@@ -193,7 +193,7 @@ void nano::vote_processor::flush ()
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	auto const cutoff = total_processed.load (std::memory_order_relaxed) + votes.size ();
-	bool success = condition.wait_for (lock, 60s, [this, &cutoff] () {
+	const bool success = condition.wait_for (lock, 60s, [this, &cutoff] () {
 		return stopped || votes.empty () || total_processed.load (std::memory_order_relaxed) >= cutoff;
 	});
 	if (!success)
@@ -228,8 +228,8 @@ void nano::vote_processor::calculate_weights ()
 		representatives_1.clear ();
 		representatives_2.clear ();
 		representatives_3.clear ();
-		auto supply (online_reps.trended ());
-		auto rep_amounts = ledger.cache.rep_weights.get_rep_amounts ();
+		const auto supply (online_reps.trended ());
+		const auto rep_amounts = ledger.cache.rep_weights.get_rep_amounts ();
 		for (auto const & rep_amount : rep_amounts)
 		{
 			nano::account const & representative (rep_amount.first);

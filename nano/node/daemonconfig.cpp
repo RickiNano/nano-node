@@ -62,7 +62,7 @@ nano::error nano::daemon_config::deserialize_toml (nano::tomlconfig & toml)
 nano::error nano::read_node_config_toml (std::filesystem::path const & data_path_a, nano::daemon_config & config_a, std::vector<std::string> const & config_overrides)
 {
 	nano::error error;
-	auto toml_config_path = nano::get_node_toml_config_path (data_path_a);
+	const auto toml_config_path = nano::get_node_toml_config_path (data_path_a);
 	auto toml_qt_config_path = nano::get_qtwallet_toml_config_path (data_path_a);
 
 	// Parse and deserialize

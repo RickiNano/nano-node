@@ -31,7 +31,7 @@ void nano::ipc::broker::start ()
 			// is that broadcast is called only to not find any live sessions.
 			if (this_l->confirmation_subscriber_count () > 0)
 			{
-				auto confirmation (std::make_shared<nanoapi::EventConfirmationT> ());
+				const auto confirmation (std::make_shared<nanoapi::EventConfirmationT> ());
 
 				confirmation->account = account_a.to_account ();
 				confirmation->amount = amount_a.to_string_dec ();
@@ -80,7 +80,7 @@ void subscribe_or_unsubscribe (nano::logger_mt & logger, COLL & subscriber_colle
 									 auto subscriber_l = sub.subscriber.lock ();
 									 if (subscriber_l)
 									 {
-										 if (auto calling_subscriber_l = subscriber_a.lock ())
+										 if (const auto calling_subscriber_l = subscriber_a.lock ())
 										 {
 											 remove = topic_a->unsubscribe && subscriber_l->get_id () == calling_subscriber_l->get_id ();
 											 if (remove)
@@ -105,7 +105,7 @@ void subscribe_or_unsubscribe (nano::logger_mt & logger, COLL & subscriber_colle
 
 void nano::ipc::broker::subscribe (std::weak_ptr<nano::ipc::subscriber> const & subscriber_a, std::shared_ptr<nanoapi::TopicConfirmationT> const & confirmation_a)
 {
-	auto subscribers = confirmation_subscribers.lock ();
+	const auto subscribers = confirmation_subscribers.lock ();
 	subscribe_or_unsubscribe (node.logger, subscribers.get (), subscriber_a, confirmation_a);
 }
 
@@ -117,16 +117,16 @@ void nano::ipc::broker::broadcast (std::shared_ptr<nanoapi::EventConfirmationT> 
 	auto itr (confirmation_subscribers->begin ());
 	while (itr != confirmation_subscribers->end ())
 	{
-		if (auto subscriber_l = itr->subscriber.lock ())
+		if (const auto subscriber_l = itr->subscriber.lock ())
 		{
 			auto should_filter = [this, &itr, confirmation_a] () {
 				debug_assert (itr->topic->options != nullptr);
-				auto conf_filter (itr->topic->options->confirmation_type_filter);
+				const auto conf_filter (itr->topic->options->confirmation_type_filter);
 
 				bool should_filter_conf_type_l (true);
-				bool all_filter = conf_filter == Filter::TopicConfirmationTypeFilter_all;
-				bool inactive_filter = conf_filter == Filter::TopicConfirmationTypeFilter_inactive;
-				bool active_filter = conf_filter == Filter::TopicConfirmationTypeFilter_active || conf_filter == Filter::TopicConfirmationTypeFilter_active_quorum || conf_filter == Filter::TopicConfirmationTypeFilter_active_confirmation_height;
+				const bool all_filter = conf_filter == Filter::TopicConfirmationTypeFilter_all;
+				const bool inactive_filter = conf_filter == Filter::TopicConfirmationTypeFilter_inactive;
+				const bool active_filter = conf_filter == Filter::TopicConfirmationTypeFilter_active || conf_filter == Filter::TopicConfirmationTypeFilter_active_quorum || conf_filter == Filter::TopicConfirmationTypeFilter_active_confirmation_height;
 
 				if ((confirmation_a->confirmation_type == nanoapi::TopicConfirmationType::TopicConfirmationType_active_quorum || confirmation_a->confirmation_type == nanoapi::TopicConfirmationType::TopicConfirmationType_active_confirmation_height) && (all_filter || active_filter))
 				{
@@ -138,16 +138,16 @@ void nano::ipc::broker::broadcast (std::shared_ptr<nanoapi::EventConfirmationT> 
 				}
 
 				bool should_filter_account_l (itr->topic->options->all_local_accounts || !itr->topic->options->accounts.empty ());
-				auto state (confirmation_a->block.AsBlockState ());
+				const auto state (confirmation_a->block.AsBlockState ());
 				if (state && !should_filter_conf_type_l)
 				{
 					if (itr->topic->options->all_local_accounts)
 					{
-						auto transaction_l (this->node.wallets.tx_begin_read ());
+						const auto transaction_l (this->node.wallets.tx_begin_read ());
 						nano::account source_l{};
 						nano::account destination_l{};
-						auto decode_source_ok_l (!source_l.decode_account (state->account));
-						auto decode_destination_ok_l (!destination_l.decode_account (state->link_as_account));
+						const auto decode_source_ok_l (!source_l.decode_account (state->account));
+						const auto decode_destination_ok_l (!destination_l.decode_account (state->link_as_account));
 						(void)decode_source_ok_l;
 						(void)decode_destination_ok_l;
 						debug_assert (decode_source_ok_l && decode_destination_ok_l);
@@ -229,7 +229,7 @@ std::size_t nano::ipc::broker::confirmation_subscriber_count () const
 
 void nano::ipc::broker::service_register (std::string const & service_name_a, std::weak_ptr<nano::ipc::subscriber> const & subscriber_a)
 {
-	if (auto subscriber_l = subscriber_a.lock ())
+	if (const auto subscriber_l = subscriber_a.lock ())
 	{
 		subscriber_l->set_service_name (service_name_a);
 	}
@@ -237,10 +237,10 @@ void nano::ipc::broker::service_register (std::string const & service_name_a, st
 
 void nano::ipc::broker::service_stop (std::string const & service_name_a)
 {
-	auto subscribers = service_stop_subscribers.lock ();
+	const auto subscribers = service_stop_subscribers.lock ();
 	for (auto & subcription : subscribers.get ())
 	{
-		if (auto subscriber_l = subcription.subscriber.lock ())
+		if (const auto subscriber_l = subcription.subscriber.lock ())
 		{
 			if (subscriber_l->get_service_name () == service_name_a)
 			{
@@ -256,6 +256,6 @@ void nano::ipc::broker::service_stop (std::string const & service_name_a)
 
 void nano::ipc::broker::subscribe (std::weak_ptr<nano::ipc::subscriber> const & subscriber_a, std::shared_ptr<nanoapi::TopicServiceStopT> const & service_stop_a)
 {
-	auto subscribers = service_stop_subscribers.lock ();
+	const auto subscribers = service_stop_subscribers.lock ();
 	subscribe_or_unsubscribe (node.logger, subscribers.get (), subscriber_a, service_stop_a);
 }

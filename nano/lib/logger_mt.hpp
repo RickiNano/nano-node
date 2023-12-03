@@ -107,7 +107,7 @@ public:
 	bool try_log (nano::severity_level severity_level, LogItems &&... log_items)
 	{
 		auto error (true);
-		auto time_now = std::chrono::steady_clock::now ();
+		const auto time_now = std::chrono::steady_clock::now ();
 		nano::unique_lock<nano::mutex> lk (last_log_time_mutex);
 		if (((time_now - last_log_time) > min_log_delta) || last_log_time == std::chrono::steady_clock::time_point{})
 		{

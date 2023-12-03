@@ -16,7 +16,7 @@ char const * account_reverse ("~0~1234567~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 char account_encode (uint8_t value)
 {
 	debug_assert (value < 32);
-	auto result (account_lookup[value]);
+	const auto result (account_lookup[value]);
 	return result;
 }
 uint8_t account_decode (char value)
@@ -46,7 +46,7 @@ void nano::public_key::encode_account (std::string & destination_a) const
 	number_l |= nano::uint512_t (check);
 	for (auto i (0); i < 60; ++i)
 	{
-		uint8_t r (number_l & static_cast<uint8_t> (0x1f));
+		const uint8_t r (number_l & static_cast<uint8_t> (0x1f));
 		number_l >>= 5;
 		destination_a.push_back (account_encode (r));
 	}
@@ -86,9 +86,9 @@ bool nano::public_key::decode_account (std::string const & source_a)
 	auto error (source_a.size () < 5);
 	if (!error)
 	{
-		auto xrb_prefix (source_a[0] == 'x' && source_a[1] == 'r' && source_a[2] == 'b' && (source_a[3] == '_' || source_a[3] == '-'));
-		auto nano_prefix (source_a[0] == 'n' && source_a[1] == 'a' && source_a[2] == 'n' && source_a[3] == 'o' && (source_a[4] == '_' || source_a[4] == '-'));
-		auto node_id_prefix = (source_a[0] == 'n' && source_a[1] == 'o' && source_a[2] == 'd' && source_a[3] == 'e' && source_a[4] == '_');
+		const auto xrb_prefix (source_a[0] == 'x' && source_a[1] == 'r' && source_a[2] == 'b' && (source_a[3] == '_' || source_a[3] == '-'));
+		const auto nano_prefix (source_a[0] == 'n' && source_a[1] == 'a' && source_a[2] == 'n' && source_a[3] == 'o' && (source_a[4] == '_' || source_a[4] == '-'));
+		const auto node_id_prefix = (source_a[0] == 'n' && source_a[1] == 'o' && source_a[2] == 'd' && source_a[3] == 'e' && source_a[4] == '_');
 		error = (xrb_prefix && source_a.size () != 64) || (nano_prefix && source_a.size () != 65);
 		if (!error)
 		{
@@ -98,13 +98,13 @@ bool nano::public_key::decode_account (std::string const & source_a)
 				if (*i == '1' || *i == '3')
 				{
 					nano::uint512_t number_l;
-					for (auto j (source_a.end ()); !error && i != j; ++i)
+					for (const auto j (source_a.end ()); !error && i != j; ++i)
 					{
-						uint8_t character (*i);
+						const uint8_t character (*i);
 						error = character < 0x30 || character >= 0x80;
 						if (!error)
 						{
-							uint8_t byte (account_decode (character));
+							const uint8_t byte (account_decode (character));
 							error = byte == '~';
 							if (!error)
 							{
@@ -115,8 +115,8 @@ bool nano::public_key::decode_account (std::string const & source_a)
 					}
 					if (!error)
 					{
-						nano::public_key temp = (number_l >> 40).convert_to<nano::uint256_t> ();
-						uint64_t check (number_l & static_cast<uint64_t> (0xffffffffff));
+						const nano::public_key temp = (number_l >> 40).convert_to<nano::uint256_t> ();
+						const uint64_t check (number_l & static_cast<uint64_t> (0xffffffffff));
 						uint64_t validation (0);
 						blake2b_state hash;
 						blake2b_init (&hash, 5);
@@ -192,7 +192,7 @@ nano::uint256_union nano::uint256_union::operator^ (nano::uint256_union const & 
 
 nano::uint256_union::uint256_union (std::string const & hex_a)
 {
-	auto error (decode_hex (hex_a));
+	const auto error (decode_hex (hex_a));
 
 	release_assert (!error);
 }
@@ -430,7 +430,7 @@ bool nano::validate_message (nano::public_key const & public_key, nano::uint256_
 
 nano::uint128_union::uint128_union (std::string const & string_a)
 {
-	auto error (decode_hex (string_a));
+	const auto error (decode_hex (string_a));
 
 	release_assert (!error);
 }
@@ -527,7 +527,7 @@ bool nano::uint128_union::decode_dec (std::string const & text, bool decimal)
 		try
 		{
 			stream >> number_l;
-			nano::uint128_t unchecked (number_l);
+			const nano::uint128_t unchecked (number_l);
 			*this = unchecked;
 			if (!stream.eof ())
 			{
@@ -697,8 +697,8 @@ void format_dec (std::ostringstream & stream, nano::uint128_t value, char group_
 std::string format_balance (nano::uint128_t balance, nano::uint128_t scale, int precision, bool group_digits, char thousands_sep, char decimal_point, std::string & grouping)
 {
 	std::ostringstream stream;
-	auto int_part = balance / scale;
-	auto frac_part = balance % scale;
+	const auto int_part = balance / scale;
+	const auto frac_part = balance % scale;
 	auto prec_scale = scale;
 	for (int i = 0; i < precision; i++)
 	{
@@ -733,16 +733,16 @@ std::string format_balance (nano::uint128_t balance, nano::uint128_t scale, int 
 
 std::string nano::uint128_union::format_balance (nano::uint128_t scale, int precision, bool group_digits) const
 {
-	auto thousands_sep = std::use_facet<std::numpunct<char>> (std::locale ()).thousands_sep ();
-	auto decimal_point = std::use_facet<std::numpunct<char>> (std::locale ()).decimal_point ();
+	const auto thousands_sep = std::use_facet<std::numpunct<char>> (std::locale ()).thousands_sep ();
+	const auto decimal_point = std::use_facet<std::numpunct<char>> (std::locale ()).decimal_point ();
 	std::string grouping = "\3";
 	return ::format_balance (number (), scale, precision, group_digits, thousands_sep, decimal_point, grouping);
 }
 
 std::string nano::uint128_union::format_balance (nano::uint128_t scale, int precision, bool group_digits, std::locale const & locale) const
 {
-	auto thousands_sep = std::use_facet<std::moneypunct<char>> (locale).thousands_sep ();
-	auto decimal_point = std::use_facet<std::moneypunct<char>> (locale).decimal_point ();
+	const auto thousands_sep = std::use_facet<std::moneypunct<char>> (locale).thousands_sep ();
+	const auto decimal_point = std::use_facet<std::moneypunct<char>> (locale).decimal_point ();
 	std::string grouping = std::use_facet<std::moneypunct<char>> (locale).grouping ();
 	return ::format_balance (number (), scale, precision, group_digits, thousands_sep, decimal_point, grouping);
 }
@@ -902,7 +902,7 @@ std::string nano::to_string (double const value_a, int const precision_a)
 uint64_t nano::difficulty::from_multiplier (double const multiplier_a, uint64_t const base_difficulty_a)
 {
 	debug_assert (multiplier_a > 0.);
-	nano::uint128_t reverse_difficulty ((-base_difficulty_a) / multiplier_a);
+	const nano::uint128_t reverse_difficulty ((-base_difficulty_a) / multiplier_a);
 	if (reverse_difficulty > std::numeric_limits<std::uint64_t>::max ())
 	{
 		return 0;

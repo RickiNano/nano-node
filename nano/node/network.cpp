@@ -141,7 +141,7 @@ void nano::network::send_node_id_handshake (std::shared_ptr<nano::transport::cha
 
 void nano::network::flood_message (nano::message & message_a, nano::transport::buffer_drop_policy const drop_policy_a, float const scale_a)
 {
-	for (auto & i : list (fanout (scale_a)))
+	for (const auto & i : list (fanout (scale_a)))
 	{
 		i->send (message_a, nullptr, drop_policy_a);
 	}
@@ -174,7 +174,7 @@ void nano::network::flood_block_initial (std::shared_ptr<nano::block> const & bl
 	{
 		i.channel->send (message, nullptr, nano::transport::buffer_drop_policy::no_limiter_drop);
 	}
-	for (auto & i : list_non_pr (fanout (1.0)))
+	for (const auto & i : list_non_pr (fanout (1.0)))
 	{
 		i->send (message, nullptr, nano::transport::buffer_drop_policy::no_limiter_drop);
 	}
@@ -183,7 +183,7 @@ void nano::network::flood_block_initial (std::shared_ptr<nano::block> const & bl
 void nano::network::flood_vote (std::shared_ptr<nano::vote> const & vote_a, float scale)
 {
 	nano::confirm_ack message{ node.network_params.network, vote_a };
-	for (auto & i : list (fanout (scale)))
+	for (const auto & i : list (fanout (scale)))
 	{
 		i->send (message, nullptr);
 	}
@@ -202,14 +202,14 @@ void nano::network::flood_block_many (std::deque<std::shared_ptr<nano::block>> b
 {
 	if (!blocks_a.empty ())
 	{
-		auto block_l (blocks_a.front ());
+		const auto block_l (blocks_a.front ());
 		blocks_a.pop_front ();
 		flood_block (block_l);
 		if (!blocks_a.empty ())
 		{
 			std::weak_ptr<nano::node> node_w (node.shared ());
 			node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::milliseconds (delay_a + std::rand () % delay_a), [node_w, blocks (std::move (blocks_a)), callback_a, delay_a] () {
-				if (auto node_l = node_w.lock ())
+				if (const auto node_l = node_w.lock ())
 				{
 					node_l->network.flood_block_many (std::move (blocks), callback_a, delay_a);
 				}
@@ -231,7 +231,7 @@ void nano::network::send_confirm_req (std::shared_ptr<nano::transport::channel> 
 
 void nano::network::broadcast_confirm_req (std::shared_ptr<nano::block> const & block_a)
 {
-	auto list (std::make_shared<std::vector<std::shared_ptr<nano::transport::channel>>> (node.rep_crawler.representative_endpoints (std::numeric_limits<std::size_t>::max ())));
+	const auto list (std::make_shared<std::vector<std::shared_ptr<nano::transport::channel>>> (node.rep_crawler.representative_endpoints (std::numeric_limits<std::size_t>::max ())));
 	if (list->empty () || node.rep_crawler.total_weight () < node.online_reps.delta ())
 	{
 		// broadcast request to all peers (with max limit 2 * sqrt (peers count))
@@ -278,7 +278,7 @@ void nano::network::broadcast_confirm_req_base (std::shared_ptr<nano::block> con
 
 		std::weak_ptr<nano::node> node_w (node.shared ());
 		node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::milliseconds (delay_a), [node_w, block_a, endpoints_a, delay_a] () {
-			if (auto node_l = node_w.lock ())
+			if (const auto node_l = node_w.lock ())
 			{
 				node_l->network.broadcast_confirm_req_base (block_a, endpoints_a, delay_a, true);
 			}
@@ -318,7 +318,7 @@ void nano::network::broadcast_confirm_req_batched_many (std::unordered_map<std::
 	{
 		std::weak_ptr<nano::node> node_w (node.shared ());
 		node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::milliseconds (delay_a), [node_w, request_bundle_a, callback_a, delay_a] () {
-			if (auto node_l = node_w.lock ())
+			if (const auto node_l = node_w.lock ())
 			{
 				node_l->network.broadcast_confirm_req_batched_many (request_bundle_a, callback_a, delay_a, true);
 			}
@@ -332,11 +332,11 @@ void nano::network::broadcast_confirm_req_batched_many (std::unordered_map<std::
 
 void nano::network::broadcast_confirm_req_many (std::deque<std::pair<std::shared_ptr<nano::block>, std::shared_ptr<std::vector<std::shared_ptr<nano::transport::channel>>>>> requests_a, std::function<void ()> callback_a, unsigned delay_a)
 {
-	auto pair_l (requests_a.front ());
+	const auto pair_l (requests_a.front ());
 	requests_a.pop_front ();
-	auto block_l (pair_l.first);
+	const auto block_l (pair_l.first);
 	// confirm_req to representatives
-	auto endpoints (pair_l.second);
+	const auto endpoints (pair_l.second);
 	if (!endpoints->empty ())
 	{
 		broadcast_confirm_req_base (block_l, endpoints, delay_a);
@@ -347,7 +347,7 @@ void nano::network::broadcast_confirm_req_many (std::deque<std::pair<std::shared
 	{
 		std::weak_ptr<nano::node> node_w (node.shared ());
 		node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::milliseconds (delay_a + std::rand () % delay_a), [node_w, requests_a, callback_a, delay_a] () {
-			if (auto node_l = node_w.lock ())
+			if (const auto node_l = node_w.lock ())
 			{
 				node_l->network.broadcast_confirm_req_many (requests_a, callback_a, delay_a);
 			}
@@ -380,10 +380,10 @@ public:
 		node.network.merge_peers (message_a.peers);
 
 		// Check for special node port data
-		auto peer0 (message_a.peers[0]);
+		const auto peer0 (message_a.peers[0]);
 		if (peer0.address () == boost::asio::ip::address_v6{} && peer0.port () != 0)
 		{
-			nano::endpoint new_endpoint (channel->get_tcp_endpoint ().address (), peer0.port ());
+			const nano::endpoint new_endpoint (channel->get_tcp_endpoint ().address (), peer0.port ());
 			node.network.merge_peer (new_endpoint);
 
 			// Remember this for future forwarding to other peers
@@ -609,7 +609,7 @@ void nano::network::random_fill (std::array<nano::endpoint, 8> & target_a) const
 {
 	auto peers (random_set (target_a.size (), 0, false)); // Don't include channels with ephemeral remote ports
 	debug_assert (peers.size () <= target_a.size ());
-	auto endpoint (nano::endpoint (boost::asio::ip::address_v6{}, 0));
+	const auto endpoint (nano::endpoint (boost::asio::ip::address_v6{}, 0));
 	debug_assert (endpoint.address ().is_v6 ());
 	std::fill (target_a.begin (), target_a.end (), endpoint);
 	auto j (target_a.begin ());
@@ -636,12 +636,12 @@ void nano::network::fill_keepalive_self (std::array<nano::endpoint, 8> & target_
 	}
 	else
 	{
-		auto external_address (node.port_mapping.external_address ());
+		const auto external_address (node.port_mapping.external_address ());
 		if (external_address.address () != boost::asio::ip::address_v4::any ())
 		{
 			target_a[0] = nano::endpoint (boost::asio::ip::address_v6{}, port);
 			boost::system::error_code ec;
-			auto external_v6 = boost::asio::ip::make_address_v6 (external_address.address ().to_string (), ec);
+			const auto external_v6 = boost::asio::ip::make_address_v6 (external_address.address ().to_string (), ec);
 			target_a[1] = nano::endpoint (external_v6, external_address.port ());
 		}
 		else
@@ -685,7 +685,7 @@ void nano::network::ongoing_cleanup ()
 	cleanup (std::chrono::steady_clock::now () - node.network_params.network.cleanup_cutoff ());
 	std::weak_ptr<nano::node> node_w (node.shared ());
 	node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::seconds (node.network_params.network.is_dev_network () ? 1 : 5), [node_w] () {
-		if (auto node_l = node_w.lock ())
+		if (const auto node_l = node_w.lock ())
 		{
 			node_l->network.ongoing_cleanup ();
 		}
@@ -697,7 +697,7 @@ void nano::network::ongoing_syn_cookie_cleanup ()
 	syn_cookies.purge (std::chrono::steady_clock::now () - nano::transport::syn_cookie_cutoff);
 	std::weak_ptr<nano::node> node_w (node.shared ());
 	node.workers.add_timed_task (std::chrono::steady_clock::now () + (nano::transport::syn_cookie_cutoff * 2), [node_w] () {
-		if (auto node_l = node_w.lock ())
+		if (const auto node_l = node_w.lock ())
 		{
 			node_l->network.ongoing_syn_cookie_cleanup ();
 		}
@@ -710,7 +710,7 @@ void nano::network::ongoing_keepalive ()
 	flood_keepalive_self (0.25f);
 	std::weak_ptr<nano::node> node_w (node.shared ());
 	node.workers.add_timed_task (std::chrono::steady_clock::now () + node.network_params.network.keepalive_period, [node_w] () {
-		if (auto node_l = node_w.lock ())
+		if (const auto node_l = node_w.lock ())
 		{
 			node_l->network.ongoing_keepalive ();
 		}
@@ -766,7 +766,7 @@ bool nano::network::verify_handshake_response (const nano::node_id_handshake::re
 		return false; // Fail
 	}
 
-	auto cookie = syn_cookies.cookie (remote_endpoint);
+	const auto cookie = syn_cookies.cookie (remote_endpoint);
 	if (!cookie)
 	{
 		node.stats.inc (nano::stat::type::handshake, nano::stat::detail::missing_cookie);
@@ -874,7 +874,7 @@ nano::syn_cookies::syn_cookies (std::size_t max_cookies_per_ip_a) :
 
 boost::optional<nano::uint256_union> nano::syn_cookies::assign (nano::endpoint const & endpoint_a)
 {
-	auto ip_addr (endpoint_a.address ());
+	const auto ip_addr (endpoint_a.address ());
 	debug_assert (ip_addr.is_v6 ());
 	nano::lock_guard<nano::mutex> lock{ syn_cookie_mutex };
 	unsigned & ip_cookies = cookies_per_ip[ip_addr];
@@ -885,7 +885,7 @@ boost::optional<nano::uint256_union> nano::syn_cookies::assign (nano::endpoint c
 		{
 			nano::uint256_union query;
 			random_pool::generate_block (query.bytes.data (), query.bytes.size ());
-			syn_cookie_info info{ query, std::chrono::steady_clock::now () };
+			const syn_cookie_info info{ query, std::chrono::steady_clock::now () };
 			cookies[endpoint_a] = info;
 			++ip_cookies;
 			result = query;
@@ -896,11 +896,11 @@ boost::optional<nano::uint256_union> nano::syn_cookies::assign (nano::endpoint c
 
 bool nano::syn_cookies::validate (nano::endpoint const & endpoint_a, nano::account const & node_id, nano::signature const & sig)
 {
-	auto ip_addr (endpoint_a.address ());
+	const auto ip_addr (endpoint_a.address ());
 	debug_assert (ip_addr.is_v6 ());
 	nano::lock_guard<nano::mutex> lock{ syn_cookie_mutex };
 	auto result (true);
-	auto cookie_it (cookies.find (endpoint_a));
+	const auto cookie_it (cookies.find (endpoint_a));
 	if (cookie_it != cookies.end () && !nano::validate_message (node_id, cookie_it->second.cookie, sig))
 	{
 		result = false;
@@ -947,10 +947,10 @@ void nano::syn_cookies::purge (std::chrono::steady_clock::time_point const & cut
 
 std::optional<nano::uint256_union> nano::syn_cookies::cookie (const nano::endpoint & endpoint_a)
 {
-	auto ip_addr (endpoint_a.address ());
+	const auto ip_addr (endpoint_a.address ());
 	debug_assert (ip_addr.is_v6 ());
 	nano::lock_guard<nano::mutex> lock{ syn_cookie_mutex };
-	auto cookie_it (cookies.find (endpoint_a));
+	const auto cookie_it (cookies.find (endpoint_a));
 	if (cookie_it != cookies.end ())
 	{
 		auto cookie = cookie_it->second.cookie;

@@ -32,8 +32,8 @@ void nano::block_broadcast::connect (nano::block_processor & block_processor)
 void nano::block_broadcast::observe (std::shared_ptr<nano::block> block)
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	auto existing = local.find (block);
-	auto local_l = existing != local.end ();
+	const auto existing = local.find (block);
+	const auto local_l = existing != local.end ();
 	lock.unlock ();
 	if (local_l)
 	{

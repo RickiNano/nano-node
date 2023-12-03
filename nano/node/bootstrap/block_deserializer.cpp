@@ -60,6 +60,6 @@ void nano::bootstrap::block_deserializer::received_type (nano::transport::socket
 void nano::bootstrap::block_deserializer::received_block (nano::block_type type, callback_type const && callback)
 {
 	nano::bufferstream stream{ read_buffer->data (), read_buffer->size () };
-	auto block = nano::deserialize_block (stream, type);
+	const auto block = nano::deserialize_block (stream, type);
 	callback (boost::system::error_code{}, block);
 }

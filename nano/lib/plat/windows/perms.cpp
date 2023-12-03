@@ -12,7 +12,7 @@ void nano::set_umask ()
 {
 	int oldMode;
 
-	auto result (_umask_s (_S_IWRITE | _S_IREAD, &oldMode));
+	const auto result (_umask_s (_S_IWRITE | _S_IREAD, &oldMode));
 	debug_assert (result == 0);
 }
 

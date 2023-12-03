@@ -12,7 +12,7 @@ nano::gap_cache::gap_cache (nano::node & node_a) :
 void nano::gap_cache::add (nano::block_hash const & hash_a, std::chrono::steady_clock::time_point time_point_a)
 {
 	nano::lock_guard<nano::mutex> lock{ mutex };
-	auto existing (blocks.get<tag_hash> ().find (hash_a));
+	const auto existing (blocks.get<tag_hash> ().find (hash_a));
 	if (existing != blocks.get<tag_hash> ().end ())
 	{
 		blocks.get<tag_hash> ().modify (existing, [time_point_a] (nano::gap_information & info) {
@@ -46,7 +46,7 @@ void nano::gap_cache::vote (std::shared_ptr<nano::vote> const & vote_a)
 		{
 			auto is_new (false);
 			gap_blocks_by_hash.modify (existing, [&is_new, &vote_a] (nano::gap_information & info) {
-				auto it = std::find (info.voters.begin (), info.voters.end (), vote_a->account);
+				const auto it = std::find (info.voters.begin (), info.voters.end (), vote_a->account);
 				is_new = (it == info.voters.end ());
 				if (is_new)
 				{
@@ -129,8 +129,8 @@ std::size_t nano::gap_cache::size ()
 
 std::unique_ptr<nano::container_info_component> nano::collect_container_info (gap_cache & gap_cache, std::string const & name)
 {
-	auto count = gap_cache.size ();
-	auto sizeof_element = sizeof (decltype (gap_cache.blocks)::value_type);
+	const auto count = gap_cache.size ();
+	const auto sizeof_element = sizeof (decltype (gap_cache.blocks)::value_type);
 	auto composite = std::make_unique<container_info_composite> (name);
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "blocks", count, sizeof_element }));
 	return composite;

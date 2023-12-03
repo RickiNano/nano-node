@@ -116,7 +116,7 @@ void nano::add_node_flag_options (boost::program_options::options_description & 
 
 std::error_code nano::update_flags (nano::node_flags & flags_a, boost::program_options::variables_map const & vm)
 {
-	std::error_code ec;
+	const std::error_code ec;
 	flags_a.disable_add_initial_peers = (vm.count ("disable_add_initial_peers") > 0);
 	flags_a.disable_backup = (vm.count ("disable_backup") > 0);
 	flags_a.disable_lazy_bootstrap = (vm.count ("disable_lazy_bootstrap") > 0);
@@ -144,33 +144,33 @@ std::error_code nano::update_flags (nano::node_flags & flags_a, boost::program_o
 		flags_a.block_processor_full_size = 1024 * 1024;
 		flags_a.block_processor_verification_size = std::numeric_limits<std::size_t>::max ();
 	}
-	auto block_processor_batch_size_it = vm.find ("block_processor_batch_size");
+	const auto block_processor_batch_size_it = vm.find ("block_processor_batch_size");
 	if (block_processor_batch_size_it != vm.end ())
 	{
 		flags_a.block_processor_batch_size = block_processor_batch_size_it->second.as<std::size_t> ();
 	}
-	auto block_processor_full_size_it = vm.find ("block_processor_full_size");
+	const auto block_processor_full_size_it = vm.find ("block_processor_full_size");
 	if (block_processor_full_size_it != vm.end ())
 	{
 		flags_a.block_processor_full_size = block_processor_full_size_it->second.as<std::size_t> ();
 	}
-	auto block_processor_verification_size_it = vm.find ("block_processor_verification_size");
+	const auto block_processor_verification_size_it = vm.find ("block_processor_verification_size");
 	if (block_processor_verification_size_it != vm.end ())
 	{
 		flags_a.block_processor_verification_size = block_processor_verification_size_it->second.as<std::size_t> ();
 	}
-	auto vote_processor_capacity_it = vm.find ("vote_processor_capacity");
+	const auto vote_processor_capacity_it = vm.find ("vote_processor_capacity");
 	if (vote_processor_capacity_it != vm.end ())
 	{
 		flags_a.vote_processor_capacity = vote_processor_capacity_it->second.as<std::size_t> ();
 	}
 	// Config overriding
-	auto config (vm.find ("config"));
+	const auto config (vm.find ("config"));
 	if (config != vm.end ())
 	{
 		flags_a.config_overrides = nano::config_overrides (config->second.as<std::vector<nano::config_key_value_pair>> ());
 	}
-	auto rpcconfig (vm.find ("rpcconfig"));
+	const auto rpcconfig (vm.find ("rpcconfig"));
 	if (rpcconfig != vm.end ())
 	{
 		flags_a.rpc_config_overrides = nano::config_overrides (rpcconfig->second.as<std::vector<nano::config_key_value_pair>> ());
@@ -199,12 +199,12 @@ void database_write_lock_error (std::error_code & ec)
 bool copy_database (std::filesystem::path const & data_path, boost::program_options::variables_map const & vm, std::filesystem::path const & output_path, std::error_code & ec)
 {
 	bool success = false;
-	bool needs_to_write = vm.count ("unchecked_clear") || vm.count ("clear_send_ids") || vm.count ("online_weight_clear") || vm.count ("peer_clear") || vm.count ("confirmation_height_clear") || vm.count ("final_vote_clear") || vm.count ("rebuild_database");
+	const bool needs_to_write = vm.count ("unchecked_clear") || vm.count ("clear_send_ids") || vm.count ("online_weight_clear") || vm.count ("peer_clear") || vm.count ("confirmation_height_clear") || vm.count ("final_vote_clear") || vm.count ("rebuild_database");
 
 	auto node_flags = nano::inactive_node_flag_defaults ();
 	node_flags.read_only = !needs_to_write;
 	nano::update_flags (node_flags, vm);
-	nano::inactive_node node (data_path, node_flags);
+	const nano::inactive_node node (data_path, node_flags);
 	if (!node.node->init_error ())
 	{
 		auto & store (node.node->store);
@@ -1325,7 +1325,7 @@ bool is_using_rocksdb (std::filesystem::path const & data_path, boost::program_o
 	nano::daemon_config config{ data_path, network_params };
 
 	// Config overriding
-	auto config_arg (vm.find ("config"));
+	const auto config_arg (vm.find ("config"));
 	std::vector<std::string> config_overrides;
 	if (config_arg != vm.end ())
 	{
@@ -1333,7 +1333,7 @@ bool is_using_rocksdb (std::filesystem::path const & data_path, boost::program_o
 	}
 
 	// config override...
-	auto error = nano::read_node_config_toml (data_path, config, config_overrides);
+	const auto error = nano::read_node_config_toml (data_path, config, config_overrides);
 	if (!error)
 	{
 		return config.node.rocksdb_config.enable;

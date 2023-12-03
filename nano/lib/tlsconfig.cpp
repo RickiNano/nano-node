@@ -141,7 +141,7 @@ namespace
 nano::error read_tls_config_toml (std::filesystem::path const & data_path_a, nano::tls_config & config_a, nano::logger_mt & logger_a, std::vector<std::string> const & config_overrides)
 {
 	nano::error error;
-	auto toml_config_path = nano::get_tls_toml_config_path (data_path_a);
+	const auto toml_config_path = nano::get_tls_toml_config_path (data_path_a);
 
 	// Parse and deserialize
 	nano::tomlconfig toml;

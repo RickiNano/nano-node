@@ -32,7 +32,7 @@ nano::signal_manager::signal_descriptor::signal_descriptor (std::shared_ptr<boos
 void nano::signal_manager::register_signal_handler (int signum, std::function<void (int)> handler, bool repeat)
 {
 	// create a signal set to hold the mapping between signals and signal handlers
-	auto sigset = std::make_shared<boost::asio::signal_set> (ioc, signum);
+	const auto sigset = std::make_shared<boost::asio::signal_set> (ioc, signum);
 
 	// a signal descriptor holds all the data needed by the base handler including the signal set
 	// working with copies of a descriptor is OK

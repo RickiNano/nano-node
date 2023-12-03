@@ -35,7 +35,7 @@ void nano::rep_crawler::validate ()
 
 	// normally the rep_crawler only tracks principal reps but it can be made to track
 	// reps with less weight by setting rep_crawler_weight_minimum to a low value
-	auto minimum = std::min (node.minimum_principal_weight (), node.config.rep_crawler_weight_minimum.number ());
+	const auto minimum = std::min (node.minimum_principal_weight (), node.config.rep_crawler_weight_minimum.number ());
 
 	for (auto const & i : responses_l)
 	{
@@ -107,20 +107,20 @@ void nano::rep_crawler::validate ()
 
 void nano::rep_crawler::ongoing_crawl ()
 {
-	auto now (std::chrono::steady_clock::now ());
-	auto total_weight_l (total_weight ());
+	const auto now (std::chrono::steady_clock::now ());
+	const auto total_weight_l (total_weight ());
 	cleanup_reps ();
 	validate ();
 	query (get_crawl_targets (total_weight_l));
-	auto sufficient_weight (total_weight_l > node.online_reps.delta ());
+	const auto sufficient_weight (total_weight_l > node.online_reps.delta ());
 	// If online weight drops below minimum, reach out to preconfigured peers
 	if (!sufficient_weight)
 	{
 		node.keepalive_preconfigured (node.config.preconfigured_peers);
 	}
 	// Reduce crawl frequency when there's enough total peer weight
-	unsigned next_run_ms = node.network_params.network.is_dev_network () ? 100 : sufficient_weight ? 7000
-																								   : 3000;
+	const unsigned next_run_ms = node.network_params.network.is_dev_network () ? 100 : sufficient_weight ? 7000
+		                             : 3000;
 	std::weak_ptr<nano::node> node_w (node.shared ());
 	node.workers.add_timed_task (now + std::chrono::milliseconds (next_run_ms), [node_w, this] () {
 		if (auto node_l = node_w.lock ())
@@ -136,7 +136,7 @@ std::vector<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::get_cr
 	constexpr std::size_t aggressive_count = 40;
 
 	// Crawl more aggressively if we lack sufficient total peer weight.
-	bool sufficient_weight (total_weight_a > node.online_reps.delta ());
+	const bool sufficient_weight (total_weight_a > node.online_reps.delta ());
 	uint16_t required_peer_count = sufficient_weight ? conservative_count : aggressive_count;
 
 	// Add random peers. We do this even if we have enough weight, in order to pick up reps
@@ -154,7 +154,7 @@ std::vector<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::get_cr
 
 void nano::rep_crawler::query (std::vector<std::shared_ptr<nano::transport::channel>> const & channels_a)
 {
-	auto transaction (node.store.tx_begin_read ());
+	const auto transaction (node.store.tx_begin_read ());
 	auto hash_root (node.ledger.hash_root_random (transaction));
 	{
 		nano::lock_guard<nano::mutex> lock{ active_mutex };
@@ -183,9 +183,9 @@ void nano::rep_crawler::query (std::vector<std::shared_ptr<nano::transport::chan
 	// A representative must respond with a vote within the deadline
 	std::weak_ptr<nano::node> node_w (node.shared ());
 	node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::seconds (5), [node_w, hash = hash_root.first] () {
-		if (auto node_l = node_w.lock ())
+		if (const auto node_l = node_w.lock ())
 		{
-			auto target_finished_processed (node_l->vote_processor.total_processed + node_l->vote_processor.size ());
+			const auto target_finished_processed (node_l->vote_processor.total_processed + node_l->vote_processor.size ());
 			node_l->rep_crawler.throttled_remove (hash, target_finished_processed);
 		}
 	});
@@ -208,7 +208,7 @@ void nano::rep_crawler::throttled_remove (nano::block_hash const & hash_a, uint6
 	{
 		std::weak_ptr<nano::node> node_w (node.shared ());
 		node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::seconds (5), [node_w, hash_a, target_finished_processed] () {
-			if (auto node_l = node_w.lock ())
+			if (const auto node_l = node_w.lock ())
 			{
 				node_l->rep_crawler.throttled_remove (hash_a, target_finished_processed);
 			}
@@ -219,7 +219,7 @@ void nano::rep_crawler::throttled_remove (nano::block_hash const & hash_a, uint6
 bool nano::rep_crawler::is_pr (nano::transport::channel const & channel_a) const
 {
 	nano::lock_guard<nano::mutex> lock{ probable_reps_mutex };
-	auto existing = probable_reps.get<tag_channel_ref> ().find (channel_a);
+	const auto existing = probable_reps.get<tag_channel_ref> ().find (channel_a);
 	bool result = false;
 	if (existing != probable_reps.get<tag_channel_ref> ().end ())
 	{
@@ -323,7 +323,7 @@ void nano::rep_crawler::cleanup_reps ()
 
 std::vector<nano::representative> nano::rep_crawler::representatives (std::size_t count_a, nano::uint128_t const weight_a, boost::optional<decltype (nano::network_constants::protocol_version)> const & opt_version_min_a)
 {
-	auto version_min (opt_version_min_a.value_or (node.network_params.network.protocol_version_min));
+	const auto version_min (opt_version_min_a.value_or (node.network_params.network.protocol_version_min));
 	std::multimap<nano::amount, representative, std::greater<nano::amount>> ordered;
 	nano::lock_guard<nano::mutex> lock{ probable_reps_mutex };
 	for (auto i (probable_reps.get<tag_account> ().begin ()), n (probable_reps.get<tag_account> ().end ()); i != n; ++i)
@@ -350,7 +350,7 @@ std::vector<nano::representative> nano::rep_crawler::principal_representatives (
 std::vector<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::representative_endpoints (std::size_t count_a)
 {
 	std::vector<std::shared_ptr<nano::transport::channel>> result;
-	auto reps (representatives (count_a));
+	const auto reps (representatives (count_a));
 	for (auto const & rep : reps)
 	{
 		result.push_back (rep.channel);

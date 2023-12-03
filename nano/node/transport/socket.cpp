@@ -122,7 +122,7 @@ void nano::transport::socket::async_read (std::shared_ptr<std::vector<uint8_t>> 
 	else
 	{
 		debug_assert (false && "nano::transport::socket::async_read called with incorrect buffer size");
-		boost::system::error_code ec_buffer = boost::system::errc::make_error_code (boost::system::errc::no_buffer_space);
+		const boost::system::error_code ec_buffer = boost::system::errc::make_error_code (boost::system::errc::no_buffer_space);
 		callback_a (ec_buffer, 0);
 	}
 }
@@ -140,7 +140,7 @@ void nano::transport::socket::async_write (nano::shared_const_buffer const & buf
 		return;
 	}
 
-	bool queued = send_queue.insert (buffer_a, callback_a, traffic_type);
+	const bool queued = send_queue.insert (buffer_a, callback_a, traffic_type);
 	if (!queued)
 	{
 		if (callback_a)
@@ -245,7 +245,7 @@ void nano::transport::socket::ongoing_checkup ()
 {
 	std::weak_ptr<nano::transport::socket> this_w (shared_from_this ());
 	node.workers.add_timed_task (std::chrono::steady_clock::now () + std::chrono::seconds (node.network_params.network.is_dev_network () ? 1 : 5), [this_w] () {
-		if (auto this_l = this_w.lock ())
+		if (const auto this_l = this_w.lock ())
 		{
 			// If the socket is already dead, close just in case, and stop doing checkups
 			if (!this_l->alive ())
@@ -254,7 +254,7 @@ void nano::transport::socket::ongoing_checkup ()
 				return;
 			}
 
-			nano::seconds_t now = nano::seconds_since_epoch ();
+			const nano::seconds_t now = nano::seconds_since_epoch ();
 			auto condition_to_disconnect{ false };
 
 			// if this is a server socket, and no data is received for silent_connection_tolerance_time seconds then disconnect
@@ -422,7 +422,7 @@ void nano::transport::socket::write_queue::clear ()
 std::size_t nano::transport::socket::write_queue::size (nano::transport::traffic_type traffic_type) const
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
-	if (auto it = queues.find (traffic_type); it != queues.end ())
+	if (const auto it = queues.find (traffic_type); it != queues.end ())
 	{
 		return it->second.size ();
 	}
@@ -470,7 +470,7 @@ void nano::transport::server_socket::close ()
 		this_l->acceptor.close ();
 		for (auto & address_connection_pair : this_l->connections_per_address)
 		{
-			if (auto connection_l = address_connection_pair.second.lock ())
+			if (const auto connection_l = address_connection_pair.second.lock ())
 			{
 				connection_l->close ();
 			}
@@ -486,14 +486,14 @@ boost::asio::ip::network_v6 nano::transport::socket_functions::get_ipv6_subnet_a
 
 boost::asio::ip::address nano::transport::socket_functions::first_ipv6_subnet_address (boost::asio::ip::address_v6 const & ip_address, std::size_t network_prefix)
 {
-	auto range = get_ipv6_subnet_address (ip_address, network_prefix).hosts ();
+	const auto range = get_ipv6_subnet_address (ip_address, network_prefix).hosts ();
 	debug_assert (!range.empty ());
 	return *(range.begin ());
 }
 
 boost::asio::ip::address nano::transport::socket_functions::last_ipv6_subnet_address (boost::asio::ip::address_v6 const & ip_address, std::size_t network_prefix)
 {
-	auto range = get_ipv6_subnet_address (ip_address, network_prefix).hosts ();
+	const auto range = get_ipv6_subnet_address (ip_address, network_prefix).hosts ();
 	debug_assert (!range.empty ());
 	return *(--range.end ());
 }
@@ -503,7 +503,7 @@ nano::transport::address_socket_mmap const & per_address_connections,
 boost::asio::ip::address_v6 const & remote_address,
 std::size_t network_prefix)
 {
-	auto range = get_ipv6_subnet_address (remote_address, network_prefix).hosts ();
+	const auto range = get_ipv6_subnet_address (remote_address, network_prefix).hosts ();
 	if (range.empty ())
 	{
 		return 0;

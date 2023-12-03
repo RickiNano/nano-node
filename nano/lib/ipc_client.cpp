@@ -56,7 +56,7 @@ public:
 		this_l->timer_start (io_timeout);
 		resolver.async_resolve (boost::asio::ip::tcp::resolver::query (host_a, std::to_string (port_a)), [this_l, callback = std::move (callback_a)] (boost::system::error_code const & ec, boost::asio::ip::tcp::resolver::iterator endpoint_iterator_a) {
 			this_l->timer_cancel ();
-			boost::asio::ip::tcp::resolver::iterator end;
+			const boost::asio::ip::tcp::resolver::iterator end;
 			if (!ec && endpoint_iterator_a != end)
 			{
 				this_l->endpoint = *endpoint_iterator_a;
@@ -94,7 +94,7 @@ public:
 	{
 		auto this_l (this->shared_from_this ());
 		boost::asio::post (strand, boost::asio::bind_executor (strand, [buffer_a, callback_a, this_l] () {
-			bool write_in_progress = !this_l->send_queue.empty ();
+			const bool write_in_progress = !this_l->send_queue.empty ();
 			auto queue_size = this_l->send_queue.size ();
 			if (queue_size < this_l->queue_size_max)
 			{
@@ -264,7 +264,7 @@ nano::error nano::ipc::ipc_client::connect (std::string const & path_a)
 void nano::ipc::ipc_client::async_connect (std::string const & host_a, uint16_t port_a, std::function<void (nano::error)> callback_a)
 {
 	impl = std::make_unique<client_impl> (io_ctx);
-	auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
+	const auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
 	client->connect (host_a, port_a, std::move (callback_a));
 }
 
@@ -279,7 +279,7 @@ nano::error nano::ipc::ipc_client::connect (std::string const & host, uint16_t p
 
 void nano::ipc::ipc_client::async_write (nano::shared_const_buffer const & buffer_a, std::function<void (nano::error, size_t)> callback_a)
 {
-	auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
+	const auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
 	client->get_channel ().async_write (buffer_a, [callback = std::move (callback_a)] (boost::system::error_code const & ec_a, size_t bytes_written_a) {
 		callback (nano::error (ec_a), bytes_written_a);
 	});
@@ -287,7 +287,7 @@ void nano::ipc::ipc_client::async_write (nano::shared_const_buffer const & buffe
 
 void nano::ipc::ipc_client::async_read (std::shared_ptr<std::vector<uint8_t>> const & buffer_a, size_t size_a, std::function<void (nano::error, size_t)> callback_a)
 {
-	auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
+	const auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
 	client->get_channel ().async_read (buffer_a, size_a, [callback = std::move (callback_a), buffer_a] (boost::system::error_code const & ec_a, size_t bytes_read_a) {
 		callback (nano::error (ec_a), bytes_read_a);
 	});
@@ -296,7 +296,7 @@ void nano::ipc::ipc_client::async_read (std::shared_ptr<std::vector<uint8_t>> co
 /** Read a length-prefixed message asynchronously. Received length must be a big endian 32-bit unsigned integer. */
 void nano::ipc::ipc_client::async_read_message (std::shared_ptr<std::vector<uint8_t>> const & buffer_a, std::chrono::seconds timeout_a, std::function<void (nano::error, size_t)> callback_a)
 {
-	auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
+	const auto client (boost::polymorphic_downcast<client_impl *> (impl.get ()));
 	client->get_channel ().async_read_message (buffer_a, timeout_a, [callback = std::move (callback_a), buffer_a] (boost::system::error_code const & ec_a, size_t bytes_read_a) {
 		callback (nano::error (ec_a), bytes_read_a);
 	});
@@ -315,7 +315,7 @@ std::vector<uint8_t> nano::ipc::get_preamble (nano::ipc::payload_encoding encodi
 nano::shared_const_buffer nano::ipc::prepare_flatbuffers_request (std::shared_ptr<flatbuffers::FlatBufferBuilder> const & flatbuffer_a)
 {
 	auto buffer_l (get_preamble (nano::ipc::payload_encoding::flatbuffers));
-	auto payload_length = static_cast<uint32_t> (flatbuffer_a->GetSize ());
+	const auto payload_length = static_cast<uint32_t> (flatbuffer_a->GetSize ());
 	uint32_t be = boost::endian::native_to_big (payload_length);
 	char * chars = reinterpret_cast<char *> (&be);
 	buffer_l.insert (buffer_l.end (), chars, chars + sizeof (uint32_t));
@@ -329,7 +329,7 @@ nano::shared_const_buffer nano::ipc::prepare_request (nano::ipc::payload_encodin
 	if (encoding_a == nano::ipc::payload_encoding::json_v1 || encoding_a == nano::ipc::payload_encoding::flatbuffers_json)
 	{
 		buffer_l = get_preamble (encoding_a);
-		auto payload_length = static_cast<uint32_t> (payload_a.size ());
+		const auto payload_length = static_cast<uint32_t> (payload_a.size ());
 		uint32_t be = boost::endian::native_to_big (payload_length);
 		char * chars = reinterpret_cast<char *> (&be);
 		buffer_l.insert (buffer_l.end (), chars, chars + sizeof (uint32_t));
@@ -340,14 +340,14 @@ nano::shared_const_buffer nano::ipc::prepare_request (nano::ipc::payload_encodin
 
 std::string nano::ipc::request (nano::ipc::payload_encoding encoding_a, nano::ipc::ipc_client & ipc_client, std::string const & rpc_action_a)
 {
-	auto req (prepare_request (encoding_a, rpc_action_a));
+	const auto req (prepare_request (encoding_a, rpc_action_a));
 	auto res (std::make_shared<std::vector<uint8_t>> ());
 
 	std::promise<std::string> result_l;
 	ipc_client.async_write (req, [&ipc_client, &res, &result_l] (nano::error const &, size_t size_a) {
 		// Read length
 		ipc_client.async_read (res, sizeof (uint32_t), [&ipc_client, &res, &result_l] (nano::error const &, size_t size_read_a) {
-			uint32_t payload_size_l = boost::endian::big_to_native (*reinterpret_cast<uint32_t *> (res->data ()));
+			const uint32_t payload_size_l = boost::endian::big_to_native (*reinterpret_cast<uint32_t *> (res->data ()));
 			// Read json payload
 			ipc_client.async_read (res, payload_size_l, [&res, &result_l] (nano::error const &, size_t size_read_a) {
 				result_l.set_value (std::string (res->begin (), res->end ()));

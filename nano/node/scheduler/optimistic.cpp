@@ -109,8 +109,8 @@ bool nano::scheduler::optimistic::predicate () const
 		return false;
 	}
 
-	auto candidate = candidates.front ();
-	bool result = nano::elapsed (candidate.timestamp, network_constants.optimistic_activation_delay);
+	const auto candidate = candidates.front ();
+	const bool result = nano::elapsed (candidate.timestamp, network_constants.optimistic_activation_delay);
 	return result;
 }
 
@@ -147,7 +147,7 @@ void nano::scheduler::optimistic::run ()
 
 void nano::scheduler::optimistic::run_one (store::transaction const & transaction, entry const & candidate)
 {
-	auto block = ledger.head_block (transaction, candidate.account);
+	const auto block = ledger.head_block (transaction, candidate.account);
 	if (block)
 	{
 		// Ensure block is not already confirmed
@@ -155,7 +155,7 @@ void nano::scheduler::optimistic::run_one (store::transaction const & transactio
 		{
 			// Try to insert it into AEC
 			// We check for AEC vacancy inside our predicate
-			auto result = node.active.insert (block, nano::election_behavior::optimistic);
+			const auto result = node.active.insert (block, nano::election_behavior::optimistic);
 
 			stats.inc (nano::stat::type::optimistic_scheduler, result.inserted ? nano::stat::detail::insert : nano::stat::detail::insert_failed);
 		}

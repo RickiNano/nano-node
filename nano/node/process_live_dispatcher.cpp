@@ -45,7 +45,7 @@ void nano::process_live_dispatcher::process_live (nano::block const & block, sto
 	// Start collecting quorum on block
 	if (ledger.dependents_confirmed (transaction, block))
 	{
-		auto account = block.account ().is_zero () ? block.sideband ().account : block.account ();
+		const auto account = block.account ().is_zero () ? block.sideband ().account : block.account ();
 		scheduler.activate (account, transaction);
 	}
 

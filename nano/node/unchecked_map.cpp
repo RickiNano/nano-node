@@ -21,7 +21,7 @@ nano::unchecked_map::~unchecked_map ()
 void nano::unchecked_map::put (nano::hash_or_account const & dependency, nano::unchecked_info const & info)
 {
 	nano::lock_guard<std::recursive_mutex> lock{ entries_mutex };
-	nano::unchecked_key key{ dependency, info.block->hash () };
+	const nano::unchecked_key key{ dependency, info.block->hash () };
 	entries.get<tag_root> ().insert ({ key, info });
 	if (entries.size () > mem_block_count_max)
 	{
@@ -66,7 +66,7 @@ bool nano::unchecked_map::exists (nano::unchecked_key const & key) const
 void nano::unchecked_map::del (nano::unchecked_key const & key)
 {
 	nano::lock_guard<std::recursive_mutex> lock{ entries_mutex };
-	auto erased = entries.get<tag_root> ().erase (key);
+	const auto erased = entries.get<tag_root> ().erase (key);
 	debug_assert (erased);
 }
 

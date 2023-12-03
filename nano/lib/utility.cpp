@@ -132,7 +132,7 @@ void assert_internal (char const * check_expr, char const * func, char const * f
 	std::cerr << "\n";
 
 	// Output stack trace to cerr
-	auto backtrace_str = nano::generate_stacktrace ();
+	const auto backtrace_str = nano::generate_stacktrace ();
 	std::cerr << backtrace_str << std::endl;
 
 	// "abort" at the end of this function will go into any signal handlers (the daemon ones will generate a stack trace and load memory address files on non-Windows systems).
@@ -141,8 +141,8 @@ void assert_internal (char const * check_expr, char const * func, char const * f
 	{
 		// Try construct the stacktrace dump in the same folder as the the running executable, otherwise use the current directory.
 		boost::system::error_code err;
-		auto running_executable_filepath = boost::dll::program_location (err);
-		std::string filename = is_release_assert ? "nano_node_backtrace_release_assert.txt" : "nano_node_backtrace_assert.txt";
+		const auto running_executable_filepath = boost::dll::program_location (err);
+		const std::string filename = is_release_assert ? "nano_node_backtrace_release_assert.txt" : "nano_node_backtrace_assert.txt";
 		std::string filepath = filename;
 		if (!err)
 		{

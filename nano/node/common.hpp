@@ -28,12 +28,12 @@ namespace
 {
 uint64_t endpoint_hash_raw (nano::endpoint const & endpoint_a)
 {
-	uint64_t result (nano::ip_address_hash_raw (endpoint_a.address (), endpoint_a.port ()));
+	const uint64_t result (nano::ip_address_hash_raw (endpoint_a.address (), endpoint_a.port ()));
 	return result;
 }
 uint64_t endpoint_hash_raw (nano::tcp_endpoint const & endpoint_a)
 {
-	uint64_t result (nano::ip_address_hash_raw (endpoint_a.address (), endpoint_a.port ()));
+	const uint64_t result (nano::ip_address_hash_raw (endpoint_a.address (), endpoint_a.port ()));
 	return result;
 }
 
@@ -60,14 +60,14 @@ struct endpoint_hash<4>
 {
 	std::size_t operator() (nano::endpoint const & endpoint_a) const
 	{
-		uint64_t big (endpoint_hash_raw (endpoint_a));
-		uint32_t result (static_cast<uint32_t> (big) ^ static_cast<uint32_t> (big >> 32));
+		const uint64_t big (endpoint_hash_raw (endpoint_a));
+		const uint32_t result (static_cast<uint32_t> (big) ^ static_cast<uint32_t> (big >> 32));
 		return result;
 	}
 	std::size_t operator() (nano::tcp_endpoint const & endpoint_a) const
 	{
-		uint64_t big (endpoint_hash_raw (endpoint_a));
-		uint32_t result (static_cast<uint32_t> (big) ^ static_cast<uint32_t> (big >> 32));
+		const uint64_t big (endpoint_hash_raw (endpoint_a));
+		const uint32_t result (static_cast<uint32_t> (big) ^ static_cast<uint32_t> (big >> 32));
 		return result;
 	}
 };
@@ -91,8 +91,8 @@ struct ip_address_hash<4>
 {
 	std::size_t operator() (boost::asio::ip::address const & ip_address_a) const
 	{
-		uint64_t big (nano::ip_address_hash_raw (ip_address_a));
-		uint32_t result (static_cast<uint32_t> (big) ^ static_cast<uint32_t> (big >> 32));
+		const uint64_t big (nano::ip_address_hash_raw (ip_address_a));
+		const uint32_t result (static_cast<uint32_t> (big) ^ static_cast<uint32_t> (big >> 32));
 		return result;
 	}
 };
@@ -105,7 +105,7 @@ struct hash<::nano::endpoint>
 {
 	std::size_t operator() (::nano::endpoint const & endpoint_a) const
 	{
-		endpoint_hash<sizeof (std::size_t)> ehash;
+		const endpoint_hash<sizeof (std::size_t)> ehash;
 		return ehash (endpoint_a);
 	}
 };
@@ -115,7 +115,7 @@ struct hash<::nano::tcp_endpoint>
 {
 	std::size_t operator() (::nano::tcp_endpoint const & endpoint_a) const
 	{
-		endpoint_hash<sizeof (std::size_t)> ehash;
+		const endpoint_hash<sizeof (std::size_t)> ehash;
 		return ehash (endpoint_a);
 	}
 };
@@ -140,7 +140,7 @@ struct hash<::nano::endpoint>
 {
 	std::size_t operator() (::nano::endpoint const & endpoint_a) const
 	{
-		std::hash<::nano::endpoint> hash;
+		const std::hash<::nano::endpoint> hash;
 		return hash (endpoint_a);
 	}
 };
@@ -150,7 +150,7 @@ struct hash<::nano::tcp_endpoint>
 {
 	std::size_t operator() (::nano::tcp_endpoint const & endpoint_a) const
 	{
-		std::hash<::nano::tcp_endpoint> hash;
+		const std::hash<::nano::tcp_endpoint> hash;
 		return hash (endpoint_a);
 	}
 };
@@ -160,7 +160,7 @@ struct hash<boost::asio::ip::address>
 {
 	std::size_t operator() (boost::asio::ip::address const & ip_a) const
 	{
-		std::hash<boost::asio::ip::address> hash;
+		const std::hash<boost::asio::ip::address> hash;
 		return hash (ip_a);
 	}
 };

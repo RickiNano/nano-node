@@ -232,7 +232,7 @@ void nano::confirmation_height_unbounded::collect_unconfirmed_receive_and_source
 				{
 					// Add the callbacks to the associated receive to retrieve later
 					debug_assert (!receive_source_pairs_a.empty ());
-					auto & last_receive_details = receive_source_pairs_a.back ().receive_details;
+					const auto & last_receive_details = receive_source_pairs_a.back ().receive_details;
 					last_receive_details->source_block_callback_data.assign (block_callback_data_a.begin (), block_callback_data_a.end ());
 					block_callback_data_a.clear ();
 				}
@@ -276,7 +276,7 @@ void nano::confirmation_height_unbounded::collect_unconfirmed_receive_and_source
 
 void nano::confirmation_height_unbounded::prepare_iterated_blocks_for_cementing (preparation_data & preparation_data_a)
 {
-	auto receive_details = preparation_data_a.receive_details;
+	const auto receive_details = preparation_data_a.receive_details;
 	auto block_height = preparation_data_a.block_height;
 	if (block_height > preparation_data_a.confirmation_height)
 	{
@@ -310,14 +310,14 @@ void nano::confirmation_height_unbounded::prepare_iterated_blocks_for_cementing 
 				if (preparation_data_a.already_traversed && receive_details->source_block_callback_data.empty ())
 				{
 					// We are confirming a block which has already been traversed and found no associated receive details for it.
-					auto & above_receive_details_w = implicit_receive_cemented_mapping[preparation_data_a.current];
+					const auto & above_receive_details_w = implicit_receive_cemented_mapping[preparation_data_a.current];
 					debug_assert (!above_receive_details_w.expired ());
-					auto above_receive_details = above_receive_details_w.lock ();
+					const auto above_receive_details = above_receive_details_w.lock ();
 
-					auto num_blocks_already_confirmed = above_receive_details->num_blocks_confirmed - (above_receive_details->height - preparation_data_a.confirmation_height);
+					const auto num_blocks_already_confirmed = above_receive_details->num_blocks_confirmed - (above_receive_details->height - preparation_data_a.confirmation_height);
 
-					auto end_it = above_receive_details->block_callback_data.begin () + above_receive_details->block_callback_data.size () - (num_blocks_already_confirmed);
-					auto start_it = end_it - num_blocks_confirmed;
+					const auto end_it = above_receive_details->block_callback_data.begin () + above_receive_details->block_callback_data.size () - (num_blocks_already_confirmed);
+					const auto start_it = end_it - num_blocks_confirmed;
 
 					block_callback_data.assign (start_it, end_it);
 				}
@@ -326,7 +326,7 @@ void nano::confirmation_height_unbounded::prepare_iterated_blocks_for_cementing 
 					block_callback_data = receive_details->source_block_callback_data;
 				}
 
-				auto num_to_remove = block_callback_data.size () - num_blocks_confirmed;
+				const auto num_to_remove = block_callback_data.size () - num_blocks_confirmed;
 				block_callback_data.erase (std::next (block_callback_data.rbegin (), num_to_remove).base (), block_callback_data.end ());
 				receive_details->source_block_callback_data.clear ();
 			}
@@ -340,17 +340,17 @@ void nano::confirmation_height_unbounded::prepare_iterated_blocks_for_cementing 
 	{
 		// Check whether the previous block has been seen. If so, the rest of sends below have already been seen so don't count them
 		auto const & receive_account = receive_details->account;
-		auto receive_account_it = confirmed_iterated_pairs.find (receive_account);
+		const auto receive_account_it = confirmed_iterated_pairs.find (receive_account);
 		if (receive_account_it != confirmed_iterated_pairs.cend ())
 		{
 			// Get current height
-			auto current_height = receive_account_it->second.confirmed_height;
+			const auto current_height = receive_account_it->second.confirmed_height;
 			receive_account_it->second.confirmed_height = receive_details->height;
 			auto const orig_num_blocks_confirmed = receive_details->num_blocks_confirmed;
 			receive_details->num_blocks_confirmed = receive_details->height - current_height;
 
 			// Get the difference and remove the callbacks
-			auto block_callbacks_to_remove = orig_num_blocks_confirmed - receive_details->num_blocks_confirmed;
+			const auto block_callbacks_to_remove = orig_num_blocks_confirmed - receive_details->num_blocks_confirmed;
 			receive_details->block_callback_data.erase (std::next (receive_details->block_callback_data.rbegin (), block_callbacks_to_remove).base (), receive_details->block_callback_data.end ());
 			debug_assert (receive_details->block_callback_data.size () == receive_details->num_blocks_confirmed);
 		}
@@ -371,7 +371,7 @@ void nano::confirmation_height_unbounded::cement_blocks (nano::write_guard & sco
 	std::vector<std::shared_ptr<nano::block>> cemented_blocks;
 	auto error = false;
 	{
-		auto transaction (ledger.store.tx_begin_write ({}, { nano::tables::confirmation_height }));
+		const auto transaction (ledger.store.tx_begin_write ({}, { nano::tables::confirmation_height }));
 		cemented_batch_timer.start ();
 		while (!pending_writes.empty ())
 		{
@@ -423,7 +423,7 @@ void nano::confirmation_height_unbounded::cement_blocks (nano::write_guard & sco
 		}
 	}
 
-	auto time_spent_cementing = cemented_batch_timer.since_start ().count ();
+	const auto time_spent_cementing = cemented_batch_timer.since_start ().count ();
 	if (logging.timing_logging () && time_spent_cementing > 50)
 	{
 		logger.always_log (boost::str (boost::format ("Cemented %1% blocks in %2% %3% (unbounded processor)") % cemented_blocks.size () % time_spent_cementing % cemented_batch_timer.unit ()));
@@ -441,7 +441,7 @@ void nano::confirmation_height_unbounded::cement_blocks (nano::write_guard & sco
 std::shared_ptr<nano::block> nano::confirmation_height_unbounded::get_block_and_sideband (nano::block_hash const & hash_a, store::transaction const & transaction_a)
 {
 	nano::lock_guard<nano::mutex> guard (block_cache_mutex);
-	auto block_cache_it = block_cache.find (hash_a);
+	const auto block_cache_it = block_cache.find (hash_a);
 	if (block_cache_it != block_cache.cend ())
 	{
 		return block_cache_it->second;
