@@ -1,8 +1,6 @@
 #include <nano/lib/errors.hpp>
 #include <nano/lib/utility.hpp>
 
-#include <boost/system/error_code.hpp>
-
 std::string nano::error_common_messages::message (int ev) const
 {
 	switch (static_cast<nano::error_common> (ev))

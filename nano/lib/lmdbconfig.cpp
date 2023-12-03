@@ -2,8 +2,6 @@
 #include <nano/lib/tomlconfig.hpp>
 #include <nano/secure/common.hpp>
 
-#include <iostream>
-
 nano::error nano::lmdb_config::serialize_toml (nano::tomlconfig & toml) const
 {
 	std::string sync_string;

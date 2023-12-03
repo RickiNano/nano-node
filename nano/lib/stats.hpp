@@ -3,14 +3,12 @@
 #include <nano/lib/errors.hpp>
 #include <nano/lib/observer_set.hpp>
 #include <nano/lib/stats_enums.hpp>
-#include <nano/lib/utility.hpp>
 
 #include <boost/circular_buffer.hpp>
 
 #include <chrono>
 #include <initializer_list>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <unordered_map>
 

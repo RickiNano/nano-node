@@ -2,8 +2,6 @@
 
 #include <nano/lib/errors.hpp>
 
-#include <thread>
-
 namespace nano
 {
 class tomlconfig;

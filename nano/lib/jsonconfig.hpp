@@ -7,8 +7,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include <fstream>
-
 namespace boost
 {
 namespace asio

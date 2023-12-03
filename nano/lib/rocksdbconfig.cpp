@@ -1,4 +1,3 @@
-#include <nano/lib/config.hpp>
 #include <nano/lib/rocksdbconfig.hpp>
 #include <nano/lib/tomlconfig.hpp>
 

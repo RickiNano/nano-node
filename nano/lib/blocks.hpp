@@ -8,12 +8,9 @@
 #include <nano/lib/stream.hpp>
 #include <nano/lib/timer.hpp>
 #include <nano/lib/uniquer.hpp>
-#include <nano/lib/utility.hpp>
 #include <nano/lib/work.hpp>
 
 #include <boost/property_tree/ptree_fwd.hpp>
-
-#include <unordered_map>
 
 namespace nano
 {
