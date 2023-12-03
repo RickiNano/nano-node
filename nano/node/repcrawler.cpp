@@ -120,7 +120,7 @@ void nano::rep_crawler::ongoing_crawl ()
 	}
 	// Reduce crawl frequency when there's enough total peer weight
 	const unsigned next_run_ms = node.network_params.network.is_dev_network () ? 100 : sufficient_weight ? 7000
-		                             : 3000;
+																										 : 3000;
 	std::weak_ptr<nano::node> node_w (node.shared ());
 	node.workers.add_timed_task (now + std::chrono::milliseconds (next_run_ms), [node_w, this] () {
 		if (auto node_l = node_w.lock ())
