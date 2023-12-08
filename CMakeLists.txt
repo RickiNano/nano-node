@@ -526,7 +526,7 @@ set(USE_INTERMEDIATE_OBJECTS_TARGET
     CACHE BOOL "")
 set(CRYPTOPP_EXTRA "")
 if(WIN32)
-  set(CRYPTOPP_EXTRA submodules/cryptopp/x64dll.asm crypto/cryptopp/x64masm.asm)
+  set(CRYPTOPP_EXTRA submodules/cryptopp/x64dll.asm submodules/cryptopp/x64masm.asm)
   enable_language(ASM)
   enable_language(ASM_MASM)
   add_definitions(-DCRYPTOPP_DISABLE_SSSE3 -DCRYPTOPP_DISABLE_AESNI)
