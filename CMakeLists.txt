@@ -541,7 +541,13 @@ endif()
 # is Intel style with no prefix and the templates are AT&T style. See:
 # submodules/cryptopp/config.h Also see
 # https://bugs.llvm.org/show_bug.cgi?id=39895
-
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_definitions(-DCRYPTOPP_DISABLE_MIXED_ASM -DCRYPTOPP_DISABLE_ASM)
+  message(
+    STATUS
+      "CryptoPP with disabled ASM for ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}"
+  )
+endif()
 add_definitions(-DCRYPTOPP_DISABLE_SHANI)
 # Fix failing builds after commit
 # https://github.com/weidai11/cryptopp/commit/df9fa62205f2d341e2b1b26595a3a1b6377c60c5
