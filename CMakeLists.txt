@@ -384,7 +384,6 @@ set(BOOST_MODULE_LIBS
     dynamic_bitset
     endian
     exception
-    filesystem
     foreach
     format
     function
