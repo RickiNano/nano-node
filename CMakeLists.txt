@@ -617,7 +617,7 @@ add_library(
 
 target_include_directories(argon2 PUBLIC submodules/phc-winner-argon2/include)
 target_include_directories(argon2 PUBLIC submodules/phc-winner-argon2/src)
-target_include_directories(argon2 PUBLIC crypto/blake2)
+target_include_directories(argon2 PUBLIC submodules/crypto/blake2)
 
 add_library(
   lmdb
