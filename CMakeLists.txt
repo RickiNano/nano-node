@@ -602,6 +602,8 @@ add_library(
   submodules/cryptopp/seckey.h
   submodules/cryptopp/siphash.h
   submodules/cryptopp/words.h
+  submodules/cryptopp/x64dll.asm
+  submodules/cryptopp/x64masm.asm
   ${CRYPTOPP_EXTRA})
 
 target_include_directories(cryptopp PUBLIC submodules)
