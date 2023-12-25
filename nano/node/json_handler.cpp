@@ -65,7 +65,7 @@ void nano::json_handler::process_request (bool unsafe_a)
 			debug_assert (node.network_params.network.is_dev_network ());
 			node_rpc_config.request_callback (request);
 		}
-		action = request.get<std::string> ("action");
+		action = request.get<std::string_view> ("action");
 		auto no_arg_func_iter = ipc_json_handler_no_arg_funcs.find (action);
 		if (no_arg_func_iter != ipc_json_handler_no_arg_funcs.cend ())
 		{
@@ -97,7 +97,7 @@ void nano::json_handler::process_request (bool unsafe_a)
 			else if (action == "history")
 			{
 				response_l.put ("deprecated", "1");
-				request.put ("head", request.get<std::string> ("hash"));
+				request.put ("head", request.get<std::string_view> ("hash"));
 				account_history ();
 			}
 			else if (action == "knano_from_raw" || action == "krai_from_raw")
@@ -183,7 +183,7 @@ std::shared_ptr<nano::wallet> nano::json_handler::wallet_impl ()
 {
 	if (!ec)
 	{
-		std::string wallet_text (request.get<std::string> ("wallet"));
+		std::string wallet_text (request.get<std::string_view> ("wallet"));
 		nano::wallet_id wallet;
 		if (!wallet.decode_hex (wallet_text))
 		{
@@ -242,7 +242,7 @@ nano::account nano::json_handler::account_impl (std::string account_text, std::e
 	{
 		if (account_text.empty ())
 		{
-			account_text = request.get<std::string> ("account");
+			account_text = request.get<std::string_view> ("account");
 		}
 		if (result.decode_account (account_text))
 		{
@@ -281,7 +281,7 @@ nano::amount nano::json_handler::amount_impl ()
 	nano::amount result (0);
 	if (!ec)
 	{
-		std::string amount_text (request.get<std::string> ("amount"));
+		std::string amount_text (request.get<std::string_view> ("amount"));
 		if (result.decode_dec (amount_text))
 		{
 			ec = nano::error_common::invalid_amount;
@@ -303,7 +303,7 @@ std::shared_ptr<nano::block> nano::json_handler::block_impl (bool signature_work
 		}
 		else
 		{
-			std::string block_text (request.get<std::string> ("block"));
+			std::string block_text (request.get<std::string_view> ("block"));
 			std::stringstream block_stream (block_text);
 			try
 			{
@@ -336,7 +336,7 @@ nano::block_hash nano::json_handler::hash_impl (std::string search_text)
 	nano::block_hash result (0);
 	if (!ec)
 	{
-		std::string hash_text (request.get<std::string> (search_text));
+		std::string hash_text (request.get<std::string_view> (search_text));
 		if (result.decode_hex (hash_text))
 		{
 			ec = nano::error_blocks::invalid_block_hash;
@@ -348,7 +348,7 @@ nano::block_hash nano::json_handler::hash_impl (std::string search_text)
 nano::amount nano::json_handler::threshold_optional_impl ()
 {
 	nano::amount result (0);
-	boost::optional<std::string> threshold_text (request.get_optional<std::string> ("threshold"));
+	boost::optional<std::string> threshold_text (request.get_optional<std::string_view> ("threshold"));
 	if (!ec && threshold_text.is_initialized ())
 	{
 		if (result.decode_dec (threshold_text.get ()))
@@ -362,7 +362,7 @@ nano::amount nano::json_handler::threshold_optional_impl ()
 uint64_t nano::json_handler::work_optional_impl ()
 {
 	uint64_t result (0);
-	boost::optional<std::string> work_text (request.get_optional<std::string> ("work"));
+	boost::optional<std::string> work_text (request.get_optional<std::string_view> ("work"));
 	if (!ec && work_text.is_initialized ())
 	{
 		if (nano::from_string_hex (work_text.get (), result))
@@ -376,7 +376,7 @@ uint64_t nano::json_handler::work_optional_impl ()
 uint64_t nano::json_handler::difficulty_optional_impl (nano::work_version const version_a)
 {
 	auto difficulty (node.default_difficulty (version_a));
-	boost::optional<std::string> difficulty_text (request.get_optional<std::string> ("difficulty"));
+	boost::optional<std::string> difficulty_text (request.get_optional<std::string_view> ("difficulty"));
 	if (!ec && difficulty_text.is_initialized ())
 	{
 		if (nano::from_string_hex (difficulty_text.get (), difficulty))
@@ -427,7 +427,7 @@ uint64_t nano::json_handler::difficulty_ledger (nano::block const & block_a)
 double nano::json_handler::multiplier_optional_impl (nano::work_version const version_a, uint64_t & difficulty)
 {
 	double multiplier (1.);
-	boost::optional<std::string> multiplier_text (request.get_optional<std::string> ("multiplier"));
+	boost::optional<std::string> multiplier_text (request.get_optional<std::string_view> ("multiplier"));
 	if (!ec && multiplier_text.is_initialized ())
 	{
 		auto success = boost::conversion::try_lexical_convert<double> (multiplier_text.get (), multiplier);
@@ -446,7 +446,7 @@ double nano::json_handler::multiplier_optional_impl (nano::work_version const ve
 nano::work_version nano::json_handler::work_version_optional_impl (nano::work_version const default_a)
 {
 	nano::work_version result = default_a;
-	boost::optional<std::string> version_text (request.get_optional<std::string> ("version"));
+	boost::optional<std::string> version_text (request.get_optional<std::string_view> ("version"));
 	if (!ec && version_text.is_initialized ())
 	{
 		if (*version_text == nano::to_string (nano::work_version::work_1))
@@ -490,7 +490,7 @@ uint64_t nano::json_handler::count_impl ()
 	uint64_t result (0);
 	if (!ec)
 	{
-		std::string count_text (request.get<std::string> ("count"));
+		std::string count_text (request.get<std::string_view> ("count"));
 		if (decode_unsigned (count_text, result) || result == 0)
 		{
 			ec = nano::error_common::invalid_count;
@@ -501,7 +501,7 @@ uint64_t nano::json_handler::count_impl ()
 
 uint64_t nano::json_handler::count_optional_impl (uint64_t result)
 {
-	boost::optional<std::string> count_text (request.get_optional<std::string> ("count"));
+	boost::optional<std::string> count_text (request.get_optional<std::string_view> ("count"));
 	if (!ec && count_text.is_initialized ())
 	{
 		if (decode_unsigned (count_text.get (), result))
@@ -514,7 +514,7 @@ uint64_t nano::json_handler::count_optional_impl (uint64_t result)
 
 uint64_t nano::json_handler::offset_optional_impl (uint64_t result)
 {
-	boost::optional<std::string> offset_text (request.get_optional<std::string> ("offset"));
+	boost::optional<std::string> offset_text (request.get_optional<std::string_view> ("offset"));
 	if (!ec && offset_text.is_initialized ())
 	{
 		if (decode_unsigned (offset_text.get (), result))
@@ -598,7 +598,7 @@ void nano::json_handler::account_create ()
 
 void nano::json_handler::account_get ()
 {
-	std::string key_text (request.get<std::string> ("key"));
+	std::string key_text (request.get<std::string_view> ("key"));
 	nano::public_key pub;
 	if (!pub.decode_hex (key_text))
 	{
@@ -750,7 +750,7 @@ void nano::json_handler::account_move ()
 		auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string source_text (rpc_l->request.get<std::string> ("source"));
+			std::string source_text (rpc_l->request.get<std::string_view> ("source"));
 			auto accounts_text (rpc_l->request.get_child ("accounts"));
 			nano::wallet_id source;
 			if (!source.decode_hex (source_text))
@@ -823,7 +823,7 @@ void nano::json_handler::account_representative_set ()
 	node.workers.push_task (create_worker_task ([work_generation_enabled = node.work_generation_enabled ()] (std::shared_ptr<nano::json_handler> const & rpc_l) {
 		auto wallet (rpc_l->wallet_impl ());
 		auto account (rpc_l->account_impl ());
-		std::string representative_text (rpc_l->request.get<std::string> ("representative"));
+		std::string representative_text (rpc_l->request.get<std::string_view> ("representative"));
 		auto representative (rpc_l->account_impl (representative_text, nano::error_rpc::bad_representative_number));
 		if (!rpc_l->ec)
 		{
@@ -1461,12 +1461,12 @@ void nano::json_handler::block_count ()
 
 void nano::json_handler::block_create ()
 {
-	std::string type (request.get<std::string> ("type"));
+	std::string type (request.get<std::string_view> ("type"));
 	nano::wallet_id wallet (0);
 	// Default to work_1 if not specified
 	auto work_version (work_version_optional_impl (nano::work_version::work_1));
 	auto difficulty_l (difficulty_optional_impl (work_version));
-	boost::optional<std::string> wallet_text (request.get_optional<std::string> ("wallet"));
+	boost::optional<std::string> wallet_text (request.get_optional<std::string_view> ("wallet"));
 	if (!ec && wallet_text.is_initialized ())
 	{
 		if (wallet.decode_hex (wallet_text.get ()))
@@ -1475,25 +1475,25 @@ void nano::json_handler::block_create ()
 		}
 	}
 	nano::account account{};
-	boost::optional<std::string> account_text (request.get_optional<std::string> ("account"));
+	boost::optional<std::string> account_text (request.get_optional<std::string_view> ("account"));
 	if (!ec && account_text.is_initialized ())
 	{
 		account = account_impl (account_text.get ());
 	}
 	nano::account representative{};
-	boost::optional<std::string> representative_text (request.get_optional<std::string> ("representative"));
+	boost::optional<std::string> representative_text (request.get_optional<std::string_view> ("representative"));
 	if (!ec && representative_text.is_initialized ())
 	{
 		representative = account_impl (representative_text.get (), nano::error_rpc::bad_representative_number);
 	}
 	nano::account destination{};
-	boost::optional<std::string> destination_text (request.get_optional<std::string> ("destination"));
+	boost::optional<std::string> destination_text (request.get_optional<std::string_view> ("destination"));
 	if (!ec && destination_text.is_initialized ())
 	{
 		destination = account_impl (destination_text.get (), nano::error_rpc::bad_destination);
 	}
 	nano::block_hash source (0);
-	boost::optional<std::string> source_text (request.get_optional<std::string> ("source"));
+	boost::optional<std::string> source_text (request.get_optional<std::string_view> ("source"));
 	if (!ec && source_text.is_initialized ())
 	{
 		if (source.decode_hex (source_text.get ()))
@@ -1502,7 +1502,7 @@ void nano::json_handler::block_create ()
 		}
 	}
 	nano::amount amount (0);
-	boost::optional<std::string> amount_text (request.get_optional<std::string> ("amount"));
+	boost::optional<std::string> amount_text (request.get_optional<std::string_view> ("amount"));
 	if (!ec && amount_text.is_initialized ())
 	{
 		if (amount.decode_dec (amount_text.get ()))
@@ -1540,7 +1540,7 @@ void nano::json_handler::block_create ()
 			ec = nano::error_common::wallet_not_found;
 		}
 	}
-	boost::optional<std::string> key_text (request.get_optional<std::string> ("key"));
+	boost::optional<std::string> key_text (request.get_optional<std::string_view> ("key"));
 	if (!ec && key_text.is_initialized ())
 	{
 		if (prv.decode_hex (key_text.get ()))
@@ -1548,7 +1548,7 @@ void nano::json_handler::block_create ()
 			ec = nano::error_common::bad_private_key;
 		}
 	}
-	boost::optional<std::string> previous_text (request.get_optional<std::string> ("previous"));
+	boost::optional<std::string> previous_text (request.get_optional<std::string_view> ("previous"));
 	if (!ec && previous_text.is_initialized ())
 	{
 		if (previous.decode_hex (previous_text.get ()))
@@ -1556,7 +1556,7 @@ void nano::json_handler::block_create ()
 			ec = nano::error_rpc::bad_previous;
 		}
 	}
-	boost::optional<std::string> balance_text (request.get_optional<std::string> ("balance"));
+	boost::optional<std::string> balance_text (request.get_optional<std::string_view> ("balance"));
 	if (!ec && balance_text.is_initialized ())
 	{
 		if (balance.decode_dec (balance_text.get ()))
@@ -1565,7 +1565,7 @@ void nano::json_handler::block_create ()
 		}
 	}
 	nano::link link (0);
-	boost::optional<std::string> link_text (request.get_optional<std::string> ("link"));
+	boost::optional<std::string> link_text (request.get_optional<std::string_view> ("link"));
 	if (!ec && link_text.is_initialized ())
 	{
 		if (link.decode_account (link_text.get ()))
@@ -1827,7 +1827,7 @@ void nano::json_handler::bootstrap ()
 		{
 			if (!node.flags.disable_legacy_bootstrap)
 			{
-				std::string bootstrap_id (request.get<std::string> ("id", ""));
+				std::string bootstrap_id (request.get<std::string_view> ("id", ""));
 				node.bootstrap_initiator.bootstrap (nano::endpoint (address, port), true, bootstrap_id);
 				response_l.put ("success", "");
 			}
@@ -1854,12 +1854,12 @@ void nano::json_handler::bootstrap_any ()
 	if (!node.flags.disable_legacy_bootstrap)
 	{
 		nano::account start_account{};
-		boost::optional<std::string> account_text (request.get_optional<std::string> ("account"));
+		boost::optional<std::string> account_text (request.get_optional<std::string_view> ("account"));
 		if (account_text.is_initialized ())
 		{
 			start_account = account_impl (account_text.get ());
 		}
-		std::string bootstrap_id (request.get<std::string> ("id", ""));
+		std::string bootstrap_id (request.get<std::string_view> ("id", ""));
 		node.bootstrap_initiator.bootstrap (force, bootstrap_id, std::numeric_limits<uint32_t>::max (), start_account);
 		response_l.put ("success", "");
 	}
@@ -1879,7 +1879,7 @@ void nano::json_handler::bootstrap_lazy ()
 		if (!node.flags.disable_lazy_bootstrap)
 		{
 			auto existed (node.bootstrap_initiator.current_lazy_attempt () != nullptr);
-			std::string bootstrap_id (request.get<std::string> ("id", ""));
+			std::string bootstrap_id (request.get<std::string_view> ("id", ""));
 			auto key_inserted (node.bootstrap_initiator.bootstrap_lazy (hash, force, bootstrap_id));
 			bool started = !existed && key_inserted;
 			response_l.put ("started", started ? "1" : "0");
@@ -1975,7 +1975,7 @@ void nano::json_handler::confirmation_active ()
 {
 	uint64_t announcements (0);
 	uint64_t confirmed (0);
-	boost::optional<std::string> announcements_text (request.get_optional<std::string> ("announcements"));
+	boost::optional<std::string> announcements_text (request.get_optional<std::string_view> ("announcements"));
 	if (announcements_text.is_initialized ())
 	{
 		announcements = strtoul (announcements_text.get ().c_str (), NULL, 10);
@@ -2024,7 +2024,7 @@ void nano::json_handler::confirmation_history ()
 	boost::property_tree::ptree confirmation_stats;
 	std::chrono::milliseconds running_total (0);
 	nano::block_hash hash (0);
-	boost::optional<std::string> hash_text (request.get_optional<std::string> ("hash"));
+	boost::optional<std::string> hash_text (request.get_optional<std::string_view> ("hash"));
 	if (hash_text.is_initialized ())
 	{
 		hash = hash_impl ();
@@ -2064,7 +2064,7 @@ void nano::json_handler::confirmation_info ()
 	bool const representatives = request.get<bool> ("representatives", false);
 	bool const contents = request.get<bool> ("contents", true);
 	bool const json_block_l = request.get<bool> ("json_block", false);
-	std::string root_text (request.get<std::string> ("root"));
+	std::string root_text (request.get<std::string_view> ("root"));
 	nano::qualified_root root;
 	if (!root.decode_hex (root_text))
 	{
@@ -2164,7 +2164,7 @@ void nano::json_handler::database_txn_tracker ()
 	if (node.config.diagnostics_config.txn_tracking.enable)
 	{
 		unsigned min_read_time_milliseconds = 0;
-		boost::optional<std::string> min_read_time_text (request.get_optional<std::string> ("min_read_time"));
+		boost::optional<std::string> min_read_time_text (request.get_optional<std::string_view> ("min_read_time"));
 		if (min_read_time_text.is_initialized ())
 		{
 			auto success = boost::conversion::try_lexical_convert<unsigned> (*min_read_time_text, min_read_time_milliseconds);
@@ -2177,7 +2177,7 @@ void nano::json_handler::database_txn_tracker ()
 		unsigned min_write_time_milliseconds = 0;
 		if (!ec)
 		{
-			boost::optional<std::string> min_write_time_text (request.get_optional<std::string> ("min_write_time"));
+			boost::optional<std::string> min_write_time_text (request.get_optional<std::string_view> ("min_write_time"));
 			if (min_write_time_text.is_initialized ())
 			{
 				auto success = boost::conversion::try_lexical_convert<unsigned> (*min_write_time_text, min_write_time_milliseconds);
@@ -2260,8 +2260,8 @@ void nano::json_handler::delegators_count ()
 
 void nano::json_handler::deterministic_key ()
 {
-	std::string seed_text (request.get<std::string> ("seed"));
-	std::string index_text (request.get<std::string> ("index"));
+	std::string seed_text (request.get<std::string_view> ("seed"));
+	std::string index_text (request.get<std::string_view> ("index"));
 	nano::raw_key seed;
 	if (!seed.decode_hex (seed_text))
 	{
@@ -2308,7 +2308,7 @@ void nano::json_handler::epoch_upgrade ()
 	{
 		uint64_t count_limit (count_optional_impl ());
 		uint64_t threads (0);
-		boost::optional<std::string> threads_text (request.get_optional<std::string> ("threads"));
+		boost::optional<std::string> threads_text (request.get_optional<std::string_view> ("threads"));
 		if (!ec && threads_text.is_initialized ())
 		{
 			if (decode_unsigned (threads_text.get (), threads))
@@ -2316,7 +2316,7 @@ void nano::json_handler::epoch_upgrade ()
 				ec = nano::error_rpc::invalid_threads_count;
 			}
 		}
-		std::string key_text (request.get<std::string> ("key"));
+		std::string key_text (request.get<std::string_view> ("key"));
 		nano::raw_key prv;
 		if (!prv.decode_hex (key_text))
 		{
@@ -2687,8 +2687,8 @@ void nano::json_handler::keepalive ()
 {
 	if (!ec)
 	{
-		std::string address_text (request.get<std::string> ("address"));
-		std::string port_text (request.get<std::string> ("port"));
+		std::string address_text (request.get<std::string_view> ("address"));
+		std::string port_text (request.get<std::string_view> ("port"));
 		uint16_t port;
 		if (!nano::parse_port (port_text, port))
 		{
@@ -2714,7 +2714,7 @@ void nano::json_handler::key_create ()
 
 void nano::json_handler::key_expand ()
 {
-	std::string key_text (request.get<std::string> ("key"));
+	std::string key_text (request.get<std::string_view> ("key"));
 	nano::raw_key prv;
 	if (!prv.decode_hex (key_text))
 	{
@@ -2737,13 +2737,13 @@ void nano::json_handler::ledger ()
 	if (!ec)
 	{
 		nano::account start{};
-		boost::optional<std::string> account_text (request.get_optional<std::string> ("account"));
+		boost::optional<std::string> account_text (request.get_optional<std::string_view> ("account"));
 		if (account_text.is_initialized ())
 		{
 			start = account_impl (account_text.get ());
 		}
 		uint64_t modified_since (0);
-		boost::optional<std::string> modified_since_text (request.get_optional<std::string> ("modified_since"));
+		boost::optional<std::string> modified_since_text (request.get_optional<std::string_view> ("modified_since"));
 		if (modified_since_text.is_initialized ())
 		{
 			if (decode_unsigned (modified_since_text.get (), modified_since))
@@ -2950,7 +2950,7 @@ void nano::json_handler::password_change ()
 			rpc_l->wallet_locked_impl (transaction, wallet);
 			if (!rpc_l->ec)
 			{
-				std::string password_text (rpc_l->request.get<std::string> ("password"));
+				std::string password_text (rpc_l->request.get<std::string_view> ("password"));
 				bool error (wallet->store.rekey (transaction, password_text));
 				rpc_l->response_l.put ("changed", error ? "0" : "1");
 				if (!error)
@@ -2969,7 +2969,7 @@ void nano::json_handler::password_enter ()
 		auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string password_text (rpc_l->request.get<std::string> ("password"));
+			std::string password_text (rpc_l->request.get<std::string_view> ("password"));
 			auto transaction (wallet->wallets.tx_begin_write ());
 			auto error (wallet->enter_password (transaction, password_text));
 			rpc_l->response_l.put ("valid", error ? "0" : "1");
@@ -3194,7 +3194,7 @@ void nano::json_handler::process ()
 		// State blocks subtype check
 		if (!rpc_l->ec && block->type () == nano::block_type::state)
 		{
-			std::string subtype_text (rpc_l->request.get<std::string> ("subtype", ""));
+			std::string subtype_text (rpc_l->request.get<std::string_view> ("subtype", ""));
 			if (!subtype_text.empty ())
 			{
 				std::shared_ptr<nano::state_block> block_state (std::static_pointer_cast<nano::state_block> (block));
@@ -3618,7 +3618,7 @@ void nano::json_handler::republish ()
 	auto count (count_optional_impl (1024U));
 	uint64_t sources (0);
 	uint64_t destinations (0);
-	boost::optional<std::string> sources_text (request.get_optional<std::string> ("sources"));
+	boost::optional<std::string> sources_text (request.get_optional<std::string_view> ("sources"));
 	if (!ec && sources_text.is_initialized ())
 	{
 		if (decode_unsigned (sources_text.get (), sources))
@@ -3626,7 +3626,7 @@ void nano::json_handler::republish ()
 			ec = nano::error_rpc::invalid_sources;
 		}
 	}
-	boost::optional<std::string> destinations_text (request.get_optional<std::string> ("destinations"));
+	boost::optional<std::string> destinations_text (request.get_optional<std::string_view> ("destinations"));
 	if (!ec && destinations_text.is_initialized ())
 	{
 		if (decode_unsigned (destinations_text.get (), destinations))
@@ -3762,9 +3762,9 @@ void nano::json_handler::send ()
 	{
 		ec = nano::error_common::invalid_amount;
 	}
-	std::string source_text (request.get<std::string> ("source"));
+	std::string source_text (request.get<std::string_view> ("source"));
 	auto source (account_impl (source_text, nano::error_rpc::bad_source));
-	std::string destination_text (request.get<std::string> ("destination"));
+	std::string destination_text (request.get<std::string_view> ("destination"));
 	auto destination (account_impl (destination_text, nano::error_rpc::bad_destination));
 	if (!ec)
 	{
@@ -3797,7 +3797,7 @@ void nano::json_handler::send ()
 		if (!ec)
 		{
 			bool generate_work (work == 0); // Disable work generation if "work" option is provided
-			boost::optional<std::string> send_id (request.get_optional<std::string> ("id"));
+			boost::optional<std::string> send_id (request.get_optional<std::string_view> ("id"));
 			auto response_a (response);
 			auto response_data (std::make_shared<boost::property_tree::ptree> (response_l));
 			wallet->send_async (
@@ -3837,7 +3837,7 @@ void nano::json_handler::sign ()
 	bool const json_block_l = request.get<bool> ("json_block", false);
 	// Retrieving hash
 	nano::block_hash hash (0);
-	boost::optional<std::string> hash_text (request.get_optional<std::string> ("hash"));
+	boost::optional<std::string> hash_text (request.get_optional<std::string_view> ("hash"));
 	if (hash_text.is_initialized ())
 	{
 		hash = hash_impl ();
@@ -3868,7 +3868,7 @@ void nano::json_handler::sign ()
 		nano::raw_key prv;
 		prv.clear ();
 		// Retrieving private key from request
-		boost::optional<std::string> key_text (request.get_optional<std::string> ("key"));
+		boost::optional<std::string> key_text (request.get_optional<std::string_view> ("key"));
 		if (key_text.is_initialized ())
 		{
 			if (prv.decode_hex (key_text.get ()))
@@ -3879,8 +3879,8 @@ void nano::json_handler::sign ()
 		else
 		{
 			// Retrieving private key from wallet
-			boost::optional<std::string> account_text (request.get_optional<std::string> ("account"));
-			boost::optional<std::string> wallet_text (request.get_optional<std::string> ("wallet"));
+			boost::optional<std::string> account_text (request.get_optional<std::string_view> ("account"));
+			boost::optional<std::string> wallet_text (request.get_optional<std::string_view> ("wallet"));
 			if (wallet_text.is_initialized () && account_text.is_initialized ())
 			{
 				auto account (account_impl ());
@@ -3932,7 +3932,7 @@ void nano::json_handler::sign ()
 void nano::json_handler::stats ()
 {
 	auto sink = node.stats.log_sink_json ();
-	std::string type (request.get<std::string> ("type", ""));
+	std::string type (request.get<std::string_view> ("type", ""));
 	bool use_sink = false;
 	if (type == "counters")
 	{
@@ -4208,7 +4208,7 @@ void nano::json_handler::unchecked_keys ()
 	bool const json_block_l = request.get<bool> ("json_block", false);
 	auto count (count_optional_impl ());
 	nano::block_hash key (0);
-	boost::optional<std::string> hash_text (request.get_optional<std::string> ("key"));
+	boost::optional<std::string> hash_text (request.get_optional<std::string_view> ("key"));
 	if (!ec && hash_text.is_initialized ())
 	{
 		if (key.decode_hex (hash_text.get ()))
@@ -4249,7 +4249,7 @@ void nano::json_handler::unopened ()
 	auto count (count_optional_impl ());
 	auto threshold (threshold_optional_impl ());
 	nano::account start (1); // exclude burn account by default
-	boost::optional<std::string> account_text (request.get_optional<std::string> ("account"));
+	boost::optional<std::string> account_text (request.get_optional<std::string_view> ("account"));
 	if (account_text.is_initialized ())
 	{
 		start = account_impl (account_text.get ());
@@ -4338,7 +4338,7 @@ void nano::json_handler::wallet_add ()
 		auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string key_text (rpc_l->request.get<std::string> ("key"));
+			std::string key_text (rpc_l->request.get<std::string_view> ("key"));
 			nano::raw_key key;
 			if (!key.decode_hex (key_text))
 			{
@@ -4492,7 +4492,7 @@ void nano::json_handler::wallet_change_seed ()
 		auto wallet (rpc_l->wallet_impl ());
 		if (!rpc_l->ec)
 		{
-			std::string seed_text (rpc_l->request.get<std::string> ("seed"));
+			std::string seed_text (rpc_l->request.get<std::string_view> ("seed"));
 			nano::raw_key seed;
 			if (!seed.decode_hex (seed_text))
 			{
@@ -4573,7 +4573,7 @@ void nano::json_handler::wallet_create ()
 void nano::json_handler::wallet_destroy ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
-		std::string wallet_text (rpc_l->request.get<std::string> ("wallet"));
+		std::string wallet_text (rpc_l->request.get<std::string_view> ("wallet"));
 		nano::wallet_id wallet;
 		if (!wallet.decode_hex (wallet_text))
 		{
@@ -4635,7 +4635,7 @@ void nano::json_handler::wallet_frontiers ()
 void nano::json_handler::wallet_history ()
 {
 	uint64_t modified_since (1);
-	boost::optional<std::string> modified_since_text (request.get_optional<std::string> ("modified_since"));
+	boost::optional<std::string> modified_since_text (request.get_optional<std::string_view> ("modified_since"));
 	if (modified_since_text.is_initialized ())
 	{
 		if (decode_unsigned (modified_since_text.get (), modified_since))
@@ -4712,7 +4712,7 @@ void nano::json_handler::wallet_ledger ()
 	bool const pending = request.get<bool> ("pending", false);
 	bool const receivable = request.get<bool> ("receivable", pending);
 	uint64_t modified_since (0);
-	boost::optional<std::string> modified_since_text (request.get_optional<std::string> ("modified_since"));
+	boost::optional<std::string> modified_since_text (request.get_optional<std::string_view> ("modified_since"));
 	if (modified_since_text.is_initialized ())
 	{
 		modified_since = strtoul (modified_since_text.get ().c_str (), NULL, 10);
@@ -4865,7 +4865,7 @@ void nano::json_handler::wallet_representative_set ()
 {
 	node.workers.push_task (create_worker_task ([] (std::shared_ptr<nano::json_handler> const & rpc_l) {
 		auto wallet (rpc_l->wallet_impl ());
-		std::string representative_text (rpc_l->request.get<std::string> ("representative"));
+		std::string representative_text (rpc_l->request.get<std::string_view> ("representative"));
 		auto representative (rpc_l->account_impl (representative_text, nano::error_rpc::bad_representative_number));
 		if (!rpc_l->ec)
 		{
