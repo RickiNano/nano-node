@@ -65,7 +65,7 @@ private:
 
 	void process_queries (decltype (buffer) const & back_buffer);
 
-	static std::size_t constexpr mem_block_count_max = 64 * 1024;
+	static std::size_t constexpr mem_block_count_max = 512 * 1000;
 
 private:
 	struct entry

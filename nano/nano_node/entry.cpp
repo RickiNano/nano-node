@@ -1729,7 +1729,7 @@ int main (int argc, char * const * argv)
 
 			start_threads (check_pending, pending);
 
-			size_t const pending_deque_overflow (64 * 1024);
+			size_t const pending_deque_overflow (256 * 1024);
 			for (auto i (node->store.pending.begin (transaction)), n (node->store.pending.end ()); i != n; ++i)
 			{
 				{

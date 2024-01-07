@@ -419,7 +419,7 @@ private:
 		boost::asio::const_buffer buffer;
 		std::function<void (boost::system::error_code const &, std::size_t)> callback;
 	};
-	std::size_t const queue_size_max = 64 * 1024;
+	std::size_t const queue_size_max = 256 * 1024;
 
 	nano::ipc::ipc_server & server;
 	nano::node & node;
