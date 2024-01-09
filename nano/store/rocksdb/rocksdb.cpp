@@ -299,11 +299,11 @@ rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_common_cf_opti
 	// Size of level 1 sst files
 	cf_options.target_file_size_base = memtable_size_bytes_a;
 
-	// Size of each memtable
+	// Size of each write buffer memtable
 	cf_options.write_buffer_size = memtable_size_bytes_a;
 
-	// Number of memtables to keep in memory
-	cf_options.max_write_buffer_number = num_memtables;
+	// Number of write buffer memtables to keep in memory
+	cf_options.max_write_buffer_number = 2;
 
 	return cf_options;
 }
@@ -803,7 +803,7 @@ rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_small_table
 
 rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_small_cf_options (std::shared_ptr<::rocksdb::TableFactory> const & table_factory_a) const
 {
-	auto const memtable_size_bytes = 10000;
+	auto const memtable_size_bytes = 64 * 1024 * 1024;
 	auto cf_options = get_common_cf_options (table_factory_a, memtable_size_bytes);
 
 	// Number of files in level 0 which triggers compaction. Size of L0 and L1 should be kept similar as this is the only compaction which is single threaded
