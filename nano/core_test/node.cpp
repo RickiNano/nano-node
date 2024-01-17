@@ -20,11 +20,11 @@ using namespace std::chrono_literals;
 TEST (node, null_account)
 {
 	auto const & null_account = nano::account::null ();
-	ASSERT_TRUE (nullptr == null_account);
+	ASSERT_TRUE (null_account == nullptr);
 	ASSERT_FALSE (null_account != nullptr);
 
 	nano::account default_account{};
-	ASSERT_FALSE (nullptr == default_account);
+	ASSERT_FALSE (default_account == nullptr);
 	ASSERT_TRUE (default_account != nullptr);
 }
 
