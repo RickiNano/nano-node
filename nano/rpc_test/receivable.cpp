@@ -376,7 +376,7 @@ TEST (rpc, search_receivable)
 	request.put ("action", "search_receivable");
 	request.put ("wallet", wallet);
 	auto response (wait_response (system, rpc_ctx, request));
-	ASSERT_TIMELY (10s, node->balance (nano::dev::genesis_key.pub) == nano::dev::constants.genesis_amount);
+	ASSERT_TIMELY_EQ (10s, node->balance (nano::dev::genesis_key.pub), nano::dev::constants.genesis_amount);
 }
 
 TEST (rpc, accounts_pending_deprecated)
