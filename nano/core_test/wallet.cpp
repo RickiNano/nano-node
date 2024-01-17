@@ -911,19 +911,19 @@ TEST (wallet, password_race_corrupt_seed)
 		{
 			nano::raw_key seed_now;
 			wallet->store.seed (seed_now, transaction);
-			ASSERT_TRUE (seed_now == seed);
+			ASSERT_EQ (seed_now, seed);
 		}
 		else if (!wallet->store.attempt_password (transaction, "0000"))
 		{
 			nano::raw_key seed_now;
 			wallet->store.seed (seed_now, transaction);
-			ASSERT_TRUE (seed_now == seed);
+			ASSERT_EQ (seed_now, seed);
 		}
 		else if (!wallet->store.attempt_password (transaction, "4567"))
 		{
 			nano::raw_key seed_now;
 			wallet->store.seed (seed_now, transaction);
-			ASSERT_TRUE (seed_now == seed);
+			ASSERT_EQ (seed_now, seed);
 		}
 		else
 		{

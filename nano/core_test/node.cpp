@@ -20,12 +20,12 @@ using namespace std::chrono_literals;
 TEST (node, null_account)
 {
 	auto const & null_account = nano::account::null ();
-	ASSERT_TRUE (null_account == nullptr);
-	ASSERT_FALSE (null_account != nullptr);
+	ASSERT_EQ (nullptr, null_account);
+	ASSERT_NE (nullptr, null_account);
 
 	nano::account default_account{};
-	ASSERT_FALSE (default_account == nullptr);
-	ASSERT_TRUE (default_account != nullptr);
+	ASSERT_NE (nullptr, default_account);
+	ASSERT_EQ (nullptr, default_account);
 }
 
 TEST (node, stop)
@@ -1099,9 +1099,9 @@ TEST (node, fork_no_vote_quorum)
 	ASSERT_NE (nullptr, channel);
 	channel->send_buffer (nano::shared_const_buffer (std::move (buffer)));
 	ASSERT_TIMELY (10s, node3.stats.count (nano::stat::type::message, nano::stat::detail::confirm_ack, nano::stat::dir::in) >= 3);
-	ASSERT_TRUE (node1.latest (nano::dev::genesis_key.pub) == send1->hash ());
-	ASSERT_TRUE (node2.latest (nano::dev::genesis_key.pub) == send1->hash ());
-	ASSERT_TRUE (node3.latest (nano::dev::genesis_key.pub) == send1->hash ());
+	ASSERT_EQ (node1.latest (nano::dev::genesis_key.pub), send1->hash ());
+	ASSERT_EQ (node2.latest (nano::dev::genesis_key.pub), send1->hash ());
+	ASSERT_EQ (node3.latest (nano::dev::genesis_key.pub), send1->hash ());
 }
 
 // Disabled because it sometimes takes way too long (but still eventually finishes)

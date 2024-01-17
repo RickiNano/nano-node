@@ -2332,13 +2332,13 @@ TEST (ledger, block_destination_source)
 	ASSERT_TRUE (ledger.block_source (transaction, *block1).is_zero ());
 	ASSERT_EQ (nano::dev::genesis->account (), ledger.block_destination (transaction, *block2));
 	ASSERT_TRUE (ledger.block_source (transaction, *block2).is_zero ());
-	ASSERT_TRUE (ledger.block_destination (transaction, *block3) == nullptr);
+	ASSERT_EQ (ledger.block_destination (transaction, *block3), nullptr);
 	ASSERT_EQ (block2->hash (), ledger.block_source (transaction, *block3));
 	ASSERT_EQ (dest.pub, ledger.block_destination (transaction, *block4));
 	ASSERT_TRUE (ledger.block_source (transaction, *block4).is_zero ());
 	ASSERT_EQ (nano::dev::genesis->account (), ledger.block_destination (transaction, *block5));
 	ASSERT_TRUE (ledger.block_source (transaction, *block5).is_zero ());
-	ASSERT_TRUE (ledger.block_destination (transaction, *block6) == nullptr);
+	ASSERT_EQ (ledger.block_destination (transaction, *block6), nullptr);
 	ASSERT_EQ (block5->hash (), ledger.block_source (transaction, *block6));
 }
 
@@ -5654,7 +5654,7 @@ TEST (ledger, migrate_lmdb_to_rocksdb)
 	ASSERT_FALSE (rocksdb_store.confirmation_height.get (rocksdb_transaction, nano::dev::genesis->account (), confirmation_height_info));
 	ASSERT_EQ (confirmation_height_info.height, 2);
 	ASSERT_EQ (confirmation_height_info.frontier, send->hash ());
-	ASSERT_TRUE (rocksdb_store.final_vote.get (rocksdb_transaction, nano::root (send->previous ())).size () == 1);
+	ASSERT_EQ (rocksdb_store.final_vote.get (rocksdb_transaction, nano::root (send->previous ())).size (), 1);
 	ASSERT_EQ (rocksdb_store.final_vote.get (rocksdb_transaction, nano::root (send->previous ()))[0], nano::block_hash (2));
 }
 

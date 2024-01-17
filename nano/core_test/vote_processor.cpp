@@ -344,7 +344,7 @@ TEST (vote_processor, large_votes)
 	ASSERT_TIMELY (5s, nano::test::active (node, blocks));
 
 	auto vote = nano::test::make_final_vote (nano::dev::genesis_key, blocks);
-	ASSERT_TRUE (vote->hashes.size () == count);
+	ASSERT_EQ (vote->hashes.size (), count);
 
 	node.vote_processor.vote (vote, nano::test::fake_channel (node));
 

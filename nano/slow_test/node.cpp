@@ -1713,7 +1713,7 @@ TEST (telemetry, many_nodes)
 		ASSERT_EQ (data.cemented_count, 1);
 		ASSERT_LE (data.peer_count, 9U);
 		ASSERT_EQ (data.account_count, 1);
-		ASSERT_TRUE (data.block_count == 2);
+		ASSERT_EQ (data.block_count, 2);
 		ASSERT_EQ (data.protocol_version, nano::dev::network_params.network.protocol_version);
 		ASSERT_GE (data.bandwidth_cap, 100000);
 		ASSERT_LT (data.bandwidth_cap, 100000 + system.nodes.size ());

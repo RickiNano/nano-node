@@ -193,7 +193,7 @@ TEST (bootstrap_server, serve_hash_one)
 	nano::asc_pull_ack::blocks_payload response_payload;
 	ASSERT_NO_THROW (response_payload = std::get<nano::asc_pull_ack::blocks_payload> (response.payload));
 	ASSERT_EQ (response_payload.blocks.size (), 1);
-	ASSERT_TRUE (response_payload.blocks.front ()->hash () == request_payload.start.as_block_hash ());
+	ASSERT_EQ (response_payload.blocks.front ()->hash (), request_payload.start.as_block_hash ());
 }
 
 TEST (bootstrap_server, serve_end_of_chain)
@@ -315,7 +315,7 @@ TEST (bootstrap_server, serve_multiple)
 		{
 			// Find matching response
 			auto response_it = std::find_if (all_responses.begin (), all_responses.end (), [&] (auto ack) { return ack.id == next_id; });
-			ASSERT_TRUE (response_it != all_responses.end ());
+			ASSERT_NE (response_it, all_responses.end ());
 			auto response = *response_it;
 
 			// Ensure we got response exactly for what we asked for

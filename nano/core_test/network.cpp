@@ -129,8 +129,8 @@ TEST (network, last_contacted)
 		// check that the endpoints are part of the same connection
 		std::shared_ptr<nano::transport::socket> sock0 = channel0->socket.lock ();
 		std::shared_ptr<nano::transport::socket> sock1 = channel1->socket.lock ();
-		ASSERT_TRUE (sock0->local_endpoint () == sock1->remote_endpoint ());
-		ASSERT_TRUE (sock1->local_endpoint () == sock0->remote_endpoint ());
+		ASSERT_EQ (sock0->local_endpoint (), sock1->remote_endpoint ());
+		ASSERT_EQ (sock1->local_endpoint (), sock0->remote_endpoint ());
 	}
 
 	// capture the state before and ensure the clock ticks at least once
@@ -1093,7 +1093,7 @@ TEST (network, loopback_channel)
 	ASSERT_EQ (channel1.get_node_id (), node1.node_id.pub);
 	ASSERT_EQ (channel1.get_node_id_optional ().value_or (0), node1.node_id.pub);
 	nano::transport::inproc::channel channel2 (node2, node2);
-	ASSERT_TRUE (channel1 == channel1);
+	ASSERT_EQ (channel1, channel1);
 	ASSERT_FALSE (channel1 == channel2);
 	++node1.network.port;
 	ASSERT_NE (channel1.get_endpoint (), node1.network.endpoint ());
@@ -1142,7 +1142,7 @@ TEST (network, fill_keepalive_self)
 	nano::test::system system{ 2 };
 	std::array<nano::endpoint, 8> target;
 	system.nodes[0]->network.fill_keepalive_self (target);
-	ASSERT_TRUE (target[2].port () == system.nodes[1]->network.port);
+	ASSERT_EQ (target[2].port (), system.nodes[1]->network.port);
 }
 
 /*
