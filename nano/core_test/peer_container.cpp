@@ -119,7 +119,7 @@ TEST (channels, fill_random_clear)
 	std::array<nano::endpoint, 8> target;
 	std::fill (target.begin (), target.end (), nano::endpoint (boost::asio::ip::address_v6::loopback (), 10000));
 	system.nodes[0]->network.random_fill (target);
-	ASSERT_TRUE (std::all_of (target.begin (), target.end (), [] (nano::endpoint const & endpoint_a) { return endpoint_a == nano::endpoint (boost::asio::ip::address_v6::any (), 0); }));
+	ASSERT_EQ (std::all_of (target.begin (), target.end (), [] (nano::endpoint const & endpoint_a) { return endpoint_a, nano::endpoint (boost::asio::ip::address_v6::any (), 0); }));
 }
 
 // Test all targets get replaced by random_fill
@@ -164,9 +164,9 @@ TEST (channels, fill_random_part)
 	ASSERT_EQ (half, system.nodes[0]->network.tcp_channels.size ());
 	std::fill (target.begin (), target.end (), nano::endpoint (boost::asio::ip::address_v6::loopback (), 10000));
 	system.nodes[0]->network.random_fill (target);
-	ASSERT_TRUE (std::none_of (target.begin (), target.begin () + half, [] (nano::endpoint const & endpoint_a) { return endpoint_a == nano::endpoint (boost::asio::ip::address_v6::loopback (), 10000); }));
-	ASSERT_TRUE (std::none_of (target.begin (), target.begin () + half, [] (nano::endpoint const & endpoint_a) { return endpoint_a == nano::endpoint (boost::asio::ip::address_v6::loopback (), 0); }));
-	ASSERT_TRUE (std::all_of (target.begin () + half, target.end (), [] (nano::endpoint const & endpoint_a) { return endpoint_a == nano::endpoint (boost::asio::ip::address_v6::any (), 0); }));
+	ASSERT_EQ (std::none_of (target.begin (), target.begin () + half, [] (nano::endpoint const & endpoint_a) { return endpoint_a, nano::endpoint (boost::asio::ip::address_v6::loopback (), 10000); }));
+	ASSERT_EQ (std::none_of (target.begin (), target.begin () + half, [] (nano::endpoint const & endpoint_a) { return endpoint_a, nano::endpoint (boost::asio::ip::address_v6::loopback (), 0); }));
+	ASSERT_EQ (std::all_of (target.begin () + half, target.end (), [] (nano::endpoint const & endpoint_a) { return endpoint_a, nano::endpoint (boost::asio::ip::address_v6::any (), 0); }));
 }
 
 // TODO: remove node instantiation requirement for testing with bigger network size
