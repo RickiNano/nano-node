@@ -294,7 +294,7 @@ TEST (request_aggregator, split)
 	node.aggregator.add (dummy_channel, request);
 	ASSERT_EQ (1, node.aggregator.size ());
 	// In the ledger but no vote generated yet
-	ASSERT_TIMELY (3s, 2, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_generated_votes));
+	ASSERT_TIMELY_EQ (3s, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_generated_votes), 2);
 	ASSERT_TRUE (node.aggregator.empty ());
 	// Two votes were sent, the first one for 12 hashes and the second one for 1 hash
 	ASSERT_EQ (1, node.stats.count (nano::stat::type::aggregator, nano::stat::detail::aggregator_accepted));
