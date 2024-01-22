@@ -120,12 +120,25 @@ bool nano::test::block_or_pruned_exists (nano::node & node, std::vector<nano::bl
 	for (const auto & hash : hashes)
 	{
 		auto transaction = node.store.tx_begin_read ();
-		if (node.store.pruned.exists (transaction, hash))
+		if (!node.store.pruned.exists (transaction, hash))
 		{
-			return true;
+			return false;
 		}
 	}
-	return false;
+	return true;
+}
+
+bool block_or_pruned_exists (nano::node & node, std::vector<std::shared_ptr<nano::block>> blocks)
+{
+	for (const auto & block : blocks)
+	{
+		auto transaction = node.store.tx_begin_read ();
+		if (!node.store.pruned.exists (transaction, block->hash ()))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 bool nano::test::activate (nano::node & node, std::vector<nano::block_hash> hashes)
