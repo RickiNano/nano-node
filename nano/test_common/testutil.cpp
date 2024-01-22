@@ -115,6 +115,19 @@ bool nano::test::exists (nano::node & node, std::vector<std::shared_ptr<nano::bl
 	return exists (node, blocks_to_hashes (blocks));
 }
 
+bool nano::test::block_or_pruned_exists (nano::node & node, std::vector<nano::block_hash> hashes)
+{
+	for (const auto & hash : hashes)
+	{
+		auto transaction = node.store.tx_begin_read ();
+		if (node.store.pruned.exists (transaction, hash))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 bool nano::test::activate (nano::node & node, std::vector<nano::block_hash> hashes)
 {
 	for (auto & hash : hashes)
