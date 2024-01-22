@@ -180,7 +180,7 @@ private:
 		nano::shared_const_buffer buffer;
 		std::function<void (boost::system::error_code const &, size_t)> callback;
 	};
-	size_t const queue_size_max = 64 * 1024;
+	size_t const queue_size_max = 512 * 1024;
 	/** The send queue is protected by always being accessed through the strand */
 	std::deque<queue_item> send_queue;
 

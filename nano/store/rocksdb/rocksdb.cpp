@@ -312,7 +312,7 @@ rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_cf_options (st
 {
 	::rocksdb::ColumnFamilyOptions cf_options;
 	auto const memtable_size_bytes = base_memtable_size_bytes ();
-	auto const block_cache_size_bytes = 1024ULL * 1024 * rocksdb_config.memory_multiplier * base_block_cache_size;
+	auto const block_cache_size_bytes = 1024ULL * 1024 * 50 * rocksdb_config.memory_multiplier * base_block_cache_size;
 	if (cf_name_a == "blocks")
 	{
 		std::shared_ptr<::rocksdb::TableFactory> table_factory (::rocksdb::NewBlockBasedTableFactory (get_active_table_options (block_cache_size_bytes * 4)));
@@ -749,7 +749,7 @@ rocksdb::Options nano::store::rocksdb::component::get_db_options ()
 
 	// The MANIFEST file contains a history of all file operations since the last time the DB was opened and is replayed during DB open.
 	// Default is 1GB, lowering this to avoid replaying for too long (100MB)
-	db_options.max_manifest_file_size = 100 * 1024 * 1024ULL;
+	db_options.max_manifest_file_size = 500 * 1024 * 1024ULL;
 
 	// Not compressing any SST files for compatibility reasons.
 	db_options.compression = ::rocksdb::kNoCompression;
@@ -803,7 +803,7 @@ rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_small_table
 
 rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_small_cf_options (std::shared_ptr<::rocksdb::TableFactory> const & table_factory_a) const
 {
-	auto const memtable_size_bytes = 10000;
+	auto const memtable_size_bytes = 1000000;
 	auto cf_options = get_common_cf_options (table_factory_a, memtable_size_bytes);
 
 	// Number of files in level 0 which triggers compaction. Size of L0 and L1 should be kept similar as this is the only compaction which is single threaded
