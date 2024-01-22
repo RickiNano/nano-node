@@ -1410,7 +1410,7 @@ TEST (active_transactions, fifo)
 	ASSERT_TIMELY_EQ (5s, node.active.size (), 1);
 
 	// Ensure overflow stats have been incremented
-	ASSERT_EQ (1, node.stats.count (nano::stat::type::active_dropped, nano::stat::detail::normal));
+	ASSERT_TIMELY_EQ (5s, 1, node.stats.count (nano::stat::type::active_dropped, nano::stat::detail::normal));
 
 	// Ensure the surviving transaction is the least recently inserted
 	ASSERT_TIMELY (1s, node.active.election (receive2->qualified_root ()) != nullptr);
