@@ -179,7 +179,7 @@ TEST (message, confirm_ack_hash_serialization)
 	ASSERT_FALSE (error);
 	ASSERT_EQ (con1, con2);
 	ASSERT_EQ (hashes, con2.vote->hashes);
-	ASSERT_FALSE (header.confirm_is_v2 ());
+	ASSERT_TRUE (header.confirm_is_v2 ());
 	ASSERT_EQ (header.count_get (), hashes.size ());
 }
 

@@ -296,10 +296,10 @@ TEST (request_aggregator, split)
 	// In the ledger but no vote generated yet
 	ASSERT_TIMELY_EQ (3s, 2, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_generated_votes));
 	ASSERT_TRUE (node.aggregator.empty ());
-	// Two votes were sent, the first one for 12 hashes and the second one for 1 hash
+	// Two votes were sent, the first one for 255 hashes and the second one for 1 hash
 	ASSERT_EQ (1, node.stats.count (nano::stat::type::aggregator, nano::stat::detail::aggregator_accepted));
 	ASSERT_EQ (0, node.stats.count (nano::stat::type::aggregator, nano::stat::detail::aggregator_dropped));
-	ASSERT_TIMELY_EQ (3s, 13, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_generated_hashes));
+	ASSERT_TIMELY_EQ (3s, 256, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_generated_hashes));
 	ASSERT_TIMELY_EQ (3s, 2, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_generated_votes));
 	ASSERT_TIMELY_EQ (3s, 0, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_unknown));
 	ASSERT_TIMELY_EQ (3s, 0, node.stats.count (nano::stat::type::requests, nano::stat::detail::requests_cached_hashes));
