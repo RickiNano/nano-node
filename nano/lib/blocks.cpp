@@ -7,6 +7,7 @@
 
 #include <boost/endian/conversion.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <bitset>
 
@@ -1869,4 +1870,28 @@ bool nano::block_sideband::deserialize (nano::stream & stream_a, nano::block_typ
 std::string_view nano::to_string (nano::block_type type)
 {
 	return magic_enum::enum_name (type);
+}
+
+std::string nano::block_sideband::to_json () const
+{
+	boost::property_tree::ptree json_tree;
+
+	json_tree.put ("successor", successor.to_string ());
+	json_tree.put ("account", account.to_account ());
+	json_tree.put ("balance", balance.to_string_dec ());
+	json_tree.put ("height", height);
+	json_tree.put ("timestamp", timestamp);
+
+	boost::property_tree::ptree block_details;
+	block_details.put ("is_send", details.is_send ? "true" : "false");
+	block_details.put ("is_receive", details.is_receive ? "true" : "false");
+	block_details.put ("is_epoch", details.is_epoch ? "true" : "false");
+	block_details.put ("source_epoch", static_cast<uint8_t> (source_epoch));
+
+	json_tree.add_child ("block_details", block_details);
+
+	std::stringstream string_stream;
+	boost::property_tree::write_json (string_stream, json_tree);
+
+	return string_stream.str ();
 }

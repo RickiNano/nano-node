@@ -100,6 +100,43 @@ TEST (block_store, sideband_serialization)
 	ASSERT_EQ (sideband1.timestamp, sideband2.timestamp);
 }
 
+TEST (block_sideband, sideband_to_json)
+{
+	nano::uint128_t balance = 200;
+	nano::block_sideband sideband;
+	sideband.successor = nano::test::random_hash ();
+	sideband.account = nano::test::random_account ();
+	sideband.balance = balance;
+	sideband.height = 1;
+	sideband.timestamp = 2;
+	sideband.details.is_send = true;
+	sideband.details.is_receive = false;
+	sideband.details.is_epoch = false;
+	sideband.details.epoch = nano::epoch::epoch_1;
+
+	std::string json_output = sideband.to_json ();
+
+	std::cout << "SIDEBAND: " << json_output << std::endl;
+
+	std::stringstream json_stream (json_output);
+	boost::property_tree::ptree json_tree;
+	boost::property_tree::read_json (json_stream, json_tree);
+
+	ASSERT_EQ (json_tree.get<std::string> ("successor"), sideband.successor.to_string ());
+	ASSERT_EQ (json_tree.get<std::string> ("account"), sideband.account.to_account ());
+	ASSERT_EQ (json_tree.get<std::string> ("balance"), sideband.balance.to_string_dec ());
+	ASSERT_EQ (json_tree.get<std::uint64_t> ("height"), 1);
+	ASSERT_EQ (json_tree.get<std::uint64_t> ("timestamp"), 2);
+
+	const auto & details = json_tree.get_child ("block_details");
+
+	ASSERT_EQ (details.get<std::string> ("is_send"), sideband.details.is_send ? "true" : "false");
+	ASSERT_EQ (details.get<std::string> ("is_receive"), sideband.details.is_receive ? "true" : "false");
+	ASSERT_EQ (details.get<std::string> ("is_epoch"), sideband.details.is_epoch ? "true" : "false");
+	ASSERT_EQ (details.get<uint8_t> ("source_epoch"), nano::epoch::epoch_1);
+
+}
+
 TEST (block_store, add_item)
 {
 	nano::logger logger;
