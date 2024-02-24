@@ -549,7 +549,7 @@ nano::vote_code nano::active_transactions::vote (std::shared_ptr<nano::vote> con
 		if (processed)
 		{
 			auto const reps (node.wallets.reps ());
-			if (!reps.have_half_rep () && !reps.exists (vote_a->account))
+			if (node.ledger.bootstrap_weight_reached () && !reps.have_half_rep () && !reps.exists (vote_a->account))
 			{
 				node.network.flood_vote (vote_a, 0.5f);
 			}
