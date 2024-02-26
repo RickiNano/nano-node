@@ -1,6 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
+source "$(dirname "$BASH_SOURCE")/common.sh"
+
+BUILD_DIR=${1-${PWD}}
+
 # Alpine doesn't offer an xvfb
 xvfb_run_()
 {
@@ -16,4 +20,4 @@ xvfb_run_()
     return ${res}
 }
 
-xvfb_run_ $(dirname "$BASH_SOURCE")/run-tests.sh qt_test
+xvfb_run_ ${BUILD_DIR}/qt_test$(get_exec_extension)

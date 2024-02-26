@@ -9,13 +9,6 @@ static std::vector<std::filesystem::path> all_unique_paths;
 std::filesystem::path nano::working_path (nano::networks network)
 {
 	auto result (nano::app_path ());
-
-	if (auto path_override = nano::get_env ("NANO_APP_PATH"))
-	{
-		result = *path_override;
-		std::cerr << "Application path overridden by NANO_APP_PATH environment variable: " << result << std::endl;
-	}
-
 	switch (network)
 	{
 		case nano::networks::invalid:
@@ -53,9 +46,6 @@ std::filesystem::path nano::unique_path (nano::networks network)
 	}
 
 	auto result = working_path (network) / random_string;
-
-	std::filesystem::create_directories (result);
-
 	all_unique_paths.push_back (result);
 	return result;
 }
@@ -69,6 +59,15 @@ void nano::remove_temporary_directories ()
 		if (ec)
 		{
 			std::cerr << "Could not remove temporary directory: " << ec.message () << std::endl;
+		}
+
+		// lmdb creates a -lock suffixed file for its MDB_NOSUBDIR databases
+		auto lockfile = path;
+		lockfile += "-lock";
+		std::filesystem::remove (lockfile, ec);
+		if (ec)
+		{
+			std::cerr << "Could not remove temporary lock file: " << ec.message () << std::endl;
 		}
 	}
 }

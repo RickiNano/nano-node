@@ -1,7 +1,6 @@
 #include <nano/node/ipc/ipc_server.hpp>
 #include <nano/rpc/rpc_request_processor.hpp>
 #include <nano/rpc_test/common.hpp>
-#include <nano/rpc_test/rpc_context.hpp>
 #include <nano/test_common/chains.hpp>
 #include <nano/test_common/system.hpp>
 #include <nano/test_common/testutil.hpp>
@@ -146,7 +145,7 @@ TEST (rpc, receivable_unconfirmed)
 	request.put ("include_only_confirmed", "false");
 	ASSERT_TRUE (check_block_response_count (system, rpc_ctx, request, 1));
 	ASSERT_TRUE (nano::test::start_elections (system, *node, { block1->hash () }, true));
-	ASSERT_TIMELY (5s, nano::test::confirmed (*node, { block1 }));
+	ASSERT_TIMELY (5s, !node->active.active (*block1));
 	request.put ("include_only_confirmed", "true");
 	ASSERT_TRUE (check_block_response_count (system, rpc_ctx, request, 1));
 }
@@ -158,7 +157,7 @@ TEST (rpc, receivable_unconfirmed)
 	auto block4 (system.wallet (0)->send_action (nano::dev::genesis_key.pub, key1.pub, 400));
 	rpc_ctx.io_scope->renew ();
 
-	ASSERT_TIMELY_EQ (10s, node->ledger.account_receivable (node->store.tx_begin_read (), key1.pub), 1000);
+	ASSERT_TIMELY (10s, node->ledger.account_receivable (node->store.tx_begin_read (), key1.pub) == 1000);
 	ASSERT_TIMELY (5s, !node->active.active (*block4));
 	ASSERT_TIMELY (5s, node->block_confirmed (block4->hash ()));
 
@@ -192,7 +191,7 @@ TEST (rpc, receivable_offset_and_sorting)
 	auto block6 = system.wallet (0)->send_action (nano::dev::genesis_key.pub, key1.pub, 300);
 
 	// check that all blocks got confirmed
-	ASSERT_TIMELY_EQ (5s, node->ledger.account_receivable (node->store.tx_begin_read (), key1.pub, true), 1600);
+	ASSERT_TIMELY (5s, node->ledger.account_receivable (node->store.tx_begin_read (), key1.pub, true) == 1600);
 
 	// check confirmation height is as expected, there is no perfect clarity yet when confirmation height updates after a block get confirmed
 	nano::confirmation_height_info confirmation_height_info;
@@ -370,14 +369,14 @@ TEST (rpc, search_receivable)
 				 .build ();
 	{
 		auto transaction (node->store.tx_begin_write ());
-		ASSERT_EQ (nano::block_status::progress, node->ledger.process (transaction, block));
+		ASSERT_EQ (nano::process_result::progress, node->ledger.process (transaction, *block).code);
 	}
 	auto const rpc_ctx = add_rpc (system, node);
 	boost::property_tree::ptree request;
 	request.put ("action", "search_receivable");
 	request.put ("wallet", wallet);
 	auto response (wait_response (system, rpc_ctx, request));
-	ASSERT_TIMELY_EQ (10s, node->balance (nano::dev::genesis_key.pub), nano::dev::constants.genesis_amount);
+	ASSERT_TIMELY (10s, node->balance (nano::dev::genesis_key.pub) == nano::dev::constants.genesis_amount);
 }
 
 TEST (rpc, accounts_pending_deprecated)
@@ -533,6 +532,7 @@ TEST (rpc, accounts_receivable_confirmed)
 	auto node = add_ipc_enabled_node (system, config);
 	auto chain = nano::test::setup_chain (system, *node, 1, nano::dev::genesis_key, false);
 	auto block1 = chain[0];
+	ASSERT_TIMELY (5s, !node->active.active (*block1));
 
 	auto const rpc_ctx = add_rpc (system, node);
 	boost::property_tree::ptree request;
@@ -549,7 +549,7 @@ TEST (rpc, accounts_receivable_confirmed)
 	request.put ("include_only_confirmed", "false");
 	ASSERT_TRUE (check_block_response_count (system, rpc_ctx, request, 1));
 	ASSERT_TRUE (nano::test::start_elections (system, *node, { block1->hash () }, true));
-	ASSERT_TIMELY (5s, nano::test::confirmed (*node, { block1 }));
+	ASSERT_TIMELY (5s, !node->active.active (*block1));
 	request.put ("include_only_confirmed", "true");
 	ASSERT_TRUE (check_block_response_count (system, rpc_ctx, request, 1));
 }

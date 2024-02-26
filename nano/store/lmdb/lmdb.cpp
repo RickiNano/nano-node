@@ -12,7 +12,7 @@
 
 #include <queue>
 
-nano::store::lmdb::component::component (nano::logger & logger_a, std::filesystem::path const & path_a, nano::ledger_constants & constants, nano::txn_tracking_config const & txn_tracking_config_a, std::chrono::milliseconds block_processor_batch_max_time_a, nano::lmdb_config const & lmdb_config_a, bool backup_before_upgrade_a) :
+nano::store::lmdb::component::component (nano::logger_mt & logger_a, std::filesystem::path const & path_a, nano::ledger_constants & constants, nano::txn_tracking_config const & txn_tracking_config_a, std::chrono::milliseconds block_processor_batch_max_time_a, nano::lmdb_config const & lmdb_config_a, bool backup_before_upgrade_a) :
 	// clang-format off
 	nano::store::component{
 		block_store,
@@ -37,7 +37,7 @@ nano::store::lmdb::component::component (nano::logger & logger_a, std::filesyste
 	confirmation_height_store{ *this },
 	final_vote_store{ *this },
 	version_store{ *this },
-	logger{ logger_a },
+	logger (logger_a),
 	env (error, path_a, nano::store::lmdb::env::options::make ().set_config (lmdb_config_a).set_use_no_mem_init (true)),
 	mdb_txn_tracker (logger_a, txn_tracking_config_a, block_processor_batch_max_time_a),
 	txn_tracking_enabled (txn_tracking_config_a.enable)
@@ -66,11 +66,10 @@ nano::store::lmdb::component::component (nano::logger & logger_a, std::filesyste
 		{
 			if (!is_fresh_db)
 			{
-				logger.info (nano::log::type::lmdb, "Upgrade in progress...");
-
+				logger.always_log ("Upgrade in progress...");
 				if (backup_before_upgrade_a)
 				{
-					create_backup_file (env, path_a, logger);
+					create_backup_file (env, path_a, logger_a);
 				}
 			}
 			auto needs_vacuuming = false;
@@ -85,18 +84,9 @@ nano::store::lmdb::component::component (nano::logger & logger_a, std::filesyste
 
 			if (needs_vacuuming)
 			{
-				logger.info (nano::log::type::lmdb, "Ledger vaccum in progress...");
-
+				logger.always_log ("Preparing vacuum...");
 				auto vacuum_success = vacuum_after_upgrade (path_a, lmdb_config_a);
-				if (vacuum_success)
-				{
-					logger.info (nano::log::type::lmdb, "Ledger vacuum completed");
-				}
-				else
-				{
-					logger.error (nano::log::type::lmdb, "Ledger vaccum failed");
-					logger.error (nano::log::type::lmdb, "(Optional) Please ensure enough disk space is available for a copy of the database and try to vacuum after shutting down the node");
-				}
+				logger.always_log (vacuum_success ? "Vacuum succeeded." : "Failed to vacuum. (Optional) Ensure enough disk space is available for a copy of the database and try to vacuum after shutting down the node");
 			}
 		}
 		else
@@ -212,7 +202,7 @@ bool nano::store::lmdb::component::do_upgrades (store::write_transaction & trans
 	auto version_l = version.get (transaction_a);
 	if (version_l < version_minimum)
 	{
-		logger.critical (nano::log::type::lmdb, "The version of the ledger ({}) is lower than the minimum ({}) which is supported for upgrades. Either upgrade a node first or delete the ledger.", version_l, version_minimum);
+		logger.always_log (boost::str (boost::format ("The version of the ledger (%1%) is lower than the minimum (%2%) which is supported for upgrades. Either upgrade to a v19, v20 or v21 node first or delete the ledger.") % version_l % version_minimum));
 		return true;
 	}
 	switch (version_l)
@@ -223,7 +213,7 @@ bool nano::store::lmdb::component::do_upgrades (store::write_transaction & trans
 		case 22:
 			break;
 		default:
-			logger.critical (nano::log::type::lmdb, "The version of the ledger ({}) is too high for this node", version_l);
+			logger.always_log (boost::str (boost::format ("The version of the ledger (%1%) is too high for this node") % version_l));
 			error = true;
 			break;
 	}
@@ -232,18 +222,16 @@ bool nano::store::lmdb::component::do_upgrades (store::write_transaction & trans
 
 void nano::store::lmdb::component::upgrade_v21_to_v22 (store::write_transaction const & transaction_a)
 {
-	logger.info (nano::log::type::lmdb, "Upgrading database from v21 to v22...");
-
+	logger.always_log ("Preparing v21 to v22 database upgrade...");
 	MDB_dbi unchecked_handle{ 0 };
 	release_assert (!mdb_dbi_open (env.tx (transaction_a), "unchecked", MDB_CREATE, &unchecked_handle));
 	release_assert (!mdb_drop (env.tx (transaction_a), unchecked_handle, 1)); // del = 1, to delete it from the environment and close the DB handle.
 	version.put (transaction_a, 22);
-
-	logger.info (nano::log::type::lmdb, "Upgrading database from v21 to v22 completed");
+	logger.always_log ("Finished removing unchecked table");
 }
 
 /** Takes a filepath, appends '_backup_<timestamp>' to the end (but before any extension) and saves that file in the same directory */
-void nano::store::lmdb::component::create_backup_file (nano::store::lmdb::env & env_a, std::filesystem::path const & filepath_a, nano::logger & logger)
+void nano::store::lmdb::component::create_backup_file (nano::store::lmdb::env & env_a, std::filesystem::path const & filepath_a, nano::logger_mt & logger_a)
 {
 	auto extension = filepath_a.extension ();
 	auto filename_without_extension = filepath_a.filename ().replace_extension ("");
@@ -254,18 +242,22 @@ void nano::store::lmdb::component::create_backup_file (nano::store::lmdb::env & 
 	backup_filename += std::to_string (std::chrono::system_clock::now ().time_since_epoch ().count ());
 	backup_filename += extension;
 	auto backup_filepath = backup_path / backup_filename;
-
-	logger.info (nano::log::type::lmdb, "Performing {} backup before database upgrade...", filepath_a.filename ().string ());
-
+	auto start_message (boost::str (boost::format ("Performing %1% backup before database upgrade...") % filepath_a.filename ()));
+	logger_a.always_log (start_message);
+	std::cout << start_message << std::endl;
 	auto error (mdb_env_copy (env_a, backup_filepath.string ().c_str ()));
 	if (error)
 	{
-		logger.critical (nano::log::type::lmdb, "Database backup failed");
+		auto error_message (boost::str (boost::format ("%1% backup failed") % filepath_a.filename ()));
+		logger_a.always_log (error_message);
+		std::cerr << error_message << std::endl;
 		std::exit (1);
 	}
 	else
 	{
-		logger.info (nano::log::type::lmdb, "Database backup completed. Backup can be found at: {}", backup_filepath.string ());
+		auto success_message (boost::str (boost::format ("Backup created: %1%") % backup_filename));
+		logger_a.always_log (success_message);
+		std::cout << success_message << std::endl;
 	}
 }
 

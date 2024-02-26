@@ -1214,6 +1214,7 @@ void nano::json_handler::block_confirm ()
 				nano::election_status status{ block_l, 0, 0, std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now ().time_since_epoch ()), std::chrono::duration_values<std::chrono::milliseconds>::zero (), 0, 1, 0, nano::election_status_type::active_confirmation_height };
 				node.active.recently_cemented.put (status);
 				// Trigger callback for confirmed block
+				node.block_arrival.add (hash);
 				auto account (node.ledger.account (transaction, hash));
 				bool error_or_pruned (false);
 				auto amount (node.ledger.amount_safe (transaction, hash, error_or_pruned));
@@ -2954,7 +2955,7 @@ void nano::json_handler::password_change ()
 				rpc_l->response_l.put ("changed", error ? "0" : "1");
 				if (!error)
 				{
-					rpc_l->node.logger.warn (nano::log::type::rpc, "Wallet password changed");
+					rpc_l->node.logger.try_log ("Wallet password changed");
 				}
 			}
 		}
@@ -3271,60 +3272,60 @@ void nano::json_handler::process ()
 					else
 					{
 						auto const & result = result_maybe.value ();
-						switch (result)
+						switch (result.code)
 						{
-							case nano::block_status::progress:
+							case nano::process_result::progress:
 							{
 								rpc_l->response_l.put ("hash", block->hash ().to_string ());
 								break;
 							}
-							case nano::block_status::gap_previous:
+							case nano::process_result::gap_previous:
 							{
 								rpc_l->ec = nano::error_process::gap_previous;
 								break;
 							}
-							case nano::block_status::gap_source:
+							case nano::process_result::gap_source:
 							{
 								rpc_l->ec = nano::error_process::gap_source;
 								break;
 							}
-							case nano::block_status::old:
+							case nano::process_result::old:
 							{
 								rpc_l->ec = nano::error_process::old;
 								break;
 							}
-							case nano::block_status::bad_signature:
+							case nano::process_result::bad_signature:
 							{
 								rpc_l->ec = nano::error_process::bad_signature;
 								break;
 							}
-							case nano::block_status::negative_spend:
+							case nano::process_result::negative_spend:
 							{
 								// TODO once we get RPC versioning, this should be changed to "negative spend"
 								rpc_l->ec = nano::error_process::negative_spend;
 								break;
 							}
-							case nano::block_status::balance_mismatch:
+							case nano::process_result::balance_mismatch:
 							{
 								rpc_l->ec = nano::error_process::balance_mismatch;
 								break;
 							}
-							case nano::block_status::unreceivable:
+							case nano::process_result::unreceivable:
 							{
 								rpc_l->ec = nano::error_process::unreceivable;
 								break;
 							}
-							case nano::block_status::block_position:
+							case nano::process_result::block_position:
 							{
 								rpc_l->ec = nano::error_process::block_position;
 								break;
 							}
-							case nano::block_status::gap_epoch_open_pending:
+							case nano::process_result::gap_epoch_open_pending:
 							{
 								rpc_l->ec = nano::error_process::gap_epoch_open_pending;
 								break;
 							}
-							case nano::block_status::fork:
+							case nano::process_result::fork:
 							{
 								bool const force = rpc_l->request.get<bool> ("force", false);
 								if (force)
@@ -3339,12 +3340,12 @@ void nano::json_handler::process ()
 								}
 								break;
 							}
-							case nano::block_status::insufficient_work:
+							case nano::process_result::insufficient_work:
 							{
 								rpc_l->ec = nano::error_process::insufficient_work;
 								break;
 							}
-							case nano::block_status::opened_burn_account:
+							case nano::process_result::opened_burn_account:
 								rpc_l->ec = nano::error_process::opened_burn_account;
 								break;
 							default:
@@ -4772,8 +4773,7 @@ void nano::json_handler::wallet_lock ()
 		empty.clear ();
 		wallet->store.password.value_set (empty);
 		response_l.put ("locked", "1");
-
-		node.logger.warn (nano::log::type::rpc, "Wallet locked");
+		node.logger.try_log ("Wallet locked");
 	}
 	response_errors ();
 }

@@ -12,6 +12,7 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 
+#include <atomic>
 #include <condition_variable>
 #include <deque>
 #include <memory>
@@ -25,7 +26,6 @@ class node;
 class active_transactions;
 class block;
 class block_sideband;
-class block_processor;
 class election;
 class vote;
 class confirmation_height_processor;
@@ -131,7 +131,7 @@ private: // Elections
 	std::unordered_map<nano::block_hash, std::shared_ptr<nano::election>> blocks;
 
 public:
-	active_transactions (nano::node &, nano::confirmation_height_processor &, nano::block_processor &);
+	active_transactions (nano::node &, nano::confirmation_height_processor &);
 	~active_transactions ();
 
 	void start ();
@@ -140,7 +140,7 @@ public:
 	/**
 	 * Starts new election with a specified behavior type
 	 */
-	nano::election_insertion_result insert (std::shared_ptr<nano::block> const &, nano::election_behavior = nano::election_behavior::normal);
+	nano::election_insertion_result insert (std::shared_ptr<nano::block> const & block, nano::election_behavior behavior = nano::election_behavior::normal);
 	// Distinguishes replay votes, cannot be determined if the block is not in any election
 	nano::vote_code vote (std::shared_ptr<nano::vote> const &);
 	// Is the root of this block in the roots container
@@ -182,6 +182,8 @@ public:
 private:
 	// Erase elections if we're over capacity
 	void trim ();
+	// Call action with confirmed block, may be different than what we started with
+	nano::election_insertion_result insert_impl (nano::unique_lock<nano::mutex> &, std::shared_ptr<nano::block> const &, nano::election_behavior = nano::election_behavior::normal, std::function<void (std::shared_ptr<nano::block> const &)> const & = nullptr);
 	void request_loop ();
 	void request_confirm (nano::unique_lock<nano::mutex> &);
 	void erase (nano::qualified_root const &);
@@ -205,9 +207,8 @@ private:
 	void notify_observers (nano::election_status const & status, std::vector<nano::vote_with_weight_info> const & votes, nano::account const & account, nano::uint128_t amount, bool is_state_send, bool is_state_epoch, nano::account const & pending_account);
 
 private: // Dependencies
-	nano::node & node;
 	nano::confirmation_height_processor & confirmation_height_processor;
-	nano::block_processor & block_processor;
+	nano::node & node;
 
 public:
 	recently_confirmed_cache recently_confirmed;

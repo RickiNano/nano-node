@@ -20,19 +20,19 @@ void nano::process_live_dispatcher::connect (nano::block_processor & block_proce
 {
 	block_processor.batch_processed.add ([this] (auto const & batch) {
 		auto const transaction = ledger.store.tx_begin_read ();
-		for (auto const & [result, context] : batch)
+		for (auto const & [result, block] : batch)
 		{
-			debug_assert (context.block != nullptr);
-			inspect (result, *context.block, transaction);
+			debug_assert (block != nullptr);
+			inspect (result, *block, transaction);
 		}
 	});
 }
 
-void nano::process_live_dispatcher::inspect (nano::block_status const & result, nano::block const & block, store::transaction const & transaction)
+void nano::process_live_dispatcher::inspect (nano::process_return const & result, nano::block const & block, store::transaction const & transaction)
 {
-	switch (result)
+	switch (result.code)
 	{
-		case nano::block_status::progress:
+		case nano::process_result::progress:
 			process_live (block, transaction);
 			break;
 		default:

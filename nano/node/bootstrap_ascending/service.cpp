@@ -34,10 +34,11 @@ nano::bootstrap_ascending::service::service (nano::node_config & config_a, nano:
 			nano::lock_guard<nano::mutex> lock{ mutex };
 
 			auto transaction = ledger.store.tx_begin_read ();
-			for (auto const & [result, context] : batch)
+			for (auto const & [result, block] : batch)
 			{
-				debug_assert (context.block != nullptr);
-				inspect (transaction, result, *context.block);
+				debug_assert (block != nullptr);
+
+				inspect (transaction, result, *block);
 			}
 		}
 
@@ -124,13 +125,13 @@ std::size_t nano::bootstrap_ascending::service::score_size () const
 - Marks an account as blocked if the result code is gap source as there is no reason request additional blocks for this account until the dependency is resolved
 - Marks an account as forwarded if it has been recently referenced by a block that has been inserted.
  */
-void nano::bootstrap_ascending::service::inspect (store::transaction const & tx, nano::block_status const & result, nano::block const & block)
+void nano::bootstrap_ascending::service::inspect (store::transaction const & tx, nano::process_return const & result, nano::block const & block)
 {
 	auto const hash = block.hash ();
 
-	switch (result)
+	switch (result.code)
 	{
-		case nano::block_status::progress:
+		case nano::process_result::progress:
 		{
 			const auto account = ledger.account (tx, hash);
 			const auto is_send = ledger.is_send (tx, block);
@@ -164,7 +165,7 @@ void nano::bootstrap_ascending::service::inspect (store::transaction const & tx,
 			}
 		}
 		break;
-		case nano::block_status::gap_source:
+		case nano::process_result::gap_source:
 		{
 			const auto account = block.previous ().is_zero () ? block.account () : ledger.account (tx, block.previous ());
 			const auto source = block.source ().is_zero () ? block.link ().as_block_hash () : block.source ();
@@ -175,12 +176,12 @@ void nano::bootstrap_ascending::service::inspect (store::transaction const & tx,
 			// TODO: Track stats
 		}
 		break;
-		case nano::block_status::old:
+		case nano::process_result::old:
 		{
 			// TODO: Track stats
 		}
 		break;
-		case nano::block_status::gap_previous:
+		case nano::process_result::gap_previous:
 		{
 			// TODO: Track stats
 		}
@@ -387,7 +388,7 @@ void nano::bootstrap_ascending::service::process (const nano::asc_pull_ack::bloc
 
 			for (auto & block : response.blocks)
 			{
-				block_processor.add (block, nano::block_source::bootstrap);
+				block_processor.add (block);
 			}
 			nano::lock_guard<nano::mutex> lock{ mutex };
 			throttle.add (true);

@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include <boost/none.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -51,7 +53,7 @@ auto message_deserializer_success_checker (message_type & message_original) -> v
 		ASSERT_EQ (*deserialized_bytes, *original_bytes);
 	});
 	// This is a sanity test, to ensure the successful deserialization case passes.
-	ASSERT_EQ (message_deserializer->status, nano::transport::parse_status::success);
+	ASSERT_EQ (message_deserializer->status, nano::transport::message_deserializer::parse_status::success);
 }
 
 TEST (message_deserializer, exact_confirm_ack)
@@ -65,7 +67,7 @@ TEST (message_deserializer, exact_confirm_ack)
 				 .balance (2)
 				 .sign (nano::keypair ().prv, 4)
 				 .work (*system.work.generate (nano::root (1)))
-				 .build ();
+				 .build_shared ();
 	auto vote (std::make_shared<nano::vote> (0, nano::keypair ().prv, 0, 0, std::vector<nano::block_hash>{ block->hash () }));
 	nano::confirm_ack message{ nano::dev::network_params.network, vote };
 
@@ -101,7 +103,7 @@ TEST (message_deserializer, exact_publish)
 				 .balance (2)
 				 .sign (nano::keypair ().prv, 4)
 				 .work (*system.work.generate (nano::root (1)))
-				 .build ();
+				 .build_shared ();
 	nano::publish message{ nano::dev::network_params.network, block };
 
 	message_deserializer_success_checker<decltype (message)> (message);

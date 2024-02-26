@@ -250,11 +250,11 @@ void nano::bootstrap_attempt_lazy::run ()
 	}
 	if (!stopped)
 	{
-		node->logger.debug (nano::log::type::bootstrap_lazy, "Completed lazy pulls");
+		node->logger.try_log ("Completed lazy pulls");
 	}
 	if (lazy_has_expired ())
 	{
-		node->logger.debug (nano::log::type::bootstrap_lazy, "Lazy bootstrap attempt ID {} expired", id);
+		node->logger.try_log (boost::str (boost::format ("Lazy bootstrap attempt ID %1% expired") % id));
 	}
 	lock.unlock ();
 	stop ();
@@ -311,7 +311,7 @@ bool nano::bootstrap_attempt_lazy::process_block_lazy (std::shared_ptr<nano::blo
 		}
 		lazy_block_state_backlog_check (block_a, hash);
 		lock.unlock ();
-		node->block_processor.add (block_a, nano::block_source::bootstrap_legacy);
+		node->block_processor.add (block_a);
 	}
 	// Force drop lazy bootstrap connection for long bulk_pull
 	if (pull_blocks_processed > max_blocks)
@@ -613,7 +613,7 @@ void nano::bootstrap_attempt_wallet::run ()
 	}
 	if (!stopped)
 	{
-		node->logger.info (nano::log::type::bootstrap_lazy, "Completed wallet lazy pulls");
+		node->logger.try_log ("Completed wallet lazy pulls");
 	}
 	lock.unlock ();
 	stop ();

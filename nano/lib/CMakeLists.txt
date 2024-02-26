@@ -50,17 +50,11 @@ add_library(
   lmdbconfig.cpp
   locks.hpp
   locks.cpp
-  logging.hpp
-  logging.cpp
-  logging_enums.hpp
-  logging_enums.cpp
+  logger_mt.hpp
   memory.hpp
   memory.cpp
   numbers.hpp
   numbers.cpp
-  object_stream.hpp
-  object_stream.cpp
-  object_stream_adapters.hpp
   observer_set.hpp
   optional_ptr.hpp
   processing_queue.hpp
@@ -106,6 +100,7 @@ add_library(
   work.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR}/submodules)
+include_directories(${CMAKE_SOURCE_DIR}/submodules/cpptoml/include)
 include_directories(
   ${CMAKE_SOURCE_DIR}/submodules/nano-pow-server/deps/cpptoml/include)
 
@@ -116,15 +111,14 @@ target_link_libraries(
   blake2
   ${CRYPTOPP_LIBRARY}
   ${CMAKE_DL_LIBS}
-  fmt::fmt
-  spdlog::spdlog
   Boost::iostreams
   Boost::asio
   Boost::circular_buffer
   Boost::dll
+  Boost::log_setup
+  Boost::log
   Boost::multiprecision
   Boost::program_options
-  Boost::property_tree
   Boost::stacktrace)
 
 if(NANO_STACKTRACE_BACKTRACE)

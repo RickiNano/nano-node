@@ -652,7 +652,7 @@ nano::receive_block_builder & nano::receive_block_builder::source_hex (std::stri
 }
 
 template <typename BLOCKTYPE, typename BUILDER>
-std::shared_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build ()
+std::unique_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build ()
 {
 	if (!ec)
 	{
@@ -663,7 +663,7 @@ std::shared_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build ()
 }
 
 template <typename BLOCKTYPE, typename BUILDER>
-std::shared_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build (std::error_code & ec)
+std::unique_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build (std::error_code & ec)
 {
 	if (!this->ec)
 	{
@@ -671,6 +671,18 @@ std::shared_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build (st
 	}
 	ec = this->ec;
 	return std::move (block);
+}
+
+template <typename BLOCKTYPE, typename BUILDER>
+std::shared_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build_shared ()
+{
+	return std::move (build ());
+}
+
+template <typename BLOCKTYPE, typename BUILDER>
+std::shared_ptr<BLOCKTYPE> nano::abstract_builder<BLOCKTYPE, BUILDER>::build_shared (std::error_code & ec)
+{
+	return std::move (build (ec));
 }
 
 template <typename BLOCKTYPE, typename BUILDER>

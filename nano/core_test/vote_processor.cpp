@@ -14,7 +14,7 @@ TEST (vote_processor, codes)
 	nano::test::system system (1);
 	auto & node (*system.nodes[0]);
 	auto blocks = nano::test::setup_chain (system, node, 1, nano::dev::genesis_key, false);
-	auto vote = nano::test::make_vote (nano::dev::genesis_key, { blocks[0] }, nano::vote::timestamp_min * 1, 0);
+	auto vote (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ blocks[0]->hash () }));
 	auto vote_invalid = std::make_shared<nano::vote> (*vote);
 	vote_invalid->signature.bytes[0] ^= 1;
 	auto channel (std::make_shared<nano::transport::inproc::channel> (node, node));
@@ -78,9 +78,9 @@ TEST (vote_processor, invalid_signature)
 	ASSERT_EQ (1, election->votes ().size ());
 
 	node.vote_processor.vote (vote_invalid, channel);
-	ASSERT_TIMELY_EQ (5s, 1, election->votes ().size ());
+	ASSERT_TIMELY (5s, 1 == election->votes ().size ());
 	node.vote_processor.vote (vote, channel);
-	ASSERT_TIMELY_EQ (5s, 2, election->votes ().size ());
+	ASSERT_TIMELY (5s, 2 == election->votes ().size ());
 }
 
 TEST (vote_processor, no_capacity)
@@ -90,7 +90,7 @@ TEST (vote_processor, no_capacity)
 	node_flags.vote_processor_capacity = 0;
 	auto & node (*system.add_node (node_flags));
 	nano::keypair key;
-	auto vote = nano::test::make_vote (key, { nano::dev::genesis }, nano::vote::timestamp_min * 1, 0);
+	auto vote (std::make_shared<nano::vote> (key.pub, key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ nano::dev::genesis->hash () }));
 	auto channel (std::make_shared<nano::transport::inproc::channel> (node, node));
 	ASSERT_TRUE (node.vote_processor.vote (vote, channel));
 }
@@ -102,7 +102,7 @@ TEST (vote_processor, overflow)
 	node_flags.vote_processor_capacity = 1;
 	auto & node (*system.add_node (node_flags));
 	nano::keypair key;
-	auto vote = nano::test::make_vote (key, { nano::dev::genesis }, nano::vote::timestamp_min * 1, 0);
+	auto vote (std::make_shared<nano::vote> (key.pub, key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ nano::dev::genesis->hash () }));
 	auto channel (std::make_shared<nano::transport::inproc::channel> (node, node));
 	auto start_time = std::chrono::system_clock::now ();
 
@@ -154,7 +154,7 @@ TEST (vote_processor, weights)
 	system.wallet (0)->send_sync (nano::dev::genesis_key.pub, key2.pub, level2);
 
 	// Wait for representatives
-	ASSERT_TIMELY_EQ (10s, node.ledger.cache.rep_weights.get_rep_amounts ().size (), 4);
+	ASSERT_TIMELY (10s, node.ledger.cache.rep_weights.get_rep_amounts ().size () == 4);
 	node.vote_processor.calculate_weights ();
 
 	ASSERT_EQ (node.vote_processor.representatives_1.end (), node.vote_processor.representatives_1.find (key0.pub));
@@ -204,7 +204,7 @@ TEST (vote_processor, no_broadcast_local)
 										.work (*system.work.generate (nano::dev::genesis->hash ()))
 										.build (ec);
 	ASSERT_FALSE (ec);
-	ASSERT_EQ (nano::block_status::progress, node.process_local (send).value ());
+	ASSERT_EQ (nano::process_result::progress, node.process_local (send).value ().code);
 	ASSERT_TIMELY (10s, !node.active.empty ());
 	ASSERT_EQ (2 * node.config.vote_minimum.number (), node.weight (nano::dev::genesis_key.pub));
 	// Insert account in wallet. Votes on node are not enabled.
@@ -257,7 +257,7 @@ TEST (vote_processor, local_broadcast_without_a_representative)
 										.work (*system.work.generate (nano::dev::genesis->hash ()))
 										.build (ec);
 	ASSERT_FALSE (ec);
-	ASSERT_EQ (nano::block_status::progress, node.process_local (send).value ());
+	ASSERT_EQ (nano::process_result::progress, node.process_local (send).value ().code);
 	ASSERT_TIMELY (10s, !node.active.empty ());
 	ASSERT_EQ (node.config.vote_minimum, node.weight (nano::dev::genesis_key.pub));
 	node.start_election (send);
@@ -305,7 +305,7 @@ TEST (vote_processor, no_broadcast_local_with_a_principal_representative)
 										.work (*system.work.generate (nano::dev::genesis->hash ()))
 										.build (ec);
 	ASSERT_FALSE (ec);
-	ASSERT_EQ (nano::block_status::progress, node.process_local (send).value ());
+	ASSERT_EQ (nano::process_result::progress, node.process_local (send).value ().code);
 	ASSERT_TIMELY (10s, !node.active.empty ());
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 2 * node.config.vote_minimum.number (), node.weight (nano::dev::genesis_key.pub));
 	// Insert account in wallet. Votes on node are not enabled.
@@ -344,7 +344,7 @@ TEST (vote_processor, large_votes)
 	ASSERT_TIMELY (5s, nano::test::active (node, blocks));
 
 	auto vote = nano::test::make_final_vote (nano::dev::genesis_key, blocks);
-	ASSERT_EQ (vote->hashes.size (), count);
+	ASSERT_TRUE (vote->hashes.size () == count);
 
 	node.vote_processor.vote (vote, nano::test::fake_channel (node));
 

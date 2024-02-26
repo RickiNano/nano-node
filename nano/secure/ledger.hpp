@@ -17,6 +17,9 @@ namespace nano
 {
 class stats;
 
+// map of vote weight per block, ordered greater first
+using tally_t = std::map<nano::uint128_t, std::shared_ptr<nano::block>, std::greater<nano::uint128_t>>;
+
 class uncemented_info
 {
 public:
@@ -45,6 +48,7 @@ public:
 	 * Return account containing hash, returns zero account if account can not be found
 	 */
 	nano::account account_safe (store::transaction const &, nano::block_hash const &) const;
+	nano::uint128_t amount (store::transaction const &, nano::account const &);
 	nano::uint128_t amount (store::transaction const &, nano::block_hash const &);
 	/** Safe for previous block, but block hash_a must exist */
 	nano::uint128_t amount_safe (store::transaction const &, nano::block_hash const & hash_a, bool &) const;
@@ -72,7 +76,7 @@ public:
 	nano::block_hash block_source (store::transaction const &, nano::block const &);
 	std::pair<nano::block_hash, nano::block_hash> hash_root_random (store::transaction const &) const;
 	std::optional<nano::pending_info> pending_info (store::transaction const & transaction, nano::pending_key const & key) const;
-	nano::block_status process (store::write_transaction const & transaction, std::shared_ptr<nano::block> block);
+	nano::process_return process (store::write_transaction const &, nano::block &);
 	bool rollback (store::write_transaction const &, nano::block_hash const &, std::vector<std::shared_ptr<nano::block>> &);
 	bool rollback (store::write_transaction const &, nano::block_hash const &);
 	void update_account (store::write_transaction const &, nano::account const &, nano::account_info const &, nano::account_info const &);

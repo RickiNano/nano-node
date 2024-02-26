@@ -2,7 +2,6 @@
 #include <nano/crypto_lib/random_pool.hpp>
 #include <nano/lib/cli.hpp>
 #include <nano/lib/errors.hpp>
-#include <nano/lib/logging.hpp>
 #include <nano/lib/rpcconfig.hpp>
 #include <nano/lib/thread_runner.hpp>
 #include <nano/lib/tlsconfig.hpp>
@@ -26,18 +25,13 @@
 
 namespace
 {
-nano::logger logger{ "wallet_daemon" };
-
 void show_error (std::string const & message_a)
 {
-	logger.critical (nano::log::type::daemon, "{}", message_a);
-
 	QMessageBox message (QMessageBox::Critical, "Error starting Nano", message_a.c_str ());
 	message.setModal (true);
 	message.show ();
 	message.exec ();
 }
-
 void show_help (std::string const & message_a)
 {
 	QMessageBox message (QMessageBox::NoIcon, "Help", "see <a href=\"https://docs.nano.org/commands/command-line-interface/#launch-options\">launch options</a> ");
@@ -74,10 +68,6 @@ nano::error read_wallet_config (nano::wallet_config & config_a, std::filesystem:
 
 int run_wallet (QApplication & application, int argc, char * const * argv, std::filesystem::path const & data_path, nano::node_flags const & flags)
 {
-	nano::logger::initialize (nano::log_config::daemon_default (), data_path, flags.config_overrides);
-
-	logger.info (nano::log::type::daemon_wallet, "Daemon started (wallet)");
-
 	int result (0);
 	nano_qt::eventloop_processor processor;
 	boost::system::error_code error_chmod;
@@ -109,6 +99,9 @@ int run_wallet (QApplication & application, int argc, char * const * argv, std::
 	{
 		nano::set_use_memory_pools (config.node.use_memory_pools);
 
+		config.node.logging.init (data_path);
+		nano::logger_mt logger{ config.node.logging.min_time_between_log_output };
+
 		auto tls_config (std::make_shared<nano::tls_config> ());
 		error = nano::read_tls_config_toml (data_path, *tls_config, logger);
 		if (error)
@@ -128,15 +121,11 @@ int run_wallet (QApplication & application, int argc, char * const * argv, std::
 		std::shared_ptr<nano::node> node;
 		std::shared_ptr<nano_qt::wallet> gui;
 		nano::set_application_icon (application);
-		auto opencl = nano::opencl_work::create (config.opencl_enable, config.opencl, logger, config.node.network_params.work);
-		nano::opencl_work_func_t opencl_work_func;
-		if (opencl)
-		{
-			opencl_work_func = [&opencl] (nano::work_version const version_a, nano::root const & root_a, uint64_t difficulty_a, std::atomic<int> &) {
-				return opencl->generate_work (version_a, root_a, difficulty_a);
-			};
-		}
-		nano::work_pool work{ config.node.network_params.network, config.node.work_threads, config.node.pow_sleep_interval, opencl_work_func };
+		auto opencl (nano::opencl_work::create (config.opencl_enable, config.opencl, logger, config.node.network_params.work));
+		nano::work_pool work{ config.node.network_params.network, config.node.work_threads, config.node.pow_sleep_interval, opencl ? [&opencl] (nano::work_version const version_a, nano::root const & root_a, uint64_t difficulty_a, std::atomic<int> &) {
+								 return opencl->generate_work (version_a, root_a, difficulty_a);
+							 }
+																																   : std::function<boost::optional<uint64_t> (nano::work_version const, nano::root const &, uint64_t, std::atomic<int> &)> (nullptr) };
 		node = std::make_shared<nano::node> (io_ctx, data_path, config.node, work, flags);
 		if (!node->init_error ())
 		{
@@ -242,17 +231,12 @@ int run_wallet (QApplication & application, int argc, char * const * argv, std::
 		splash->hide ();
 		show_error ("Error deserializing config: " + error.get_message ());
 	}
-
-	logger.info (nano::log::type::daemon_wallet, "Daemon exiting (wallet)");
-
 	return result;
 }
 
 int main (int argc, char * const * argv)
 {
-	nano::set_umask (); // Make sure the process umask is set before any files are created
-	nano::logger::initialize (nano::log_config::cli_default ());
-
+	nano::set_umask ();
 	nano::node_singleton_memory_pool_purge_guard memory_pool_cleanup_guard;
 
 	QApplication application (argc, const_cast<char **> (argv));

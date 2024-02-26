@@ -1,7 +1,6 @@
 #pragma once
 
 #include <nano/lib/locks.hpp>
-#include <nano/lib/object_stream.hpp>
 #include <nano/lib/stats.hpp>
 #include <nano/node/bandwidth_limiter.hpp>
 #include <nano/node/common.hpp>
@@ -141,9 +140,6 @@ private:
 
 protected:
 	nano::node & node;
-
-public: // Logging
-	virtual void operator() (nano::object_stream &) const;
 };
 }
 

@@ -34,7 +34,7 @@ private:
 };
 }
 
-nano::store::rocksdb::component::component (nano::logger & logger_a, std::filesystem::path const & path_a, nano::ledger_constants & constants, nano::rocksdb_config const & rocksdb_config_a, bool open_read_only_a) :
+nano::store::rocksdb::component::component (nano::logger_mt & logger_a, std::filesystem::path const & path_a, nano::ledger_constants & constants, nano::rocksdb_config const & rocksdb_config_a, bool open_read_only_a) :
 	// clang-format off
 	nano::store::component{
 		block_store,
@@ -95,16 +95,14 @@ nano::store::rocksdb::component::component (nano::logger & logger_a, std::filesy
 		auto version_l = version.get (transaction);
 		if (version_l > version_current)
 		{
-			logger.critical (nano::log::type::rocksdb, "The version of the ledger ({}) is too high for this node", version_l);
-
 			error = true;
+			logger.always_log (boost::str (boost::format ("The version of the ledger (%1%) is too high for this node") % version_l));
 			return;
 		}
 		else if (version_l < version_minimum)
 		{
-			logger.critical (nano::log::type::rocksdb, "The version of the ledger ({}) is lower than the minimum ({}) which is supported for upgrades. Either upgrade a node first or delete the ledger.", version_l, version_minimum);
-
 			error = true;
+			logger.always_log (boost::str (boost::format ("The version of the ledger (%1%) is lower than the minimum (%2%) which is supported for upgrades. Either upgrade to a v19, v20 or v21 node first or delete the ledger.") % version_l % version_minimum));
 			return;
 		}
 		is_fully_upgraded = (version_l == version_current);
@@ -151,8 +149,7 @@ nano::store::rocksdb::component::component (nano::logger & logger_a, std::filesy
 	open (error, path_a, open_read_only_a, options, get_current_column_families (path_a.string (), options));
 	if (!error)
 	{
-		logger.info (nano::log::type::rocksdb, "Upgrade in progress...");
-
+		logger.always_log ("Upgrade in progress...");
 		auto transaction = tx_begin_write ();
 		error |= do_upgrades (transaction);
 	}
@@ -243,7 +240,7 @@ bool nano::store::rocksdb::component::do_upgrades (store::write_transaction cons
 		case 22:
 			break;
 		default:
-			logger.critical (nano::log::type::rocksdb, "The version of the ledger ({}) is too high for this node", version_l);
+			logger.always_log (boost::str (boost::format ("The version of the ledger (%1%) is too high for this node") % version_l));
 			error_l = true;
 			break;
 	}
@@ -252,8 +249,7 @@ bool nano::store::rocksdb::component::do_upgrades (store::write_transaction cons
 
 void nano::store::rocksdb::component::upgrade_v21_to_v22 (store::write_transaction const & transaction_a)
 {
-	logger.info (nano::log::type::rocksdb, "Upgrading database from v21 to v22...");
-
+	logger.always_log ("Preparing v21 to v22 database upgrade...");
 	if (column_family_exists ("unchecked"))
 	{
 		auto const unchecked_handle = get_column_family ("unchecked");
@@ -268,12 +264,9 @@ void nano::store::rocksdb::component::upgrade_v21_to_v22 (store::write_transacti
 			}
 			return false;
 		});
-		logger.debug (nano::log::type::rocksdb, "Finished removing unchecked table");
 	}
-
 	version.put (transaction_a, 22);
-
-	logger.info (nano::log::type::rocksdb, "Upgrading database from v21 to v22 completed");
+	logger.always_log ("Finished removing unchecked table");
 }
 
 void nano::store::rocksdb::component::generate_tombstone_map ()

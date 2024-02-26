@@ -21,7 +21,7 @@
 namespace nano
 {
 class wallets;
-class logger;
+class logger_mt;
 class vote;
 class election_status;
 class telemetry_data;
@@ -142,8 +142,8 @@ namespace websocket
 	class confirmation_options final : public options
 	{
 	public:
-		confirmation_options (nano::wallets & wallets_a, nano::logger &);
-		confirmation_options (boost::property_tree::ptree const & options_a, nano::wallets & wallets_a, nano::logger &);
+		confirmation_options (nano::wallets & wallets_a);
+		confirmation_options (boost::property_tree::ptree const & options_a, nano::wallets & wallets_a, nano::logger_mt & logger_a);
 
 		/**
 		 * Checks if a message should be filtered for given block confirmation options.
@@ -195,8 +195,7 @@ namespace websocket
 		void check_filter_empty () const;
 
 		nano::wallets & wallets;
-		nano::logger & logger;
-
+		boost::optional<nano::logger_mt &> logger;
 		bool include_election_info{ false };
 		bool include_election_info_with_votes{ false };
 		bool include_sideband_info{ false };
@@ -215,7 +214,7 @@ namespace websocket
 	class vote_options final : public options
 	{
 	public:
-		vote_options (boost::property_tree::ptree const & options_a, nano::logger &);
+		vote_options (boost::property_tree::ptree const & options_a, nano::logger_mt & logger_a);
 
 		/**
 		 * Checks if a message should be filtered for given vote received options.
@@ -241,7 +240,7 @@ namespace websocket
 		explicit session (nano::websocket::listener & listener_a, socket_type socket_a, boost::asio::ssl::context & ctx_a);
 #endif
 		/** Constructor that takes ownership over \p socket_a */
-		explicit session (nano::websocket::listener & listener_a, socket_type socket_a, nano::logger &);
+		explicit session (nano::websocket::listener & listener_a, socket_type socket_a);
 
 		~session ();
 
@@ -262,16 +261,10 @@ namespace websocket
 		nano::websocket::listener & ws_listener;
 		/** Websocket stream, supporting both plain and tls connections */
 		nano::websocket::stream ws;
-		nano::logger & logger;
-
 		/** Buffer for received messages */
 		boost::beast::multi_buffer read_buffer;
 		/** Outgoing messages. The send queue is protected by accessing it only through the strand */
 		std::deque<message> send_queue;
-
-		/** Cache remote & local endpoints to make them available after the socket is closed */
-		socket_type::endpoint_type remote;
-		socket_type::endpoint_type local;
 
 		/** Hash functor for topic enums */
 		struct topic_hash
@@ -298,7 +291,7 @@ namespace websocket
 	class listener final : public std::enable_shared_from_this<listener>
 	{
 	public:
-		listener (std::shared_ptr<nano::tls_config> const & tls_config_a, nano::logger &, nano::wallets & wallets_a, boost::asio::io_context & io_ctx_a, boost::asio::ip::tcp::endpoint endpoint_a);
+		listener (std::shared_ptr<nano::tls_config> const & tls_config_a, nano::logger_mt & logger_a, nano::wallets & wallets_a, boost::asio::io_context & io_ctx_a, boost::asio::ip::tcp::endpoint endpoint_a);
 
 		/** Start accepting connections */
 		void run ();
@@ -313,6 +306,11 @@ namespace websocket
 
 		/** Broadcast \p message to all session subscribing to the message topic. */
 		void broadcast (nano::websocket::message message_a);
+
+		nano::logger_mt & get_logger () const
+		{
+			return logger;
+		}
 
 		std::uint16_t listening_port ()
 		{
@@ -348,7 +346,7 @@ namespace websocket
 		void decrease_subscriber_count (nano::websocket::topic const & topic_a);
 
 		std::shared_ptr<nano::tls_config> tls_config;
-		nano::logger & logger;
+		nano::logger_mt & logger;
 		nano::wallets & wallets;
 		boost::asio::ip::tcp::acceptor acceptor;
 		socket_type socket;
@@ -365,7 +363,7 @@ namespace websocket
 class websocket_server
 {
 public:
-	websocket_server (nano::websocket::config &, nano::node_observers &, nano::wallets &, nano::ledger &, boost::asio::io_context &, nano::logger &);
+	websocket_server (nano::websocket::config &, nano::node_observers &, nano::wallets &, nano::ledger &, boost::asio::io_context &, nano::logger_mt &);
 
 	void start ();
 	void stop ();
@@ -376,7 +374,7 @@ private: // Dependencies
 	nano::wallets & wallets;
 	nano::ledger & ledger;
 	boost::asio::io_context & io_ctx;
-	nano::logger & logger;
+	nano::logger_mt & logger;
 
 public:
 	// TODO: Encapsulate, this is public just because existing code needs it

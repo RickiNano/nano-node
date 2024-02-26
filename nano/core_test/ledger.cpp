@@ -1,4 +1,3 @@
-#include <nano/lib/logging.hpp>
 #include <nano/lib/stats.hpp>
 #include <nano/lib/threading.hpp>
 #include <nano/node/election.hpp>
@@ -47,6 +46,8 @@ TEST (ledger, genesis_balance)
 	auto transaction = store.tx_begin_write ();
 	auto balance = ledger.account_balance (transaction, nano::dev::genesis->account ());
 	ASSERT_EQ (nano::dev::constants.genesis_amount, balance);
+	auto amount = ledger.amount (transaction, nano::dev::genesis->account ());
+	ASSERT_EQ (nano::dev::constants.genesis_amount, amount);
 	auto info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (info);
 	ASSERT_EQ (1, ledger.cache.account_count);
@@ -77,7 +78,7 @@ TEST (ledger, process_modifies_sideband)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (store.tx_begin_write (), send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (store.tx_begin_write (), *send1).code);
 	ASSERT_EQ (send1->sideband ().timestamp, store.block.get (store.tx_begin_read (), send1->hash ())->sideband ().timestamp);
 }
 
@@ -105,13 +106,13 @@ TEST (ledger, process_send)
 	ASSERT_EQ (nano::dev::genesis_key.pub, store.frontier.get (transaction, info1->head));
 	ASSERT_EQ (1, info1->block_count);
 	// This was a valid block, it should progress.
-	auto return1 = ledger.process (transaction, send);
+	auto return1 = ledger.process (transaction, *send);
 	ASSERT_EQ (nano::dev::genesis_key.pub, send->sideband ().account);
 	ASSERT_EQ (2, send->sideband ().height);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, ledger.amount (transaction, hash1));
 	ASSERT_TRUE (store.frontier.get (transaction, info1->head).is_zero ());
 	ASSERT_EQ (nano::dev::genesis_key.pub, store.frontier.get (transaction, hash1));
-	ASSERT_EQ (nano::block_status::progress, return1);
+	ASSERT_EQ (nano::process_result::progress, return1.code);
 	ASSERT_EQ (nano::dev::genesis_key.pub, ledger.account (*send));
 	ASSERT_EQ (50, ledger.account_balance (transaction, nano::dev::genesis_key.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, ledger.account_receivable (transaction, key2.pub));
@@ -134,13 +135,13 @@ TEST (ledger, process_send)
 				.build ();
 	nano::block_hash hash2 (open->hash ());
 	// This was a valid block, it should progress.
-	auto return2 = ledger.process (transaction, open);
-	ASSERT_EQ (nano::block_status::progress, return2);
+	auto return2 = ledger.process (transaction, *open);
+	ASSERT_EQ (nano::process_result::progress, return2.code);
 	ASSERT_EQ (key2.pub, open->sideband ().account);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, open->sideband ().balance.number ());
 	ASSERT_EQ (1, open->sideband ().height);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, ledger.amount (transaction, hash2));
-	ASSERT_EQ (nano::block_status::progress, return2);
+	ASSERT_EQ (nano::process_result::progress, return2.code);
 	ASSERT_EQ (key2.pub, ledger.account (*open));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, ledger.amount (transaction, hash2));
 	ASSERT_EQ (key2.pub, store.frontier.get (transaction, hash2));
@@ -212,7 +213,7 @@ TEST (ledger, process_receive)
 				.work (*pool.generate (info1->head))
 				.build ();
 	nano::block_hash hash1 (send->hash ());
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	nano::keypair key3;
 	auto open = builder
 				.open ()
@@ -223,8 +224,8 @@ TEST (ledger, process_receive)
 				.work (*pool.generate (key2.pub))
 				.build ();
 	nano::block_hash hash2 (open->hash ());
-	auto return1 = ledger.process (transaction, open);
-	ASSERT_EQ (nano::block_status::progress, return1);
+	auto return1 = ledger.process (transaction, *open);
+	ASSERT_EQ (nano::process_result::progress, return1.code);
 	ASSERT_EQ (key2.pub, ledger.account (*open));
 	ASSERT_EQ (key2.pub, open->sideband ().account);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, open->sideband ().balance.number ());
@@ -240,7 +241,7 @@ TEST (ledger, process_receive)
 				 .work (*pool.generate (hash1))
 				 .build ();
 	nano::block_hash hash3 = send2->hash ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	auto receive = builder
 				   .receive ()
 				   .previous (hash2)
@@ -250,14 +251,14 @@ TEST (ledger, process_receive)
 				   .build ();
 	auto hash4 = receive->hash ();
 	ASSERT_EQ (key2.pub, store.frontier.get (transaction, hash2));
-	auto return2 = ledger.process (transaction, receive);
+	auto return2 = ledger.process (transaction, *receive);
 	ASSERT_EQ (key2.pub, receive->sideband ().account);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 25, receive->sideband ().balance.number ());
 	ASSERT_EQ (2, receive->sideband ().height);
 	ASSERT_EQ (25, ledger.amount (transaction, hash4));
 	ASSERT_TRUE (store.frontier.get (transaction, hash2).is_zero ());
 	ASSERT_EQ (key2.pub, store.frontier.get (transaction, hash4));
-	ASSERT_EQ (nano::block_status::progress, return2);
+	ASSERT_EQ (nano::process_result::progress, return2.code);
 	ASSERT_EQ (key2.pub, ledger.account (*receive));
 	ASSERT_EQ (hash4, ledger.latest (transaction, key2.pub));
 	ASSERT_EQ (25, ledger.account_balance (transaction, nano::dev::genesis_key.pub));
@@ -300,7 +301,7 @@ TEST (ledger, rollback_receiver)
 				.work (*pool.generate (info1->head))
 				.build ();
 	nano::block_hash hash1 (send->hash ());
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	nano::keypair key3;
 	auto open = builder
 				.open ()
@@ -311,7 +312,7 @@ TEST (ledger, rollback_receiver)
 				.work (*pool.generate (key2.pub))
 				.build ();
 	nano::block_hash hash2 (open->hash ());
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open).code);
 	ASSERT_EQ (hash2, ledger.latest (transaction, key2.pub));
 	ASSERT_EQ (50, ledger.account_balance (transaction, nano::dev::genesis_key.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 50, ledger.account_balance (transaction, key2.pub));
@@ -345,7 +346,7 @@ TEST (ledger, rollback_representation)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (nano::dev::genesis->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change1).code);
 	nano::keypair key3;
 	auto change2 = builder
 				   .change ()
@@ -354,7 +355,7 @@ TEST (ledger, rollback_representation)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (change1->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change2).code);
 	nano::keypair key2;
 	auto send1 = builder
 				 .send ()
@@ -364,7 +365,7 @@ TEST (ledger, rollback_representation)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (change2->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	nano::keypair key4;
 	auto open = builder
 				.open ()
@@ -374,7 +375,7 @@ TEST (ledger, rollback_representation)
 				.sign (key2.prv, key2.pub)
 				.work (*pool.generate (key2.pub))
 				.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open).code);
 	auto send2 = builder
 				 .send ()
 				 .previous (send1->hash ())
@@ -383,7 +384,7 @@ TEST (ledger, rollback_representation)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	auto receive1 = builder
 					.receive ()
 					.previous (open->hash ())
@@ -391,7 +392,7 @@ TEST (ledger, rollback_representation)
 					.sign (key2.prv, key2.pub)
 					.work (*pool.generate (open->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_EQ (1, ledger.weight (key3.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 1, ledger.weight (key4.pub));
 	auto info1 = ledger.account_info (transaction, key2.pub);
@@ -435,7 +436,7 @@ TEST (ledger, receive_rollback)
 				.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				.work (*pool.generate (nano::dev::genesis->hash ()))
 				.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	auto receive = builder
 				   .receive ()
 				   .previous (send->hash ())
@@ -443,7 +444,7 @@ TEST (ledger, receive_rollback)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (send->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive).code);
 	ASSERT_FALSE (ledger.rollback (transaction, receive->hash ()));
 }
 
@@ -467,8 +468,8 @@ TEST (ledger, process_duplicate)
 				.work (*pool.generate (info1->head))
 				.build ();
 	nano::block_hash hash1 (send->hash ());
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
-	ASSERT_EQ (nano::block_status::old, ledger.process (transaction, send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
+	ASSERT_EQ (nano::process_result::old, ledger.process (transaction, *send).code);
 	auto open = builder
 				.open ()
 				.source (hash1)
@@ -477,8 +478,8 @@ TEST (ledger, process_duplicate)
 				.sign (key2.prv, key2.pub)
 				.work (*pool.generate (key2.pub))
 				.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open));
-	ASSERT_EQ (nano::block_status::old, ledger.process (transaction, open));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open).code);
+	ASSERT_EQ (nano::process_result::old, ledger.process (transaction, *open).code);
 }
 
 TEST (ledger, representative_genesis)
@@ -520,11 +521,11 @@ TEST (ledger, representative_change)
 				 .work (*pool.generate (info1->head))
 				 .build ();
 	ASSERT_EQ (nano::dev::genesis_key.pub, store.frontier.get (transaction, info1->head));
-	auto return1 (ledger.process (transaction, block));
+	auto return1 (ledger.process (transaction, *block));
 	ASSERT_EQ (0, ledger.amount (transaction, block->hash ()));
 	ASSERT_TRUE (store.frontier.get (transaction, info1->head).is_zero ());
 	ASSERT_EQ (nano::dev::genesis_key.pub, store.frontier.get (transaction, block->hash ()));
-	ASSERT_EQ (nano::block_status::progress, return1);
+	ASSERT_EQ (nano::process_result::progress, return1.code);
 	ASSERT_EQ (nano::dev::genesis_key.pub, ledger.account (*block));
 	ASSERT_EQ (0, ledger.weight (nano::dev::genesis_key.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount, ledger.weight (key2.pub));
@@ -561,7 +562,7 @@ TEST (ledger, send_fork)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (info1->head))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block).code);
 	auto block2 = builder
 				  .send ()
 				  .previous (info1->head)
@@ -570,7 +571,7 @@ TEST (ledger, send_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (info1->head))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *block2).code);
 }
 
 TEST (ledger, receive_fork)
@@ -593,7 +594,7 @@ TEST (ledger, receive_fork)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (info1->head))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block).code);
 	auto block2 = builder
 				  .open ()
 				  .source (block->hash ())
@@ -602,7 +603,7 @@ TEST (ledger, receive_fork)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (key2.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
 	auto block3 = builder
 				  .change ()
 				  .previous (block2->hash ())
@@ -610,7 +611,7 @@ TEST (ledger, receive_fork)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (block2->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block3).code);
 	auto block4 = builder
 				  .send ()
 				  .previous (block->hash ())
@@ -619,7 +620,7 @@ TEST (ledger, receive_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block4).code);
 	auto block5 = builder
 				  .receive ()
 				  .previous (block2->hash ())
@@ -627,7 +628,7 @@ TEST (ledger, receive_fork)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (block2->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, block5));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *block5).code);
 }
 
 TEST (ledger, open_fork)
@@ -650,7 +651,7 @@ TEST (ledger, open_fork)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (info1->head))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block).code);
 	auto block2 = builder
 				  .open ()
 				  .source (block->hash ())
@@ -659,7 +660,7 @@ TEST (ledger, open_fork)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (key2.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
 	auto block3 = builder
 				  .open ()
 				  .source (block->hash ())
@@ -668,7 +669,7 @@ TEST (ledger, open_fork)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (key2.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, block3));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *block3).code);
 }
 
 TEST (ledger, representation_changes)
@@ -701,7 +702,7 @@ TEST (ledger, representation)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 100, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	nano::keypair key3;
 	auto block2 = builder
@@ -712,7 +713,7 @@ TEST (ledger, representation)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (key2.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 100, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (100, rep_weights.representation_get (key3.pub));
@@ -724,7 +725,7 @@ TEST (ledger, representation)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block3).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (100, rep_weights.representation_get (key3.pub));
@@ -735,7 +736,7 @@ TEST (ledger, representation)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (block2->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block4).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (200, rep_weights.representation_get (key3.pub));
@@ -747,7 +748,7 @@ TEST (ledger, representation)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (block4->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block5));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block5).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key3.pub));
@@ -761,7 +762,7 @@ TEST (ledger, representation)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (block5->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block6));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block6).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key3.pub));
@@ -776,7 +777,7 @@ TEST (ledger, representation)
 				  .sign (key5.prv, key5.pub)
 				  .work (*pool.generate (key5.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block7));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block7).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key3.pub));
@@ -791,7 +792,7 @@ TEST (ledger, representation)
 				  .sign (key2.prv, key2.pub)
 				  .work (*pool.generate (block6->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block8));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block8).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key3.pub));
@@ -805,7 +806,7 @@ TEST (ledger, representation)
 				  .sign (key5.prv, key5.pub)
 				  .work (*pool.generate (block7->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block9));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block9).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 200, rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key2.pub));
 	ASSERT_EQ (0, rep_weights.representation_get (key3.pub));
@@ -816,7 +817,7 @@ TEST (ledger, representation)
 
 TEST (ledger, double_open)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -834,7 +835,7 @@ TEST (ledger, double_open)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -843,7 +844,7 @@ TEST (ledger, double_open)
 				 .sign (key2.prv, key2.pub)
 				 .work (*pool.generate (key2.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	auto open2 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -852,7 +853,7 @@ TEST (ledger, double_open)
 				 .sign (key2.prv, key2.pub)
 				 .work (*pool.generate (key2.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, open2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *open2).code);
 }
 
 TEST (ledger, double_receive)
@@ -872,7 +873,7 @@ TEST (ledger, double_receive)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -881,7 +882,7 @@ TEST (ledger, double_receive)
 				 .sign (key2.prv, key2.pub)
 				 .work (*pool.generate (key2.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	auto receive1 = builder
 					.receive ()
 					.previous (open1->hash ())
@@ -889,7 +890,7 @@ TEST (ledger, double_receive)
 					.sign (key2.prv, key2.pub)
 					.work (*pool.generate (open1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *receive1).code);
 }
 
 TEST (votes, check_signature)
@@ -907,17 +908,17 @@ TEST (votes, check_signature)
 				 .balance (nano::dev::constants.genesis_amount - 100)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	{
 		auto transaction (node1.store.tx_begin_write ());
-		ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send1));
+		ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send1).code);
 	}
 	node1.scheduler.priority.activate (nano::dev::genesis_key.pub, node1.store.tx_begin_read ());
 	ASSERT_TIMELY (5s, node1.active.election (send1->qualified_root ()));
 	auto election1 = node1.active.election (send1->qualified_root ());
 	ASSERT_EQ (1, election1->votes ().size ());
-	auto vote1 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 1, 0);
+	auto vote1 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	vote1->signature.bytes[0] ^= 1;
 	ASSERT_EQ (nano::vote_code::invalid, node1.vote_processor.vote_blocking (vote1, std::make_shared<nano::transport::inproc::channel> (node1, node1)));
 	vote1->signature.bytes[0] ^= 1;
@@ -938,17 +939,17 @@ TEST (votes, add_one)
 				 .balance (nano::dev::constants.genesis_amount - 100)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto transaction (node1.store.tx_begin_write ());
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send1).code);
 	node1.start_election (send1);
 	ASSERT_TIMELY (5s, node1.active.election (send1->qualified_root ()));
 	auto election1 = node1.active.election (send1->qualified_root ());
 	ASSERT_EQ (1, election1->votes ().size ());
-	auto vote1 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 1, 0);
+	auto vote1 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	ASSERT_EQ (nano::vote_code::vote, node1.active.vote (vote1));
-	auto vote2 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 2, 0);
+	auto vote2 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 2, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	ASSERT_EQ (nano::vote_code::vote, node1.active.vote (vote2));
 	ASSERT_EQ (2, election1->votes ().size ());
 	auto votes1 (election1->votes ());
@@ -983,11 +984,11 @@ TEST (votes, add_existing)
 										 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 										 .build ();
 	node1.work_generate_blocking (*send1);
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (node1.store.tx_begin_write (), send1));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (node1.store.tx_begin_write (), *send1).code);
 	node1.scheduler.priority.activate (nano::dev::genesis_key.pub, node1.store.tx_begin_read ());
 	ASSERT_TIMELY (5s, node1.active.election (send1->qualified_root ()));
 	auto election1 = node1.active.election (send1->qualified_root ());
-	auto vote1 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 1, 0);
+	auto vote1 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	ASSERT_EQ (nano::vote_code::vote, node1.active.vote (vote1));
 	// Block is already processed from vote
 	ASSERT_TRUE (node1.active.publish (send1));
@@ -1005,7 +1006,7 @@ TEST (votes, add_existing)
 	node1.work_generate_blocking (*send2);
 	ASSERT_FALSE (node1.active.publish (send2));
 	ASSERT_TIMELY (5s, node1.active.active (*send2));
-	auto vote2 = nano::test::make_vote (nano::dev::genesis_key, { send2 }, nano::vote::timestamp_min * 2, 0);
+	auto vote2 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 2, 0, std::vector<nano::block_hash>{ send2->hash () }));
 	// Pretend we've waited the timeout
 	auto vote_info1 = election1->get_last_vote (nano::dev::genesis_key.pub);
 	vote_info1.time = std::chrono::steady_clock::now () - std::chrono::seconds (20);
@@ -1039,14 +1040,14 @@ TEST (votes, add_old)
 				 .balance (0)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto transaction (node1.store.tx_begin_write ());
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send1).code);
 	node1.start_election (send1);
 	ASSERT_TIMELY (5s, node1.active.election (send1->qualified_root ()));
 	auto election1 = node1.active.election (send1->qualified_root ());
-	auto vote1 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 2, 0);
+	auto vote1 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 2, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	auto channel (std::make_shared<nano::transport::inproc::channel> (node1, node1));
 	node1.vote_processor.vote_blocking (vote1, channel);
 	nano::keypair key2;
@@ -1057,7 +1058,7 @@ TEST (votes, add_old)
 				 .balance (0)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send2);
 	auto vote2 = std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ send2->hash () });
 	auto vote_info = election1->get_last_vote (nano::dev::genesis_key.pub);
@@ -1089,7 +1090,7 @@ TEST (votes, DISABLED_add_old_different_account)
 				 .balance (0)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto send2 = builder
 				 .send ()
@@ -1098,10 +1099,10 @@ TEST (votes, DISABLED_add_old_different_account)
 				 .balance (0)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send2);
-	ASSERT_EQ (nano::block_status::progress, node1.process (send1));
-	ASSERT_EQ (nano::block_status::progress, node1.process (send2));
+	ASSERT_EQ (nano::process_result::progress, node1.process (*send1).code);
+	ASSERT_EQ (nano::process_result::progress, node1.process (*send2).code);
 	ASSERT_TRUE (nano::test::start_elections (system, node1, { send1, send2 }));
 	auto election1 = node1.active.election (send1->qualified_root ());
 	ASSERT_NE (nullptr, election1);
@@ -1109,13 +1110,13 @@ TEST (votes, DISABLED_add_old_different_account)
 	ASSERT_NE (nullptr, election2);
 	ASSERT_EQ (1, election1->votes ().size ());
 	ASSERT_EQ (1, election2->votes ().size ());
-	auto vote1 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 2, 0);
+	auto vote1 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 2, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	auto channel (std::make_shared<nano::transport::inproc::channel> (node1, node1));
 	auto vote_result1 (node1.vote_processor.vote_blocking (vote1, channel));
 	ASSERT_EQ (nano::vote_code::vote, vote_result1);
 	ASSERT_EQ (2, election1->votes ().size ());
 	ASSERT_EQ (1, election2->votes ().size ());
-	auto vote2 = nano::test::make_vote (nano::dev::genesis_key, { send2 }, nano::vote::timestamp_min * 1, 0);
+	auto vote2 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ send2->hash () }));
 	auto vote_result2 (node1.vote_processor.vote_blocking (vote2, channel));
 	ASSERT_EQ (nano::vote_code::vote, vote_result2);
 	ASSERT_EQ (2, election1->votes ().size ());
@@ -1144,14 +1145,14 @@ TEST (votes, add_cooldown)
 				 .balance (0)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto transaction (node1.store.tx_begin_write ());
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send1).code);
 	node1.start_election (send1);
 	ASSERT_TIMELY (5s, node1.active.election (send1->qualified_root ()));
 	auto election1 = node1.active.election (send1->qualified_root ());
-	auto vote1 = nano::test::make_vote (nano::dev::genesis_key, { send1 }, nano::vote::timestamp_min * 1, 0);
+	auto vote1 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 1, 0, std::vector<nano::block_hash>{ send1->hash () }));
 	auto channel (std::make_shared<nano::transport::inproc::channel> (node1, node1));
 	node1.vote_processor.vote_blocking (vote1, channel);
 	nano::keypair key2;
@@ -1162,9 +1163,9 @@ TEST (votes, add_cooldown)
 				 .balance (0)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send2);
-	auto vote2 = nano::test::make_vote (nano::dev::genesis_key, { send2 }, nano::vote::timestamp_min * 2, 0);
+	auto vote2 (std::make_shared<nano::vote> (nano::dev::genesis_key.pub, nano::dev::genesis_key.prv, nano::vote::timestamp_min * 2, 0, std::vector<nano::block_hash>{ send2->hash () }));
 	node1.vote_processor.vote_blocking (vote2, channel);
 	ASSERT_EQ (2, election1->votes ().size ());
 	auto votes (election1->votes ());
@@ -1190,7 +1191,7 @@ TEST (ledger, successor)
 				 .build ();
 	node1.work_generate_blocking (*send1);
 	auto transaction (node1.store.tx_begin_write ());
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send1).code);
 	ASSERT_EQ (*send1, *node1.ledger.successor (transaction, nano::qualified_root (nano::root (0), nano::dev::genesis->hash ())));
 	ASSERT_EQ (*nano::dev::genesis, *node1.ledger.successor (transaction, nano::dev::genesis->qualified_root ()));
 	ASSERT_EQ (nullptr, node1.ledger.successor (transaction, nano::qualified_root (0)));
@@ -1212,10 +1213,10 @@ TEST (ledger, fail_change_old)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::progress, result1);
-	auto result2 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::old, result2);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
+	auto result2 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::old, result2.code);
 }
 
 TEST (ledger, fail_change_gap_previous)
@@ -1234,8 +1235,8 @@ TEST (ledger, fail_change_gap_previous)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::root (1)))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::gap_previous, result1);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::gap_previous, result1.code);
 }
 
 TEST (ledger, fail_state_bad_signature)
@@ -1256,8 +1257,8 @@ TEST (ledger, fail_state_bad_signature)
 				 .sign (nano::keypair ().prv, 0)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::bad_signature, result1);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::bad_signature, result1.code);
 }
 
 TEST (ledger, fail_epoch_bad_signature)
@@ -1277,13 +1278,13 @@ TEST (ledger, fail_epoch_bad_signature)
 				 .link (ledger.epoch_link (nano::epoch::epoch_1))
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
-				 .build ();
+				 .build_shared ();
 	block->signature.bytes[0] ^= 1;
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::bad_signature, result1); // Fails epoch signature
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::bad_signature, result1.code); // Fails epoch signature
 	block->signature.bytes[0] ^= 1;
-	auto result2 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::progress, result2); // Succeeds with epoch signature
+	auto result2 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::progress, result2.code); // Succeeds with epoch signature
 }
 
 TEST (ledger, fail_change_bad_signature)
@@ -1302,8 +1303,8 @@ TEST (ledger, fail_change_bad_signature)
 				 .sign (nano::keypair ().prv, 0)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::bad_signature, result1);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::bad_signature, result1.code);
 }
 
 TEST (ledger, fail_change_fork)
@@ -1322,8 +1323,8 @@ TEST (ledger, fail_change_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	nano::keypair key2;
 	auto block2 = builder
 				  .change ()
@@ -1332,8 +1333,8 @@ TEST (ledger, fail_change_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::fork, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::fork, result2.code);
 }
 
 TEST (ledger, fail_send_old)
@@ -1353,10 +1354,10 @@ TEST (ledger, fail_send_old)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::progress, result1);
-	auto result2 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::old, result2);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
+	auto result2 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::old, result2.code);
 }
 
 TEST (ledger, fail_send_gap_previous)
@@ -1376,8 +1377,8 @@ TEST (ledger, fail_send_gap_previous)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::root (1)))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::gap_previous, result1);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::gap_previous, result1.code);
 }
 
 TEST (ledger, fail_send_bad_signature)
@@ -1397,8 +1398,8 @@ TEST (ledger, fail_send_bad_signature)
 				 .sign (nano::keypair ().prv, 0)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	auto result1 = ledger.process (transaction, block);
-	ASSERT_EQ (nano::block_status::bad_signature, result1);
+	auto result1 = ledger.process (transaction, *block);
+	ASSERT_EQ (nano::process_result::bad_signature, result1.code);
 }
 
 TEST (ledger, fail_send_negative_spend)
@@ -1418,7 +1419,7 @@ TEST (ledger, fail_send_negative_spend)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	nano::keypair key2;
 	auto block2 = builder
 				  .send ()
@@ -1428,7 +1429,7 @@ TEST (ledger, fail_send_negative_spend)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::negative_spend, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::negative_spend, ledger.process (transaction, *block2).code);
 }
 
 TEST (ledger, fail_send_fork)
@@ -1448,7 +1449,7 @@ TEST (ledger, fail_send_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	nano::keypair key2;
 	auto block2 = builder
 				  .send ()
@@ -1458,7 +1459,7 @@ TEST (ledger, fail_send_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *block2).code);
 }
 
 TEST (ledger, fail_open_old)
@@ -1478,7 +1479,7 @@ TEST (ledger, fail_open_old)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	auto block2 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1487,8 +1488,8 @@ TEST (ledger, fail_open_old)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
-	ASSERT_EQ (nano::block_status::old, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
+	ASSERT_EQ (nano::process_result::old, ledger.process (transaction, *block2).code);
 }
 
 TEST (ledger, fail_open_gap_source)
@@ -1508,8 +1509,8 @@ TEST (ledger, fail_open_gap_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::gap_source, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::gap_source, result2.code);
 }
 
 TEST (ledger, fail_open_bad_signature)
@@ -1529,7 +1530,7 @@ TEST (ledger, fail_open_bad_signature)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	auto block2 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1539,7 +1540,7 @@ TEST (ledger, fail_open_bad_signature)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
 	block2->signature.clear ();
-	ASSERT_EQ (nano::block_status::bad_signature, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::bad_signature, ledger.process (transaction, *block2).code);
 }
 
 TEST (ledger, fail_open_fork_previous)
@@ -1559,7 +1560,7 @@ TEST (ledger, fail_open_fork_previous)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1568,7 +1569,7 @@ TEST (ledger, fail_open_fork_previous)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1577,7 +1578,7 @@ TEST (ledger, fail_open_fork_previous)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block3).code);
 	auto block4 = builder
 				  .open ()
 				  .source (block2->hash ())
@@ -1586,7 +1587,7 @@ TEST (ledger, fail_open_fork_previous)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, block4));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *block4).code);
 	ASSERT_EQ (store.account.count (transaction), ledger.cache.account_count);
 }
 
@@ -1607,7 +1608,7 @@ TEST (ledger, fail_open_account_mismatch)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	nano::keypair badkey;
 	auto block2 = builder
 				  .open ()
@@ -1617,7 +1618,7 @@ TEST (ledger, fail_open_account_mismatch)
 				  .sign (badkey.prv, badkey.pub)
 				  .work (*pool.generate (badkey.pub))
 				  .build ();
-	ASSERT_NE (nano::block_status::progress, ledger.process (transaction, block2));
+	ASSERT_NE (nano::process_result::progress, ledger.process (transaction, *block2).code);
 	ASSERT_EQ (store.account.count (transaction), ledger.cache.account_count);
 }
 
@@ -1638,7 +1639,7 @@ TEST (ledger, fail_receive_old)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1647,7 +1648,7 @@ TEST (ledger, fail_receive_old)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1656,7 +1657,7 @@ TEST (ledger, fail_receive_old)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block3).code);
 	auto block4 = builder
 				  .receive ()
 				  .previous (block3->hash ())
@@ -1664,8 +1665,8 @@ TEST (ledger, fail_receive_old)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block4));
-	ASSERT_EQ (nano::block_status::old, ledger.process (transaction, block4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block4).code);
+	ASSERT_EQ (nano::process_result::old, ledger.process (transaction, *block4).code);
 }
 
 TEST (ledger, fail_receive_gap_source)
@@ -1685,8 +1686,8 @@ TEST (ledger, fail_receive_gap_source)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1695,8 +1696,8 @@ TEST (ledger, fail_receive_gap_source)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result2.code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1705,8 +1706,8 @@ TEST (ledger, fail_receive_gap_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result3 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::progress, result3);
+	auto result3 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::progress, result3.code);
 	auto block4 = builder
 				  .receive ()
 				  .previous (block3->hash ())
@@ -1714,8 +1715,8 @@ TEST (ledger, fail_receive_gap_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	auto result4 = ledger.process (transaction, block4);
-	ASSERT_EQ (nano::block_status::gap_source, result4);
+	auto result4 = ledger.process (transaction, *block4);
+	ASSERT_EQ (nano::process_result::gap_source, result4.code);
 }
 
 TEST (ledger, fail_receive_overreceive)
@@ -1735,8 +1736,8 @@ TEST (ledger, fail_receive_overreceive)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1745,8 +1746,8 @@ TEST (ledger, fail_receive_overreceive)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result3 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result3);
+	auto result3 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result3.code);
 	auto block3 = builder
 				  .receive ()
 				  .previous (block2->hash ())
@@ -1754,8 +1755,8 @@ TEST (ledger, fail_receive_overreceive)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block2->hash ()))
 				  .build ();
-	auto result4 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::unreceivable, result4);
+	auto result4 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::unreceivable, result4.code);
 }
 
 TEST (ledger, fail_receive_bad_signature)
@@ -1775,8 +1776,8 @@ TEST (ledger, fail_receive_bad_signature)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1785,8 +1786,8 @@ TEST (ledger, fail_receive_bad_signature)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result2.code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1795,8 +1796,8 @@ TEST (ledger, fail_receive_bad_signature)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result3 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::progress, result3);
+	auto result3 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::progress, result3.code);
 	auto block4 = builder
 				  .receive ()
 				  .previous (block3->hash ())
@@ -1804,8 +1805,8 @@ TEST (ledger, fail_receive_bad_signature)
 				  .sign (nano::keypair ().prv, 0)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	auto result4 = ledger.process (transaction, block4);
-	ASSERT_EQ (nano::block_status::bad_signature, result4);
+	auto result4 = ledger.process (transaction, *block4);
+	ASSERT_EQ (nano::process_result::bad_signature, result4.code);
 }
 
 TEST (ledger, fail_receive_gap_previous_opened)
@@ -1825,8 +1826,8 @@ TEST (ledger, fail_receive_gap_previous_opened)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1835,8 +1836,8 @@ TEST (ledger, fail_receive_gap_previous_opened)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result2.code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1845,8 +1846,8 @@ TEST (ledger, fail_receive_gap_previous_opened)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result3 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::progress, result3);
+	auto result3 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::progress, result3.code);
 	auto block4 = builder
 				  .receive ()
 				  .previous (1)
@@ -1854,8 +1855,8 @@ TEST (ledger, fail_receive_gap_previous_opened)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (nano::root (1)))
 				  .build ();
-	auto result4 = ledger.process (transaction, block4);
-	ASSERT_EQ (nano::block_status::gap_previous, result4);
+	auto result4 = ledger.process (transaction, *block4);
+	ASSERT_EQ (nano::process_result::gap_previous, result4.code);
 }
 
 TEST (ledger, fail_receive_gap_previous_unopened)
@@ -1875,8 +1876,8 @@ TEST (ledger, fail_receive_gap_previous_unopened)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1885,8 +1886,8 @@ TEST (ledger, fail_receive_gap_previous_unopened)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result2.code);
 	auto block3 = builder
 				  .receive ()
 				  .previous (1)
@@ -1894,8 +1895,8 @@ TEST (ledger, fail_receive_gap_previous_unopened)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (nano::root (1)))
 				  .build ();
-	auto result3 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::gap_previous, result3);
+	auto result3 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::gap_previous, result3.code);
 }
 
 TEST (ledger, fail_receive_fork_previous)
@@ -1915,8 +1916,8 @@ TEST (ledger, fail_receive_fork_previous)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1925,8 +1926,8 @@ TEST (ledger, fail_receive_fork_previous)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result2.code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -1935,8 +1936,8 @@ TEST (ledger, fail_receive_fork_previous)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result3 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::progress, result3);
+	auto result3 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::progress, result3.code);
 	nano::keypair key2;
 	auto block4 = builder
 				  .send ()
@@ -1946,8 +1947,8 @@ TEST (ledger, fail_receive_fork_previous)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	auto result4 = ledger.process (transaction, block4);
-	ASSERT_EQ (nano::block_status::progress, result4);
+	auto result4 = ledger.process (transaction, *block4);
+	ASSERT_EQ (nano::process_result::progress, result4.code);
 	auto block5 = builder
 				  .receive ()
 				  .previous (block3->hash ())
@@ -1955,8 +1956,8 @@ TEST (ledger, fail_receive_fork_previous)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	auto result5 = ledger.process (transaction, block5);
-	ASSERT_EQ (nano::block_status::fork, result5);
+	auto result5 = ledger.process (transaction, *block5);
+	ASSERT_EQ (nano::process_result::fork, result5.code);
 }
 
 TEST (ledger, fail_receive_received_source)
@@ -1976,8 +1977,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	auto result1 = ledger.process (transaction, block1);
-	ASSERT_EQ (nano::block_status::progress, result1);
+	auto result1 = ledger.process (transaction, *block1);
+	ASSERT_EQ (nano::process_result::progress, result1.code);
 	auto block2 = builder
 				  .send ()
 				  .previous (block1->hash ())
@@ -1986,8 +1987,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block1->hash ()))
 				  .build ();
-	auto result2 = ledger.process (transaction, block2);
-	ASSERT_EQ (nano::block_status::progress, result2);
+	auto result2 = ledger.process (transaction, *block2);
+	ASSERT_EQ (nano::process_result::progress, result2.code);
 	auto block6 = builder
 				  .send ()
 				  .previous (block2->hash ())
@@ -1996,8 +1997,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block2->hash ()))
 				  .build ();
-	auto result6 = ledger.process (transaction, block6);
-	ASSERT_EQ (nano::block_status::progress, result6);
+	auto result6 = ledger.process (transaction, *block6);
+	ASSERT_EQ (nano::process_result::progress, result6.code);
 	auto block3 = builder
 				  .open ()
 				  .source (block1->hash ())
@@ -2006,8 +2007,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (key1.pub))
 				  .build ();
-	auto result3 = ledger.process (transaction, block3);
-	ASSERT_EQ (nano::block_status::progress, result3);
+	auto result3 = ledger.process (transaction, *block3);
+	ASSERT_EQ (nano::process_result::progress, result3.code);
 	nano::keypair key2;
 	auto block4 = builder
 				  .send ()
@@ -2017,8 +2018,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	auto result4 = ledger.process (transaction, block4);
-	ASSERT_EQ (nano::block_status::progress, result4);
+	auto result4 = ledger.process (transaction, *block4);
+	ASSERT_EQ (nano::process_result::progress, result4.code);
 	auto block5 = builder
 				  .receive ()
 				  .previous (block4->hash ())
@@ -2026,8 +2027,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block4->hash ()))
 				  .build ();
-	auto result5 = ledger.process (transaction, block5);
-	ASSERT_EQ (nano::block_status::progress, result5);
+	auto result5 = ledger.process (transaction, *block5);
+	ASSERT_EQ (nano::process_result::progress, result5.code);
 	auto block7 = builder
 				  .receive ()
 				  .previous (block3->hash ())
@@ -2035,8 +2036,8 @@ TEST (ledger, fail_receive_received_source)
 				  .sign (key1.prv, key1.pub)
 				  .work (*pool.generate (block3->hash ()))
 				  .build ();
-	auto result7 = ledger.process (transaction, block7);
-	ASSERT_EQ (nano::block_status::fork, result7);
+	auto result7 = ledger.process (transaction, *block7);
+	ASSERT_EQ (nano::process_result::fork, result7.code);
 }
 
 TEST (ledger, latest_empty)
@@ -2069,7 +2070,7 @@ TEST (ledger, latest_root)
 				.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				.work (*pool.generate (hash1))
 				.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	ASSERT_EQ (send->hash (), ledger.latest_root (transaction, nano::dev::genesis_key.pub).as_block_hash ());
 }
 
@@ -2091,7 +2092,7 @@ TEST (ledger, change_representative_move_representation)
 				.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				.work (*pool.generate (nano::dev::genesis->hash ()))
 				.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	ASSERT_EQ (0, ledger.weight (nano::dev::genesis_key.pub));
 	nano::keypair key2;
 	auto change = builder
@@ -2101,7 +2102,7 @@ TEST (ledger, change_representative_move_representation)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (send->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change).code);
 	nano::keypair key3;
 	auto open = builder
 				.open ()
@@ -2111,7 +2112,7 @@ TEST (ledger, change_representative_move_representation)
 				.sign (key1.prv, key1.pub)
 				.work (*pool.generate (key1.pub))
 				.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount, ledger.weight (key3.pub));
 }
 
@@ -2134,8 +2135,8 @@ TEST (ledger, send_open_receive_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (info1->head))
 				 .build ();
-	auto return1 = ledger.process (transaction, send1);
-	ASSERT_EQ (nano::block_status::progress, return1);
+	auto return1 = ledger.process (transaction, *send1);
+	ASSERT_EQ (nano::process_result::progress, return1.code);
 	auto send2 = builder
 				 .send ()
 				 .previous (send1->hash ())
@@ -2144,8 +2145,8 @@ TEST (ledger, send_open_receive_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	auto return2 = ledger.process (transaction, send2);
-	ASSERT_EQ (nano::block_status::progress, return2);
+	auto return2 = ledger.process (transaction, *send2);
+	ASSERT_EQ (nano::process_result::progress, return2.code);
 	nano::keypair key2;
 	auto open = builder
 				.open ()
@@ -2155,8 +2156,8 @@ TEST (ledger, send_open_receive_rollback)
 				.sign (key1.prv, key1.pub)
 				.work (*pool.generate (key1.pub))
 				.build ();
-	auto return4 = ledger.process (transaction, open);
-	ASSERT_EQ (nano::block_status::progress, return4);
+	auto return4 = ledger.process (transaction, *open);
+	ASSERT_EQ (nano::process_result::progress, return4.code);
 	auto receive = builder
 				   .receive ()
 				   .previous (open->hash ())
@@ -2164,8 +2165,8 @@ TEST (ledger, send_open_receive_rollback)
 				   .sign (key1.prv, key1.pub)
 				   .work (*pool.generate (open->hash ()))
 				   .build ();
-	auto return5 = ledger.process (transaction, receive);
-	ASSERT_EQ (nano::block_status::progress, return5);
+	auto return5 = ledger.process (transaction, *receive);
+	ASSERT_EQ (nano::process_result::progress, return5.code);
 	nano::keypair key3;
 	ASSERT_EQ (100, ledger.weight (key2.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 100, ledger.weight (nano::dev::genesis_key.pub));
@@ -2177,8 +2178,8 @@ TEST (ledger, send_open_receive_rollback)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (send2->hash ()))
 				   .build ();
-	auto return6 = ledger.process (transaction, change1);
-	ASSERT_EQ (nano::block_status::progress, return6);
+	auto return6 = ledger.process (transaction, *change1);
+	ASSERT_EQ (nano::process_result::progress, return6.code);
 	ASSERT_EQ (100, ledger.weight (key2.pub));
 	ASSERT_EQ (0, ledger.weight (nano::dev::genesis_key.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - 100, ledger.weight (key3.pub));
@@ -2224,7 +2225,7 @@ TEST (ledger, bootstrap_rep_weight)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (info1->head))
 					.build ();
-		ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+		ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	}
 	ASSERT_EQ (2, ledger.cache.block_count);
 	{
@@ -2245,7 +2246,7 @@ TEST (ledger, bootstrap_rep_weight)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (info1->head))
 					.build ();
-		ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+		ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 	}
 	ASSERT_EQ (3, ledger.cache.block_count);
 	ASSERT_EQ (0, ledger.weight (key2.pub));
@@ -2320,24 +2321,24 @@ TEST (ledger, block_destination_source)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (block5->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block1));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block2));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block3));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block4));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block5));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, block6));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block1).code);
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block2).code);
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block3).code);
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block4).code);
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block5).code);
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *block6).code);
 	ASSERT_EQ (balance, ledger.balance (transaction, block6->hash ()));
 	ASSERT_EQ (dest.pub, ledger.block_destination (transaction, *block1));
 	ASSERT_TRUE (ledger.block_source (transaction, *block1).is_zero ());
 	ASSERT_EQ (nano::dev::genesis->account (), ledger.block_destination (transaction, *block2));
 	ASSERT_TRUE (ledger.block_source (transaction, *block2).is_zero ());
-	ASSERT_EQ (ledger.block_destination (transaction, *block3), nullptr);
+	ASSERT_TRUE (ledger.block_destination (transaction, *block3) == nullptr);
 	ASSERT_EQ (block2->hash (), ledger.block_source (transaction, *block3));
 	ASSERT_EQ (dest.pub, ledger.block_destination (transaction, *block4));
 	ASSERT_TRUE (ledger.block_source (transaction, *block4).is_zero ());
 	ASSERT_EQ (nano::dev::genesis->account (), ledger.block_destination (transaction, *block5));
 	ASSERT_TRUE (ledger.block_source (transaction, *block5).is_zero ());
-	ASSERT_EQ (ledger.block_destination (transaction, *block6), nullptr);
+	ASSERT_TRUE (ledger.block_destination (transaction, *block6) == nullptr);
 	ASSERT_EQ (block5->hash (), ledger.block_source (transaction, *block6));
 }
 
@@ -2359,7 +2360,7 @@ TEST (ledger, state_account)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_EQ (nano::dev::genesis->account (), ledger.account (transaction, send1->hash ()));
 }
 
@@ -2381,7 +2382,7 @@ TEST (ledger, state_send_receive)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -2404,7 +2405,7 @@ TEST (ledger, state_send_receive)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_TRUE (store.block.exists (transaction, receive1->hash ()));
 	auto receive2 = store.block.get (transaction, receive1->hash ());
 	ASSERT_NE (nullptr, receive2);
@@ -2436,7 +2437,7 @@ TEST (ledger, state_receive)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -2454,7 +2455,7 @@ TEST (ledger, state_receive)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_TRUE (store.block.exists (transaction, receive1->hash ()));
 	auto receive2 = store.block.get (transaction, receive1->hash ());
 	ASSERT_NE (nullptr, receive2);
@@ -2487,7 +2488,7 @@ TEST (ledger, state_rep_change)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (nano::dev::genesis->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change1).code);
 	ASSERT_TRUE (store.block.exists (transaction, change1->hash ()));
 	auto change2 = store.block.get (transaction, change1->hash ());
 	ASSERT_NE (nullptr, change2);
@@ -2521,7 +2522,7 @@ TEST (ledger, state_open)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -2540,7 +2541,7 @@ TEST (ledger, state_open)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_FALSE (store.pending.exists (transaction, nano::pending_key (destination.pub, send1->hash ())));
 	ASSERT_TRUE (store.block.exists (transaction, open1->hash ()));
 	auto open2 = store.block.get (transaction, open1->hash ());
@@ -2575,7 +2576,7 @@ TEST (ledger, send_after_state_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto send2 = builder
 				 .send ()
 				 .previous (send1->hash ())
@@ -2584,7 +2585,7 @@ TEST (ledger, send_after_state_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *send2).code);
 }
 
 // Make sure old block types can't be inserted after a state block.
@@ -2606,7 +2607,7 @@ TEST (ledger, receive_after_state_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto receive1 = builder
 					.receive ()
 					.previous (send1->hash ())
@@ -2614,7 +2615,7 @@ TEST (ledger, receive_after_state_fail)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *receive1).code);
 }
 
 // Make sure old block types can't be inserted after a state block.
@@ -2636,7 +2637,7 @@ TEST (ledger, change_after_state_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	nano::keypair rep;
 	auto change1 = builder
 				   .change ()
@@ -2645,7 +2646,7 @@ TEST (ledger, change_after_state_fail)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (send1->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *change1).code);
 }
 
 TEST (ledger, state_unreceivable_fail)
@@ -2664,7 +2665,7 @@ TEST (ledger, state_unreceivable_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -2682,7 +2683,7 @@ TEST (ledger, state_unreceivable_fail)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::gap_source, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::gap_source, ledger.process (transaction, *receive1).code);
 }
 
 TEST (ledger, state_receive_bad_amount_fail)
@@ -2701,7 +2702,7 @@ TEST (ledger, state_receive_bad_amount_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -2719,7 +2720,7 @@ TEST (ledger, state_receive_bad_amount_fail)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::balance_mismatch, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::balance_mismatch, ledger.process (transaction, *receive1).code);
 }
 
 TEST (ledger, state_no_link_amount_fail)
@@ -2740,7 +2741,7 @@ TEST (ledger, state_no_link_amount_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	nano::keypair rep;
 	auto change1 = builder
 				   .state ()
@@ -2752,7 +2753,7 @@ TEST (ledger, state_no_link_amount_fail)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (send1->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::balance_mismatch, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::balance_mismatch, ledger.process (transaction, *change1).code);
 }
 
 TEST (ledger, state_receive_wrong_account_fail)
@@ -2773,7 +2774,7 @@ TEST (ledger, state_receive_wrong_account_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -2792,7 +2793,7 @@ TEST (ledger, state_receive_wrong_account_fail)
 					.sign (key.prv, key.pub)
 					.work (*pool.generate (key.pub))
 					.build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *receive1).code);
 }
 
 TEST (ledger, state_open_state_fork)
@@ -2814,7 +2815,7 @@ TEST (ledger, state_open_state_fork)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .state ()
 				 .account (destination.pub)
@@ -2825,7 +2826,7 @@ TEST (ledger, state_open_state_fork)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	auto open2 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -2834,7 +2835,7 @@ TEST (ledger, state_open_state_fork)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, open2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *open2).code);
 	ASSERT_EQ (open1->root (), open2->root ());
 }
 
@@ -2857,7 +2858,7 @@ TEST (ledger, state_state_open_fork)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -2866,7 +2867,7 @@ TEST (ledger, state_state_open_fork)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	auto open2 = builder
 				 .state ()
 				 .account (destination.pub)
@@ -2877,7 +2878,7 @@ TEST (ledger, state_state_open_fork)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, open2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *open2).code);
 	ASSERT_EQ (open1->root (), open2->root ());
 	ASSERT_EQ (store.account.count (transaction), ledger.cache.account_count);
 }
@@ -2901,7 +2902,7 @@ TEST (ledger, state_open_previous_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .state ()
 				 .account (destination.pub)
@@ -2912,7 +2913,7 @@ TEST (ledger, state_open_previous_fail)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (1))
 				 .build ();
-	ASSERT_EQ (nano::block_status::gap_previous, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::gap_previous, ledger.process (transaction, *open1).code);
 }
 
 TEST (ledger, state_open_source_fail)
@@ -2934,7 +2935,7 @@ TEST (ledger, state_open_source_fail)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .state ()
 				 .account (destination.pub)
@@ -2945,7 +2946,7 @@ TEST (ledger, state_open_source_fail)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::gap_source, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::gap_source, ledger.process (transaction, *open1).code);
 }
 
 TEST (ledger, state_send_change)
@@ -2967,7 +2968,7 @@ TEST (ledger, state_send_change)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -3000,7 +3001,7 @@ TEST (ledger, state_receive_change)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -3019,7 +3020,7 @@ TEST (ledger, state_receive_change)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_TRUE (store.block.exists (transaction, receive1->hash ()));
 	auto receive2 = store.block.get (transaction, receive1->hash ());
 	ASSERT_NE (nullptr, receive2);
@@ -3053,7 +3054,7 @@ TEST (ledger, state_open_old)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -3062,7 +3063,7 @@ TEST (ledger, state_open_old)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_EQ (nano::Gxrb_ratio, ledger.balance (transaction, open1->hash ()));
 	ASSERT_EQ (nano::Gxrb_ratio, ledger.amount (transaction, open1->hash ()));
 	ASSERT_EQ (nano::dev::constants.genesis_amount, ledger.weight (nano::dev::genesis->account ()));
@@ -3087,7 +3088,7 @@ TEST (ledger, state_receive_old)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto send2 = builder
 				 .state ()
 				 .account (nano::dev::genesis->account ())
@@ -3098,7 +3099,7 @@ TEST (ledger, state_receive_old)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	auto open1 = builder
 				 .open ()
 				 .source (send1->hash ())
@@ -3107,7 +3108,7 @@ TEST (ledger, state_receive_old)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	auto receive1 = builder
 					.receive ()
 					.previous (open1->hash ())
@@ -3115,7 +3116,7 @@ TEST (ledger, state_receive_old)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (open1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_EQ (2 * nano::Gxrb_ratio, ledger.balance (transaction, receive1->hash ()));
 	ASSERT_EQ (nano::Gxrb_ratio, ledger.amount (transaction, receive1->hash ()));
 	ASSERT_EQ (nano::dev::constants.genesis_amount, ledger.weight (nano::dev::genesis->account ()));
@@ -3139,7 +3140,7 @@ TEST (ledger, state_rollback_send)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store.block.exists (transaction, send1->hash ()));
 	auto send2 = store.block.get (transaction, send1->hash ());
 	ASSERT_NE (nullptr, send2);
@@ -3177,7 +3178,7 @@ TEST (ledger, state_rollback_receive)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto receive1 = builder
 					.state ()
 					.account (nano::dev::genesis->account ())
@@ -3188,7 +3189,7 @@ TEST (ledger, state_rollback_receive)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (store.pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), receive1->hash ())));
 	ASSERT_FALSE (ledger.rollback (transaction, receive1->hash ()));
 	auto info = ledger.pending_info (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ()));
@@ -3220,7 +3221,7 @@ TEST (ledger, state_rollback_received_send)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto receive1 = builder
 					.state ()
 					.account (key.pub)
@@ -3231,7 +3232,7 @@ TEST (ledger, state_rollback_received_send)
 					.sign (key.prv, key.pub)
 					.work (*pool.generate (key.pub))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (store.pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), receive1->hash ())));
 	ASSERT_FALSE (ledger.rollback (transaction, send1->hash ()));
 	ASSERT_FALSE (store.pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
@@ -3263,7 +3264,7 @@ TEST (ledger, state_rep_change_rollback)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (nano::dev::genesis->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change1).code);
 	ASSERT_FALSE (ledger.rollback (transaction, change1->hash ()));
 	ASSERT_FALSE (store.block.exists (transaction, change1->hash ()));
 	ASSERT_EQ (nano::dev::constants.genesis_amount, ledger.account_balance (transaction, nano::dev::genesis->account ()));
@@ -3290,7 +3291,7 @@ TEST (ledger, state_open_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto open1 = builder
 				 .state ()
 				 .account (destination.pub)
@@ -3301,7 +3302,7 @@ TEST (ledger, state_open_rollback)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_FALSE (ledger.rollback (transaction, open1->hash ()));
 	ASSERT_FALSE (store.block.exists (transaction, open1->hash ()));
 	ASSERT_EQ (0, ledger.account_balance (transaction, destination.pub));
@@ -3332,7 +3333,7 @@ TEST (ledger, state_send_change_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_FALSE (ledger.rollback (transaction, send1->hash ()));
 	ASSERT_FALSE (store.block.exists (transaction, send1->hash ()));
 	ASSERT_EQ (nano::dev::constants.genesis_amount, ledger.account_balance (transaction, nano::dev::genesis->account ()));
@@ -3359,7 +3360,7 @@ TEST (ledger, state_receive_change_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	nano::keypair rep;
 	auto receive1 = builder
 					.state ()
@@ -3371,7 +3372,7 @@ TEST (ledger, state_receive_change_rollback)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (ledger.rollback (transaction, receive1->hash ()));
 	ASSERT_FALSE (store.block.exists (transaction, receive1->hash ()));
 	ASSERT_EQ (nano::dev::constants.genesis_amount - nano::Gxrb_ratio, ledger.account_balance (transaction, nano::dev::genesis->account ()));
@@ -3399,7 +3400,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	ASSERT_FALSE (epoch1->sideband ().details.is_send);
 	ASSERT_FALSE (epoch1->sideband ().details.is_receive);
 	ASSERT_TRUE (epoch1->sideband ().details.is_epoch);
@@ -3415,7 +3416,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (epoch1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, epoch2));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *epoch2).code);
 	auto genesis_info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (genesis_info);
 	ASSERT_EQ (genesis_info->epoch (), nano::epoch::epoch_1);
@@ -3423,7 +3424,7 @@ TEST (ledger, epoch_blocks_v1_general)
 	genesis_info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (genesis_info);
 	ASSERT_EQ (genesis_info->epoch (), nano::epoch::epoch_0);
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	genesis_info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (genesis_info);
 	ASSERT_EQ (genesis_info->epoch (), nano::epoch::epoch_1);
@@ -3439,7 +3440,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (epoch1->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *change1).code);
 	auto send1 = builder
 				 .state ()
 				 .account (nano::dev::genesis->account ())
@@ -3450,7 +3451,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (epoch1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (send1->sideband ().details.is_send);
 	ASSERT_FALSE (send1->sideband ().details.is_receive);
 	ASSERT_FALSE (send1->sideband ().details.is_epoch);
@@ -3464,7 +3465,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *open1).code);
 	auto epoch3 = builder
 				  .state ()
 				  .account (destination.pub)
@@ -3475,7 +3476,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (destination.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::representative_mismatch, ledger.process (transaction, epoch3));
+	ASSERT_EQ (nano::process_result::representative_mismatch, ledger.process (transaction, *epoch3).code);
 	auto epoch4 = builder
 				  .state ()
 				  .account (destination.pub)
@@ -3486,7 +3487,7 @@ TEST (ledger, epoch_blocks_v1_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (destination.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch4).code);
 	ASSERT_FALSE (epoch4->sideband ().details.is_send);
 	ASSERT_FALSE (epoch4->sideband ().details.is_receive);
 	ASSERT_TRUE (epoch4->sideband ().details.is_epoch);
@@ -3499,7 +3500,7 @@ TEST (ledger, epoch_blocks_v1_general)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (epoch4->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *receive1).code);
 	auto receive2 = builder
 					.state ()
 					.account (destination.pub)
@@ -3510,7 +3511,7 @@ TEST (ledger, epoch_blocks_v1_general)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (epoch4->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive2).code);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().source_epoch);
 	ASSERT_EQ (0, ledger.balance (transaction, epoch4->hash ()));
@@ -3543,7 +3544,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
 	// Trying to upgrade from epoch 0 to epoch 2. It is a requirement epoch upgrades are sequential unless the account is unopened
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *epoch1).code);
 	// Set it to the first epoch and it should now succeed
 	epoch1 = builder
 			 .state ()
@@ -3555,7 +3556,7 @@ TEST (ledger, epoch_blocks_v2_general)
 			 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 			 .work (epoch1->work)
 			 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	ASSERT_EQ (nano::epoch::epoch_1, epoch1->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, epoch1->sideband ().source_epoch); // Not used for epoch blocks
 	auto epoch2 = builder
@@ -3568,7 +3569,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (epoch1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch2).code);
 	ASSERT_EQ (nano::epoch::epoch_2, epoch2->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, epoch2->sideband ().source_epoch); // Not used for epoch blocks
 	auto epoch3 = builder
@@ -3581,7 +3582,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (epoch2->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, epoch3));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *epoch3).code);
 	auto genesis_info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (genesis_info);
 	ASSERT_EQ (genesis_info->epoch (), nano::epoch::epoch_2);
@@ -3589,7 +3590,7 @@ TEST (ledger, epoch_blocks_v2_general)
 	genesis_info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (genesis_info);
 	ASSERT_EQ (genesis_info->epoch (), nano::epoch::epoch_0);
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	genesis_info = ledger.account_info (transaction, nano::dev::genesis->account ());
 	ASSERT_TRUE (genesis_info);
 	ASSERT_EQ (genesis_info->epoch (), nano::epoch::epoch_1);
@@ -3600,7 +3601,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (epoch1->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *change1).code);
 	auto send1 = builder
 				 .state ()
 				 .account (nano::dev::genesis->account ())
@@ -3611,7 +3612,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (epoch1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_EQ (nano::epoch::epoch_1, send1->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, send1->sideband ().source_epoch); // Not used for send blocks
 	auto open1 = builder
@@ -3622,7 +3623,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *open1).code);
 	auto epoch4 = builder
 				  .state ()
 				  .account (destination.pub)
@@ -3633,7 +3634,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (destination.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch4).code);
 	ASSERT_EQ (nano::epoch::epoch_1, epoch4->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, epoch4->sideband ().source_epoch); // Not used for epoch blocks
 	auto epoch5 = builder
@@ -3646,7 +3647,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (epoch4->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::representative_mismatch, ledger.process (transaction, epoch5));
+	ASSERT_EQ (nano::process_result::representative_mismatch, ledger.process (transaction, *epoch5).code);
 	auto epoch6 = builder
 				  .state ()
 				  .account (destination.pub)
@@ -3657,7 +3658,7 @@ TEST (ledger, epoch_blocks_v2_general)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (epoch4->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch6));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch6).code);
 	ASSERT_EQ (nano::epoch::epoch_2, epoch6->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, epoch6->sideband ().source_epoch); // Not used for epoch blocks
 	auto receive1 = builder
@@ -3667,7 +3668,7 @@ TEST (ledger, epoch_blocks_v2_general)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (epoch6->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::block_position, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::block_position, ledger.process (transaction, *receive1).code);
 	auto receive2 = builder
 					.state ()
 					.account (destination.pub)
@@ -3678,7 +3679,7 @@ TEST (ledger, epoch_blocks_v2_general)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (epoch6->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive2).code);
 	ASSERT_EQ (nano::epoch::epoch_2, receive2->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().source_epoch);
 	ASSERT_EQ (0, ledger.balance (transaction, epoch6->hash ()));
@@ -3707,7 +3708,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto epoch1 = builder
 				  .state ()
 				  .account (nano::dev::genesis->account ())
@@ -3718,7 +3719,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (send1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	auto send2 = builder
 				 .state ()
 				 .account (nano::dev::genesis->account ())
@@ -3729,7 +3730,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (epoch1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_EQ (nano::epoch::epoch_1, send2->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, send2->sideband ().source_epoch); // Not used for send blocks
 	auto open1 = builder
@@ -3740,7 +3741,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (destination.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_EQ (nano::epoch::epoch_0, open1->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, open1->sideband ().source_epoch);
 	auto receive1 = builder
@@ -3750,7 +3751,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (open1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *receive1).code);
 	auto receive2 = builder
 					.state ()
 					.account (destination.pub)
@@ -3761,7 +3762,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (open1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive2).code);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().source_epoch);
 	auto destination_info = ledger.account_info (transaction, destination.pub);
@@ -3776,7 +3777,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 	ASSERT_EQ (nano::dev::genesis_key.pub, pending_send2->source);
 	ASSERT_EQ (nano::Gxrb_ratio, pending_send2->amount.number ());
 	ASSERT_EQ (nano::epoch::epoch_1, pending_send2->epoch);
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive2).code);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_1, receive2->sideband ().source_epoch);
 	destination_info = ledger.account_info (transaction, destination.pub);
@@ -3793,7 +3794,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (destination.prv, destination.pub)
 				 .work (*pool.generate (receive2->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send3).code);
 	auto open2 = builder
 				 .open ()
 				 .source (send3->hash ())
@@ -3802,7 +3803,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (destination2.prv, destination2.pub)
 				 .work (*pool.generate (destination2.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, open2));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *open2).code);
 	// Upgrade to epoch 2 and send to destination. Try to create an open block from an epoch 2 source block.
 	nano::keypair destination3;
 	auto epoch2 = builder
@@ -3815,7 +3816,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (send2->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch2).code);
 	auto send4 = builder
 				 .state ()
 				 .account (nano::dev::genesis->account ())
@@ -3826,7 +3827,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (epoch2->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send4).code);
 	auto open3 = builder
 				 .open ()
 				 .source (send4->hash ())
@@ -3835,7 +3836,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (destination3.prv, destination3.pub)
 				 .work (*pool.generate (destination3.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::unreceivable, ledger.process (transaction, open3));
+	ASSERT_EQ (nano::process_result::unreceivable, ledger.process (transaction, *open3).code);
 	// Send it to an epoch 1 account
 	auto send5 = builder
 				 .state ()
@@ -3847,7 +3848,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send4->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send5));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send5).code);
 	destination_info = ledger.account_info (transaction, destination.pub);
 	ASSERT_TRUE (destination_info);
 	ASSERT_EQ (destination_info->epoch (), nano::epoch::epoch_1);
@@ -3861,7 +3862,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 					.sign (destination.prv, destination.pub)
 					.work (*pool.generate (send3->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive3).code);
 	ASSERT_EQ (nano::epoch::epoch_2, receive3->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_2, receive3->sideband ().source_epoch);
 	destination_info = ledger.account_info (transaction, destination.pub);
@@ -3879,7 +3880,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send5->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send6));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send6).code);
 	auto epoch4 = builder
 				  .state ()
 				  .account (destination4.pub)
@@ -3890,7 +3891,7 @@ TEST (ledger, epoch_blocks_receive_upgrade)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (destination4.pub))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch4));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch4).code);
 	ASSERT_EQ (nano::epoch::epoch_2, epoch4->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, epoch4->sideband ().source_epoch); // Not used for epoch blocks
 	ASSERT_EQ (store.account.count (transaction), ledger.cache.account_count);
@@ -3913,7 +3914,7 @@ TEST (ledger, epoch_blocks_fork)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto epoch1 = builder
 				  .state ()
 				  .account (nano::dev::genesis->account ())
@@ -3924,7 +3925,7 @@ TEST (ledger, epoch_blocks_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *epoch1).code);
 	auto epoch2 = builder
 				  .state ()
 				  .account (nano::dev::genesis->account ())
@@ -3935,7 +3936,7 @@ TEST (ledger, epoch_blocks_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, epoch2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *epoch2).code);
 	auto epoch3 = builder
 				  .state ()
 				  .account (nano::dev::genesis->account ())
@@ -3946,7 +3947,7 @@ TEST (ledger, epoch_blocks_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (send1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch3).code);
 	ASSERT_EQ (nano::epoch::epoch_1, epoch3->sideband ().details.epoch);
 	ASSERT_EQ (nano::epoch::epoch_0, epoch3->sideband ().source_epoch); // Not used for epoch state blocks
 	auto epoch4 = builder
@@ -3959,7 +3960,7 @@ TEST (ledger, epoch_blocks_fork)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (send1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::fork, ledger.process (transaction, epoch2));
+	ASSERT_EQ (nano::process_result::fork, ledger.process (transaction, *epoch2).code);
 }
 
 TEST (ledger, successor_epoch)
@@ -4017,11 +4018,11 @@ TEST (ledger, successor_epoch)
 					  .work (*pool.generate (open->hash ()))
 					  .build ();
 	auto transaction (node1.store.tx_begin_write ());
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send1));
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, open));
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, change));
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, send2));
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, epoch_open));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send1).code);
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *open).code);
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *change).code);
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *send2).code);
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *epoch_open).code);
 	ASSERT_EQ (*change, *node1.ledger.successor (transaction, change->qualified_root ()));
 	ASSERT_EQ (*epoch_open, *node1.ledger.successor (transaction, epoch_open->qualified_root ()));
 	ASSERT_EQ (nano::epoch::epoch_1, epoch_open->sideband ().details.epoch);
@@ -4043,12 +4044,12 @@ TEST (ledger, epoch_open_pending)
 					  .link (node1.ledger.epoch_link (nano::epoch::epoch_1))
 					  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					  .work (*pool.generate (key1.pub))
-					  .build ();
-	auto process_result = node1.ledger.process (node1.store.tx_begin_write (), epoch_open);
-	ASSERT_EQ (nano::block_status::gap_epoch_open_pending, process_result);
+					  .build_shared ();
+	auto process_result = node1.ledger.process (node1.store.tx_begin_write (), *epoch_open);
+	ASSERT_EQ (nano::process_result::gap_epoch_open_pending, process_result.code);
 	node1.block_processor.add (epoch_open);
 	// Waits for the block to get saved in the database
-	ASSERT_TIMELY_EQ (10s, 1, node1.unchecked.count ());
+	ASSERT_TIMELY (10s, 1 == node1.unchecked.count ());
 	ASSERT_FALSE (node1.ledger.block_or_pruned_exists (epoch_open->hash ()));
 	// Open block should be inserted into unchecked
 	auto blocks = node1.unchecked.get (nano::hash_or_account (epoch_open->account ()).hash);
@@ -4063,7 +4064,7 @@ TEST (ledger, epoch_open_pending)
 				 .link (key1.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
-				 .build ();
+				 .build_shared ();
 	node1.block_processor.add (send1);
 	ASSERT_TIMELY (10s, node1.ledger.block_or_pruned_exists (epoch_open->hash ()));
 }
@@ -4089,7 +4090,7 @@ TEST (ledger, block_hash_account_conflict)
 				 .link (key1.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
-				 .build ();
+				 .build_shared ();
 
 	auto receive1 = builder.state ()
 					.account (key1.pub)
@@ -4099,7 +4100,7 @@ TEST (ledger, block_hash_account_conflict)
 					.link (send1->hash ())
 					.sign (key1.prv, key1.pub)
 					.work (*pool.generate (key1.pub))
-					.build ();
+					.build_shared ();
 
 	/*
 	 * Note that the below link is a block hash when this is intended
@@ -4115,7 +4116,7 @@ TEST (ledger, block_hash_account_conflict)
 				 .link (receive1->hash ())
 				 .sign (key1.prv, key1.pub)
 				 .work (*pool.generate (receive1->hash ()))
-				 .build ();
+				 .build_shared ();
 
 	/*
 	 * Generate an epoch open for the account with the same value as the block hash
@@ -4129,16 +4130,16 @@ TEST (ledger, block_hash_account_conflict)
 					   .link (node1.ledger.epoch_link (nano::epoch::epoch_1))
 					   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					   .work (*pool.generate (receive1->hash ()))
-					   .build ();
+					   .build_shared ();
 
 	node1.work_generate_blocking (*send1);
 	node1.work_generate_blocking (*receive1);
 	node1.work_generate_blocking (*send2);
 	node1.work_generate_blocking (*open_epoch1);
-	ASSERT_EQ (nano::block_status::progress, node1.process (send1));
-	ASSERT_EQ (nano::block_status::progress, node1.process (receive1));
-	ASSERT_EQ (nano::block_status::progress, node1.process (send2));
-	ASSERT_EQ (nano::block_status::progress, node1.process (open_epoch1));
+	ASSERT_EQ (nano::process_result::progress, node1.process (*send1).code);
+	ASSERT_EQ (nano::process_result::progress, node1.process (*receive1).code);
+	ASSERT_EQ (nano::process_result::progress, node1.process (*send2).code);
+	ASSERT_EQ (nano::process_result::progress, node1.process (*open_epoch1).code);
 	ASSERT_TRUE (nano::test::start_elections (system, node1, { send1, receive1, send2, open_epoch1 }));
 	auto election1 = node1.active.election (send1->qualified_root ());
 	ASSERT_NE (nullptr, election1);
@@ -4160,7 +4161,7 @@ TEST (ledger, block_hash_account_conflict)
 
 TEST (ledger, could_fit)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -4212,7 +4213,7 @@ TEST (ledger, could_fit)
 				 .build ();
 	ASSERT_FALSE (ledger.could_fit (transaction, *send1));
 	ASSERT_FALSE (ledger.could_fit (transaction, *send2));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change1).code);
 	ASSERT_TRUE (ledger.could_fit (transaction, *change1));
 	ASSERT_TRUE (ledger.could_fit (transaction, *change2));
 	ASSERT_TRUE (ledger.could_fit (transaction, *send1));
@@ -4238,12 +4239,12 @@ TEST (ledger, could_fit)
 				 .build ();
 	ASSERT_FALSE (ledger.could_fit (transaction, *open1));
 	ASSERT_FALSE (ledger.could_fit (transaction, *open2));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_TRUE (ledger.could_fit (transaction, *send1));
 	ASSERT_TRUE (ledger.could_fit (transaction, *send2));
 	ASSERT_TRUE (ledger.could_fit (transaction, *open1));
 	ASSERT_TRUE (ledger.could_fit (transaction, *open2));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_TRUE (ledger.could_fit (transaction, *open1));
 	ASSERT_TRUE (ledger.could_fit (transaction, *open2));
 	// Create another send to receive
@@ -4277,7 +4278,7 @@ TEST (ledger, could_fit)
 					.build ();
 	ASSERT_FALSE (ledger.could_fit (transaction, *receive1));
 	ASSERT_FALSE (ledger.could_fit (transaction, *receive2));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send3).code);
 	ASSERT_TRUE (ledger.could_fit (transaction, *receive1));
 	ASSERT_TRUE (ledger.could_fit (transaction, *receive2));
 	// Test epoch (state)
@@ -4292,11 +4293,11 @@ TEST (ledger, could_fit)
 				  .work (*pool.generate (receive1->hash ()))
 				  .build ();
 	ASSERT_FALSE (ledger.could_fit (transaction, *epoch1));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_TRUE (ledger.could_fit (transaction, *receive1));
 	ASSERT_TRUE (ledger.could_fit (transaction, *receive2));
 	ASSERT_TRUE (ledger.could_fit (transaction, *epoch1));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	ASSERT_TRUE (ledger.could_fit (transaction, *epoch1));
 }
 
@@ -4315,7 +4316,7 @@ TEST (ledger, unchecked_epoch)
 				 .link (destination.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto open1 = builder
 				 .state ()
@@ -4326,7 +4327,7 @@ TEST (ledger, unchecked_epoch)
 				 .link (send1->hash ())
 				 .sign (destination.prv, destination.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*open1);
 	auto epoch1 = builder
 				  .state ()
@@ -4337,12 +4338,12 @@ TEST (ledger, unchecked_epoch)
 				  .link (node1.ledger.epoch_link (nano::epoch::epoch_1))
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (0)
-				  .build ();
+				  .build_shared ();
 	node1.work_generate_blocking (*epoch1);
 	node1.block_processor.add (epoch1);
 	{
 		// Waits for the epoch1 block to pass through block_processor and unchecked.put queues
-		ASSERT_TIMELY_EQ (10s, 1, node1.unchecked.count ());
+		ASSERT_TIMELY (10s, 1 == node1.unchecked.count ());
 		auto blocks = node1.unchecked.get (epoch1->previous ());
 		ASSERT_EQ (blocks.size (), 1);
 	}
@@ -4351,7 +4352,7 @@ TEST (ledger, unchecked_epoch)
 	ASSERT_TIMELY (5s, node1.store.block.exists (node1.store.tx_begin_read (), epoch1->hash ()));
 	{
 		// Waits for the last blocks to pass through block_processor and unchecked.put queues
-		ASSERT_TIMELY_EQ (10s, 0, node1.unchecked.count ());
+		ASSERT_TIMELY (10s, 0 == node1.unchecked.count ());
 		auto info = node1.ledger.account_info (node1.store.tx_begin_read (), destination.pub);
 		ASSERT_TRUE (info);
 		ASSERT_EQ (info->epoch (), nano::epoch::epoch_1);
@@ -4375,7 +4376,7 @@ TEST (ledger, unchecked_epoch_invalid)
 				 .link (destination.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto open1 = builder
 				 .state ()
@@ -4386,7 +4387,7 @@ TEST (ledger, unchecked_epoch_invalid)
 				 .link (send1->hash ())
 				 .sign (destination.prv, destination.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*open1);
 	// Epoch block with account own signature
 	auto epoch1 = builder
@@ -4398,7 +4399,7 @@ TEST (ledger, unchecked_epoch_invalid)
 				  .link (node1.ledger.epoch_link (nano::epoch::epoch_1))
 				  .sign (destination.prv, destination.pub)
 				  .work (0)
-				  .build ();
+				  .build_shared ();
 	node1.work_generate_blocking (*epoch1);
 	// Pseudo epoch block (send subtype, destination - epoch link)
 	auto epoch2 = builder
@@ -4410,13 +4411,13 @@ TEST (ledger, unchecked_epoch_invalid)
 				  .link (node1.ledger.epoch_link (nano::epoch::epoch_1))
 				  .sign (destination.prv, destination.pub)
 				  .work (0)
-				  .build ();
+				  .build_shared ();
 	node1.work_generate_blocking (*epoch2);
 	node1.block_processor.add (epoch1);
 	node1.block_processor.add (epoch2);
 	{
 		// Waits for the last blocks to pass through block_processor and unchecked.put queues
-		ASSERT_TIMELY_EQ (10s, 2, node1.unchecked.count ());
+		ASSERT_TIMELY (10s, 2 == node1.unchecked.count ());
 		auto blocks = node1.unchecked.get (epoch1->previous ());
 		ASSERT_EQ (blocks.size (), 2);
 	}
@@ -4457,7 +4458,7 @@ TEST (ledger, unchecked_open)
 				 .link (destination.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto open1 = builder
 				 .open ()
@@ -4466,7 +4467,7 @@ TEST (ledger, unchecked_open)
 				 .account (destination.pub)
 				 .sign (destination.prv, destination.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*open1);
 	// Invalid signature for open block
 	auto open2 = builder
@@ -4476,14 +4477,14 @@ TEST (ledger, unchecked_open)
 				 .account (destination.pub)
 				 .sign (destination.prv, destination.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*open2);
 	open2->signature.bytes[0] ^= 1;
 	node1.block_processor.add (open2); // Insert open2 in to the queue before open1
 	node1.block_processor.add (open1);
 	{
 		// Waits for the last blocks to pass through block_processor and unchecked.put queues
-		ASSERT_TIMELY_EQ (10s, 1, node1.unchecked.count ());
+		ASSERT_TIMELY (10s, 1 == node1.unchecked.count ());
 		// Get the next peer for attempting a tcp bootstrap connection
 		auto blocks = node1.unchecked.get (open1->source ());
 		ASSERT_EQ (blocks.size (), 1);
@@ -4509,7 +4510,7 @@ TEST (ledger, unchecked_receive)
 				 .link (destination.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send1);
 	auto send2 = builder
 				 .state ()
@@ -4520,7 +4521,7 @@ TEST (ledger, unchecked_receive)
 				 .link (destination.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*send2);
 	auto open1 = builder
 				 .open ()
@@ -4529,7 +4530,7 @@ TEST (ledger, unchecked_receive)
 				 .account (destination.pub)
 				 .sign (destination.prv, destination.pub)
 				 .work (0)
-				 .build ();
+				 .build_shared ();
 	node1.work_generate_blocking (*open1);
 	auto receive1 = builder
 					.receive ()
@@ -4537,7 +4538,7 @@ TEST (ledger, unchecked_receive)
 					.source (send2->hash ())
 					.sign (destination.prv, destination.pub)
 					.work (0)
-					.build ();
+					.build_shared ();
 	node1.work_generate_blocking (*receive1);
 	node1.block_processor.add (send1);
 	node1.block_processor.add (receive1);
@@ -4588,7 +4589,7 @@ TEST (ledger, confirmation_height_not_updated)
 	ASSERT_FALSE (store.confirmation_height.get (transaction, nano::dev::genesis->account (), confirmation_height_info));
 	ASSERT_EQ (1, confirmation_height_info.height);
 	ASSERT_EQ (nano::dev::genesis->hash (), confirmation_height_info.frontier);
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_FALSE (store.confirmation_height.get (transaction, nano::dev::genesis->account (), confirmation_height_info));
 	ASSERT_EQ (1, confirmation_height_info.height);
 	ASSERT_EQ (nano::dev::genesis->hash (), confirmation_height_info.frontier);
@@ -4600,7 +4601,7 @@ TEST (ledger, confirmation_height_not_updated)
 				 .sign (key.prv, key.pub)
 				 .work (*pool.generate (key.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_TRUE (store.confirmation_height.get (transaction, key.pub, confirmation_height_info));
 	ASSERT_EQ (0, confirmation_height_info.height);
 	ASSERT_EQ (nano::block_hash (0), confirmation_height_info.frontier);
@@ -4621,7 +4622,7 @@ TEST (ledger, zero_rep)
 				  .work (*system.work.generate (nano::dev::genesis->hash ()))
 				  .build ();
 	auto transaction (node1.store.tx_begin_write ());
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, block1));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *block1).code);
 	ASSERT_EQ (0, node1.ledger.cache.rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (nano::dev::constants.genesis_amount, node1.ledger.cache.rep_weights.representation_get (0));
 	auto block2 = builder.state ()
@@ -4633,7 +4634,7 @@ TEST (ledger, zero_rep)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*system.work.generate (block1->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, node1.ledger.process (transaction, block2));
+	ASSERT_EQ (nano::process_result::progress, node1.ledger.process (transaction, *block2).code);
 	ASSERT_EQ (nano::dev::constants.genesis_amount, node1.ledger.cache.rep_weights.representation_get (nano::dev::genesis_key.pub));
 	ASSERT_EQ (0, node1.ledger.cache.rep_weights.representation_get (0));
 }
@@ -4649,74 +4650,74 @@ TEST (ledger, work_validation)
 	nano::keypair key;
 
 	// With random work the block doesn't pass, then modifies the block with sufficient work and ensures a correct result
-	auto process_block = [&store, &ledger, &pool] (std::shared_ptr<nano::block> block_a, nano::block_details const details_a) {
-		auto threshold = nano::dev::network_params.work.threshold (block_a->work_version (), details_a);
+	auto process_block = [&store, &ledger, &pool] (nano::block & block_a, nano::block_details const details_a) {
+		auto threshold = nano::dev::network_params.work.threshold (block_a.work_version (), details_a);
 		// Rarely failed with random work, so modify until it doesn't have enough difficulty
-		while (nano::dev::network_params.work.difficulty (*block_a) >= threshold)
+		while (nano::dev::network_params.work.difficulty (block_a) >= threshold)
 		{
-			block_a->block_work_set (block_a->block_work () + 1);
+			block_a.block_work_set (block_a.block_work () + 1);
 		}
-		EXPECT_EQ (nano::block_status::insufficient_work, ledger.process (store.tx_begin_write (), block_a));
-		block_a->block_work_set (*pool.generate (block_a->root (), threshold));
-		EXPECT_EQ (nano::block_status::progress, ledger.process (store.tx_begin_write (), block_a));
+		EXPECT_EQ (nano::process_result::insufficient_work, ledger.process (store.tx_begin_write (), block_a).code);
+		block_a.block_work_set (*pool.generate (block_a.root (), threshold));
+		EXPECT_EQ (nano::process_result::progress, ledger.process (store.tx_begin_write (), block_a).code);
 	};
 
 	std::error_code ec;
 
-	auto send = builder.send ()
-				.previous (nano::dev::genesis->hash ())
-				.destination (gen.pub)
-				.balance (nano::dev::constants.genesis_amount - 1)
-				.sign (gen.prv, gen.pub)
-				.work (0)
-				.build (ec);
+	auto send = *builder.send ()
+				 .previous (nano::dev::genesis->hash ())
+				 .destination (gen.pub)
+				 .balance (nano::dev::constants.genesis_amount - 1)
+				 .sign (gen.prv, gen.pub)
+				 .work (0)
+				 .build (ec);
 	ASSERT_FALSE (ec);
 
-	auto receive = builder.receive ()
-				   .previous (send->hash ())
-				   .source (send->hash ())
+	auto receive = *builder.receive ()
+					.previous (send.hash ())
+					.source (send.hash ())
+					.sign (gen.prv, gen.pub)
+					.work (0)
+					.build (ec);
+	ASSERT_FALSE (ec);
+
+	auto change = *builder.change ()
+				   .previous (receive.hash ())
+				   .representative (key.pub)
 				   .sign (gen.prv, gen.pub)
 				   .work (0)
 				   .build (ec);
 	ASSERT_FALSE (ec);
 
-	auto change = builder.change ()
-				  .previous (receive->hash ())
-				  .representative (key.pub)
+	auto state = *builder.state ()
+				  .account (gen.pub)
+				  .previous (change.hash ())
+				  .representative (gen.pub)
+				  .balance (nano::dev::constants.genesis_amount - 1)
+				  .link (key.pub)
 				  .sign (gen.prv, gen.pub)
 				  .work (0)
 				  .build (ec);
 	ASSERT_FALSE (ec);
 
-	auto state = builder.state ()
-				 .account (gen.pub)
-				 .previous (change->hash ())
-				 .representative (gen.pub)
-				 .balance (nano::dev::constants.genesis_amount - 1)
-				 .link (key.pub)
-				 .sign (gen.prv, gen.pub)
-				 .work (0)
-				 .build (ec);
-	ASSERT_FALSE (ec);
-
-	auto open = builder.open ()
-				.account (key.pub)
-				.source (state->hash ())
-				.representative (key.pub)
-				.sign (key.prv, key.pub)
-				.work (0)
-				.build (ec);
-	ASSERT_FALSE (ec);
-
-	auto epoch = builder.state ()
+	auto open = *builder.open ()
 				 .account (key.pub)
-				 .previous (open->hash ())
-				 .balance (1)
+				 .source (state.hash ())
 				 .representative (key.pub)
-				 .link (ledger.epoch_link (nano::epoch::epoch_1))
-				 .sign (gen.prv, gen.pub)
+				 .sign (key.prv, key.pub)
 				 .work (0)
 				 .build (ec);
+	ASSERT_FALSE (ec);
+
+	auto epoch = *builder.state ()
+				  .account (key.pub)
+				  .previous (open.hash ())
+				  .balance (1)
+				  .representative (key.pub)
+				  .link (ledger.epoch_link (nano::epoch::epoch_1))
+				  .sign (gen.prv, gen.pub)
+				  .work (0)
+				  .build (ec);
 	ASSERT_FALSE (ec);
 
 	process_block (send, {});
@@ -4745,8 +4746,8 @@ TEST (ledger, dependents_confirmed)
 				 .link (key1.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
-				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+				 .build_shared ();
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (ledger.dependents_confirmed (transaction, *send1));
 	auto send2 = builder.state ()
 				 .account (nano::dev::genesis->account ())
@@ -4756,8 +4757,8 @@ TEST (ledger, dependents_confirmed)
 				 .link (key1.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
-				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+				 .build_shared ();
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_FALSE (ledger.dependents_confirmed (transaction, *send2));
 	auto receive1 = builder.state ()
 					.account (key1.pub)
@@ -4767,8 +4768,8 @@ TEST (ledger, dependents_confirmed)
 					.link (send1->hash ())
 					.sign (key1.prv, key1.pub)
 					.work (*pool.generate (key1.pub))
-					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+					.build_shared ();
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (ledger.dependents_confirmed (transaction, *receive1));
 	nano::confirmation_height_info height;
 	ASSERT_FALSE (ledger.store.confirmation_height.get (transaction, nano::dev::genesis->account (), height));
@@ -4783,8 +4784,8 @@ TEST (ledger, dependents_confirmed)
 					.link (send2->hash ())
 					.sign (key1.prv, key1.pub)
 					.work (*pool.generate (receive1->hash ()))
-					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive2));
+					.build_shared ();
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive2).code);
 	ASSERT_FALSE (ledger.dependents_confirmed (transaction, *receive2));
 	ASSERT_TRUE (ledger.store.confirmation_height.get (transaction, key1.pub, height));
 	height.height += 1;
@@ -4798,7 +4799,7 @@ TEST (ledger, dependents_confirmed)
 
 TEST (ledger, dependents_confirmed_pruning)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::stats stats;
@@ -4817,8 +4818,8 @@ TEST (ledger, dependents_confirmed_pruning)
 				 .link (key1.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
-				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+				 .build_shared ();
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	auto send2 = builder.state ()
 				 .account (nano::dev::genesis->account ())
 				 .previous (send1->hash ())
@@ -4827,8 +4828,8 @@ TEST (ledger, dependents_confirmed_pruning)
 				 .link (key1.pub)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
-				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+				 .build_shared ();
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	nano::confirmation_height_info height;
 	ASSERT_FALSE (ledger.store.confirmation_height.get (transaction, nano::dev::genesis->account (), height));
 	height.height = 3;
@@ -4843,7 +4844,7 @@ TEST (ledger, dependents_confirmed_pruning)
 					.link (send1->hash ())
 					.sign (key1.prv, key1.pub)
 					.work (*pool.generate (key1.pub))
-					.build ();
+					.build_shared ();
 	ASSERT_TRUE (ledger.dependents_confirmed (transaction, *receive1));
 }
 
@@ -4868,7 +4869,7 @@ TEST (ledger, block_confirmed)
 				 .build ();
 	// Must be safe against non-existing blocks
 	ASSERT_FALSE (ledger.block_confirmed (transaction, send1->hash ()));
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_FALSE (ledger.block_confirmed (transaction, send1->hash ()));
 	nano::confirmation_height_info height;
 	ASSERT_FALSE (ledger.store.confirmation_height.get (transaction, nano::dev::genesis->account (), height));
@@ -4927,7 +4928,7 @@ TEST (ledger, cache)
 					.build ();
 		{
 			auto transaction (store.tx_begin_write ());
-			ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+			ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 		}
 
 		++block_count;
@@ -4937,7 +4938,7 @@ TEST (ledger, cache)
 
 		{
 			auto transaction (store.tx_begin_write ());
-			ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open));
+			ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open).code);
 		}
 
 		++block_count;
@@ -4988,7 +4989,7 @@ TEST (ledger, cache)
 
 TEST (ledger, pruning_action)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5008,7 +5009,7 @@ TEST (ledger, pruning_action)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store->block.exists (transaction, send1->hash ()));
 	auto send1_stored (store->block.get (transaction, send1->hash ()));
 	ASSERT_NE (nullptr, send1_stored);
@@ -5024,7 +5025,7 @@ TEST (ledger, pruning_action)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_TRUE (store->block.exists (transaction, send2->hash ()));
 	// Pruning action
 	ASSERT_EQ (1, ledger.pruning_action (transaction, send1->hash (), 1));
@@ -5050,7 +5051,7 @@ TEST (ledger, pruning_action)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send2->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_TRUE (store->block.exists (transaction, receive1->hash ()));
 	auto receive1_stored (store->block.get (transaction, receive1->hash ()));
 	ASSERT_NE (nullptr, receive1_stored);
@@ -5072,7 +5073,7 @@ TEST (ledger, pruning_action)
 
 TEST (ledger, pruning_large_chain)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5096,7 +5097,7 @@ TEST (ledger, pruning_large_chain)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (last_hash))
 					.build ();
-		ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send));
+		ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send).code);
 		ASSERT_TRUE (store->block.exists (transaction, send->hash ()));
 		auto receive = builder
 					   .state ()
@@ -5108,7 +5109,7 @@ TEST (ledger, pruning_large_chain)
 					   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					   .work (*pool.generate (send->hash ()))
 					   .build ();
-		ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive));
+		ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive).code);
 		ASSERT_TRUE (store->block.exists (transaction, receive->hash ()));
 		last_hash = receive->hash ();
 	}
@@ -5127,7 +5128,7 @@ TEST (ledger, pruning_large_chain)
 
 TEST (ledger, pruning_source_rollback)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5147,7 +5148,7 @@ TEST (ledger, pruning_source_rollback)
 				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				  .work (*pool.generate (nano::dev::genesis->hash ()))
 				  .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, epoch1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *epoch1).code);
 	auto send1 = builder
 				 .state ()
 				 .account (nano::dev::genesis->account ())
@@ -5158,7 +5159,7 @@ TEST (ledger, pruning_source_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (epoch1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	auto send2 = builder
 				 .state ()
@@ -5170,7 +5171,7 @@ TEST (ledger, pruning_source_rollback)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_TRUE (store->block.exists (transaction, send2->hash ()));
 	// Pruning action
 	ASSERT_EQ (2, ledger.pruning_action (transaction, send1->hash (), 1));
@@ -5195,7 +5196,7 @@ TEST (ledger, pruning_source_rollback)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send2->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	ASSERT_EQ (2, ledger.cache.pruned_count);
 	ASSERT_EQ (5, ledger.cache.block_count);
@@ -5207,7 +5208,7 @@ TEST (ledger, pruning_source_rollback)
 	ASSERT_EQ (nano::Gxrb_ratio, info2->amount.number ());
 	ASSERT_EQ (nano::epoch::epoch_1, info2->epoch);
 	// Process receive block again
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	ASSERT_EQ (2, ledger.cache.pruned_count);
 	ASSERT_EQ (5, ledger.cache.block_count);
@@ -5215,7 +5216,7 @@ TEST (ledger, pruning_source_rollback)
 
 TEST (ledger, pruning_source_rollback_legacy)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5233,7 +5234,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	nano::keypair key1;
 	auto send2 = builder
@@ -5244,7 +5245,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_TRUE (store->block.exists (transaction, send2->hash ()));
 	ASSERT_TRUE (store->pending.exists (transaction, nano::pending_key (key1.pub, send2->hash ())));
 	auto send3 = builder
@@ -5255,7 +5256,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send2->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send3).code);
 	ASSERT_TRUE (store->block.exists (transaction, send3->hash ()));
 	ASSERT_TRUE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send3->hash ())));
 	// Pruning action
@@ -5283,7 +5284,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send3->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	ASSERT_EQ (2, ledger.cache.pruned_count);
 	ASSERT_EQ (5, ledger.cache.block_count);
@@ -5295,7 +5296,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 	ASSERT_EQ (nano::Gxrb_ratio, info3->amount.number ());
 	ASSERT_EQ (nano::epoch::epoch_0, info3->epoch);
 	// Process receive block again
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	ASSERT_FALSE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	ASSERT_EQ (2, ledger.cache.pruned_count);
 	ASSERT_EQ (5, ledger.cache.block_count);
@@ -5308,7 +5309,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 				 .sign (key1.prv, key1.pub)
 				 .work (*pool.generate (key1.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_FALSE (store->pending.exists (transaction, nano::pending_key (key1.pub, send2->hash ())));
 	ASSERT_EQ (2, ledger.cache.pruned_count);
 	ASSERT_EQ (6, ledger.cache.block_count);
@@ -5320,7 +5321,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 	ASSERT_EQ (nano::Gxrb_ratio, info4->amount.number ());
 	ASSERT_EQ (nano::epoch::epoch_0, info4->epoch);
 	// Process open block again
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	ASSERT_FALSE (store->pending.exists (transaction, nano::pending_key (key1.pub, send2->hash ())));
 	ASSERT_EQ (2, ledger.cache.pruned_count);
 	ASSERT_EQ (6, ledger.cache.block_count);
@@ -5328,7 +5329,7 @@ TEST (ledger, pruning_source_rollback_legacy)
 
 TEST (ledger, pruning_process_error)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5348,7 +5349,7 @@ TEST (ledger, pruning_process_error)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_EQ (0, ledger.cache.pruned_count);
 	ASSERT_EQ (2, ledger.cache.block_count);
 	// Pruning action for latest block (not valid action)
@@ -5356,7 +5357,7 @@ TEST (ledger, pruning_process_error)
 	ASSERT_FALSE (store->block.exists (transaction, send1->hash ()));
 	ASSERT_TRUE (store->pruned.exists (transaction, send1->hash ()));
 	// Attempt to process pruned block again
-	ASSERT_EQ (nano::block_status::old, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::old, ledger.process (transaction, *send1).code);
 	// Attept to process new block after pruned
 	auto send2 = builder
 				 .state ()
@@ -5368,14 +5369,14 @@ TEST (ledger, pruning_process_error)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::gap_previous, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::gap_previous, ledger.process (transaction, *send2).code);
 	ASSERT_EQ (1, ledger.cache.pruned_count);
 	ASSERT_EQ (2, ledger.cache.block_count);
 }
 
 TEST (ledger, pruning_legacy_blocks)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5394,7 +5395,7 @@ TEST (ledger, pruning_legacy_blocks)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store->pending.exists (transaction, nano::pending_key (nano::dev::genesis->account (), send1->hash ())));
 	auto receive1 = builder
 					.receive ()
@@ -5403,7 +5404,7 @@ TEST (ledger, pruning_legacy_blocks)
 					.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					.work (*pool.generate (send1->hash ()))
 					.build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, receive1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *receive1).code);
 	auto change1 = builder
 				   .change ()
 				   .previous (receive1->hash ())
@@ -5411,7 +5412,7 @@ TEST (ledger, pruning_legacy_blocks)
 				   .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				   .work (*pool.generate (receive1->hash ()))
 				   .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, change1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *change1).code);
 	auto send2 = builder
 				 .send ()
 				 .previous (change1->hash ())
@@ -5420,7 +5421,7 @@ TEST (ledger, pruning_legacy_blocks)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (change1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	auto open1 = builder
 				 .open ()
 				 .source (send2->hash ())
@@ -5429,7 +5430,7 @@ TEST (ledger, pruning_legacy_blocks)
 				 .sign (key1.prv, key1.pub)
 				 .work (*pool.generate (key1.pub))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, open1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *open1).code);
 	auto send3 = builder
 				 .send ()
 				 .previous (open1->hash ())
@@ -5438,7 +5439,7 @@ TEST (ledger, pruning_legacy_blocks)
 				 .sign (key1.prv, key1.pub)
 				 .work (*pool.generate (open1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send3));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send3).code);
 	// Pruning action
 	ASSERT_EQ (3, ledger.pruning_action (transaction, change1->hash (), 2));
 	ASSERT_EQ (1, ledger.pruning_action (transaction, open1->hash (), 1));
@@ -5461,7 +5462,7 @@ TEST (ledger, pruning_legacy_blocks)
 
 TEST (ledger, pruning_safe_functions)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5481,7 +5482,7 @@ TEST (ledger, pruning_safe_functions)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store->block.exists (transaction, send1->hash ()));
 	auto send2 = builder
 				 .state ()
@@ -5493,7 +5494,7 @@ TEST (ledger, pruning_safe_functions)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_TRUE (store->block.exists (transaction, send2->hash ()));
 	// Pruning action
 	ASSERT_EQ (1, ledger.pruning_action (transaction, send1->hash (), 1));
@@ -5522,7 +5523,7 @@ TEST (ledger, pruning_safe_functions)
 
 TEST (ledger, hash_root_random)
 {
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_TRUE (!store->init_error ());
 	nano::stats stats;
@@ -5542,7 +5543,7 @@ TEST (ledger, hash_root_random)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (nano::dev::genesis->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send1));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send1).code);
 	ASSERT_TRUE (store->block.exists (transaction, send1->hash ()));
 	auto send2 = builder
 				 .state ()
@@ -5554,7 +5555,7 @@ TEST (ledger, hash_root_random)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*pool.generate (send1->hash ()))
 				 .build ();
-	ASSERT_EQ (nano::block_status::progress, ledger.process (transaction, send2));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (transaction, *send2).code);
 	ASSERT_TRUE (store->block.exists (transaction, send2->hash ()));
 	// Pruning action
 	ASSERT_EQ (1, ledger.pruning_action (transaction, send1->hash (), 1));
@@ -5586,7 +5587,7 @@ TEST (ledger, migrate_lmdb_to_rocksdb)
 {
 	nano::test::system system{};
 	auto path = nano::unique_path ();
-	nano::logger logger;
+	nano::logger_mt logger{};
 	boost::asio::ip::address_v6 address (boost::asio::ip::make_address_v6 ("::ffff:127.0.0.1"));
 	uint16_t port = 100;
 	nano::store::lmdb::component store{ logger, path / "data.ldb", nano::dev::constants };
@@ -5601,7 +5602,7 @@ TEST (ledger, migrate_lmdb_to_rocksdb)
 										.balance (nano::dev::constants.genesis_amount - 100)
 										.sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 										.work (*pool.generate (nano::dev::genesis->hash ()))
-										.build ();
+										.build_shared ();
 
 	nano::endpoint_key endpoint_key (address.to_bytes (), port);
 	auto version = nano::store::component::version_current;
@@ -5653,7 +5654,7 @@ TEST (ledger, migrate_lmdb_to_rocksdb)
 	ASSERT_FALSE (rocksdb_store.confirmation_height.get (rocksdb_transaction, nano::dev::genesis->account (), confirmation_height_info));
 	ASSERT_EQ (confirmation_height_info.height, 2);
 	ASSERT_EQ (confirmation_height_info.frontier, send->hash ());
-	ASSERT_EQ (rocksdb_store.final_vote.get (rocksdb_transaction, nano::root (send->previous ())).size (), 1);
+	ASSERT_TRUE (rocksdb_store.final_vote.get (rocksdb_transaction, nano::root (send->previous ())).size () == 1);
 	ASSERT_EQ (rocksdb_store.final_vote.get (rocksdb_transaction, nano::root (send->previous ()))[0], nano::block_hash (2));
 }
 
@@ -5680,7 +5681,7 @@ TEST (ledger, unconfirmed_frontiers)
 				.work (*pool.generate (latest))
 				.build ();
 
-	ASSERT_EQ (nano::block_status::progress, ledger.process (store.tx_begin_write (), send));
+	ASSERT_EQ (nano::process_result::progress, ledger.process (store.tx_begin_write (), *send).code);
 
 	unconfirmed_frontiers = ledger.unconfirmed_frontiers ();
 	ASSERT_EQ (unconfirmed_frontiers.size (), 1);

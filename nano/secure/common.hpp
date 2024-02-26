@@ -6,7 +6,6 @@
 #include <nano/lib/config.hpp>
 #include <nano/lib/epoch.hpp>
 #include <nano/lib/numbers.hpp>
-#include <nano/lib/object_stream.hpp>
 #include <nano/lib/rep_weights.hpp>
 #include <nano/lib/stats.hpp>
 #include <nano/lib/timer.hpp>
@@ -253,7 +252,7 @@ enum class vote_code
 	indeterminate // Unknown if replay or vote
 };
 
-enum class block_status
+enum class process_result
 {
 	progress, // Hasn't been seen before, signed correctly
 	bad_signature, // Signature was bad, forged or transmission error
@@ -270,16 +269,19 @@ enum class block_status
 	block_position, // This block cannot follow the previous block
 	insufficient_work // Insufficient work for this block, even though it passed the minimal validation
 };
-
-std::string_view to_string (block_status);
-nano::stat::detail to_stat_detail (block_status);
-
+class process_return final
+{
+public:
+	nano::process_result code;
+};
 enum class tally_result
 {
 	vote,
 	changed,
 	confirm
 };
+
+nano::stat::detail to_stat_detail (process_result);
 
 class network_params;
 

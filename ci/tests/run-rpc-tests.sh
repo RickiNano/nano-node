@@ -1,4 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-$(dirname "$BASH_SOURCE")/run-tests.sh rpc_test
+source "$(dirname "$BASH_SOURCE")/common.sh"
+
+BUILD_DIR=${1-${PWD}}
+
+${BUILD_DIR}/rpc_test$(get_exec_extension)

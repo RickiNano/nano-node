@@ -2,7 +2,6 @@
 
 #include <nano/lib/diagnosticsconfig.hpp>
 #include <nano/lib/id_dispenser.hpp>
-#include <nano/lib/logging.hpp>
 #include <nano/lib/timer.hpp>
 #include <nano/store/component.hpp>
 #include <nano/store/transaction.hpp>
@@ -12,6 +11,10 @@
 
 #include <lmdb/libraries/liblmdb/lmdb.h>
 
+namespace nano
+{
+class logger_mt;
+}
 namespace nano::store::lmdb
 {
 class env;
@@ -72,7 +75,7 @@ public:
 class mdb_txn_tracker
 {
 public:
-	mdb_txn_tracker (nano::logger &, nano::txn_tracking_config const & txn_tracking_config_a, std::chrono::milliseconds block_processor_batch_max_time_a);
+	mdb_txn_tracker (nano::logger_mt & logger_a, nano::txn_tracking_config const & txn_tracking_config_a, std::chrono::milliseconds block_processor_batch_max_time_a);
 	void serialize_json (boost::property_tree::ptree & json, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time);
 	void add (store::transaction_impl const * transaction_impl);
 	void erase (store::transaction_impl const * transaction_impl);
@@ -80,7 +83,7 @@ public:
 private:
 	nano::mutex mutex;
 	std::vector<mdb_txn_stats> stats;
-	nano::logger & logger;
+	nano::logger_mt & logger;
 	nano::txn_tracking_config txn_tracking_config;
 	std::chrono::milliseconds block_processor_batch_max_time;
 

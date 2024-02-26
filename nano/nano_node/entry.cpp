@@ -53,11 +53,8 @@ public:
 
 int main (int argc, char * const * argv)
 {
-	nano::set_umask (); // Make sure the process umask is set before any files are created
-	nano::logger::initialize (nano::log_config::cli_default ());
-
+	nano::set_umask ();
 	nano::node_singleton_memory_pool_purge_guard memory_pool_cleanup_guard;
-
 	boost::program_options::options_description description ("Command line options");
 	// clang-format off
 	description.add_options ()
@@ -141,7 +138,7 @@ int main (int argc, char * const * argv)
 	{
 		if (vm.count ("daemon") > 0)
 		{
-			nano::daemon daemon;
+			nano_daemon::daemon daemon;
 			nano::node_flags flags;
 			auto flags_ec = nano::update_flags (flags, vm);
 			if (flags_ec)
@@ -284,14 +281,14 @@ int main (int argc, char * const * argv)
 				{
 					if (sample.diff > log_threshold)
 					{
-						std::cout << '\t' << sample.get_entry () << '\n';
+						node->logger.always_log (sample.get_entry ());
 					}
 				}
 				for (auto const & newcomer : newcomers)
 				{
 					if (newcomer.second > log_threshold)
 					{
-						std::cout << '\t' << newcomer_entry (newcomer) << '\n';
+						node->logger.always_log (newcomer_entry (newcomer));
 					}
 				}
 			}
@@ -613,17 +610,13 @@ int main (int argc, char * const * argv)
 						error |= device >= environment.platforms[platform].devices.size ();
 						if (!error)
 						{
-							nano::logger logger;
+							nano::logger_mt logger;
 							nano::opencl_config config (platform, device, threads);
-							auto opencl = nano::opencl_work::create (true, config, logger, network_params.work);
-							nano::opencl_work_func_t opencl_work_func;
-							if (opencl)
-							{
-								opencl_work_func = [&opencl] (nano::work_version const version_a, nano::root const & root_a, uint64_t difficulty_a, std::atomic<int> &) {
-									return opencl->generate_work (version_a, root_a, difficulty_a);
-								};
-							}
-							nano::work_pool work_pool{ network_params.network, 0, std::chrono::nanoseconds (0), opencl_work_func };
+							auto opencl (nano::opencl_work::create (true, config, logger, network_params.work));
+							nano::work_pool work_pool{ network_params.network, 0, std::chrono::nanoseconds (0), opencl ? [&opencl] (nano::work_version const version_a, nano::root const & root_a, uint64_t difficulty_a, std::atomic<int> &) {
+														  return opencl->generate_work (version_a, root_a, difficulty_a);
+													  }
+																													   : std::function<boost::optional<uint64_t> (nano::work_version const, nano::root const &, uint64_t, std::atomic<int> &)> (nullptr) };
 							nano::change_block block (0, 0, nano::keypair ().prv, 0, 0);
 							std::cerr << boost::str (boost::format ("Starting OpenCL generation profiling. Platform: %1%. Device: %2%. Threads: %3%. Difficulty: %4$#x (%5%x from base difficulty %6$#x)\n") % platform % device % threads % difficulty % nano::to_string (nano::difficulty::to_multiplier (difficulty, nano::work_thresholds::publish_full.base), 4) % nano::work_thresholds::publish_full.base);
 							for (uint64_t i (0); true; ++i)
@@ -994,6 +987,7 @@ int main (int argc, char * const * argv)
 				}
 			}
 
+			node->block_processor.flush ();
 			auto end (std::chrono::high_resolution_clock::now ());
 			auto time (std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count ());
 			node->stop ();
@@ -1033,7 +1027,7 @@ int main (int argc, char * const * argv)
 							.build ();
 
 				genesis_latest = send->hash ();
-				node->ledger.process (transaction, send);
+				node->ledger.process (transaction, *send);
 
 				auto open = builder.state ()
 							.account (keys[i].pub)
@@ -1045,7 +1039,7 @@ int main (int argc, char * const * argv)
 							.work (*node->work.generate (nano::work_version::work_1, keys[i].pub, node->network_params.work.epoch_1))
 							.build ();
 
-				node->ledger.process (transaction, open);
+				node->ledger.process (transaction, *open);
 			}
 			// Generating blocks
 			std::deque<std::shared_ptr<nano::block>> blocks;
@@ -1086,10 +1080,7 @@ int main (int argc, char * const * argv)
 				node->process_active (block);
 				blocks.pop_front ();
 			}
-			while (node->block_processor.size () > 0)
-			{
-				std::this_thread::sleep_for (std::chrono::milliseconds (100));
-			}
+			node->block_processor.flush ();
 			// Processing votes
 			std::cerr << boost::str (boost::format ("Starting processing %1% votes\n") % max_votes);
 			auto begin (std::chrono::high_resolution_clock::now ());
@@ -1130,8 +1121,10 @@ int main (int argc, char * const * argv)
 			boost::asio::io_context io_ctx1;
 			boost::asio::io_context io_ctx2;
 			nano::work_pool work{ network_params.network, std::numeric_limits<unsigned>::max () };
+			nano::logging logging;
 			auto path1 (nano::unique_path ());
 			auto path2 (nano::unique_path ());
+			logging.init (path1);
 			std::vector<std::string> config_overrides;
 			auto config (vm.find ("config"));
 			if (config != vm.end ())
@@ -1197,6 +1190,7 @@ int main (int argc, char * const * argv)
 			{
 				node1->block_processor.add (block);
 			}
+			node1->block_processor.flush ();
 			auto iteration (0);
 			while (node1->ledger.cache.block_count != count * 2 + 1)
 			{
@@ -1246,6 +1240,7 @@ int main (int argc, char * const * argv)
 				node2->block_processor.add (block);
 				blocks.pop_front ();
 			}
+			node2->block_processor.flush ();
 			while (node2->ledger.cache.block_count != count * 2 + 1)
 			{
 				std::this_thread::sleep_for (std::chrono::milliseconds (500));
@@ -1840,6 +1835,8 @@ int main (int argc, char * const * argv)
 				}
 			}
 
+			node.node->block_processor.flush ();
+
 			auto end (std::chrono::high_resolution_clock::now ());
 			auto time (std::chrono::duration_cast<std::chrono::microseconds> (end - begin).count ());
 			auto us_in_second (1000000);
@@ -1874,7 +1871,7 @@ int main (int argc, char * const * argv)
 			nano::update_flags (node_flags, vm);
 			nano::inactive_node inactive_node (data_path, node_flags);
 			auto node = inactive_node.node;
-			node->ledger_pruning (node_flags.block_processor_batch_size != 0 ? node_flags.block_processor_batch_size : 16 * 1024, true);
+			node->ledger_pruning (node_flags.block_processor_batch_size != 0 ? node_flags.block_processor_batch_size : 16 * 1024, true, true);
 		}
 		else if (vm.count ("debug_stacktrace"))
 		{
@@ -1882,12 +1879,15 @@ int main (int argc, char * const * argv)
 		}
 		else if (vm.count ("debug_sys_logging"))
 		{
+#ifdef BOOST_WINDOWS
+			if (!nano::event_log_reg_entry_exists () && !nano::is_windows_elevated ())
+			{
+				std::cerr << "The event log requires the HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\Nano\\Nano registry entry, run again as administator to create it.\n";
+				return 1;
+			}
+#endif
 			auto inactive_node = nano::default_inactive_node (data_path, vm);
-			inactive_node->node->logger.critical ({}, "Testing system logger (CRITICAL)");
-			inactive_node->node->logger.error ({}, "Testing system logger (ERROR)");
-			inactive_node->node->logger.warn ({}, "Testing system logger (WARN)");
-			inactive_node->node->logger.info ({}, "Testing system logger (INFO)");
-			inactive_node->node->logger.debug ({}, "Testing system logger (DEBUG)");
+			inactive_node->node->logger.always_log (nano::severity_level::error, "Testing system logger");
 		}
 		else if (vm.count ("debug_account_versions"))
 		{

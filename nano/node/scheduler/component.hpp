@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nano/lib/locks.hpp>
+
 #include <memory>
 #include <string>
 

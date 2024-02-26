@@ -4,8 +4,6 @@
 
 #include <boost/thread/thread.hpp>
 
-#include <thread>
-
 namespace nano
 {
 namespace thread_attributes

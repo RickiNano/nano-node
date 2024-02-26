@@ -23,7 +23,7 @@ nano::block_list_t nano::test::setup_chain (nano::test::system & system, nano::n
 					.link (throwaway.pub)
 					.sign (target.prv, target.pub)
 					.work (*system.work.generate (latest))
-					.build ();
+					.build_shared ();
 
 		latest = send->hash ();
 
@@ -63,7 +63,7 @@ std::vector<std::pair<nano::account, nano::block_list_t>> nano::test::setup_chai
 					.link (key.pub)
 					.sign (source.prv, source.pub)
 					.work (*system.work.generate (latest))
-					.build ();
+					.build_shared ();
 
 		auto open = builder
 					.state ()
@@ -74,7 +74,7 @@ std::vector<std::pair<nano::account, nano::block_list_t>> nano::test::setup_chai
 					.link (send->hash ())
 					.sign (key.prv, key.pub)
 					.work (*system.work.generate (key.pub))
-					.build ();
+					.build_shared ();
 
 		latest = send->hash ();
 
@@ -120,7 +120,7 @@ nano::block_list_t nano::test::setup_independent_blocks (nano::test::system & sy
 					.link (key.pub)
 					.sign (source.prv, source.pub)
 					.work (*system.work.generate (latest))
-					.build ();
+					.build_shared ();
 
 		latest = send->hash ();
 
@@ -133,7 +133,7 @@ nano::block_list_t nano::test::setup_independent_blocks (nano::test::system & sy
 					.link (send->hash ())
 					.sign (key.prv, key.pub)
 					.work (*system.work.generate (key.pub))
-					.build ();
+					.build_shared ();
 
 		EXPECT_TRUE (nano::test::process (node, { send, open }));
 		EXPECT_TIMELY (5s, nano::test::exists (node, { send, open })); // Ensure blocks are in the ledger
@@ -148,42 +148,39 @@ nano::block_list_t nano::test::setup_independent_blocks (nano::test::system & sy
 	return blocks;
 }
 
-std::pair<std::shared_ptr<nano::block>, std::shared_ptr<nano::block>> nano::test::setup_new_account (nano::test::system & system, nano::node & node, nano::uint128_t const amount, nano::keypair source, nano::keypair dest, nano::account dest_rep, bool force_confirm)
+nano::keypair nano::test::setup_rep (nano::test::system & system, nano::node & node, nano::uint128_t const amount, nano::keypair source)
 {
 	auto latest = node.latest (source.pub);
 	auto balance = node.balance (source.pub);
 
-	auto send = nano::block_builder ()
+	nano::keypair key;
+	nano::block_builder builder;
+
+	auto send = builder
 				.state ()
 				.account (source.pub)
 				.previous (latest)
 				.representative (source.pub)
 				.balance (balance - amount)
-				.link (dest.pub)
+				.link (key.pub)
 				.sign (source.prv, source.pub)
 				.work (*system.work.generate (latest))
-				.build ();
+				.build_shared ();
 
-	auto open = nano::block_builder ()
+	auto open = builder
 				.state ()
-				.account (dest.pub)
+				.account (key.pub)
 				.previous (0)
-				.representative (dest_rep)
+				.representative (key.pub)
 				.balance (amount)
 				.link (send->hash ())
-				.sign (dest.prv, dest.pub)
-				.work (*system.work.generate (dest.pub))
-				.build ();
+				.sign (key.prv, key.pub)
+				.work (*system.work.generate (key.pub))
+				.build_shared ();
 
 	EXPECT_TRUE (nano::test::process (node, { send, open }));
-	EXPECT_TRUE (nano::test::start_elections (system, node, { send, open }, force_confirm));
+	EXPECT_TRUE (nano::test::start_elections (system, node, { send, open }, true));
 	EXPECT_TIMELY (5s, nano::test::confirmed (node, { send, open }));
-	return std::make_pair (send, open);
-}
 
-nano::keypair nano::test::setup_rep (nano::test::system & system, nano::node & node, nano::uint128_t const amount, nano::keypair source)
-{
-	nano::keypair destkey;
-	nano::test::setup_new_account (system, node, amount, source, destkey, destkey.pub, true);
-	return destkey;
+	return key;
 }

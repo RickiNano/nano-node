@@ -22,17 +22,18 @@ add_executable(
   enums.cpp
   epochs.cpp
   frontiers_confirmation.cpp
+  gap_cache.cpp
   ipc.cpp
   ledger.cpp
+  ledger_walker.cpp
   locks.cpp
-  logging.cpp
+  logger.cpp
   message.cpp
   message_deserializer.cpp
   memory_pool.cpp
   network.cpp
   network_filter.cpp
   node.cpp
-  object_stream.cpp
   optimistic_scheduler.cpp
   processing_queue.cpp
   processor_service.cpp
@@ -64,4 +65,5 @@ target_compile_definitions(
 target_link_libraries(core_test test_common)
 
 include_directories(${CMAKE_SOURCE_DIR}/submodules)
+include_directories(${CMAKE_SOURCE_DIR}/submodules/cpptoml/include)
 include_directories(${CMAKE_SOURCE_DIR}/submodules/gtest/googletest/include)

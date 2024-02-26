@@ -45,7 +45,7 @@ TEST (network_filter, unit)
 					 .link (nano::public_key ())
 					 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					 .work (0)
-					 .build ();
+					 .build_shared ();
 
 	one_block (new_block, false);
 	for (int i = 0; i < 10; ++i)
@@ -74,7 +74,7 @@ TEST (network_filter, many)
 					 .link (key1.pub)
 					 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 					 .work (0)
-					 .build ();
+					 .build_shared ();
 
 		nano::publish message{ nano::dev::network_params.network, block };
 		auto bytes (message.to_bytes ());

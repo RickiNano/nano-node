@@ -1,4 +1,3 @@
-#include <nano/lib/logging.hpp>
 #include <nano/lib/stats.hpp>
 #include <nano/lib/tomlconfig.hpp>
 #include <nano/node/bootstrap_ascending/service.hpp>
@@ -25,7 +24,7 @@ nano::block_hash random_hash ()
 TEST (account_sets, construction)
 {
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -35,7 +34,7 @@ TEST (account_sets, empty_blocked)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -46,7 +45,7 @@ TEST (account_sets, block)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -58,7 +57,7 @@ TEST (account_sets, unblock)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -72,7 +71,7 @@ TEST (account_sets, priority_base)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -83,7 +82,7 @@ TEST (account_sets, priority_blocked)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -96,7 +95,7 @@ TEST (account_sets, priority_unblock_keep)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -114,7 +113,7 @@ TEST (account_sets, priority_up_down)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -129,7 +128,7 @@ TEST (account_sets, priority_down_sat)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -142,7 +141,7 @@ TEST (account_sets, saturate_priority)
 {
 	nano::account account{ 1 };
 	nano::stats stats;
-	nano::logger logger;
+	nano::logger_mt logger;
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
 	nano::bootstrap_ascending::account_sets sets{ stats };
@@ -170,8 +169,8 @@ TEST (bootstrap_ascending, account_base)
 				 .balance (nano::dev::constants.genesis_amount - 1)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*system.work.generate (nano::dev::genesis->hash ()))
-				 .build ();
-	ASSERT_EQ (nano::block_status::progress, node0.process (send1));
+				 .build_shared ();
+	ASSERT_EQ (nano::process_result::progress, node0.process (*send1).code);
 	auto & node1 = *system.add_node (flags);
 	ASSERT_TIMELY (5s, node1.block (send1->hash ()) != nullptr);
 }
@@ -193,7 +192,7 @@ TEST (bootstrap_ascending, account_inductive)
 				 .balance (nano::dev::constants.genesis_amount - 1)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*system.work.generate (nano::dev::genesis->hash ()))
-				 .build ();
+				 .build_shared ();
 	auto send2 = builder.make_block ()
 				 .account (nano::dev::genesis_key.pub)
 				 .previous (send1->hash ())
@@ -202,12 +201,12 @@ TEST (bootstrap_ascending, account_inductive)
 				 .balance (nano::dev::constants.genesis_amount - 2)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*system.work.generate (send1->hash ()))
-				 .build ();
+				 .build_shared ();
 	//	std::cerr << "Genesis: " << nano::dev::genesis->hash ().to_string () << std::endl;
 	//	std::cerr << "Send1: " << send1->hash ().to_string () << std::endl;
 	//	std::cerr << "Send2: " << send2->hash ().to_string () << std::endl;
-	ASSERT_EQ (nano::block_status::progress, node0.process (send1));
-	ASSERT_EQ (nano::block_status::progress, node0.process (send2));
+	ASSERT_EQ (nano::process_result::progress, node0.process (*send1).code);
+	ASSERT_EQ (nano::process_result::progress, node0.process (*send2).code);
 	auto & node1 = *system.add_node (flags);
 	ASSERT_TIMELY (50s, node1.block (send2->hash ()) != nullptr);
 }
@@ -231,7 +230,7 @@ TEST (bootstrap_ascending, trace_base)
 				 .balance (nano::dev::constants.genesis_amount - 1)
 				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
 				 .work (*system.work.generate (nano::dev::genesis->hash ()))
-				 .build ();
+				 .build_shared ();
 	auto receive1 = builder.make_block ()
 					.account (key.pub)
 					.previous (0)
@@ -240,7 +239,7 @@ TEST (bootstrap_ascending, trace_base)
 					.balance (1)
 					.sign (key.prv, key.pub)
 					.work (*system.work.generate (key.pub))
-					.build ();
+					.build_shared ();
 	//	std::cerr << "Genesis key: " << nano::dev::genesis_key.pub.to_account () << std::endl;
 	//	std::cerr << "Key: " << key.pub.to_account () << std::endl;
 	//	std::cerr << "Genesis: " << nano::dev::genesis->hash ().to_string () << std::endl;
@@ -248,8 +247,8 @@ TEST (bootstrap_ascending, trace_base)
 	//	std::cerr << "receive1: " << receive1->hash ().to_string () << std::endl;
 	auto & node1 = *system.add_node ();
 	//	std::cerr << "--------------- Start ---------------\n";
-	ASSERT_EQ (nano::block_status::progress, node0.process (send1));
-	ASSERT_EQ (nano::block_status::progress, node0.process (receive1));
+	ASSERT_EQ (nano::process_result::progress, node0.process (*send1).code);
+	ASSERT_EQ (nano::process_result::progress, node0.process (*receive1).code);
 	ASSERT_EQ (node1.store.pending.begin (node1.store.tx_begin_read (), nano::pending_key{ key.pub, 0 }), node1.store.pending.end ());
 	//	std::cerr << "node0: " << node0.network.endpoint () << std::endl;
 	//	std::cerr << "node1: " << node1.network.endpoint () << std::endl;
