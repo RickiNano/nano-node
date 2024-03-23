@@ -186,6 +186,21 @@ void nano::tomlconfig::erase_default_values (tomlconfig & defaults_a)
 	erase_defaults (defaults_l.get_tree (), self.get_tree (), get_tree ());
 }
 
+void nano::tomlconfig::merge_defaults (std::shared_ptr<cpptoml::table> const & base, std::shared_ptr<cpptoml::table> const & defaults)
+{
+	debug_assert (defaults != nullptr);
+
+	for (auto & item : *defaults)
+	{
+		std::string const & key = item.first;
+		if (!base->contains (key))
+		{
+			// Insert missing item into current config
+			base->insert (key, item.second);
+		}
+	}
+}
+
 std::string nano::tomlconfig::to_string (bool comment_values)
 {
 	std::stringstream ss, ss_processed;
