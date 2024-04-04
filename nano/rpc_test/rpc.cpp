@@ -6869,15 +6869,24 @@ TEST (rpc, confirmation_info)
 
 TEST (rpc, election_statistics)
 {
-	nano::test::system system;
-	auto node1 = add_ipc_enabled_node (system);
-	auto const rpc_ctx = add_rpc (system, node1);
-	boost::property_tree::ptree request1;
-	request1.put ("action", "election_statistics");
-	auto response1 (wait_response (system, rpc_ctx, request1));
-	ASSERT_EQ ("0", response1.get<std::string> ("normal"));
-	ASSERT_EQ ("0", response1.get<std::string> ("hinted"));
-	ASSERT_EQ ("0", response1.get<std::string> ("optimistic"));
-	ASSERT_EQ ("0", response1.get<std::string> ("total"));
-	ASSERT_EQ ("0.00", response1.get<std::string> ("aec_utilization_percentage"));
+    nano::test::system system;
+    auto node1 = add_ipc_enabled_node (system);
+    auto const rpc_ctx = add_rpc (system, node1);
+
+    nano::keypair key;
+    auto latest (node1->latest (nano::dev::genesis_key.pub));
+    auto send (std::make_shared<nano::send_block> (latest, key.pub, 0, nano::dev::genesis_key.prv, nano::dev::genesis_key.pub, 0));
+    node1->process_active (send);
+
+    ASSERT_TIMELY (5s, node1->ledger.block_exists (node1->store.tx_begin_read (), send->hash ()));
+
+    boost::property_tree::ptree request1;
+    request1.put ("action", "election_statistics");
+    auto response1 (wait_response (system, rpc_ctx, request1));
+
+    ASSERT_EQ ("1", response1.get<std::string> ("normal"));
+    ASSERT_EQ ("0", response1.get<std::string> ("hinted"));
+    ASSERT_EQ ("0", response1.get<std::string> ("optimistic"));
+    ASSERT_EQ ("1", response1.get<std::string> ("total"));
+    ASSERT_NE ("0.00", response1.get<std::string> ("aec_utilization_percentage"));
 }
