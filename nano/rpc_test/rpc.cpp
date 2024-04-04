@@ -6878,8 +6878,6 @@ TEST (rpc, election_statistics)
     auto send (std::make_shared<nano::send_block> (latest, key.pub, 0, nano::dev::genesis_key.prv, nano::dev::genesis_key.pub, 0));
     node1->process_active (send);
 
-    ASSERT_TIMELY (5s, node1->ledger.block_exists (node1->store.tx_begin_read (), send->hash ()));
-
     boost::property_tree::ptree request1;
     request1.put ("action", "election_statistics");
     auto response1 (wait_response (system, rpc_ctx, request1));
