@@ -6877,6 +6877,7 @@ TEST (rpc, election_statistics)
     auto latest (node1->latest (nano::dev::genesis_key.pub));
     auto send (std::make_shared<nano::send_block> (latest, key.pub, 0, nano::dev::genesis_key.prv, nano::dev::genesis_key.pub, 0));
     node1->process_active (send);
+	ASSERT_TIMELY (5s, !node1->active.empty());
 
     boost::property_tree::ptree request1;
     request1.put ("action", "election_statistics");
