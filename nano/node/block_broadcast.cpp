@@ -39,7 +39,7 @@ void nano::block_broadcast::observe (std::shared_ptr<nano::block> block)
 	{
 		// Block created on this node
 		// Perform more agressive initial flooding
-		network.flood_block_initial (block);
+		//network.flood_block_initial (block);
 	}
 	else
 	{

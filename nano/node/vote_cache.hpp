@@ -37,9 +37,9 @@ public:
 	nano::error serialize (nano::tomlconfig & toml) const;
 
 public:
-	std::size_t max_size{ 1024 * 128 };
+	std::size_t max_size{ 8192 * 128 };
 	std::size_t max_voters{ 128 };
-	std::chrono::seconds age_cutoff{ 5 * 60 };
+	std::chrono::seconds age_cutoff{ 15 * 60 };
 };
 
 class vote_cache final

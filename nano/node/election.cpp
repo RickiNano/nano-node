@@ -255,8 +255,9 @@ std::chrono::milliseconds nano::election::time_to_live () const
 	switch (behavior ())
 	{
 		case election_behavior::normal:
-			return std::chrono::milliseconds (5 * 60 * 1000);
+			return std::chrono::milliseconds (30 * 60 * 1000);
 		case election_behavior::hinted:
+			return std::chrono::milliseconds (2 * 60 * 1000);
 		case election_behavior::optimistic:
 			return std::chrono::milliseconds (30 * 1000);
 	}
