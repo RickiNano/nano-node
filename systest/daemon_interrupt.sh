@@ -11,7 +11,7 @@ NODE_PID=$!
 sleep 10
 
 # Send an interrupt signal to the node process
-taskkill /PID $NODE_PID /F
+taskkill /PID "$NODE_PID" /F
 kill -SIGINT $NODE_PID
 
 # Check if the process has stopped using a timeout to avoid infinite waiting
