@@ -13,24 +13,24 @@ sleep 10
 # Send an interrupt signal to the node process
 if [[ "$OSTYPE" == "msys" ]]; then
     # For Windows, use PowerShell to stop the process
-	echo "Node stop"
-		string processName = "nano_node.exe";
+    echo "Node stop"
+    powershell -Command "& {
+        $processName = 'nano_node.exe'
 
-        // Get all processes with the specified name
-        Process[] processes = Process.GetProcessesByName(processName);
+        # Get all processes with the specified name
+        $processes = Get-Process -Name $processName -ErrorAction SilentlyContinue
 
-        if (processes.Length > 0)
-        {
-            // Send the CTRL+C event to each process with the specified name
-            foreach (Process process in processes)
-            {
-                GenerateConsoleCtrlEvent(CTRL_C_EVENT, process.SessionId);
+        if ($processes) {
+            # Send the CTRL+C event to each process with the specified name
+            foreach ($process in $processes) {
+                $process | ForEach-Object {
+                    $_.CloseMainWindow()
+                }
             }
+        } else {
+            Write-Host 'No processes with the specified name were found.'
         }
-        else
-        {
-            Console.WriteLine("No processes with the specified name were found.");
-        }
+    }"
 else
     # For Unix-based systems, use kill
     kill -SIGINT $NODE_PID
