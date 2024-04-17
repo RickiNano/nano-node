@@ -11,11 +11,13 @@ NODE_PID=$!
 sleep 10
 
 # Send an interrupt signal to the node process
-	timeout /t 5 /nobreak > nul
-  kill -SIGINT $NODE_PID
-  timeout /t 5 /nobreak > nul
-
-
+if [[ "$OSTYPE" == "msys" ]]; then
+    # For Windows, use PowerShell to stop the process
+    powershell -Command "Stop-Process -Id $NODE_PID"
+else
+    # For Unix-based systems, use kill
+    kill -SIGINT $NODE_PID
+fi
 
 # Check if the process has stopped using a timeout to avoid infinite waiting
 if wait $NODE_PID; then
