@@ -13,6 +13,8 @@ sleep 10
 # Send an interrupt signal to the node process
 kill -SIGINT $NODE_PID
 
+sleep 10
+
 # Check if the process has stopped using a timeout to avoid infinite waiting
 if wait $NODE_PID; then
     echo "Node stopped successfully"
