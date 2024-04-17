@@ -14,7 +14,7 @@ sleep 60
 if [[ "$OSTYPE" != "msys" ]]; then
   kill -SIGINT $NODE_PID
 else  # For Windows
-  taskkill //PID $NODE_PID /F /T
+  tskill $NODE_PID
 fi
 
 # Check if the process has stopped using a timeout to avoid infinite waiting
