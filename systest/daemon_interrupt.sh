@@ -13,8 +13,9 @@ sleep 10
 # Send an interrupt signal to the node process
 if [[ "$OSTYPE" == "msys" ]]; then
     # For Windows, use PowerShell to stop the process
-    taskkill //F //IM "NANO_NODE.EXE"
-	taskkill //F //IM "bash.exe"
+	echo "Node stop"
+    taskkill //IM "NANO_NODE.EXE"
+	timeout //t 5 > nul
 else
     # For Unix-based systems, use kill
     kill -SIGINT $NODE_PID
