@@ -11,7 +11,7 @@ NODE_PID=$!
 sleep 10
 
 # Send an interrupt signal to the node process
-
+	timeout /t 5 /nobreak > nul
   kill -SIGINT $NODE_PID
   timeout /t 5 /nobreak > nul
 
