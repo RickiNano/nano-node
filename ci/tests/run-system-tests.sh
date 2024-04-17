@@ -28,7 +28,7 @@ for script in ${NANO_SYSTEST_DIR}/*.sh; do
     # Using timeout command to enforce time limits
     if [[ "$OSTYPE" == "msys" ]]; then
         # Windows minimal system (msys) detected. Launch a command prompt for better compatibility and timeout function
-        cmd.exe /C "timeout /T $((TEST_TIMEOUT * 1000)) /NOBREAK & ./$script > ${name}.log 2>&1"
+        powershell -Command "$ErrorActionPreference = 'Stop'; $Process = Start-Process -FilePath 'cmd.exe' -ArgumentList '/C ./$script > ${name}.log 2>&1' -NoNewWindow -PassThru; $Process.WaitForExit($TEST_TIMEOUT); if (!$Process.HasExited) { $Process.Kill(); Write-Output '::error::Systest timed out: $name'; exit 124; }"
     else
         # Other systems like Mac or Linux
         timeout $TEST_TIMEOUT ./$script > "${name}.log" 2>&1
