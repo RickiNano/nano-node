@@ -11,12 +11,9 @@ NODE_PID=$!
 sleep 10
 
 # Send an interrupt signal to the node process
-if [[ "$OSTYPE" != "msys" ]]; then
+
   kill -SIGINT $NODE_PID
-else  # For Windows
-  taskkill //PID $NODE_PID //F //T
   timeout /t 5 /nobreak > nul
-fi
 
 
 
