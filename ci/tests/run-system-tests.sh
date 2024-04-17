@@ -29,7 +29,7 @@ for script in ${NANO_SYSTEST_DIR}/*.sh; do
     if [[ "$OSTYPE" == "msys" ]]; then
         # Windows minimal system (msys) detected. Launch a command prompt for better compatibility
 		# Todo: Add timeout logic to limit execution time. This will probably require a powershell script
-        powershell.exe -Command "Start-Process -FilePath \"$script\" -Wait -Timeout $TEST_TIMEOUT" > "${name}.log" 2>&1
+        sudo timeout $TEST_TIMEOUT ./$script > "${name}.log" 2>&1
     else
         # Other systems like Mac or Linux
         timeout $TEST_TIMEOUT ./$script > "${name}.log" 2>&1
