@@ -11,8 +11,14 @@ NODE_PID=$!
 sleep 10
 
 # Send an interrupt signal to the node process
-kill -SIGTERM $NODE_PID
-
+if [[ "$OSTYPE" == "msys" ]]; then
+    # For Windows, use PowerShell to stop the process
+    
+	taskkill //IM "bash.exe"
+else
+    # For Unix-based systems, use kill
+    kill -SIGINT $NODE_PID
+fi
 # Check if the process has stopped using a timeout to avoid infinite waiting
 if wait $NODE_PID; then
     echo "Node stopped successfully"
