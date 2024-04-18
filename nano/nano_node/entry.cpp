@@ -56,6 +56,21 @@ public:
 };
 }
 
+#ifdef _WIN32
+#include <Windows.h>
+BOOL WINAPI consoleHandler (DWORD signal)
+{
+	if (signal == CTRL_C_EVENT || signal == CTRL_BREAK_EVENT)
+	{
+		// Handle shutdown logic
+		std::cout << "Shutting down signal...\n";
+		// Signal your service or application to shut down
+		return TRUE;
+	}
+	return FALSE;
+}
+#endif
+
 int main (int argc, char * const * argv)
 {
 	nano::set_umask (); // Make sure the process umask is set before any files are created
