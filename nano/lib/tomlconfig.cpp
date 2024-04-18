@@ -186,19 +186,47 @@ void nano::tomlconfig::erase_default_values (tomlconfig & defaults_a)
 	erase_defaults (defaults_l.get_tree (), self.get_tree (), get_tree ());
 }
 
-void nano::tomlconfig::merge_defaults (std::shared_ptr<cpptoml::table> const & base, std::shared_ptr<cpptoml::table> const & defaults)
+std::string nano::tomlconfig::merge_defaults (nano::tomlconfig & current, nano::tomlconfig & defaults)
 {
 	debug_assert (defaults != nullptr);
 
-	for (auto & item : *defaults)
+	auto current_tree = current.get_tree ();
+	auto default_tree = defaults.get_tree ();
+
+	for (auto & item : *default_tree)
 	{
 		std::string const & key = item.first;
-		if (!base->contains (key))
+		if (!current_tree->contains (key))
 		{
 			// Insert missing item into current config
-			base->insert (key, item.second);
+			current_tree->insert (key, item.second);
 		}
 	}
+
+	// Serialize both configs as fully commented
+	auto string_defaults = current.to_string (true);
+	auto string_current = defaults.to_string (true);
+
+	std::istringstream stream_a (string_defaults);
+	std::istringstream stream_b (string_current);
+
+	std::string line_a, line_b, result;
+
+	// Compare the configs line by line
+	while (std::getline (stream_a, line_a) && std::getline (stream_b, line_b))
+	{
+		if (line_a == line_b)
+		{
+			result += line_a + "\n";
+		}
+		else
+		{
+			// remove the # to uncomment
+			size_t pos = line_b.find ('#');
+			result += line_b.substr (0, pos) + line_b.substr (pos + 1) + "\n";
+		}
+	}
+	return result;
 }
 
 std::string nano::tomlconfig::to_string (bool comment_values)
@@ -223,35 +251,6 @@ std::string nano::tomlconfig::to_string (bool comment_values)
 		ss_processed << line << std::endl;
 	}
 	return ss_processed.str ();
-}
-
-// Compares the current config file with default and comments all default values
-std::string nano::tomlconfig::to_string_commented_defaults (nano::tomlconfig & default_toml, nano::tomlconfig & current_toml)
-{
-	// Get both configs as fully commented
-	auto string_defaults = default_toml.to_string (true);
-	auto string_current = current_toml.to_string (true);
-
-	std::istringstream stream_a (string_defaults);
-	std::istringstream stream_b (string_current);
-
-	std::string line_a, line_b, result;
-
-	// Compare the configs line by line
-	while (std::getline (stream_a, line_a) && std::getline (stream_b, line_b))
-	{
-		if (line_a == line_b)
-		{
-			result += line_a + "\n";
-		}
-		else
-		{
-			// remove the # to uncomment
-			size_t pos = line_b.find ('#');
-			result += line_b.substr (0, pos) + line_b.substr (pos + 1) + "\n";
-		}
-	}
-	return result;
 }
 
 // boost's lexical cast doesn't handle (u)int8_t
