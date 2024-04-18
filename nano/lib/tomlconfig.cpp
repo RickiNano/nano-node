@@ -190,8 +190,8 @@ std::string nano::tomlconfig::merge_defaults (tomlconfig & current, tomlconfig &
 {
 	debug_assert (defaults != nullptr);
 
-	auto current_tree = current.get_tree ();
-	auto default_tree = defaults.get_tree ();
+	auto current_tree = std::dynamic_pointer_cast<cpptoml::table>  (current.get_tree ());
+	auto default_tree = std::dynamic_pointer_cast<cpptoml::table>  (defaults.get_tree ());
 
 	for (auto & item : *default_tree)
 	{
