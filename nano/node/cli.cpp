@@ -730,11 +730,33 @@ std::error_code nano::handle_node_options (boost::program_options::variables_map
 		else
 		{
 			current_config.serialize_toml (current_toml);
+			default_config.serialize_toml (default_toml);
 
 			// Insert new default keys and values into current config
 			current_toml.merge_defaults (current_toml.get_tree (), default_toml.get_tree ());
 
-			std::cout << current_toml.to_string (false) << std::endl;
+			auto string_defaults = default_toml.to_string (true);
+			auto string_current = current_toml.to_string (true);
+
+			std::istringstream stream_a (string_defaults);
+			std::istringstream stream_b (string_current);
+
+			std::string line_a, line_b, result;
+
+			while (std::getline (stream_a, line_a) && std::getline (stream_b, line_b))
+			{
+				if (line_a == line_b)
+				{
+					result += line_a + "\n";
+				}
+				else
+				{
+					size_t pos = line_b.find ('#');
+					result += line_b.substr (0, pos) + line_b.substr (pos + 1) + "\n";
+				}
+			}
+
+			std::cout << result;
 		}
 	}
 	else if (vm.count ("diagnostics"))
