@@ -33,6 +33,8 @@ nano::signal_manager::signal_descriptor::signal_descriptor (std::shared_ptr<boos
 
 void nano::signal_manager::register_signal_handler (int signum, std::function<void (int)> handler, bool repeat)
 {
+	std::cout << "register_signal_handler!" << std::endl;
+
 	// create a signal set to hold the mapping between signals and signal handlers
 	auto sigset = std::make_shared<boost::asio::signal_set> (ioc, signum);
 
@@ -53,6 +55,7 @@ void nano::signal_manager::register_signal_handler (int signum, std::function<vo
 
 void nano::signal_manager::base_handler (nano::signal_manager::signal_descriptor descriptor, boost::system::error_code const & ec, int signum)
 {
+	std::cout << "base_handler!" << std::endl;
 	auto & logger = descriptor.sigman.logger;
 
 	if (!ec)
