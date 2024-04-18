@@ -33,6 +33,8 @@ nano::signal_manager::signal_descriptor::signal_descriptor (std::shared_ptr<boos
 
 void nano::signal_manager::register_signal_handler (int signum, std::function<void (int)> handler, bool repeat)
 {
+	std::cout << "Signal recieved!!";
+
 	// create a signal set to hold the mapping between signals and signal handlers
 	auto sigset = std::make_shared<boost::asio::signal_set> (ioc, signum);
 
@@ -55,6 +57,7 @@ void nano::signal_manager::base_handler (nano::signal_manager::signal_descriptor
 {
 	auto & logger = descriptor.sigman.logger;
 
+	std::cout << "Signal recieved 2!!";
 	if (!ec)
 	{
 		logger.debug (nano::log::type::signal_manager, "Signal received: {}", to_signal_name (signum));
@@ -81,7 +84,7 @@ void nano::signal_manager::base_handler (nano::signal_manager::signal_descriptor
 	}
 	else
 	{
-		logger.debug (nano::log::type::signal_manager, "Signal error: {} ({})", ec.message (), to_signal_name (signum));
+		logger.error (nano::log::type::signal_manager, "Signal error: {} ({})", ec.message (), to_signal_name (signum));
 	}
 }
 
