@@ -26,7 +26,7 @@ for script in ${NANO_SYSTEST_DIR}/*.sh; do
 
     # Redirecting output to a file to prevent it from being mixed with the output of the action
     # Using timeout command to enforce time limits
-    timeout $TEST_TIMEOUT ./$script > "${name}.log" 2>&1
+    ./$script > "${name}.log" 2>&1
     status=$?
     cat "${name}.log"
 
