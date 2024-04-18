@@ -225,6 +225,35 @@ std::string nano::tomlconfig::to_string (bool comment_values)
 	return ss_processed.str ();
 }
 
+// Compares the current config file with default and comments all default values
+std::string nano::tomlconfig::to_string_commented_defaults (nano::tomlconfig & default_toml, nano::tomlconfig & current_toml)
+{
+	// Get both configs as fully commented
+	auto string_defaults = default_toml.to_string (true);
+	auto string_current = current_toml.to_string (true);
+
+	std::istringstream stream_a (string_defaults);
+	std::istringstream stream_b (string_current);
+
+	std::string line_a, line_b, result;
+
+	// Compare the configs line by line
+	while (std::getline (stream_a, line_a) && std::getline (stream_b, line_b))
+	{
+		if (line_a == line_b)
+		{
+			result += line_a + "\n";
+		}
+		else
+		{
+			// remove the # to uncomment
+			size_t pos = line_b.find ('#');
+			result += line_b.substr (0, pos) + line_b.substr (pos + 1) + "\n";
+		}
+	}
+	return result;
+}
+
 // boost's lexical cast doesn't handle (u)int8_t
 nano::tomlconfig & nano::tomlconfig::get_config (bool optional, std::string const & key, uint8_t & target, uint8_t default_value)
 {
