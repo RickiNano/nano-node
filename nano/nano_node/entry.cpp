@@ -60,6 +60,7 @@ public:
 #include <Windows.h>
 BOOL WINAPI consoleHandler (DWORD signal)
 {
+	std::cout << "Signal received... " << signal << std::endl;
 	if (signal == CTRL_C_EVENT || signal == CTRL_BREAK_EVENT)
 	{
 		// Handle shutdown logic
