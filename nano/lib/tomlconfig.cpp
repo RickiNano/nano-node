@@ -207,23 +207,23 @@ std::string nano::tomlconfig::merge_defaults (nano::tomlconfig & current, nano::
 	auto string_defaults = defaults.to_string (true);
 	auto string_current = current.to_string (true);
 
-	std::istringstream stream_a (string_defaults);
-	std::istringstream stream_b (string_current);
+	std::istringstream stream_defaults (string_defaults);
+	std::istringstream stream_current (string_current);
 
-	std::string line_a, line_b, result;
+	std::string line_defaults, line_current, result;
 
-	// Compare the configs line by line
-	while (std::getline (stream_a, line_a) && std::getline (stream_b, line_b))
+	// Compare the serialized configs line by line
+	while (std::getline (stream_defaults, line_defaults) && std::getline (stream_current, line_current))
 	{
-		if (line_a == line_b)
+		if (line_current == line_defaults)
 		{
-			result += line_a + "\n";
+			result += line_defaults + "\n";
 		}
 		else
 		{
 			// remove the # to uncomment
-			size_t pos = line_b.find ('#');
-			result += line_b.substr (0, pos) + line_b.substr (pos + 1) + "\n";
+			size_t pos = line_current.find ('#');
+			result += line_current.substr (0, pos) + line_current.substr (pos + 1) + "\n";
 		}
 	}
 	return result;
