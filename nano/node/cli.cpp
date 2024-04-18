@@ -733,9 +733,8 @@ std::error_code nano::handle_node_options (boost::program_options::variables_map
 			default_config.serialize_toml (default_toml);
 
 			// Insert new default keys and values into current config
-			current_toml.merge_defaults (current_toml, default_toml);
+			auto output = current_toml.merge_defaults (current_toml, default_toml);
 
-			auto output = current_toml.to_string_commented_defaults (default_toml, current_toml);
 			std::cout << output;
 		}
 	}

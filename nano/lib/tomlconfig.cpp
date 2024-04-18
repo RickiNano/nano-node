@@ -186,7 +186,7 @@ void nano::tomlconfig::erase_default_values (tomlconfig & defaults_a)
 	erase_defaults (defaults_l.get_tree (), self.get_tree (), get_tree ());
 }
 
-void nano::tomlconfig::merge_defaults (tomlconfig & current, tomlconfig & defaults)
+std::string nano::tomlconfig::merge_defaults (tomlconfig & current, tomlconfig & defaults)
 {
 	debug_assert (defaults != nullptr);
 
@@ -202,6 +202,7 @@ void nano::tomlconfig::merge_defaults (tomlconfig & current, tomlconfig & defaul
 			current_tree->insert (key, item.second);
 		}
 	}
+	return current.to_string_commented_defaults (defaults, current);
 }
 
 std::string nano::tomlconfig::to_string (bool comment_values)

@@ -49,7 +49,7 @@ public:
 	void erase_default_values (tomlconfig & defaults_a);
 	std::string to_string (bool comment_values);
 	std::string to_string_commented_defaults (nano::tomlconfig & default_toml, nano::tomlconfig & current_toml);
-	void merge_defaults (tomlconfig & current, tomlconfig & defaults);
+	std::string merge_defaults (tomlconfig & current, tomlconfig & defaults);
 
 	/** Set value for the given key. Any existing value will be overwritten. */
 	template <typename T>
