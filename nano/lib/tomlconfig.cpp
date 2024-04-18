@@ -204,8 +204,8 @@ std::string nano::tomlconfig::merge_defaults (nano::tomlconfig & current, nano::
 	}
 
 	// Serialize both configs as fully commented
-	auto string_defaults = current.to_string (true);
-	auto string_current = defaults.to_string (true);
+	auto string_defaults = defaults.to_string (true);
+	auto string_current = current.to_string (true);
 
 	std::istringstream stream_a (string_defaults);
 	std::istringstream stream_b (string_current);
