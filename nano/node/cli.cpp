@@ -732,7 +732,7 @@ std::error_code nano::handle_node_options (boost::program_options::variables_map
 			current_config.serialize_toml (current_toml);
 			default_config.serialize_toml (default_toml);
 
-			auto output = current_toml.merge_defaults (current_toml, default_toml);
+			auto output = current_toml.merge_defaults (default_toml);
 			std::cout << output;
 		}
 	}
