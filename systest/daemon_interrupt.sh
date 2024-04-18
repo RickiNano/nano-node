@@ -14,7 +14,7 @@ sleep 10
 if [[ "$OSTYPE" == "msys" ]]; then
     # For Windows, use PowerShell to stop the process
     
-	taskkill //IM "bash.exe"
+	taskkill //IM "nano_node.exe"
 else
     # For Unix-based systems, use kill
     kill -SIGINT $NODE_PID
