@@ -202,7 +202,31 @@ std::string nano::tomlconfig::merge_defaults (tomlconfig & current, tomlconfig &
 			current_tree->insert (key, item.second);
 		}
 	}
-	return current.to_string_commented_defaults (defaults, current);
+
+	auto string_defaults = defaults.to_string (true);
+	auto string_current = current.to_string (true);
+
+	std::istringstream stream_a (string_defaults);
+	std::istringstream stream_b (string_current);
+
+	std::string line_a, line_b, result;
+
+	// Compare the configs line by line
+	while (std::getline (stream_a, line_a) && std::getline (stream_b, line_b))
+	{
+		if (line_a == line_b)
+		{
+			result += line_a + "\n";
+		}
+		else
+		{
+			// remove the # to uncomment
+			size_t pos = line_b.find ('#');
+			result += line_b.substr (0, pos) + line_b.substr (pos + 1) + "\n";
+		}
+	}
+
+	return result;
 }
 
 std::string nano::tomlconfig::to_string (bool comment_values)
