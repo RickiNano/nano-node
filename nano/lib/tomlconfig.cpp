@@ -186,11 +186,11 @@ void nano::tomlconfig::erase_default_values (tomlconfig & defaults_a)
 	erase_defaults (defaults_l.get_tree (), self.get_tree (), get_tree ());
 }
 
-std::string nano::tomlconfig::merge_defaults (nano::tomlconfig & defaults)
+std::string nano::tomlconfig::merge_defaults (tomlconfig & defaults)
 {
 	debug_assert (defaults != nullptr);
 
-	auto current_tree = this->get_tree ();
+	auto current_tree = std::dynamic_pointer_cast<cpptoml::table> (tree->clone ());
 	auto default_tree = defaults.get_tree ();
 
 	for (auto & item : *default_tree)

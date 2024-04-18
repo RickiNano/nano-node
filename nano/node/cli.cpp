@@ -718,10 +718,10 @@ std::error_code nano::handle_node_options (boost::program_options::variables_map
 		nano::tomlconfig current_toml;
 		nano::network_params network_params{ nano::network_constants::active_network };
 		nano::daemon_config default_config{ data_path, network_params };
-
-		std::vector<std::string> config_overrides;
 		nano::daemon_config current_config{ data_path, network_params };
-		auto error = nano::read_node_config_toml (data_path, current_config, config_overrides);
+
+		auto error = nano::read_node_config_toml (data_path, current_config, std::vector<std::string>());
+
 		if (error)
 		{
 			std::cerr << "Could not read existing config file\n";
