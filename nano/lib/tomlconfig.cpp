@@ -193,35 +193,38 @@ std::string nano::tomlconfig::merge_defaults (nano::tomlconfig & current_config,
 
 	debug_assert (default_tree != nullptr);
 
+	// Insert items from default config that are missing in current config
 	for (auto & item : *default_tree)
 	{
 		const std::string & key = item.first;
 		if (!current_tree->contains (key))
 		{
-			// Insert missing item into current config
 			current_tree->insert (key, item.second->clone ());
 		}
 	}
+	
+	// Serialize both configs to commented strings
+	std::string defaults_str = default_config.to_string (true);
+	std::string current_str = current_config.to_string (true);
 
-	// Generate commented string representation
-	std::stringstream ss, ss_defaults;
-	default_tree->accept (cpptoml::toml_writer (ss_defaults, ""));
-	current_tree->accept (cpptoml::toml_writer (ss, ""));
+	std::istringstream stream_defaults (defaults_str);
+	std::istringstream stream_current (current_str);
 
 	std::string line_defaults, line_current, result;
 
-	std::istringstream stream_defaults (ss_defaults.str ());
-	std::istringstream stream_current (ss.str ());
-
+	// Read and compare the configs line by line
 	while (std::getline (stream_defaults, line_defaults) && std::getline (stream_current, line_current))
 	{
 		if (line_defaults == line_current)
 		{
-			result += "# " + line_current + "\n";
+			// Use default value
+			result += line_defaults + "\n";
 		}
 		else
 		{
-			result += line_current + "\n";
+			// Non default value. Removing the # to uncomment
+			size_t pos = line_current.find ('#');
+			result += line_current.substr (0, pos) + line_current.substr (pos + 1) + "\n";
 		}
 	}
 
