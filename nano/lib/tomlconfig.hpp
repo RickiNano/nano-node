@@ -48,8 +48,7 @@ public:
 	std::shared_ptr<cpptoml::array> create_array (std::string const & key, boost::optional<char const *> documentation_a);
 	void erase_default_values (tomlconfig & defaults_a);
 	std::string to_string (bool comment_values);
-	std::string to_string_commented_defaults (nano::tomlconfig & default_toml, nano::tomlconfig & current_toml);
-	void merge_defaults (nano::tomlconfig & current_config, nano::tomlconfig & default_config);
+	std::string merge_defaults (nano::tomlconfig & current_config, nano::tomlconfig & default_config);
 
 	/** Set value for the given key. Any existing value will be overwritten. */
 	template <typename T>
