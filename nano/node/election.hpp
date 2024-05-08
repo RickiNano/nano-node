@@ -64,7 +64,7 @@ private:
 	std::function<void (std::shared_ptr<nano::block> const &)> confirmation_action;
 	std::function<void (nano::account const &)> live_vote_action;
 
-public:
+private:
 	// Election time to live
 	const std::chrono::milliseconds election_max_duration{ std::chrono::milliseconds (10 * 60 * 1000) };
 	const std::chrono::milliseconds normal_election_max_idle{ std::chrono::milliseconds (30 * 1000) };
