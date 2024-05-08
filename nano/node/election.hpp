@@ -64,6 +64,13 @@ private:
 	std::function<void (std::shared_ptr<nano::block> const &)> confirmation_action;
 	std::function<void (nano::account const &)> live_vote_action;
 
+private:
+	// Election time to live
+	std::chrono::milliseconds election_max_duration;
+	std::chrono::milliseconds normal_election_max_idle;
+	std::chrono::milliseconds hinted_election_max_idle;
+	std::chrono::milliseconds optimistic_election_max_idle;
+
 private: // State management
 	static unsigned constexpr passive_duration_factor = 5;
 	static unsigned constexpr active_request_count_min = 2;

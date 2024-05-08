@@ -29,7 +29,13 @@ nano::election::election (nano::node & node_a, std::shared_ptr<nano::block> cons
 	status ({ block_a, 0, 0, std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now ().time_since_epoch ()), std::chrono::duration_values<std::chrono::milliseconds>::zero (), 0, 1, 0, nano::election_status_type::ongoing }),
 	height (block_a->sideband ().height),
 	root (block_a->root ()),
-	qualified_root (block_a->qualified_root ())
+	qualified_root (block_a->qualified_root ()),
+	election_max_duration (std::chrono::milliseconds (10 * 60 * 1000)),
+	normal_election_max_idle (std::chrono::milliseconds (30 * 1000)),
+	hinted_election_max_idle (std::chrono::milliseconds (10 * 1000)),
+	optimistic_election_max_idle (std::chrono::milliseconds (10 * 1000)),
+	election_start (std::chrono::steady_clock::now ()),
+	last_vote_received (std::chrono::steady_clock::now ())
 {
 	last_votes.emplace (nano::account::null (), nano::vote_info{ std::chrono::steady_clock::now (), 0, block_a->hash () });
 	last_blocks.emplace (block_a->hash (), block_a);
@@ -295,7 +301,7 @@ bool nano::election::has_expired () const
 {
 	const auto now = std::chrono::steady_clock::now ();
 
-	if (now > election_start + std::chrono::milliseconds (10 * 60 * 1000))
+	if (now > election_start + election_max_duration)
 	{
 		return true;
 	}
@@ -303,11 +309,11 @@ bool nano::election::has_expired () const
 	switch (behavior ())
 	{
 		case election_behavior::normal:
-			return now > last_vote_received + std::chrono::milliseconds (10 * 60 * 1000);
+			return now > last_vote_received + normal_election_max_idle;
 		case election_behavior::hinted:
-			return now > last_vote_received + std::chrono::milliseconds (10 * 60 * 1000);
+			return now > last_vote_received + hinted_election_max_idle;
 		case election_behavior::optimistic:
-			return now > last_vote_received + std::chrono::milliseconds (10 * 60 * 1000);
+			return now > last_vote_received + optimistic_election_max_idle;
 	}
 
 	debug_assert (false);
