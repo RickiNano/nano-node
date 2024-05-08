@@ -295,7 +295,7 @@ bool nano::election::has_expired () const
 {
 	const auto now = std::chrono::steady_clock::now ();
 
-	if (now > election_start + election_max_duration)
+	if (now > election_start + std::chrono::milliseconds (10 * 60 * 1000))
 	{
 		return true;
 	}
@@ -303,11 +303,11 @@ bool nano::election::has_expired () const
 	switch (behavior ())
 	{
 		case election_behavior::normal:
-			return now > last_vote_received + normal_election_max_idle;
+			return now > last_vote_received + std::chrono::milliseconds (10 * 60 * 1000);
 		case election_behavior::hinted:
-			return now > last_vote_received + hinted_election_max_idle;
+			return now > last_vote_received + std::chrono::milliseconds (10 * 60 * 1000);
 		case election_behavior::optimistic:
-			return now > last_vote_received + optimistic_election_max_idle;
+			return now > last_vote_received + std::chrono::milliseconds (10 * 60 * 1000);
 	}
 
 	debug_assert (false);
