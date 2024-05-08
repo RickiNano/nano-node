@@ -308,10 +308,9 @@ bool nano::election::has_expired () const
 			return now > last_vote_received + hinted_election_max_idle;
 		case election_behavior::optimistic:
 			return now > last_vote_received + optimistic_election_max_idle;
-		default:
-			debug_assert (false);
-			return false;
 	}
+	debug_assert (false);
+	return {};
 }
 
 std::chrono::seconds nano::election::cooldown_time (nano::uint128_t weight) const
