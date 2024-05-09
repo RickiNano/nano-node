@@ -23,7 +23,7 @@ TEST (difficultyDeathTest, multipliers)
 	}
 
 	{
-		uint64_t base = 0xffffffc000000000;
+		constexpr uint64_t base = 0xffffffc000000000;
 		uint64_t difficulty = 0xfffffe0000000000;
 		double expected_multiplier = 0.125;
 
@@ -32,12 +32,12 @@ TEST (difficultyDeathTest, multipliers)
 	}
 
 	{
-		uint64_t max_base = std::numeric_limits<std::uint64_t>::max ();
-		uint64_t difficulty = 0xffffffffffffff00;
-		double expected_multiplier = 0.00390625;
+		constexpr uint64_t max_base = std::numeric_limits<std::uint64_t>::max ();
+		constexpr uint64_t difficulty_2 = 0xffffffffffffff00;
+		constexpr double expected_multiplier = 0.00390625;
 
-		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, max_base), 1e-10);
-		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, max_base));
+		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty_2, max_base), 1e-10);
+		ASSERT_EQ (difficulty_2, nano::difficulty::from_multiplier (expected_multiplier, max_base));
 	}
 
 	{
