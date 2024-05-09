@@ -15,38 +15,38 @@ TEST (difficultyDeathTest, multipliers)
 
 	{
 		uint64_t base = 0xff00000000000000;
-		uint64_t difficulty = 0xfff27e7a57c285cd;
+		uint64_t difficulty_1 = 0xfff27e7a57c285cd;
 		double expected_multiplier = 18.95461493377003;
 
-		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
-		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
+		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty_1, base), 1e-10);
+		ASSERT_EQ (difficulty_1, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
 	{
 		uint64_t base = 0xffffffc000000000;
-		uint64_t difficulty = 0xfffffe0000000000;
+		uint64_t difficulty_2 = 0xfffffe0000000000;
 		double expected_multiplier = 0.125;
 
-		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
-		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
+		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty_2, base), 1e-10);
+		ASSERT_EQ (difficulty_2, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
 	{
-		uint64_t base = std::numeric_limits<std::uint64_t>::max ();
-		uint64_t difficulty = 0xffffffffffffff00;
+		uint64_t base = 0xffffffffffffffff;
+		uint64_t difficulty_3 = 0xffffffffffffff00;
 		double expected_multiplier = 0.00390625;
 
-		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
-		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
+		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty_3, base), 1e-10);
+		ASSERT_EQ (difficulty_3, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
 	{
 		uint64_t base = 0x8000000000000000;
-		uint64_t difficulty = 0xf000000000000000;
+		uint64_t difficulty_4 = 0xf000000000000000;
 		double expected_multiplier = 8.0;
 
-		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
-		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
+		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty_4, base), 1e-10);
+		ASSERT_EQ (difficulty_4, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
 	// The death checks don't fail on a release config, so guard against them
@@ -56,7 +56,7 @@ TEST (difficultyDeathTest, multipliers)
 	{
 		uint64_t base = 0xffffffc000000000;
 		uint64_t difficulty_nil = 0;
-		double multiplier_nil = 0.;
+		double multiplier_nil = 0.0;
 
 		ASSERT_DEATH_IF_SUPPORTED (nano::difficulty::to_multiplier (difficulty_nil, base), "");
 		ASSERT_DEATH_IF_SUPPORTED (nano::difficulty::from_multiplier (multiplier_nil, base), "");
