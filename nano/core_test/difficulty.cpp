@@ -20,30 +20,24 @@ TEST (difficultyDeathTest, multipliers)
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
-	}
-
-	{
-		uint64_t base = 0xffffffc000000000;
-		uint64_t difficulty = 0xfffffe0000000000;
-		double expected_multiplier = 0.125;
+		
+		base = 0xffffffc000000000;
+		difficulty = 0xfffffe0000000000;
+		expected_multiplier = 0.125;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
-	}
 
-	{
-		uint64_t base = std::numeric_limits<std::uint64_t>::max ();
-		uint64_t difficulty = 0xffffffffffffff00;
-		double expected_multiplier = 0.00390625;
+		base = 0xffffffffffffffff;
+		difficulty = 0xffffffffffffff00;
+		expected_multiplier = 0.00390625;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
-	}
 
-	{
-		uint64_t base = 0x8000000000000000;
-		uint64_t difficulty = 0xf000000000000000;
-		double expected_multiplier = 8.0;
+		base = 0x8000000000000000;
+		difficulty = 0xf000000000000000;
+		expected_multiplier = 8.0;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
