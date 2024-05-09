@@ -32,7 +32,7 @@ TEST (difficultyDeathTest, multipliers)
 	}
 
 	{
-		uint64_t base = std::numeric_limits<std::uint64_t>::max ();
+		uint64_t base = 0xffffffffffffffff;
 		uint64_t difficulty = 0xffffffffffffff00;
 		double expected_multiplier = 0.00390625;
 
