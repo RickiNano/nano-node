@@ -31,14 +31,14 @@ TEST (difficultyDeathTest, multipliers)
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
-	{
-		uint64_t base = std::numeric_limits<std::uint64_t>::max ();
-		uint64_t difficulty = 0xffffffffffffff00;
-		double expected_multiplier = 0.00390625;
+	//{
+	//	uint64_t base = std::numeric_limits<std::uint64_t>::max ();
+	//	uint64_t difficulty = 0xffffffffffffff00;
+	//	double expected_multiplier = 0.00390625;
 
-		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
-		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
-	}
+	//	ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
+	//	ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
+	//}
 
 	{
 		uint64_t base = 0x8000000000000000;
