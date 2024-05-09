@@ -41,6 +41,7 @@ TEST (difficultyDeathTest, multipliers)
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));*/
+
 	}
 
 	// The death checks don't fail on a release config, so guard against them
