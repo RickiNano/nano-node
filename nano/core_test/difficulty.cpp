@@ -11,7 +11,7 @@
 TEST (difficultyDeathTest, multipliers)
 {
 	// For ASSERT_DEATH_IF_SUPPORTED
-	testing::FLAGS_gtest_death_test_style = "threadsafe";
+	testing::FLAGS_gtest_death_test_style = "fast";
 
 	{
 		uint64_t base = 0xff00000000000000;
