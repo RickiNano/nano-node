@@ -26,7 +26,6 @@ TEST (difficultyDeathTest, multipliers)
 	// Set death test style to fast to avoid thread-related issues
 	testing::FLAGS_gtest_death_test_style = "fast";
 
-	std::cout << "assert 1" << std::endl;
 	{
 		constexpr uint64_t base = 0xffffffffffffffff;
 		constexpr uint64_t difficulty = 0xffffffffffffff00;
@@ -36,7 +35,6 @@ TEST (difficultyDeathTest, multipliers)
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
-	std::cout << "assert 2" << std::endl;
 	{
 		constexpr uint64_t base = 0xff00000000000000;
 		constexpr uint64_t difficulty = 0xfff27e7a57c285cd;
@@ -46,7 +44,6 @@ TEST (difficultyDeathTest, multipliers)
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
-	std::cout << "assert 3" << std::endl;
 	{
 		constexpr uint64_t base = 0xffffffc000000000;
 		constexpr uint64_t difficulty = 0xfffffe0000000000;
@@ -56,7 +53,6 @@ TEST (difficultyDeathTest, multipliers)
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
-	std::cout << "assert 4" << std::endl;
 	{
 		constexpr uint64_t base = 0x8000000000000000;
 		constexpr uint64_t difficulty = 0xf000000000000000;
@@ -66,8 +62,9 @@ TEST (difficultyDeathTest, multipliers)
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
+	// The death checks don't fail on a release config, so guard against them
 #ifndef NDEBUG
-	// Protect the death test with a mutex to ensure thread safety
+	// Causes valgrind to be noisy
 	if (!nano::running_within_valgrind ())
 	{
 		std::lock_guard<std::mutex> lock (death_test_mutex);
