@@ -8,55 +8,72 @@
 
 #include <gtest/gtest.h>
 
+namespace nano
+{
+namespace difficulty
+{
+	double to_multiplier (uint64_t difficulty, uint64_t base);
+	uint64_t from_multiplier (double multiplier, uint64_t base);
+}
+
+bool running_within_valgrind ();
+}
+
+std::mutex death_test_mutex;
+
 TEST (difficultyDeathTest, multipliers)
 {
-	// For ASSERT_DEATH_IF_SUPPORTED
-	testing::FLAGS_gtest_death_test_style = "threadsafe";
+	// Set death test style to fast to avoid thread-related issues
+	testing::FLAGS_gtest_death_test_style = "fast";
 
+	std::cout << "assert 1" << std::endl;
 	{
-		uint64_t base = 0xff00000000000000;
-		uint64_t difficulty = 0xfff27e7a57c285cd;
-		double expected_multiplier = 18.95461493377003;
+		constexpr uint64_t base = 0xffffffffffffffff;
+		constexpr uint64_t difficulty = 0xffffffffffffff00;
+		constexpr double expected_multiplier = 0.00390625;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
+	std::cout << "assert 2" << std::endl;
 	{
-		uint64_t base = 0xffffffc000000000;
-		uint64_t difficulty = 0xfffffe0000000000;
-		double expected_multiplier = 0.125;
+		constexpr uint64_t base = 0xff00000000000000;
+		constexpr uint64_t difficulty = 0xfff27e7a57c285cd;
+		constexpr double expected_multiplier = 18.95461493377003;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
+	std::cout << "assert 3" << std::endl;
 	{
-		uint64_t base = std::numeric_limits<std::uint64_t>::max ();
-		uint64_t difficulty = 0xffffffffffffff00;
-		double expected_multiplier = 0.00390625;
+		constexpr uint64_t base = 0xffffffc000000000;
+		constexpr uint64_t difficulty = 0xfffffe0000000000;
+		constexpr double expected_multiplier = 0.125;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
+	std::cout << "assert 4" << std::endl;
 	{
-		uint64_t base = 0x8000000000000000;
-		uint64_t difficulty = 0xf000000000000000;
-		double expected_multiplier = 8.0;
+		constexpr uint64_t base = 0x8000000000000000;
+		constexpr uint64_t difficulty = 0xf000000000000000;
+		constexpr double expected_multiplier = 8.0;
 
 		ASSERT_NEAR (expected_multiplier, nano::difficulty::to_multiplier (difficulty, base), 1e-10);
 		ASSERT_EQ (difficulty, nano::difficulty::from_multiplier (expected_multiplier, base));
 	}
 
-	// The death checks don't fail on a release config, so guard against them
 #ifndef NDEBUG
-	// Causes valgrind to be noisy
+	// Protect the death test with a mutex to ensure thread safety
 	if (!nano::running_within_valgrind ())
 	{
-		uint64_t base = 0xffffffc000000000;
-		uint64_t difficulty_nil = 0;
-		double multiplier_nil = 0.;
+		std::lock_guard<std::mutex> lock (death_test_mutex);
+		constexpr uint64_t base = 0xffffffc000000000;
+		constexpr uint64_t difficulty_nil = 0;
+		constexpr double multiplier_nil = 0.0;
 
 		ASSERT_DEATH_IF_SUPPORTED (nano::difficulty::to_multiplier (difficulty_nil, base), "");
 		ASSERT_DEATH_IF_SUPPORTED (nano::difficulty::from_multiplier (multiplier_nil, base), "");
