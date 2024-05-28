@@ -315,7 +315,7 @@ rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_cf_options (st
 	auto const block_cache_size_bytes = 1024ULL * 1024 * rocksdb_config.memory_multiplier * base_block_cache_size;
 	if (cf_name_a == "blocks")
 	{
-		std::shared_ptr<::rocksdb::TableFactory> table_factory (::rocksdb::NewBlockBasedTableFactory (get_active_table_options (block_cache_size_bytes * 4)));
+		std::shared_ptr<::rocksdb::TableFactory> table_factory (::rocksdb::NewBlockBasedTableFactory (get_active_table_options (block_cache_size_bytes)));
 		cf_options = get_active_cf_options (table_factory, blocks_memtable_size_bytes ());
 	}
 	else if (cf_name_a == "confirmation_height")

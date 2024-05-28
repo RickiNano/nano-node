@@ -171,8 +171,8 @@ private:
 	unsigned long long base_memtable_size_bytes () const;
 	unsigned long long blocks_memtable_size_bytes () const;
 
-	constexpr static int base_memtable_size = 16;
-	constexpr static int base_block_cache_size = 8;
+	constexpr static int base_memtable_size = 256;
+	constexpr static int base_block_cache_size = 256;
 
 	friend class nano::rocksdb_block_store_tombstone_count_Test;
 	friend class rocksdb_block_store_upgrade_v21_v22_Test;

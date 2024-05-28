@@ -121,6 +121,10 @@ public: // Status
 	nano::election_extended_status current_status () const;
 	std::shared_ptr<nano::block> winner () const;
 	std::atomic<unsigned> confirmation_request_count{ 0 };
+	std::chrono::steady_clock::time_point get_election_start () const
+	{
+		return election_start;
+	}
 
 	void log_votes (nano::tally_t const &, std::string const & = "") const;
 	nano::tally_t tally () const;
