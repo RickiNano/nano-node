@@ -44,7 +44,7 @@ TEST (processor_service, bad_receive_signature)
 
 	auto store = nano::make_store (system.logger, nano::unique_path (), nano::dev::constants);
 	ASSERT_FALSE (store->init_error ());
-	nano::ledger ledger (*store, system.stats, nano::dev::constants);
+	nano::ledger ledger (logger, *store, system.stats, nano::dev::constants);
 	auto transaction = ledger.tx_begin_write ();
 	store->initialize (transaction, ledger.cache, ledger.constants);
 	nano::work_pool pool{ nano::dev::network_params.network, std::numeric_limits<unsigned>::max () };

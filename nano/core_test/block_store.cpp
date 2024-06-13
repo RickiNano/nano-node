@@ -631,7 +631,7 @@ TEST (mdb_block_store, supported_version_upgrades)
 	{
 		nano::store::lmdb::component store (logger, path, nano::dev::constants);
 		nano::stats stats{ logger };
-		nano::ledger ledger (store, stats, nano::dev::constants);
+		nano::ledger ledger (logger, store, stats, nano::dev::constants);
 		auto transaction (store.tx_begin_write ());
 		store.initialize (transaction, ledger.cache, nano::dev::constants);
 		// Lower the database to the max version unsupported for upgrades
@@ -649,7 +649,7 @@ TEST (mdb_block_store, supported_version_upgrades)
 	{
 		nano::store::lmdb::component store (logger, path1, nano::dev::constants);
 		nano::stats stats{ logger };
-		nano::ledger ledger (store, stats, nano::dev::constants);
+		nano::ledger ledger (logger, store, stats, nano::dev::constants);
 		auto transaction (store.tx_begin_write ());
 		store.initialize (transaction, ledger.cache, nano::dev::constants);
 		// Lower the database version to the minimum version supported for upgrade.
@@ -897,7 +897,7 @@ TEST (block_store, cemented_count_cache)
 	ASSERT_TRUE (!store->init_error ());
 	auto transaction (store->tx_begin_write ());
 	nano::stats stats{ logger };
-	nano::ledger ledger (*store, stats, nano::dev::constants);
+	nano::ledger ledger (logger, *store, stats, nano::dev::constants);
 	store->initialize (transaction, ledger.cache, nano::dev::constants);
 	ASSERT_EQ (1, ledger.cemented_count ());
 }
@@ -1000,7 +1000,7 @@ TEST (mdb_block_store, sideband_height)
 	nano::store::lmdb::component store (logger, nano::unique_path () / "data.ldb", nano::dev::constants);
 	ASSERT_FALSE (store.init_error ());
 	nano::stats stats{ logger };
-	nano::ledger ledger (store, stats, nano::dev::constants);
+	nano::ledger ledger (logger, store, stats, nano::dev::constants);
 	nano::block_builder builder;
 	auto transaction = ledger.tx_begin_write ();
 	store.initialize (transaction, ledger.cache, nano::dev::constants);

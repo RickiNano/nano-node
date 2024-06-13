@@ -711,7 +711,7 @@ void representative_visitor::state_block (nano::state_block const & block_a)
 }
 } // namespace
 
-nano::ledger::ledger (nano::store::component & store_a, nano::stats & stat_a, nano::ledger_constants & constants, nano::generate_cache_flags const & generate_cache_flags_a, nano::uint128_t min_rep_weight_a) :
+nano::ledger::ledger (nano::logger & logger_a, nano::store::component & store_a, nano::stats & stat_a, nano::ledger_constants & constants, nano::generate_cache_flags const & generate_cache_flags_a, nano::uint128_t min_rep_weight_a) :
 	constants{ constants },
 	store{ store_a },
 	cache{ store_a.rep_weight, min_rep_weight_a },
@@ -720,7 +720,8 @@ nano::ledger::ledger (nano::store::component & store_a, nano::stats & stat_a, na
 	any_impl{ std::make_unique<ledger_set_any> (*this) },
 	confirmed_impl{ std::make_unique<ledger_set_confirmed> (*this) },
 	any{ *any_impl },
-	confirmed{ *confirmed_impl }
+	confirmed{ *confirmed_impl },
+	logger{ logger_a }
 {
 	if (!store.init_error ())
 	{
@@ -1232,7 +1233,6 @@ bool nano::ledger::migrate_lmdb_to_rocksdb (std::filesystem::path const & data_p
 	auto rockdb_data_path = data_path_a / "rocksdb";
 	std::filesystem::remove_all (rockdb_data_path);
 
-	nano::logger logger;
 	auto error (false);
 
 	// Open rocksdb database
@@ -1240,6 +1240,7 @@ bool nano::ledger::migrate_lmdb_to_rocksdb (std::filesystem::path const & data_p
 	rocksdb_config.enable = true;
 	auto rocksdb_store = nano::make_store (logger, data_path_a, nano::dev::constants, false, true, rocksdb_config);
 
+	logger.info (nano::log::type::bootstrap, "TEST");
 	if (!rocksdb_store->init_error ())
 	{
 		std::cout << "Step 1 of 7: Converting blocks table..." << std::endl;
