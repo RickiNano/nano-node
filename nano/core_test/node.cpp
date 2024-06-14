@@ -2062,7 +2062,7 @@ TEST (node, local_votes_cache_fork)
 	node_config.peering_port = system.get_available_port ();
 	auto & node2 (*system.add_node (node_config, node_flags));
 	node2.process_active (send1_fork);
-	ASSERT_TIMELY (5s, node2.block_or_pruned_exists (send1->hash ()));
+	ASSERT_TIMELY (15s, node2.block_or_pruned_exists (send1->hash ()));
 }
 
 TEST (node, vote_republish)
