@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nano/lib/logging.hpp>
 #include <nano/lib/numbers.hpp>
 #include <nano/lib/timer.hpp>
 #include <nano/secure/account_info.hpp>
@@ -35,7 +36,7 @@ class ledger final
 	friend class receivable_iterator;
 
 public:
-	ledger (nano::store::component &, nano::stats &, nano::ledger_constants & constants, nano::generate_cache_flags const & = nano::generate_cache_flags{}, nano::uint128_t min_rep_weight_a = 0);
+	ledger (nano::logger &, nano::store::component &, nano::stats &, nano::ledger_constants & constants, nano::generate_cache_flags const & = nano::generate_cache_flags{}, nano::uint128_t min_rep_weight_a = 0);
 	~ledger ();
 
 	/** Start read-write transaction */
@@ -95,6 +96,7 @@ public:
 private:
 	void initialize (nano::generate_cache_flags const &);
 	void confirm (secure::write_transaction const & transaction, nano::block const & block);
+	nano::logger & logger;
 
 	std::unique_ptr<ledger_set_any> any_impl;
 	std::unique_ptr<ledger_set_confirmed> confirmed_impl;
