@@ -25,10 +25,6 @@ namespace
 {
 void nano_abort_signal_handler (int signum)
 {
-	// remove `signum` from signal handling when under Windows
-#ifdef _WIN32
-	std::signal (signum, SIG_DFL);
-#endif
 
 	// create some debugging log files
 	nano::dump_crash_stacktrace ();
