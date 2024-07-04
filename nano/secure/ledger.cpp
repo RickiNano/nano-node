@@ -1309,7 +1309,6 @@ bool nano::ledger::migrate_lmdb_to_rocksdb (std::filesystem::path const & data_p
 		});
 		logger.info (nano::log::type::ledger, "Finished converting {} entries", count.load ());
 
-
 		table_size = store.count (store.tx_begin_read (), tables::confirmation_height);
 		logger.info (nano::log::type::ledger, "Step 4 of 7: Converting {} entries from confirmation_height table", table_size);
 		count = 0;
