@@ -1250,21 +1250,25 @@ bool nano::ledger::migrate_lmdb_to_rocksdb (std::filesystem::path const & data_p
 		std::atomic<std::size_t> count = 0;
 		store.block.for_each_par (
 		[&rocksdb_store, &count, &logger] (store::read_transaction const & /*unused*/, auto i, auto n) {
-			for (; i != n; ++i)
+			while (i != n)
 			{
-				auto rocksdb_transaction (rocksdb_store->tx_begin_write ({}, { nano::tables::blocks }));
+				// Create a new transaction for each batch
+				auto rocksdb_transaction = rocksdb_store->tx_begin_write ({}, { nano::tables::blocks });
 
-				std::vector<uint8_t> vector;
+				for (size_t j = 0; j < 100 && i != n; ++j, ++i)
 				{
-					nano::vectorstream stream (vector);
-					nano::serialize_block (stream, *i->second.block);
-					i->second.sideband.serialize (stream, i->second.block->type ());
+					std::vector<uint8_t> vector;
+					{
+						nano::vectorstream stream (vector);
+						nano::serialize_block (stream, *i->second.block);
+						i->second.sideband.serialize (stream, i->second.block->type ());
+					}
+					rocksdb_store->block.raw_put (rocksdb_transaction, vector, i->first);
 				}
-				rocksdb_store->block.raw_put (rocksdb_transaction, vector, i->first);
-
-				if (auto count_l = ++count; count_l % 5000000 == 0)
+				rocksdb_transaction.commit ();
+				if (auto count_l = ++count; count_l % 10000 == 0)
 				{
-					logger.info (nano::log::type::ledger, "{} million blocks converted", count_l / 1000000);
+					logger.info (nano::log::type::ledger, "{} million blocks converted", count_l / 10000);
 				}
 			}
 		});
