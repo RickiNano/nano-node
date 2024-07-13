@@ -371,3 +371,8 @@ nano::stat::detail nano::to_stat_detail (nano::block_status code)
 {
 	return nano::enum_util::cast<nano::stat::detail> (code);
 }
+
+std::string_view nano::to_string (nano::database_backend backend)
+{
+	return nano::enum_util::name (backend);
+}

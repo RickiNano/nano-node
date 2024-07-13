@@ -219,12 +219,14 @@ enum class tally_result
 	confirm
 };
 
-enum class database_backend
+enum class database_backend : uint8_t
 {
 	unknown,
 	lmdb,
 	rocksdb
 };
+
+std::string_view to_string (database_backend);
 
 class network_params;
 
