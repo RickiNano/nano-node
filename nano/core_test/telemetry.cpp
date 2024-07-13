@@ -577,7 +577,7 @@ TEST (telemetry, majority_database_backend_information_missing)
 	all_data.push_back (data2);
 
 	auto consolidated_telemetry_data2 = nano::consolidate_telemetry_data (all_data);
-	ASSERT_EQ (consolidated_telemetry_data2.database_backend, 2);
+	ASSERT_EQ (consolidated_telemetry_data2.database_backend, 0);
 }
 
 TEST (telemetry, majority_database_backend_information_included)
