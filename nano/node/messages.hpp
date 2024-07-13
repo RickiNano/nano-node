@@ -324,7 +324,7 @@ public: // Payload
 	uint8_t maker{ static_cast<std::underlying_type_t<telemetry_maker>> (telemetry_maker::nf_node) }; // Where this telemetry information originated
 	std::chrono::system_clock::time_point timestamp;
 	uint64_t active_difficulty{ 0 };
-	uint8_t database_backend{ 0 };
+	nano::database_backend database_backend{ nano::database_backend::unknown };
 	std::vector<uint8_t> unknown_data;
 
 public:

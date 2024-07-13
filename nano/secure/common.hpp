@@ -219,6 +219,13 @@ enum class tally_result
 	confirm
 };
 
+enum class database_backend
+{
+	unknown,
+	lmdb,
+	rocksdb
+};
+
 class network_params;
 
 /** Genesis keys and ledger constants for network variants */
