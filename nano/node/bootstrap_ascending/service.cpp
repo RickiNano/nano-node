@@ -43,7 +43,6 @@ nano::bootstrap_ascending::service::service (nano::node_config & config_a, nano:
 				inspect (transaction, result, *context.block);
 			}
 		}
-
 		condition.notify_all ();
 	});
 }

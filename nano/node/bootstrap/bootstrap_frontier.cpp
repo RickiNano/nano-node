@@ -70,9 +70,7 @@ void nano::frontier_req_client::receive_frontier ()
 		// we simply get a size of 0.
 		if (size_a == nano::frontier_req_client::size_frontier)
 		{
-			node->bootstrap_workers.push_task ([this_l, ec, size_a] () {
-				this_l->received_frontier (ec, size_a);
-			});
+			this_l->received_frontier (ec, size_a);
 		}
 		else
 		{
