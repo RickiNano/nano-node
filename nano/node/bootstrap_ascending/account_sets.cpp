@@ -114,25 +114,36 @@ void nano::bootstrap_ascending::account_sets::unblock (nano::account const & acc
 	}
 }
 
-void nano::bootstrap_ascending::account_sets::timestamp (const nano::account & account, bool reset)
+void nano::bootstrap_ascending::account_sets::timestamp_set (const nano::account & account)
 {
-	const nano::millis_t tstamp = reset ? 0 : nano::milliseconds_since_epoch ();
-
 	auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
-		priorities.get<tag_account> ().modify (iter, [tstamp] (auto & entry) {
-			entry.timestamp = tstamp;
+		priorities.get<tag_account> ().modify (iter, [] (auto & entry) {
+			entry.timestamp = std::chrono::steady_clock::now ();
 		});
 	}
 }
 
+void nano::bootstrap_ascending::account_sets::timestamp_reset (const nano::account & account)
+{
+	auto iter = priorities.get<tag_account> ().find (account);
+	if (iter != priorities.get<tag_account> ().end ())
+	{
+		priorities.get<tag_account> ().modify (iter, [] (auto & entry) {
+			entry.timestamp = {};
+		});
+	}
+}
+
+// Returns false if the account is busy
 bool nano::bootstrap_ascending::account_sets::check_timestamp (const nano::account & account) const
 {
 	auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
-		if (nano::milliseconds_since_epoch () - iter->timestamp < config.cooldown)
+		auto const cutoff = std::chrono::steady_clock::now () - config.cooldown;
+		if (iter->timestamp > cutoff)
 		{
 			return false;
 		}
