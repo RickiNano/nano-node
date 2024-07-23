@@ -12,6 +12,8 @@
 #include <nano/store/account.hpp>
 #include <nano/store/component.hpp>
 
+#include <algorithm>
+
 using namespace std::chrono_literals;
 
 /*
@@ -40,7 +42,7 @@ nano::bootstrap_ascending::service::service (nano::node_config & config_a, nano:
 			for (auto const & [result, context] : batch)
 			{
 				debug_assert (context.block != nullptr);
-				inspect (transaction, result, *context.block);
+				inspect (transaction, result, context);
 			}
 		}
 
@@ -69,6 +71,11 @@ void nano::bootstrap_ascending::service::start ()
 		nano::thread_role::set (nano::thread_role::name::ascending_bootstrap);
 		run_timeouts ();
 	});
+
+	limiter_thread = std::thread ([this] () {
+		nano::thread_role::set (nano::thread_role::name::ascending_bootstrap);
+		run_limiter ();
+	});
 }
 
 void nano::bootstrap_ascending::service::stop ()
@@ -80,6 +87,7 @@ void nano::bootstrap_ascending::service::stop ()
 	condition.notify_all ();
 	nano::join_or_pass (thread);
 	nano::join_or_pass (timeout_thread);
+	nano::join_or_pass (limiter_thread);
 }
 
 void nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::channel> channel, async_tag tag)
@@ -92,7 +100,10 @@ void nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::
 
 	nano::asc_pull_req::blocks_payload request_payload;
 	request_payload.start = tag.start;
-	request_payload.count = config.bootstrap_ascending.pull_count;
+	// request_payload.count = config.bootstrap_ascending.pull_count;
+	size_t account_priority = static_cast<size_t> (accounts.priority (tag.account));
+	size_t payload_count = std::clamp (account_priority, static_cast<size_t> (2), config.bootstrap_ascending.pull_count);
+	request_payload.count = payload_count;
 	request_payload.start_type = (tag.type == async_tag::query_type::blocks_by_hash) ? nano::asc_pull_req::hash_type::block : nano::asc_pull_req::hash_type::account;
 
 	request.payload = request_payload;
@@ -104,6 +115,7 @@ void nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::
 	channel->send (
 	request, nullptr,
 	nano::transport::buffer_drop_policy::limiter, nano::transport::traffic_type::bootstrap);
+	// std::cout << "DEBUG SEND " << tag.account.to_account () << " priority: " << payload_count << std::endl;
 }
 
 std::size_t nano::bootstrap_ascending::service::priority_size () const
@@ -128,8 +140,9 @@ std::size_t nano::bootstrap_ascending::service::score_size () const
 - Marks an account as blocked if the result code is gap source as there is no reason request additional blocks for this account until the dependency is resolved
 - Marks an account as forwarded if it has been recently referenced by a block that has been inserted.
  */
-void nano::bootstrap_ascending::service::inspect (secure::transaction const & tx, nano::block_status const & result, nano::block const & block)
+void nano::bootstrap_ascending::service::inspect (secure::transaction const & tx, nano::block_status const & result, block_processor::context const & context)
 {
+	auto & block = *context.block;
 	auto const hash = block.hash ();
 
 	switch (result)
@@ -140,14 +153,14 @@ void nano::bootstrap_ascending::service::inspect (secure::transaction const & tx
 
 			// If we've inserted any block in to an account, unmark it as blocked
 			accounts.unblock (account);
-			accounts.priority_up (account);
+			accounts.priority_up (account); // increase priority for each processed block.
 			accounts.timestamp (account, /* reset timestamp */ true);
 
 			if (block.is_send ())
 			{
 				auto destination = block.destination ();
-				accounts.unblock (destination, hash); // Unblocking automatically inserts account into priority set
-				accounts.priority_up (destination);
+				accounts.unblock (destination, hash); // Unblocking inserts previoulsy blocked account into priority set
+				accounts.priority_set (destination); // set to initial priority
 			}
 		}
 		break;
@@ -169,6 +182,18 @@ void nano::bootstrap_ascending::service::inspect (secure::transaction const & tx
 		break;
 		case nano::block_status::gap_previous:
 		{
+			if (block.type () == block_type::state)
+			{
+				const auto account = block.account_field ().value ();
+				// if (context.source == nano::block_source::live)
+				// {
+				accounts.priority_set (account); // set to initial priority
+				// }
+				// else {
+
+				// }
+			}
+
 			// TODO: Track stats
 		}
 		break;
@@ -208,7 +233,7 @@ nano::account nano::bootstrap_ascending::service::available_account ()
 		}
 	}
 
-	if (database_limiter.should_pass (1))
+	if (accounts.priority_vacancy () && database_limiter.should_pass (1)) // only iterate to next account if there is vacancy in the priorities
 	{
 		auto account = iterator.next ();
 		if (!account.is_zero ())
@@ -269,6 +294,23 @@ bool nano::bootstrap_ascending::service::request (nano::account & account, std::
 	return true; // Request sent
 }
 
+bool nano::bootstrap_ascending::service::request (nano::block_hash & block_a, std::shared_ptr<nano::transport::channel> & channel)
+{
+	async_tag tag{};
+	tag.id = nano::bootstrap_ascending::generate_id ();
+	tag.time = nano::milliseconds_since_epoch ();
+
+	tag.type = async_tag::query_type::blocks_by_hash;
+	tag.start = block_a;
+
+	on_request.notify (tag, channel);
+
+	track (tag);
+	send (channel, tag);
+
+	return true; // Request sent
+}
+
 bool nano::bootstrap_ascending::service::run_one ()
 {
 	// Ensure there is enough space in blockprocessor for queuing new blocks
@@ -277,6 +319,37 @@ bool nano::bootstrap_ascending::service::run_one ()
 	// Waits for account either from priority queue or database
 	auto account = wait_available_account ();
 	if (account.is_zero ())
+	{
+		// std::cout << "Account is zero" << std::endl;
+		return false;
+	}
+
+	// Waits for channel that is not full
+	auto channel = wait_available_channel ();
+	if (!channel)
+	{
+		// std::cout << "No channel found: " << account.to_account () << std::endl;
+		return false;
+	}
+
+	bool success = request (account, channel);
+	return success;
+}
+
+bool nano::bootstrap_ascending::service::run_try_unblock ()
+{
+	// Only move to next entry when new priorities can be inserted
+	if (accounts.priority_half_full ())
+	{
+		return false;
+	}
+
+	// Ensure there is enough space in blockprocessor for queuing new blocks
+	wait_blockprocessor ();
+
+	// Waits for account either from priority queue or database
+	auto block_hash = accounts.next_blocking ();
+	if (block_hash.is_zero ())
 	{
 		return false;
 	}
@@ -288,7 +361,8 @@ bool nano::bootstrap_ascending::service::run_one ()
 		return false;
 	}
 
-	bool success = request (account, channel);
+	bool success = request (block_hash, channel);
+	stats.inc (nano::stat::type::bootstrap_ascending, nano::stat::detail::try_unblock);
 	return success;
 }
 
@@ -305,13 +379,38 @@ void nano::bootstrap_ascending::service::throttle_if_needed (nano::unique_lock<n
 void nano::bootstrap_ascending::service::run ()
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
+	size_t iteration_count = 1; // Counter for iterations
 	while (!stopped)
 	{
 		lock.unlock ();
 		stats.inc (nano::stat::type::bootstrap_ascending, nano::stat::detail::loop);
 		run_one ();
+		run_try_unblock ();
 		lock.lock ();
 		throttle_if_needed (lock);
+	}
+}
+
+void nano::bootstrap_ascending::service::run_limiter ()
+{
+	while (!stopped)
+	{
+		{
+			auto account_count = ledger.account_count (); // Fetch the total number of accounts.
+
+			nano::unique_lock<nano::mutex> lock{ mutex };
+			size_t priority_size = std::max (accounts.priority_size (), size_t (1));
+			double priority_sqrt = sqrt (static_cast<double> (priority_size));
+			size_t current_limit = static_cast<size_t> (config.bootstrap_ascending.database_requests_limit / priority_sqrt);
+
+			// Ensure the current_limit does not exceed the account_count.
+			current_limit = std::min (current_limit, static_cast<size_t> (account_count));
+
+			database_limiter.reset (current_limit, 1.0);
+			std::cout << "DEBUG database_limiter current_limit: " << current_limit << std::endl;
+		} // Release lock before sleeping
+
+		std::this_thread::sleep_for (std::chrono::seconds (1)); // Sleep to maintain ~1 second interval
 	}
 }
 
@@ -494,7 +593,7 @@ std::size_t nano::bootstrap_ascending::service::compute_throttle_size () const
 {
 	// Scales logarithmically with ledger block
 	// Returns: config.throttle_coefficient * sqrt(block_count)
-	std::size_t size_new = config.bootstrap_ascending.throttle_coefficient * std::sqrt (ledger.block_count ());
+	std::size_t size_new = ledger.account_count () / config.bootstrap_ascending.throttle_coefficient;
 	return size_new == 0 ? 16 : size_new;
 }
 

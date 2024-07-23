@@ -39,11 +39,15 @@ namespace bootstrap_ascending
 		 * Current implementation divides priority by 2.0f and saturates down to 1.0f.
 		 */
 		void priority_down (nano::account const & account);
+		void priority_set (nano::account const & account);
+		bool priority_vacancy () const;
+		bool priority_half_full () const;
 		void block (nano::account const & account, nano::block_hash const & dependency);
 		void unblock (nano::account const & account, std::optional<nano::block_hash> const & hash = std::nullopt);
 		void timestamp (nano::account const & account, bool reset = false);
 
 		nano::account next ();
+		nano::block_hash next_blocking ();
 
 	public:
 		bool blocked (nano::account const & account) const;
@@ -61,6 +65,7 @@ namespace bootstrap_ascending
 	private:
 		void trim_overflow ();
 		bool check_timestamp (nano::account const & account) const;
+		bool check_blocking_timestamp (nano::account const & account);
 
 	private: // Dependencies
 		nano::stats & stats;
@@ -102,7 +107,7 @@ namespace bootstrap_ascending
 			mi::ordered_unique<mi::tag<tag_account>,
 				mi::member<priority_entry, nano::account, &priority_entry::account>>,
 			mi::ordered_non_unique<mi::tag<tag_priority>,
-				mi::member<priority_entry, float, &priority_entry::priority>>,
+				mi::member<priority_entry, float, &priority_entry::priority>, std::greater<float>>,
 			mi::ordered_unique<mi::tag<tag_id>,
 				mi::member<priority_entry, nano::bootstrap_ascending::id_t, &priority_entry::id>>
 		>>;
@@ -128,10 +133,10 @@ namespace bootstrap_ascending
 		nano::account_sets_config config;
 
 	public: // Consts
-		static float constexpr priority_initial = 8.0f;
-		static float constexpr priority_increase = 2.0f;
-		static float constexpr priority_decrease = 0.5f;
-		static float constexpr priority_max = 32.0f;
+		static float constexpr priority_initial = 10.0f;
+		static float constexpr priority_increase = 1.0f;
+		static float constexpr priority_decrease = 8.0f;
+		static float constexpr priority_max = 128.0f;
 		static float constexpr priority_cutoff = 1.0f;
 
 	public:
