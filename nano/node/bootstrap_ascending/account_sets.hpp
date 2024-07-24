@@ -41,9 +41,11 @@ namespace bootstrap_ascending
 		void priority_down (nano::account const & account);
 		void block (nano::account const & account, nano::block_hash const & dependency);
 		void unblock (nano::account const & account, std::optional<nano::block_hash> const & hash = std::nullopt);
-		void timestamp (nano::account const & account, bool reset = false);
+		void timestamp_set (nano::account const & account);
+		void timestamp_reset (nano::account const & account);
 
-		nano::account next ();
+		nano::account next_priority ();
+		nano::block_hash next_blocking ();
 
 	public:
 		bool blocked (nano::account const & account) const;
@@ -70,8 +72,9 @@ namespace bootstrap_ascending
 		{
 			nano::account account{ 0 };
 			float priority{ 0 };
-			nano::millis_t timestamp{ 0 };
-			nano::bootstrap_ascending::id_t id{ 0 }; // Uniformly distributed, used for random querying
+			std::chrono::steady_clock::time_point timestamp{};
+
+			nano::bootstrap_ascending::id_t id{ nano::bootstrap_ascending::generate_id () }; // Uniformly distributed, used for random querying
 
 			priority_entry (nano::account account, float priority);
 		};
@@ -81,6 +84,8 @@ namespace bootstrap_ascending
 			nano::account account{ 0 };
 			nano::block_hash dependency{ 0 };
 			priority_entry original_entry{ 0, 0 };
+
+			nano::bootstrap_ascending::id_t id{ nano::bootstrap_ascending::generate_id () }; // Uniformly distributed, used for random querying
 
 			float priority () const
 			{
@@ -115,7 +120,9 @@ namespace bootstrap_ascending
 			mi::ordered_unique<mi::tag<tag_account>,
 				mi::member<blocking_entry, nano::account, &blocking_entry::account>>,
 			mi::ordered_non_unique<mi::tag<tag_priority>,
-				mi::const_mem_fun<blocking_entry, float, &blocking_entry::priority>>
+				mi::const_mem_fun<blocking_entry, float, &blocking_entry::priority>>,
+			mi::ordered_unique<mi::tag<tag_id>,
+				mi::member<blocking_entry, nano::bootstrap_ascending::id_t, &blocking_entry::id>>
 		>>;
 		// clang-format on
 
