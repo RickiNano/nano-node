@@ -114,25 +114,36 @@ void nano::bootstrap_ascending::account_sets::unblock (nano::account const & acc
 	}
 }
 
-void nano::bootstrap_ascending::account_sets::timestamp (const nano::account & account, bool reset)
+void nano::bootstrap_ascending::account_sets::timestamp_set (const nano::account & account)
 {
-	const nano::millis_t tstamp = reset ? 0 : nano::milliseconds_since_epoch ();
-
 	auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
-		priorities.get<tag_account> ().modify (iter, [tstamp] (auto & entry) {
-			entry.timestamp = tstamp;
+		priorities.get<tag_account> ().modify (iter, [] (auto & entry) {
+			entry.timestamp = std::chrono::steady_clock::now ();
 		});
 	}
 }
 
+void nano::bootstrap_ascending::account_sets::timestamp_reset (const nano::account & account)
+{
+	auto iter = priorities.get<tag_account> ().find (account);
+	if (iter != priorities.get<tag_account> ().end ())
+	{
+		priorities.get<tag_account> ().modify (iter, [] (auto & entry) {
+			entry.timestamp = {};
+		});
+	}
+}
+
+// Returns false if the account is busy
 bool nano::bootstrap_ascending::account_sets::check_timestamp (const nano::account & account) const
 {
 	auto iter = priorities.get<tag_account> ().find (account);
 	if (iter != priorities.get<tag_account> ().end ())
 	{
-		if (nano::milliseconds_since_epoch () - iter->timestamp < config.cooldown)
+		auto const cutoff = std::chrono::steady_clock::now () - config.cooldown;
+		if (iter->timestamp > cutoff)
 		{
 			return false;
 		}
@@ -142,23 +153,21 @@ bool nano::bootstrap_ascending::account_sets::check_timestamp (const nano::accou
 
 void nano::bootstrap_ascending::account_sets::trim_overflow ()
 {
-	if (priorities.size () > config.priorities_max)
+	while (priorities.size () > config.priorities_max)
 	{
-		// Evict the lowest priority entry
-		priorities.get<tag_priority> ().erase (priorities.get<tag_priority> ().begin ());
-
+		// Erase the oldest entry
+		priorities.pop_front ();
 		stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::priority_erase_overflow);
 	}
-	if (blocking.size () > config.blocking_max)
+	while (blocking.size () > config.blocking_max)
 	{
-		// Evict the lowest priority entry
-		blocking.get<tag_priority> ().erase (blocking.get<tag_priority> ().begin ());
-
+		// Erase the oldest entry
+		blocking.pop_front ();
 		stats.inc (nano::stat::type::bootstrap_ascending_accounts, nano::stat::detail::blocking_erase_overflow);
 	}
 }
 
-nano::account nano::bootstrap_ascending::account_sets::next ()
+nano::account nano::bootstrap_ascending::account_sets::next_priority ()
 {
 	if (priorities.empty ())
 	{
@@ -197,6 +206,25 @@ nano::account nano::bootstrap_ascending::account_sets::next ()
 	auto selection = dist (rng);
 	debug_assert (!weights.empty () && selection < weights.size ());
 	auto result = candidates[selection];
+	return result;
+}
+
+nano::block_hash nano::bootstrap_ascending::account_sets::next_blocking ()
+{
+	if (blocking.empty ())
+	{
+		return { 0 };
+	}
+
+	// Use a dedicated, uniformly distributed field for sampling to avoid problematic corner case when accounts in the queue are very close together
+	auto search = nano::bootstrap_ascending::generate_id ();
+	auto iter = blocking.get<tag_id> ().lower_bound (search);
+	if (iter == blocking.get<tag_id> ().end ())
+	{
+		iter = blocking.get<tag_id> ().begin ();
+	}
+
+	auto result = iter->dependency;
 	return result;
 }
 
@@ -240,15 +268,4 @@ std::unique_ptr<nano::container_info_component> nano::bootstrap_ascending::accou
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "priorities", priorities.size (), sizeof (decltype (priorities)::value_type) }));
 	composite->add_component (std::make_unique<container_info_leaf> (container_info{ "blocking", blocking.size (), sizeof (decltype (blocking)::value_type) }));
 	return composite;
-}
-
-/*
- * priority_entry
- */
-
-nano::bootstrap_ascending::account_sets::priority_entry::priority_entry (nano::account account_a, float priority_a) :
-	account{ account_a },
-	priority{ priority_a }
-{
-	id = nano::bootstrap_ascending::generate_id ();
 }

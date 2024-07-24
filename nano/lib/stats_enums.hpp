@@ -421,6 +421,10 @@ enum class detail
 	track,
 	timeout,
 	nothing_new,
+	account_info_empty,
+	loop_database,
+	loop_blocking,
+	loop_dependencies,
 
 	// bootstrap ascending accounts
 	prioritize,
@@ -429,9 +433,11 @@ enum class detail
 	unblock,
 	unblock_failed,
 
+	next_none,
 	next_priority,
 	next_database,
-	next_none,
+	next_blocking,
+	next_dependency,
 
 	blocking_insert,
 	blocking_erase_overflow,
@@ -442,6 +448,12 @@ enum class detail
 	deprioritize,
 	deprioritize_failed,
 
+	request_blocks,
+	request_account_info,
+
+	// active
+	started_hinted,
+	started_optimistic,
 	// rep_crawler
 	channel_dead,
 	query_target_failed,
