@@ -65,6 +65,9 @@ enum class type
 	bootstrap_ascending_request,
 	bootstrap_ascending_reply,
 	bootstrap_ascending_next,
+	bootstrap_ascending_priority,
+	bootstrap_ascending_database,
+	bootstrap_ascending_dependency,
 	bootstrap_server,
 	bootstrap_server_request,
 	bootstrap_server_overfill,
@@ -430,6 +433,7 @@ enum class detail
 	loop_database,
 	loop_blocking,
 	loop_dependencies,
+	timestamp_reset,
 
 	// bootstrap ascending accounts
 	prioritize,
