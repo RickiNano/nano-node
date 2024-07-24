@@ -58,6 +58,13 @@ enum class type
 	blockprocessor_source,
 	blockprocessor_result,
 	blockprocessor_overfill,
+	bootstrap_ascending,
+	bootstrap_ascending_accounts,
+	bootstrap_ascending_verify,
+	bootstrap_ascending_process,
+	bootstrap_ascending_request,
+	bootstrap_ascending_reply,
+	bootstrap_ascending_next,
 	bootstrap_server,
 	bootstrap_server_request,
 	bootstrap_server_overfill,
@@ -86,9 +93,6 @@ enum class type
 	message_processor,
 	message_processor_overfill,
 	message_processor_type,
-
-	bootstrap_ascending,
-	bootstrap_ascending_accounts,
 
 	_last // Must be the last enum
 };
@@ -129,6 +133,7 @@ enum class detail
 	unconfirmed,
 	cemented,
 	cooldown,
+	empty,
 
 	// processing queue
 	queue,
@@ -421,6 +426,10 @@ enum class detail
 	track,
 	timeout,
 	nothing_new,
+	account_info_empty,
+	loop_database,
+	loop_blocking,
+	loop_dependencies,
 
 	// bootstrap ascending accounts
 	prioritize,
@@ -429,9 +438,11 @@ enum class detail
 	unblock,
 	unblock_failed,
 
+	next_none,
 	next_priority,
 	next_database,
-	next_none,
+	next_blocking,
+	next_dependency,
 
 	blocking_insert,
 	blocking_erase_overflow,
@@ -442,6 +453,12 @@ enum class detail
 	deprioritize,
 	deprioritize_failed,
 
+	request_blocks,
+	request_account_info,
+
+	// active
+	started_hinted,
+	started_optimistic,
 	// rep_crawler
 	channel_dead,
 	query_target_failed,
@@ -488,6 +505,11 @@ enum class detail
 	// election bucket
 	activate_success,
 	cancel_lowest,
+
+	// query_type
+	blocks_by_hash,
+	blocks_by_account,
+	account_info_by_hash,
 
 	_last // Must be the last enum
 };
