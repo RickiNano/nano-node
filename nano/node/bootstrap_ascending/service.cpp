@@ -223,23 +223,51 @@ void nano::bootstrap_ascending::service::inspect (secure::transaction const & tx
 	}
 }
 
+void nano::bootstrap_ascending::service::wait_tags ()
+{
+	nano::unique_lock<nano::mutex> lock{ mutex };
+
+	auto wait_predicate = [this] () {
+		debug_assert (!mutex.try_lock ());
+		return tags.size () > max_tags;
+	};
+
+	while (!stopped && wait_predicate ())
+	{
+		condition.wait_for (lock, config.bootstrap_ascending.throttle_wait);
+	}
+}
+
 void nano::bootstrap_ascending::service::wait_blockprocessor ()
 {
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	while (!stopped && block_processor.size (nano::block_source::bootstrap) > config.bootstrap_ascending.block_wait_count)
+
+	auto wait_predicate = [this] () {
+		return block_processor.size (nano::block_source::bootstrap) > config.bootstrap_ascending.block_wait_count;
+	};
+
+	while (!stopped && wait_predicate ())
 	{
-		condition.wait_for (lock, std::chrono::milliseconds{ config.bootstrap_ascending.throttle_wait }, [this] () { return stopped; }); // Blockprocessor is relatively slow, sleeping here instead of using conditions
+		condition.wait_for (lock, config.bootstrap_ascending.throttle_wait);
 	}
 }
 
 std::shared_ptr<nano::transport::channel> nano::bootstrap_ascending::service::wait_channel ()
 {
-	std::shared_ptr<nano::transport::channel> channel;
 	nano::unique_lock<nano::mutex> lock{ mutex };
-	while (!stopped && !(channel = scoring.channel ()))
+
+	std::shared_ptr<nano::transport::channel> channel;
+	auto wait_predicate = [this, &channel] () {
+		debug_assert (!mutex.try_lock ());
+		channel = scoring.channel ();
+		return channel == nullptr; // Wait until a channel is available
+	};
+
+	while (!stopped && wait_predicate ())
 	{
-		condition.wait_for (lock, std::chrono::milliseconds{ config.bootstrap_ascending.throttle_wait }, [this] () { return stopped; });
+		condition.wait_for (lock, config.bootstrap_ascending.throttle_wait);
 	}
+
 	return channel;
 }
 
@@ -269,7 +297,7 @@ nano::account nano::bootstrap_ascending::service::wait_priority ()
 		}
 		else
 		{
-			condition.wait_for (lock, 100ms);
+			condition.wait_for (lock, config.bootstrap_ascending.throttle_wait);
 		}
 	}
 	return { 0 };
@@ -305,7 +333,7 @@ nano::account nano::bootstrap_ascending::service::wait_database (bool should_thr
 		}
 		else
 		{
-			condition.wait_for (lock, 100ms);
+			condition.wait_for (lock, config.bootstrap_ascending.throttle_wait);
 		}
 	}
 	return { 0 };
@@ -336,7 +364,7 @@ nano::block_hash nano::bootstrap_ascending::service::wait_dependency ()
 		}
 		else
 		{
-			condition.wait_for (lock, 100ms);
+			condition.wait_for (lock, config.bootstrap_ascending.throttle_wait);
 		}
 	}
 	return { 0 };
@@ -353,6 +381,7 @@ bool nano::bootstrap_ascending::service::request (nano::account account, std::sh
 	{
 		tag.type = query_type::blocks_by_hash;
 		tag.start = info->head;
+		tag.hash = info->head;
 	}
 	else
 	{
@@ -372,6 +401,7 @@ bool nano::bootstrap_ascending::service::request_info (nano::block_hash hash, st
 	async_tag tag{};
 	tag.type = query_type::account_info_by_hash;
 	tag.start = hash;
+	tag.hash = hash;
 
 	on_request.notify (tag, channel);
 
@@ -382,6 +412,7 @@ bool nano::bootstrap_ascending::service::request_info (nano::block_hash hash, st
 
 void nano::bootstrap_ascending::service::run_one_priority ()
 {
+	wait_tags ();
 	wait_blockprocessor ();
 	auto channel = wait_channel ();
 	if (!channel)
@@ -410,6 +441,7 @@ void nano::bootstrap_ascending::service::run_priorities ()
 
 void nano::bootstrap_ascending::service::run_one_database (bool should_throttle)
 {
+	wait_tags ();
 	wait_blockprocessor ();
 	auto channel = wait_channel ();
 	if (!channel)
@@ -440,6 +472,7 @@ void nano::bootstrap_ascending::service::run_database ()
 
 void nano::bootstrap_ascending::service::run_one_dependency ()
 {
+	wait_tags ();
 	wait_blockprocessor ();
 	auto channel = wait_channel ();
 	if (!channel)
