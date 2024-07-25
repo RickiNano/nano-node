@@ -106,6 +106,8 @@ namespace bootstrap_ascending
 		void run_one_dependency ();
 		void run_timeouts ();
 
+		void wait_backoff (std::function<bool ()> const & predicate, std::vector<std::chrono::milliseconds> const & intervals);
+
 		/* Avoid too many in-flight requests */
 		void wait_tags ();
 		/* Ensure there is enough space in blockprocessor for queuing new blocks */
