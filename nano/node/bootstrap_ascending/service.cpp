@@ -99,14 +99,19 @@ void nano::bootstrap_ascending::service::stop ()
 	nano::join_or_pass (timeout_thread);
 }
 
-void nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::channel> const & channel, async_tag tag)
+bool nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::channel> const & channel, async_tag tag)
 {
 	debug_assert (tag.type != query_type::invalid);
 
 	{
 		nano::lock_guard<nano::mutex> lock{ mutex };
 		debug_assert (tags.get<tag_id> ().count (tag.id) == 0);
-		tags.get<tag_id> ().insert (tag);
+		auto [it, inserted] = tags.get<tag_id> ().insert (tag);
+		if (!inserted)
+		{
+			stats.inc (nano::stat::type::bootstrap_ascending, nano::stat::detail::duplicate_request);
+			return false; // Not sent
+		}
 	}
 
 	nano::asc_pull_req request{ network_consts };
@@ -149,6 +154,8 @@ void nano::bootstrap_ascending::service::send (std::shared_ptr<nano::transport::
 	channel->send (
 	request, nullptr,
 	nano::transport::buffer_drop_policy::limiter, nano::transport::traffic_type::bootstrap);
+
+	return true; // Assumed sent
 }
 
 std::size_t nano::bootstrap_ascending::service::priority_size () const
@@ -421,9 +428,7 @@ bool nano::bootstrap_ascending::service::request (nano::account account, std::sh
 
 	on_request.notify (tag, channel);
 
-	send (channel, tag);
-
-	return true; // Request sent
+	return send (channel, tag);
 }
 
 bool nano::bootstrap_ascending::service::request_info (nano::block_hash hash, std::shared_ptr<nano::transport::channel> const & channel)
@@ -435,9 +440,7 @@ bool nano::bootstrap_ascending::service::request_info (nano::block_hash hash, st
 
 	on_request.notify (tag, channel);
 
-	send (channel, tag);
-
-	return true; // Request sent
+	return send (channel, tag);
 }
 
 void nano::bootstrap_ascending::service::run_one_priority ()

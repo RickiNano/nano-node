@@ -126,7 +126,7 @@ namespace bootstrap_ascending
 
 		bool request (nano::account, std::shared_ptr<nano::transport::channel> const &);
 		bool request_info (nano::block_hash, std::shared_ptr<nano::transport::channel> const &);
-		void send (std::shared_ptr<nano::transport::channel> const &, async_tag tag);
+		bool send (std::shared_ptr<nano::transport::channel> const &, async_tag tag);
 
 		void process (nano::asc_pull_ack::blocks_payload const & response, async_tag const & tag);
 		void process (nano::asc_pull_ack::account_info_payload const & response, async_tag const & tag);
@@ -168,9 +168,9 @@ namespace bootstrap_ascending
 			mi::sequenced<mi::tag<tag_sequenced>>,
 			mi::hashed_unique<mi::tag<tag_id>,
 				mi::member<async_tag, nano::bootstrap_ascending::id_t, &async_tag::id>>,
-			mi::hashed_non_unique<mi::tag<tag_account>,
+			mi::hashed_unique<mi::tag<tag_account>,
 				mi::member<async_tag, nano::account , &async_tag::account>>,
-			mi::hashed_non_unique<mi::tag<tag_hash>,
+			mi::hashed_unique<mi::tag<tag_hash>,
 				mi::member<async_tag, nano::block_hash, &async_tag::hash>>
 		>>;
 		// clang-format on
