@@ -171,14 +171,6 @@ void nano::opencl_environment::dump (std::ostream & stream)
 		{
 			std::vector<unsigned> queries = { CL_PLATFORM_PROFILE, CL_PLATFORM_VERSION, CL_PLATFORM_NAME, CL_PLATFORM_VENDOR, CL_PLATFORM_EXTENSIONS };
 			stream << "Platform: " << index << std::endl;
-			for (auto j (queries.begin ()), m (queries.end ()); j != m; ++j)
-			{
-				std::size_t platformInfoCount = 0;
-				clGetPlatformInfo (i->platform, *j, 0, nullptr, &platformInfoCount);
-				std::vector<char> info (platformInfoCount);
-				clGetPlatformInfo (i->platform, *j, info.size (), info.data (), nullptr);
-				stream << info.data () << std::endl;
-			}
 			for (auto j (i->devices.begin ()), m (i->devices.end ()); j != m; ++j)
 			{
 				std::vector<unsigned> queries = { CL_DEVICE_NAME, CL_DEVICE_VENDOR, CL_DEVICE_PROFILE };
