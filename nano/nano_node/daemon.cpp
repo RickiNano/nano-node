@@ -99,7 +99,7 @@ void nano::daemon::run (std::filesystem::path const & data_path, nano::node_flag
 	try
 	{
 		// This avoids a blank prompt during any node initialization delays
-		logger.info (nano::log::type::daemon, "Starting up Nano node...");
+		logger.info (nano::log::type::daemon, "Starting up Nano node {} ...", NANO_VERSION_STRING);
 
 		// Print info about number of logical cores detected, those are used to decide how many IO, worker and signature checker threads to spawn
 		logger.info (nano::log::type::daemon, "Hardware concurrency: {} ( configured: {} )", std::thread::hardware_concurrency (), nano::hardware_concurrency ());
@@ -120,11 +120,9 @@ void nano::daemon::run (std::filesystem::path const & data_path, nano::node_flag
 			std::time_t dateTime = std::time (nullptr);
 
 			logger.info (nano::log::type::daemon, "Network: {}", network_label);
-			logger.info (nano::log::type::daemon, "Version: {}", NANO_VERSION_STRING);
 			logger.info (nano::log::type::daemon, "Data path: '{}'", node->application_path.string ());
 			logger.info (nano::log::type::daemon, "Build info: {}", BUILD_INFO);
 			logger.info (nano::log::type::daemon, "Database backend: {}", node->store.vendor_get ());
-			logger.info (nano::log::type::daemon, "Start time: {:%c} UTC", fmt::gmtime (dateTime));
 
 			// IO context runner should be started first and stopped last to allow asio handlers to execute during node start/stop
 			runner = std::make_unique<nano::thread_runner> (io_ctx, logger, node->config.io_threads, nano::thread_role::name::io_daemon);
