@@ -210,10 +210,10 @@ void nano::store::rocksdb::component::open (bool & error_a, std::filesystem::pat
 	error_a |= !s.ok ();
 }
 
-bool nano::store::rocksdb::component::do_upgrades (store::write_transaction const & transaction_a)
+bool nano::store::rocksdb::component::do_upgrades (store::write_transaction & transaction)
 {
 	bool error_l{ false };
-	auto version_l = version.get (transaction_a);
+	auto version_l = version.get (transaction);
 	switch (version_l)
 	{
 		case 1:
@@ -240,13 +240,13 @@ bool nano::store::rocksdb::component::do_upgrades (store::write_transaction cons
 		case 19:
 		case 20:
 		case 21:
-			upgrade_v21_to_v22 (transaction_a);
+			upgrade_v21_to_v22 (transaction);
 			[[fallthrough]];
 		case 22:
-			upgrade_v22_to_v23 (transaction_a);
+			upgrade_v22_to_v23 (transaction);
 			[[fallthrough]];
 		case 23:
-			upgrade_v23_to_v24 (transaction_a);
+			upgrade_v23_to_v24 (transaction);
 			[[fallthrough]];
 		case 24:
 			break;
@@ -258,7 +258,7 @@ bool nano::store::rocksdb::component::do_upgrades (store::write_transaction cons
 	return error_l;
 }
 
-void nano::store::rocksdb::component::upgrade_v21_to_v22 (store::write_transaction const & transaction_a)
+void nano::store::rocksdb::component::upgrade_v21_to_v22 (store::write_transaction & transaction)
 {
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v21 to v22...");
 
@@ -279,17 +279,23 @@ void nano::store::rocksdb::component::upgrade_v21_to_v22 (store::write_transacti
 		logger.debug (nano::log::type::rocksdb, "Finished removing unchecked table");
 	}
 
-	version.put (transaction_a, 22);
+	version.put (transaction, 22);
 
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v21 to v22 completed");
 }
 
 // Fill rep_weights table with all existing representatives and their vote weight
-void nano::store::rocksdb::component::upgrade_v22_to_v23 (store::write_transaction const & transaction_a)
+void nano::store::rocksdb::component::upgrade_v22_to_v23 (store::write_transaction & transaction)
 {
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v22 to v23...");
 
-	if (!column_family_exists ("rep_weights"))
+	if (column_family_exists ("rep_weights"))
+	{
+		logger.info (nano::log::type::rocksdb, "Dropping existing rep_weights table");
+		drop (transaction, tables::rep_weights);
+		transaction.refresh ();
+	}
+
 	{
 		logger.info (nano::log::type::rocksdb, "Creating table rep_weights");
 		::rocksdb::ColumnFamilyOptions new_cf_options;
@@ -297,36 +303,63 @@ void nano::store::rocksdb::component::upgrade_v22_to_v23 (store::write_transacti
 		::rocksdb::Status status = db->CreateColumnFamily (new_cf_options, "rep_weights", &new_cf_handle);
 		handles.emplace_back (new_cf_handle);
 	}
-	auto i{ make_iterator<nano::account, nano::account_info_v22> (transaction_a, tables::accounts) };
-	auto end{ store::iterator<nano::account, nano::account_info_v22> (nullptr) };
-	uint64_t processed_accounts = 0;
-	for (; i != end; ++i)
+
+	transaction.refresh ();
+	release_assert (rep_weight.begin (transaction) == rep_weight.end (), "rep weights table must be empty before upgrading to v23");
+
+	const size_t batch_size = 1000 * 10;
+
+	nano::account next = 0;
+	size_t processed_accounts = 0;
+	while (true)
 	{
-		if (!i->second.balance.is_zero ())
+		transaction.refresh ();
+
+		// Manually create v22 compatible iterator to read accounts
+		auto it = make_iterator<nano::account, nano::account_info_v22> (transaction, tables::accounts, next);
+		auto const end = store::iterator<nano::account, nano::account_info_v22> (nullptr);
+
+		if (it == end)
 		{
-			nano::uint128_t total{ 0 };
-			nano::store::rocksdb::db_val value;
-			auto status = get (transaction_a, tables::rep_weights, i->second.representative, value);
-			if (success (status))
-			{
-				total = nano::amount{ value }.number ();
-			}
-			total += i->second.balance.number ();
-			status = put (transaction_a, tables::rep_weights, i->second.representative, nano::amount{ total });
-			release_assert_success (status);
+			break;
 		}
-		processed_accounts++;
-		if (processed_accounts % 250000 == 0)
+
+		for (size_t count = 0; it != end && count < batch_size; ++it, ++count)
 		{
-			logger.info (nano::log::type::rocksdb, "Processed {} accounts", processed_accounts);
+			auto const & account = it->first;
+			auto const & account_info = it->second;
+
+			if (!account_info.balance.is_zero ())
+			{
+				nano::uint128_t total{ 0 };
+				nano::store::rocksdb::db_val value;
+				auto status = get (transaction, tables::rep_weights, account_info.representative, value);
+				if (success (status))
+				{
+					total = nano::amount{ value }.number ();
+				}
+				total += account_info.balance.number ();
+				status = put (transaction, tables::rep_weights, account_info.representative, nano::amount{ total });
+				release_assert_success (status);
+			}
+
+			processed_accounts++;
+			if (processed_accounts % 250000 == 0)
+			{
+				logger.info (nano::log::type::rocksdb, "Processed {} accounts", processed_accounts);
+			}
+
+			next = account.number () + 1;
 		}
 	}
+
 	logger.info (nano::log::type::rocksdb, "Processed {} accounts", processed_accounts);
-	version.put (transaction_a, 23);
+	version.put (transaction, 23);
+
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v22 to v23 completed");
 }
 
-void nano::store::rocksdb::component::upgrade_v23_to_v24 (store::write_transaction const & transaction_a)
+void nano::store::rocksdb::component::upgrade_v23_to_v24 (store::write_transaction & transaction)
 {
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v23 to v24...");
 
@@ -347,7 +380,7 @@ void nano::store::rocksdb::component::upgrade_v23_to_v24 (store::write_transacti
 		logger.debug (nano::log::type::rocksdb, "Finished removing frontiers table");
 	}
 
-	version.put (transaction_a, 24);
+	version.put (transaction, 24);
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v23 to v24 completed");
 }
 
