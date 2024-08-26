@@ -258,6 +258,9 @@ void nano::store::lmdb::component::upgrade_v22_to_v23 (store::write_transaction 
 
 	drop (transaction, tables::rep_weights);
 
+	transaction.refresh ();
+	release_assert (rep_weight.begin (transaction) == rep_weight.end (), "rep weights table must be empty before upgrading to v23");
+
 	const size_t batch_size = 1000 * 10;
 
 	nano::account next = 0;
