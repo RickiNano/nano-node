@@ -64,7 +64,7 @@ nano::store::rocksdb::component::component (nano::logger & logger_a, std::filesy
 	logger{ logger_a },
 	constants{ constants },
 	rocksdb_config{ rocksdb_config_a },
-	max_block_write_batch_num_m{ nano::narrow_cast<unsigned> (memtable_size_bytes / (2 * (sizeof (nano::block_type) + nano::state_block::size + nano::block_sideband::size (nano::block_type::state)))) },
+	max_block_write_batch_num_m{ nano::narrow_cast<unsigned> ((rocksdb_config_a.write_cache * 1024 * 1024) / (2 * (sizeof (nano::block_type) + nano::state_block::size + nano::block_sideband::size (nano::block_type::state)))) },
 	cf_name_table_map{ create_cf_name_table_map () }
 {
 	boost::system::error_code error_mkdir, error_chmod;
@@ -404,7 +404,7 @@ rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_cf_options (st
 	::rocksdb::ColumnFamilyOptions cf_options;
 	if (cf_name_a != ::rocksdb::kDefaultColumnFamilyName)
 	{
-		std::shared_ptr<::rocksdb::TableFactory> table_factory (::rocksdb::NewBlockBasedTableFactory (get_table_options (read_cache_size_bytes)));
+		std::shared_ptr<::rocksdb::TableFactory> table_factory (::rocksdb::NewBlockBasedTableFactory (get_table_options ()));
 		cf_options.table_factory = table_factory;
 	}
 	return cf_options;
@@ -773,7 +773,7 @@ rocksdb::Options nano::store::rocksdb::component::get_db_options ()
 	return db_options;
 }
 
-rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_table_options (std::size_t lru_size) const
+rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_table_options () const
 {
 	::rocksdb::BlockBasedTableOptions table_options;
 
@@ -786,7 +786,7 @@ rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_table_optio
 	table_options.format_version = 4;
 
 	// Block cache for reads
-	table_options.block_cache = ::rocksdb::NewLRUCache (lru_size);
+	table_options.block_cache = ::rocksdb::NewLRUCache (rocksdb_config.read_cache * 1024 * 1024);
 
 	// Bloom filter to help with point reads. 10bits gives 1% false positive rate.
 	table_options.filter_policy.reset (::rocksdb::NewBloomFilterPolicy (10, false));

@@ -154,7 +154,7 @@ private:
 
 	void construct_column_family_mutexes ();
 	::rocksdb::Options get_db_options ();
-	::rocksdb::BlockBasedTableOptions get_table_options (std::size_t lru_size) const;
+	::rocksdb::BlockBasedTableOptions get_table_options () const;
 	::rocksdb::ColumnFamilyOptions get_cf_options (std::string const & cf_name_a) const;
 
 	void on_flush (::rocksdb::FlushJobInfo const &);
@@ -164,9 +164,6 @@ private:
 	std::unordered_map<char const *, nano::tables> create_cf_name_table_map () const;
 
 	std::vector<::rocksdb::ColumnFamilyDescriptor> create_column_families ();
-
-	constexpr static long memtable_size_bytes = 16 * 1024 * 1024;
-	constexpr static long read_cache_size_bytes = 8 * 1024 * 1024;
 
 	friend class nano::rocksdb_block_store_tombstone_count_Test;
 	friend class rocksdb_block_store_upgrade_v21_v22_Test;
