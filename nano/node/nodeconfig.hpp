@@ -48,6 +48,14 @@ enum class frontiers_confirmation_mode : uint8_t
 	invalid
 };
 
+enum class database_backend : uint8_t
+{
+	automatic, // backend is determined based on existing ledger files found
+	rocksdb,
+	lmdb,
+	invalid
+};
+
 class message_processor_config;
 
 /**
@@ -143,6 +151,7 @@ public:
 	nano::rocksdb_config rocksdb_config;
 	nano::lmdb_config lmdb_config;
 	nano::frontiers_confirmation_mode frontiers_confirmation{ nano::frontiers_confirmation_mode::automatic };
+	nano::database_backend database_backend{ nano::database_backend::automatic };
 	/** Number of accounts per second to process when doing backlog population scan */
 	unsigned backlog_scan_batch_size{ 10 * 1000 };
 	/** Number of times per second to run backlog population batches. Number of accounts per single batch is `backlog_scan_batch_size / backlog_scan_frequency` */
@@ -165,6 +174,8 @@ public:
 public:
 	std::string serialize_frontiers_confirmation (nano::frontiers_confirmation_mode) const;
 	nano::frontiers_confirmation_mode deserialize_frontiers_confirmation (std::string const &);
+	std::string serialize_database_backend (nano::database_backend) const;
+	nano::database_backend deserialize_database_backend (std::string const & string_a);
 	/** Entry is ignored if it cannot be parsed as a valid address:port */
 	void deserialize_address (std::string const &, std::vector<std::pair<std::string, uint16_t>> &) const;
 

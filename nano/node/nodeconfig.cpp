@@ -139,6 +139,7 @@ nano::error nano::node_config::serialize_toml (nano::tomlconfig & toml) const
 	toml.put ("backup_before_upgrade", backup_before_upgrade, "Backup the ledger database before performing upgrades.\nWarning: uses more disk storage and increases startup time when upgrading.\ntype:bool");
 	toml.put ("max_work_generate_multiplier", max_work_generate_multiplier, "Maximum allowed difficulty multiplier for work generation.\ntype:double,[1..]");
 	toml.put ("frontiers_confirmation", serialize_frontiers_confirmation (frontiers_confirmation), "Mode controlling frontier confirmation rate.\ntype:string,{auto,always,disabled}");
+	toml.put ("database_backend", serialize_frontiers_confirmation (frontiers_confirmation), "Database used for storing the ledger. Default is auto\ntype:string,{auto,rocksdb,lmdb}");
 	toml.put ("max_queued_requests", max_queued_requests, "Limit for number of queued confirmation requests for one channel, after which new requests are dropped until the queue drops below this value.\ntype:uint32");
 	toml.put ("request_aggregator_threads", request_aggregator_threads, "Number of threads to dedicate to request aggregator. Defaults to using all cpu threads, up to a maximum of 4");
 	toml.put ("max_unchecked_blocks", max_unchecked_blocks, "Maximum number of unchecked blocks to store in memory. Defaults to 65536. \ntype:uint64,[0..]");
@@ -553,6 +554,16 @@ nano::error nano::node_config::deserialize_toml (nano::tomlconfig & toml)
 			frontiers_confirmation = deserialize_frontiers_confirmation (frontiers_confirmation_l);
 		}
 
+		if (toml.has_key ("database_backend"))
+		{
+			auto database_backend_l (toml.get<std::string> ("database_backend"));
+			database_backend = deserialize_database_backend (database_backend_l);
+			if (database_backend == database_backend::invalid)
+			{
+				toml.get_error ().set ("database_backend is invalid. Valid options are \"auto\",\"rocksdb\" and \"lmdb\"");
+			}
+		}
+
 		toml.get<unsigned> ("backlog_scan_batch_size", backlog_scan_batch_size);
 		toml.get<unsigned> ("backlog_scan_frequency", backlog_scan_frequency);
 
@@ -655,6 +666,41 @@ nano::frontiers_confirmation_mode nano::node_config::deserialize_frontiers_confi
 	else
 	{
 		return nano::frontiers_confirmation_mode::invalid;
+	}
+}
+
+std::string nano::node_config::serialize_database_backend (nano::database_backend mode_a) const
+{
+	switch (mode_a)
+	{
+		case nano::database_backend::automatic:
+			return "auto";
+		case nano::database_backend::rocksdb:
+			return "rocksdb";
+		case nano::database_backend::lmdb:
+			return "lmdb";
+		default:
+			return "auto";
+	}
+}
+
+nano::database_backend nano::node_config::deserialize_database_backend (std::string const & string_a)
+{
+	if (string_a == "auto")
+	{
+		return nano::database_backend::automatic;
+	}
+	else if (string_a == "rocksdb")
+	{
+		return nano::database_backend::rocksdb;
+	}
+	else if (string_a == "lmdb")
+	{
+		return nano::database_backend::lmdb;
+	}
+	else
+	{
+		return nano::database_backend::invalid;
 	}
 }
 
