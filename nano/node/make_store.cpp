@@ -23,6 +23,9 @@ std::unique_ptr<nano::store::component> nano::make_store (nano::logger & logger,
 		debug_assert (false);
 	}
 
+	std::cout << "**** UNIT TEST NOT DETECTED ****" << unit_testing_backend << std::endl;
+	debug_assert (false);
+
 	if (node_config.database_backend == nano::database_backend::lmdb)
 	{
 		return std::make_unique<nano::store::lmdb::component> (logger, add_db_postfix ? path / "data.ldb" : path, constants, node_config.diagnostics_config.txn_tracking, block_processor_batch_max_time_a, node_config.lmdb_config, backup_before_upgrade);
