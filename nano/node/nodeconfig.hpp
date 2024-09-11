@@ -151,7 +151,7 @@ public:
 	nano::rocksdb_config rocksdb_config;
 	nano::lmdb_config lmdb_config;
 	nano::frontiers_confirmation_mode frontiers_confirmation{ nano::frontiers_confirmation_mode::automatic };
-	nano::database_backend database_backend{ nano::database_backend::automatic };
+	nano::database_backend database_backend{ nano::database_backend::rocksdb };
 	/** Number of accounts per second to process when doing backlog population scan */
 	unsigned backlog_scan_batch_size{ 10 * 1000 };
 	/** Number of times per second to run backlog population batches. Number of accounts per single batch is `backlog_scan_batch_size / backlog_scan_frequency` */

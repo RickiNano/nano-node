@@ -31,6 +31,21 @@ nano::error nano::rocksdb_config::deserialize_toml (nano::tomlconfig & toml)
 
 bool nano::rocksdb_config::using_rocksdb_in_tests ()
 {
-	auto use_rocksdb_str = std::getenv ("TEST_USE_ROCKSDB");
-	return use_rocksdb_str && (boost::lexical_cast<int> (use_rocksdb_str) == 1);
+	const char * unit_testing_backend = std::getenv ("BACKEND");
+	if (unit_testing_backend != nullptr)
+	{
+		std::cout << "DB backend: " << unit_testing_backend << std::endl;
+		if (std::strcmp (unit_testing_backend, "rocksdb"))
+		{
+			std::cout << "in test DB : " << unit_testing_backend << std::endl;
+			return true;
+		}
+		if (std::strcmp (unit_testing_backend, "lmdb"))
+		{
+			std::cout << "in test DB : " << unit_testing_backend << std::endl;
+			return false;
+		}
+	}
+	std::cout << "Backend not found : " << unit_testing_backend << std::endl;
+	debug_assert (false);
 }
