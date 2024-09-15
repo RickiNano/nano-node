@@ -528,7 +528,6 @@ int nano::store::rocksdb::component::del (store::write_transaction const & trans
 	return tx (transaction_a)->Delete (table_to_column_family (table_a), key_a).code ();
 }
 
-
 void nano::store::rocksdb::component::flush_table (nano::tables table_a)
 {
 	db->Flush (::rocksdb::FlushOptions{}, table_to_column_family (table_a));
