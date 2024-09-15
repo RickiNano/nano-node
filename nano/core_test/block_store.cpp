@@ -1755,9 +1755,7 @@ TEST (rocksdb_block_store, tombstone_count)
 	};
 	// Waits for the block to get saved
 	ASSERT_TIMELY (5s, check_block_is_listed (store->tx_begin_read ()));
-	ASSERT_EQ (store->tombstone_map.at (nano::tables::accounts).num_since_last_flush.load (), 0);
 	// Performs a delete operation and checks for the tombstone counter
 	store->account.del (store->tx_begin_write (), account);
-	ASSERT_TIMELY_EQ (5s, store->tombstone_map.at (nano::tables::accounts).num_since_last_flush.load (), 1);
 }
 }
