@@ -1773,7 +1773,7 @@ TEST (rocksdb_block_store, transaction_speed)
 	ASSERT_TRUE (!store->init_error ());
 
 	// Number of operations to test
-	const size_t num_operations = 5000;
+	const size_t num_operations = 50000;
 
 	// Measure write transaction speed
 	auto start_time = std::chrono::steady_clock::now ();
