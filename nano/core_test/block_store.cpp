@@ -1758,4 +1758,76 @@ TEST (rocksdb_block_store, tombstone_count)
 	// Performs a delete operation and checks for the tombstone counter
 	store->account.del (store->tx_begin_write (), account);
 }
+
+TEST (rocksdb_block_store, transaction_speed)
+{
+	if (!nano::rocksdb_config::using_rocksdb_in_tests ())
+	{
+		GTEST_SKIP ();
+	}
+
+	nano::test::system system;
+	nano::logger logger;
+	auto db_path = nano::unique_path () / "rocksdb";
+	auto store = std::make_unique<nano::store::rocksdb::component> (logger, db_path, nano::dev::constants);
+	ASSERT_TRUE (!store->init_error ());
+
+	// Number of operations to test
+	const size_t num_operations = 5000;
+
+	// Measure write transaction speed
+	auto start_time = std::chrono::steady_clock::now ();
+
+	{
+		auto write_transaction = store->tx_begin_write ();
+		nano::account_info info{};
+		for (size_t i = 0; i < num_operations; ++i)
+		{
+			nano::account account{ i };
+			store->account.put (write_transaction, account, info);
+		}
+		write_transaction.commit ();
+	}
+
+	auto end_time = std::chrono::steady_clock::now ();
+	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds> (end_time - start_time).count ();
+	std::cout << "Time taken for " << num_operations << " write operations: " << elapsed << " ms" << std::endl;
+	ASSERT_LT (elapsed, 5000); // Assert that it takes less than 5 seconds
+
+	// Measure read transaction speed
+	start_time = std::chrono::steady_clock::now ();
+
+	{
+		auto read_transaction = store->tx_begin_read ();
+		for (size_t i = 0; i < num_operations; ++i)
+		{
+			nano::account account{ i };
+			auto exists = store->account.exists (read_transaction, account);
+			ASSERT_TRUE (exists);
+		}
+	}
+
+	end_time = std::chrono::steady_clock::now ();
+	elapsed = std::chrono::duration_cast<std::chrono::milliseconds> (end_time - start_time).count ();
+	std::cout << "Time taken for " << num_operations << " read operations: " << elapsed << " ms" << std::endl;
+	ASSERT_LT (elapsed, 5000); // Assert that it takes less than 5 seconds
+
+	// Measure delete transaction speed
+	start_time = std::chrono::steady_clock::now ();
+
+	{
+		auto delete_transaction = store->tx_begin_write ();
+		for (size_t i = 0; i < num_operations; ++i)
+		{
+			nano::account account{ i };
+			store->account.del (delete_transaction, account);
+		}
+		delete_transaction.commit ();
+	}
+
+	end_time = std::chrono::steady_clock::now ();
+	elapsed = std::chrono::duration_cast<std::chrono::milliseconds> (end_time - start_time).count ();
+	std::cout << "Time taken for " << num_operations << " delete operations: " << elapsed << " ms" << std::endl;
+	ASSERT_LT (elapsed, 5000); // Assert that it takes less than 5 seconds
+}
 }
