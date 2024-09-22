@@ -25,7 +25,7 @@ std::deque<nano::keypair> rep_set (size_t count)
 TEST (flamegraph, large_direct_processing)
 {
 	auto reps = rep_set (4);
-	auto circulating = 10 * nano::Gxrb_ratio;
+	auto circulating = 10 * nano::Knano_ratio;
 	nano::test::system system;
 	system.ledger_initialization_set (reps, circulating);
 	auto & node = *system.add_node ();
@@ -66,7 +66,7 @@ TEST (flamegraph, large_direct_processing)
 TEST (flamegraph, large_confirmation)
 {
 	auto reps = rep_set (4);
-	auto circulating = 10 * nano::Gxrb_ratio;
+	auto circulating = 10 * nano::Knano_ratio;
 	nano::test::system system;
 	system.ledger_initialization_set (reps, circulating);
 	auto prepare = [&] () {
