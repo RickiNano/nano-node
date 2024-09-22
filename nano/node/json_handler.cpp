@@ -18,6 +18,7 @@
 #include <nano/secure/ledger_set_confirmed.hpp>
 #include <nano/secure/transaction.hpp>
 
+#include <boost/algorithm/string/find.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -139,6 +140,10 @@ void nano::json_handler::process_request (bool unsafe_a)
 			else if (action == "raw_to_nano")
 			{
 				raw_to_nano ();
+			}
+			else if (action == "decimal_nano_to_raw")
+			{
+				decimal_nano_to_raw ();
 			}
 			else if (action == "password_valid")
 			{
@@ -282,6 +287,57 @@ nano::account_info nano::json_handler::account_info_impl (secure::transaction co
 		}
 	}
 	return result;
+}
+
+nano::amount nano::json_handler::amount_dec_impl ()
+{
+	if (!ec)
+	{
+		std::string amount_text (request.get<std::string> ("amount"));
+
+		try
+		{
+			size_t decimal_point_position = amount_text.find ('.');
+			auto integer_string = amount_text.substr (0, decimal_point_position);
+
+			nano::amount integer_amount (0);
+
+			if (integer_amount.decode_dec (integer_string))
+			{
+				ec = nano::error_common::invalid_amount;
+			}
+
+			integer_amount = integer_amount.number () * nano::Mxrb_ratio;
+			if (decimal_point_position == -1) // No fractional part. Return the result
+			{
+				return integer_amount;
+			}
+
+			auto fractional_string = amount_text.substr (decimal_point_position + 1);
+			if (fractional_string.size () > 30)
+			{
+				ec = nano::error_common::invalid_amount;
+				return nano::amount(0);
+			}
+
+			fractional_string.append (30 - fractional_string.length (), '0');
+			fractional_string.erase (0, fractional_string.find_first_not_of ('0'));
+
+			nano::amount fractional_amount (0);
+			if (fractional_amount.decode_dec (fractional_string))
+			{
+				ec = nano::error_common::invalid_amount;
+			}
+			release_assert (fractional_amount < 1 * nano::Mxrb_ratio);
+
+			return nano::amount (integer_amount.number () += fractional_amount.number ());
+		}
+		catch (const boost::bad_lexical_cast & e)
+		{
+			ec = nano::error_common::invalid_amount;
+		}
+	}
+	return nano::amount (0);
 }
 
 nano::amount nano::json_handler::amount_impl ()
@@ -2927,6 +2983,16 @@ void nano::json_handler::mnano_to_raw (nano::uint128_t ratio)
 		{
 			ec = nano::error_common::invalid_amount_big;
 		}
+	}
+	response_errors ();
+}
+
+void nano::json_handler::decimal_nano_to_raw ()
+{
+	auto amount (amount_dec_impl ());
+	if (!ec)
+	{
+		response_l.put ("amount", amount.number ().convert_to<std::string> ());
 	}
 	response_errors ();
 }
