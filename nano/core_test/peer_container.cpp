@@ -184,6 +184,10 @@ TEST (peer_container, list_fanout)
 	auto add_peer = [&node, &system] () {
 		auto outer_node = nano::test::add_outer_node (system);
 		auto channel = nano::test::establish_tcp (system, *node, outer_node->network.endpoint ());
+		if (!channel)
+		{
+			std::cerr << "Failed to establish TCP connection on Windows runner" << std::endl;
+		}
 	};
 	std::cout << "1" << std::endl;
 	add_peer ();
