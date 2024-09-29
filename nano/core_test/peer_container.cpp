@@ -189,19 +189,16 @@ TEST (peer_container, list_fanout)
 			std::cerr << "Failed to establish TCP connection on Windows runner" << std::endl;
 		}
 	};
-	std::cout << "1" << std::endl;
 	add_peer ();
 	ASSERT_TIMELY_EQ (15s, 1, node->network.size ());
 	ASSERT_EQ (1.f, node->network.size_sqrt ());
 	ASSERT_EQ (1, node->network.fanout ());
 	ASSERT_EQ (1, node->network.list (node->network.fanout ()).size ());
-	std::cout << "2" << std::endl;
 	add_peer ();
 	ASSERT_TIMELY_EQ (15s, 2, node->network.size ());
 	ASSERT_EQ (std::sqrt (2.f), node->network.size_sqrt ());
 	ASSERT_EQ (2, node->network.fanout ());
 	ASSERT_EQ (2, node->network.list (node->network.fanout ()).size ());
-	std::cout << "3" << std::endl;
 	unsigned number_of_peers = 10;
 	for (unsigned i = 2; i < number_of_peers; ++i)
 	{
@@ -209,10 +206,13 @@ TEST (peer_container, list_fanout)
 	}
 
 	ASSERT_TIMELY_EQ (15s, number_of_peers, node->network.size ());
-	std::cout << "4" << std::endl;
+	std::cout << "1" << std::endl;
 	ASSERT_EQ (std::sqrt (float (number_of_peers)), node->network.size_sqrt ());
+	std::cout << "2" << std::endl;
 	ASSERT_EQ (4, node->network.fanout ());
+	std::cout << "3" << std::endl;
 	ASSERT_EQ (4, node->network.list (node->network.fanout ()).size ());
+	std::cout << "4" << std::endl;
 }
 
 // Test to make sure we don't repeatedly send keepalive messages to nodes that aren't responding
