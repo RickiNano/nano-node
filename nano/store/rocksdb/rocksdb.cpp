@@ -407,7 +407,7 @@ rocksdb::ColumnFamilyOptions nano::store::rocksdb::component::get_cf_options (st
 		std::shared_ptr<::rocksdb::TableFactory> table_factory (::rocksdb::NewBlockBasedTableFactory (get_table_options ()));
 		cf_options.table_factory = table_factory;
 		// Size of each memtable (write buffer for this column family)
-		cf_options.write_buffer_size = rocksdb_config.write_cache * 1024 * 1024;
+		cf_options.write_buffer_size = 1 * 1024 * 1024;
 	}
 	return cf_options;
 }
@@ -762,19 +762,20 @@ rocksdb::Options nano::store::rocksdb::component::get_db_options ()
 	db_options.OptimizeLevelStyleCompaction ();
 
 	// Set max number of threads
-	db_options.IncreaseParallelism ();
-	db_options.max_background_compactions = 4;
-	db_options.max_open_files = 500;
-	db_options.use_direct_reads = false; // This might help with file I/O issues on Windows
-	db_options.use_direct_io_for_flush_and_compaction = false;
+	db_options.IncreaseParallelism (1); // Reduce parallelism
+	db_options.max_background_compactions = 1; // Limit background compaction threads
+	db_options.max_background_flushes = 1; // Limit background flush threads
+	db_options.write_buffer_size = 16 * 1024 * 1024; // Reduce memory usage for write buffer
+	db_options.max_write_buffer_number = 2; // Fewer memtables
+	db_options.max_open_files = 100; // Reduce the number of open files
+	db_options.target_file_size_base = 16 * 1024 * 1024; // Lower target file size for each SST
+	db_options.level0_file_num_compaction_trigger = 4; // Trigger compaction at 4 level-0 files
+	db_options.max_bytes_for_level_base = 32 * 1024 * 1024; // Lower base size for level-1
+	db_options.use_direct_reads = false; // Disable direct I/O for reads
+	db_options.use_direct_io_for_flush_and_compaction = false; // Disable direct I/O for flush/compaction
 
 	// Not compressing any SST files for compatibility reasons.
 	db_options.compression = ::rocksdb::kNoCompression;
-
-	auto event_listener_l = new event_listener ([this] (::rocksdb::FlushJobInfo const & flush_job_info_a) {
-		this->on_flush (flush_job_info_a);
-	});
-	db_options.listeners.emplace_back (event_listener_l);
 
 	return db_options;
 }
@@ -790,6 +791,7 @@ rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_table_optio
 	// Version 5 offers improved read spead, caching and better compression (if enabled)
 	// Any existing ledger data in version 4 will not be migrated. New data will be written in version 5.
 	table_options.format_version = 5;
+	table_options.no_block_cache = true;
 
 	// Block cache for reads
 	table_options.block_cache = ::rocksdb::NewLRUCache (rocksdb_config.read_cache * 1024 * 1024);
@@ -798,15 +800,6 @@ rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_table_optio
 	table_options.filter_policy.reset (::rocksdb::NewBloomFilterPolicy (10, false));
 
 	return table_options;
-}
-
-void nano::store::rocksdb::component::on_flush (::rocksdb::FlushJobInfo const & flush_job_info_a)
-{
-	// Reset appropriate tombstone counters
-	if (auto it = tombstone_map.find (cf_name_table_map[flush_job_info_a.cf_name.c_str ()]); it != tombstone_map.end ())
-	{
-		it->second.num_since_last_flush = 0;
-	}
 }
 
 std::vector<nano::tables> nano::store::rocksdb::component::all_tables () const
