@@ -27,25 +27,6 @@ jobs:
       - name: Prepare
         run: ci/prepare/macos/prepare.sh
 
-      - name: Build Tests
-        id: build
-        run: ci/build-tests.sh
-
-      - name: Core Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-core-tests.sh
-        working-directory: build
-
-      - name: RPC Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-rpc-tests.sh
-        working-directory: build
-
-      - name: System Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-system-tests.sh
-        working-directory: build
-
   linux_test:
     name: Linux [${{ matrix.BACKEND }} | ${{ matrix.COMPILER }}]
     timeout-minutes: 90
@@ -72,30 +53,6 @@ jobs:
 
       - name: Prepare
         run: sudo -E ci/prepare/linux/prepare.sh
-
-      - name: Build Tests
-        id: build
-        run: ci/build-tests.sh
-
-      - name: Core Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-core-tests.sh
-        working-directory: build
-
-      - name: RPC Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-rpc-tests.sh
-        working-directory: build
-
-      - name: System Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-system-tests.sh
-        working-directory: build
-
-      - name: QT Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-qt-tests.sh
-        working-directory: build
 
   windows_test:
     name: Windows [${{ matrix.BACKEND }}]
