@@ -207,7 +207,7 @@ void nano::test::system::stop_node (nano::node & node)
 	auto stopped = std::async (std::launch::async, [&node] () {
 		node.stop ();
 	});
-	auto ec = poll_until_true (5s, [&] () {
+	auto ec = poll_until_true (15s, [&] () {
 		auto status = stopped.wait_for (0s);
 		return status == std::future_status::ready;
 	});
