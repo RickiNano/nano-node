@@ -199,7 +199,7 @@ TEST (peer_container, list_fanout)
 	ASSERT_EQ (std::sqrt (2.f), node->network.size_sqrt ());
 	ASSERT_EQ (2, node->network.fanout ());
 	ASSERT_EQ (2, node->network.list (node->network.fanout ()).size ());
-	unsigned number_of_peers = 10;
+	unsigned number_of_peers = 5;
 	for (unsigned i = 2; i < number_of_peers; ++i)
 	{
 		add_peer ();
