@@ -762,7 +762,11 @@ rocksdb::Options nano::store::rocksdb::component::get_db_options ()
 	db_options.OptimizeLevelStyleCompaction ();
 
 	// Set max number of threads
-	db_options.IncreaseParallelism (rocksdb_config.io_threads);
+	db_options.IncreaseParallelism ();
+	db_options.max_background_compactions = 4;
+	db_options.max_open_files = 500;
+	db_options.use_direct_reads = false; // This might help with file I/O issues on Windows
+	db_options.use_direct_io_for_flush_and_compaction = false;
 
 	// Not compressing any SST files for compatibility reasons.
 	db_options.compression = ::rocksdb::kNoCompression;
