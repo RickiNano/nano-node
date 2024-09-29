@@ -765,10 +765,10 @@ rocksdb::Options nano::store::rocksdb::component::get_db_options ()
 	db_options.IncreaseParallelism (1); // Reduce parallelism
 	db_options.max_background_compactions = 1; // Limit background compaction threads
 	db_options.max_background_flushes = 1; // Limit background flush threads
-	db_options.write_buffer_size = 16 * 1024 * 1024; // Reduce memory usage for write buffer
-	db_options.max_write_buffer_number = 2; // Fewer memtables
+	db_options.write_buffer_size = 1024 * 1024; // Reduce memory usage for write buffer
+	db_options.max_write_buffer_number = 1; // Fewer memtables
 	db_options.max_open_files = 100; // Reduce the number of open files
-	db_options.target_file_size_base = 16 * 1024 * 1024; // Lower target file size for each SST
+	db_options.target_file_size_base = 4 * 1024 * 1024; // Lower target file size for each SST
 	db_options.level0_file_num_compaction_trigger = 4; // Trigger compaction at 4 level-0 files
 	db_options.max_bytes_for_level_base = 32 * 1024 * 1024; // Lower base size for level-1
 	db_options.use_direct_reads = false; // Disable direct I/O for reads

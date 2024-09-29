@@ -690,11 +690,13 @@ void nano::node::stop ()
 	logger.info (nano::log::type::node, "Node stopping...");
 
 	tcp_listener.stop ();
+	std::cout << "1" << std::endl;
 	bootstrap_workers.stop ();
 	wallet_workers.stop ();
 	election_workers.stop ();
 	vote_router.stop ();
 	peer_history.stop ();
+	std::cout << "2" << std::endl;
 	// Cancels ongoing work generation tasks, which may be blocking other threads
 	// No tasks may wait for work generation in I/O threads, or termination signal capturing will be unable to call node::stop()
 	distributed_work.stop ();
@@ -704,6 +706,7 @@ void nano::node::stop ()
 	unchecked.stop ();
 	block_processor.stop ();
 	aggregator.stop ();
+	std::cout << "3" << std::endl;
 	vote_cache_processor.stop ();
 	vote_processor.stop ();
 	rep_tiers.stop ();
@@ -712,6 +715,7 @@ void nano::node::stop ()
 	generator.stop ();
 	final_generator.stop ();
 	confirming_set.stop ();
+	std::cout << "4" << std::endl;
 	telemetry.stop ();
 	websocket.stop ();
 	bootstrap_server.stop ();
@@ -719,12 +723,14 @@ void nano::node::stop ()
 	port_mapping.stop ();
 	wallets.stop ();
 	stats.stop ();
+	std::cout << "5" << std::endl;
 	epoch_upgrader.stop ();
 	workers.stop ();
 	local_block_broadcaster.stop ();
 	message_processor.stop ();
 	network.stop (); // Stop network last to avoid killing in-use sockets
 	monitor.stop ();
+	std::cout << "6" << std::endl;
 
 	// work pool is not stopped on purpose due to testing setup
 
