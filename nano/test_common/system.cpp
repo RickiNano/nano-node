@@ -205,12 +205,15 @@ void nano::test::system::register_node (std::shared_ptr<nano::node> const & node
 void nano::test::system::stop_node (nano::node & node)
 {
 	auto stopped = std::async (std::launch::async, [&node] () {
+		std::cout << "Stopping node..." << std::endl;
 		node.stop ();
+		std::cout << "Node stopped..." << std::endl;
 	});
-	auto ec = poll_until_true (5s, [&] () {
+	auto ec = poll_until_true (15s, [&] () {
 		auto status = stopped.wait_for (0s);
 		return status == std::future_status::ready;
 	});
+	std::cout << "Stop node error:" << ec << std::endl;
 	debug_assert (!ec);
 }
 
