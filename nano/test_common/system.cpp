@@ -211,6 +211,7 @@ void nano::test::system::stop_node (nano::node & node)
 		auto status = stopped.wait_for (0s);
 		return status == std::future_status::ready;
 	});
+	std::cout << "Stop node error:" << ec << std::endl;
 	debug_assert (!ec);
 }
 
