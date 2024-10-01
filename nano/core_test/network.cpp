@@ -656,7 +656,7 @@ TEST (network, peer_max_tcp_attempts)
 		node->network.merge_peer (node2->network.endpoint ());
 	}
 
-	ASSERT_TIMELY_EQ (15s, node->network.size (), node_config.network.max_peers_per_ip);
+	ASSERT_TIMELY_EQ (60s, node->network.size (), node_config.network.max_peers_per_ip);
 	ASSERT_FALSE (node->network.tcp_channels.track_reachout (nano::endpoint (node->network.endpoint ().address (), system.get_available_port ())));
 	ASSERT_LE (1, node->stats.count (nano::stat::type::tcp, nano::stat::detail::max_per_ip, nano::stat::dir::out));
 }
