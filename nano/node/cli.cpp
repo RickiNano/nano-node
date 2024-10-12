@@ -1385,7 +1385,7 @@ bool is_using_rocksdb (std::filesystem::path const & data_path, boost::program_o
 	auto error = nano::read_node_config_toml (data_path, config, config_overrides);
 	if (!error)
 	{
-		return config.node.rocksdb_config.enable;
+		return config.node.database_backend == nano::database_backend::rocksdb;
 	}
 	else
 	{
