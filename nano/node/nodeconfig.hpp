@@ -140,8 +140,7 @@ public:
 	uint64_t max_pruning_depth{ 0 };
 	nano::rocksdb_config rocksdb_config;
 	nano::lmdb_config lmdb_config;
-	nano::database_backend database_backend{ std::string (std::getenv ("BACKEND") ? std::getenv ("BACKEND") : "") == "rocksdb" ? nano::database_backend::rocksdb : std::string (std::getenv ("BACKEND") ? std::getenv ("BACKEND") : "") == "lmdb" ? nano::database_backend::lmdb
-																																																												  : nano::database_backend::automatic };
+	nano::database_backend database_backend{ backend_used_in_tests () };
 	bool enable_upnp{ true };
 	nano::vote_cache_config vote_cache;
 	nano::rep_crawler_config rep_crawler;
