@@ -92,7 +92,7 @@ TEST (node_DeathTest, readonly_block_store_not_exist)
 #endif
 {
 	// This is a read-only node with no ledger file
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		nano::inactive_node node (nano::unique_path (), nano::inactive_node_flag_defaults ());
 		ASSERT_TRUE (node.node->init_error ());
@@ -2766,7 +2766,7 @@ TEST (node, dont_write_lock_node)
 TEST (node, bidirectional_tcp)
 {
 #ifdef _WIN32
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();

@@ -5913,7 +5913,7 @@ TEST (rpc, block_confirmed)
 
 TEST (rpc, database_txn_tracker)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		return;

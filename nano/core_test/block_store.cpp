@@ -619,7 +619,7 @@ namespace nano::store::lmdb
 {
 TEST (mdb_block_store, supported_version_upgrades)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
@@ -666,7 +666,7 @@ TEST (mdb_block_store, supported_version_upgrades)
 
 TEST (mdb_block_store, bad_path)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
@@ -988,7 +988,7 @@ TEST (block_store, state_block)
 
 TEST (mdb_block_store, sideband_height)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
@@ -1362,7 +1362,7 @@ namespace nano::store::lmdb
 {
 TEST (mdb_block_store, upgrade_v21_v22)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
@@ -1398,7 +1398,7 @@ TEST (mdb_block_store, upgrade_v21_v22)
 
 TEST (mdb_block_store, upgrade_v23_v24)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Direct lmdb operations are used to simulate the old ledger format so this test will not work on RocksDB
 		GTEST_SKIP ();
@@ -1437,7 +1437,7 @@ namespace nano::store::rocksdb
 {
 TEST (rocksdb_block_store, upgrade_v21_v22)
 {
-	if (!nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::lmdb)
 	{
 		// Don't test this in LMDB mode
 		GTEST_SKIP ();
@@ -1524,7 +1524,7 @@ TEST (mdb_block_store, upgrade_v22_to_v23)
 
 TEST (mdb_block_store, upgrade_backup)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
@@ -1565,7 +1565,7 @@ TEST (mdb_block_store, upgrade_backup)
 // Test various confirmation height values as well as clearing them
 TEST (block_store, confirmation_height)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode
 		GTEST_SKIP ();
@@ -1611,7 +1611,7 @@ TEST (block_store, confirmation_height)
 // Test various confirmation height values as well as clearing them
 TEST (block_store, final_vote)
 {
-	if (nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		// Don't test this in rocksdb mode as deletions cause inaccurate counts
 		GTEST_SKIP ();
@@ -1730,7 +1730,7 @@ namespace nano
 // logic bound to the way RocksDB is used by the node.
 TEST (rocksdb_block_store, tombstone_count)
 {
-	if (!nano::rocksdb_config::using_rocksdb_in_tests ())
+	if (nano::node_config::backend_used_in_tests () == nano::database_backend::rocksdb)
 	{
 		GTEST_SKIP ();
 	}

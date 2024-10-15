@@ -163,6 +163,7 @@ public:
 	void deserialize_address (std::string const &, std::vector<std::pair<std::string, uint16_t>> &) const;
 	std::string serialize_database_backend (nano::database_backend) const;
 	nano::database_backend deserialize_database_backend (std::string const & string_a);
+	static nano::database_backend backend_used_in_tests ();
 
 private:
 	static std::optional<unsigned> env_io_threads ();

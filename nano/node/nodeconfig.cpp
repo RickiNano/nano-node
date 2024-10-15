@@ -685,6 +685,17 @@ nano::database_backend nano::node_config::deserialize_database_backend (std::str
 	debug_assert (false);
 }
 
+nano::database_backend nano::node_config::backend_used_in_tests ()
+{
+	auto backend_string = std::string (std::getenv ("BACKEND"));
+	debug_assert (backend_string != nullptr);
+	if (backend_string == "rocksdb")
+		return nano::database_backend::rocksdb;
+	if (backend_string == "lmdb")
+		return nano::database_backend::lmdb;
+	debug_assert (false);
+}
+
 nano::account nano::node_config::random_representative () const
 {
 	debug_assert (!preconfigured_representatives.empty ());
