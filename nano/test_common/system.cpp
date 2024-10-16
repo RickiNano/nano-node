@@ -38,11 +38,6 @@ nano::test::system::system () :
 	io_guard{ boost::asio::make_work_guard (*io_ctx) },
 	stats{ logger }
 {
-	auto scale_str = std::getenv ("DEADLINE_SCALE_FACTOR");
-	if (scale_str)
-	{
-		deadline_scaling_factor = std::stod (scale_str);
-	}
 }
 
 nano::test::system::system (uint16_t count_a, nano::transport::transport_type type_a, nano::node_flags flags_a) :
@@ -313,7 +308,7 @@ std::shared_ptr<nano::state_block> nano::test::system::upgrade_genesis_epoch (na
 
 void nano::test::system::deadline_set (std::chrono::duration<double, std::nano> const & delta_a)
 {
-	deadline = std::chrono::steady_clock::now () + delta_a * deadline_scaling_factor;
+	deadline = std::chrono::steady_clock::now () + delta_a;
 }
 
 std::error_code nano::test::system::poll (std::chrono::nanoseconds const & wait_time)
