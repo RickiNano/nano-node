@@ -91,7 +91,6 @@ namespace test
 		nano::stats stats;
 		nano::work_pool work{ nano::dev::network_params.network, std::max (nano::hardware_concurrency (), 1u) };
 		std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<double>> deadline{ std::chrono::steady_clock::time_point::max () };
-		double deadline_scaling_factor{ 1.0 };
 		unsigned node_sequence{ 0 };
 		std::deque<std::shared_ptr<nano::block>> initialization_blocks;
 		std::deque<std::shared_ptr<nano::block>> initialization_blocks_cemented;
