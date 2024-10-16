@@ -1703,18 +1703,18 @@ TEST (block_store, reset_renew_existing_transaction)
 	ASSERT_NE (nullptr, block_existing);
 }
 
-TEST (block_store, rocksdb_force_test_env_variable)
+TEST (block_store, backend_test_env_variable)
 {
 	nano::logger logger;
 
 	// Set environment variable
-	constexpr auto env_var = "TEST_USE_ROCKSDB";
+	constexpr auto env_var = "BACKEND";
 	auto value = std::getenv (env_var);
 
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 
 	auto mdb_cast = dynamic_cast<nano::store::lmdb::component *> (store.get ());
-	if (value && boost::lexical_cast<int> (value) == 1)
+	if (value && std::string (value) == "rocksdb")
 	{
 		ASSERT_NE (boost::polymorphic_downcast<nano::store::rocksdb::component *> (store.get ()), nullptr);
 	}
