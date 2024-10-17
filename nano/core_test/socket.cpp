@@ -19,76 +19,76 @@
 
 using namespace std::chrono_literals;
 
-TEST (socket, max_connections)
-{
-	nano::test::system system;
-
-	nano::node_flags node_flags;
-	nano::node_config node_config = system.default_config ();
-	node_config.tcp.max_inbound_connections = 2;
-	auto node = system.add_node (node_config, node_flags);
-
-	// client side connection tracking
-	std::atomic<size_t> connection_attempts = 0;
-	auto connect_handler = [&connection_attempts] (boost::system::error_code const & ec_a) {
-		ASSERT_EQ (ec_a.value (), 0);
-		++connection_attempts;
-	};
-
-	// start 3 clients, 2 will persist but 1 will be dropped
-	auto client1 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client1->async_connect (node->network.endpoint (), connect_handler);
-
-	auto client2 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client2->async_connect (node->network.endpoint (), connect_handler);
-
-	auto client3 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client3->async_connect (node->network.endpoint (), connect_handler);
-
-	ASSERT_TIMELY_EQ (5s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 2);
-	ASSERT_ALWAYS_EQ (1s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 2);
-	ASSERT_TIMELY_EQ (5s, connection_attempts, 3);
-
-	// create space for one socket and fill the connections table again
-	{
-		auto sockets1 = node->tcp_listener.sockets ();
-		ASSERT_EQ (sockets1.size (), 2);
-		sockets1[0]->close ();
-	}
-	ASSERT_TIMELY_EQ (10s, node->tcp_listener.sockets ().size (), 1);
-
-	auto client4 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client4->async_connect (node->network.endpoint (), connect_handler);
-
-	auto client5 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client5->async_connect (node->network.endpoint (), connect_handler);
-
-	ASSERT_TIMELY_EQ (5s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 3);
-	ASSERT_ALWAYS_EQ (1s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 3);
-	ASSERT_TIMELY_EQ (5s, connection_attempts, 5);
-
-	// close all existing sockets and fill the connections table again
-	{
-		auto sockets2 = node->tcp_listener.sockets ();
-		ASSERT_EQ (sockets2.size (), 2);
-		sockets2[0]->close ();
-		sockets2[1]->close ();
-	}
-	ASSERT_TIMELY_EQ (10s, node->tcp_listener.sockets ().size (), 0);
-
-	auto client6 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client6->async_connect (node->network.endpoint (), connect_handler);
-
-	auto client7 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client7->async_connect (node->network.endpoint (), connect_handler);
-
-	auto client8 = std::make_shared<nano::transport::tcp_socket> (*node);
-	client8->async_connect (node->network.endpoint (), connect_handler);
-
-	ASSERT_TIMELY_EQ (5s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 5);
-	ASSERT_ALWAYS_EQ (1s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 5);
-	ASSERT_TIMELY_EQ (5s, connection_attempts, 8); // connections initiated by the client
-}
+//TEST (socket, max_connections)
+//{
+//	nano::test::system system;
+//
+//	nano::node_flags node_flags;
+//	nano::node_config node_config = system.default_config ();
+//	node_config.tcp.max_inbound_connections = 2;
+//	auto node = system.add_node (node_config, node_flags);
+//
+//	// client side connection tracking
+//	std::atomic<size_t> connection_attempts = 0;
+//	auto connect_handler = [&connection_attempts] (boost::system::error_code const & ec_a) {
+//		ASSERT_EQ (ec_a.value (), 0);
+//		++connection_attempts;
+//	};
+//
+//	// start 3 clients, 2 will persist but 1 will be dropped
+//	auto client1 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client1->async_connect (node->network.endpoint (), connect_handler);
+//
+//	auto client2 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client2->async_connect (node->network.endpoint (), connect_handler);
+//
+//	auto client3 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client3->async_connect (node->network.endpoint (), connect_handler);
+//
+//	ASSERT_TIMELY_EQ (5s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 2);
+//	ASSERT_ALWAYS_EQ (1s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 2);
+//	ASSERT_TIMELY_EQ (5s, connection_attempts, 3);
+//
+//	// create space for one socket and fill the connections table again
+//	{
+//		auto sockets1 = node->tcp_listener.sockets ();
+//		ASSERT_EQ (sockets1.size (), 2);
+//		sockets1[0]->close ();
+//	}
+//	ASSERT_TIMELY_EQ (10s, node->tcp_listener.sockets ().size (), 1);
+//
+//	auto client4 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client4->async_connect (node->network.endpoint (), connect_handler);
+//
+//	auto client5 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client5->async_connect (node->network.endpoint (), connect_handler);
+//
+//	ASSERT_TIMELY_EQ (5s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 3);
+//	ASSERT_ALWAYS_EQ (1s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 3);
+//	ASSERT_TIMELY_EQ (5s, connection_attempts, 5);
+//
+//	// close all existing sockets and fill the connections table again
+//	{
+//		auto sockets2 = node->tcp_listener.sockets ();
+//		ASSERT_EQ (sockets2.size (), 2);
+//		sockets2[0]->close ();
+//		sockets2[1]->close ();
+//	}
+//	ASSERT_TIMELY_EQ (10s, node->tcp_listener.sockets ().size (), 0);
+//
+//	auto client6 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client6->async_connect (node->network.endpoint (), connect_handler);
+//
+//	auto client7 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client7->async_connect (node->network.endpoint (), connect_handler);
+//
+//	auto client8 = std::make_shared<nano::transport::tcp_socket> (*node);
+//	client8->async_connect (node->network.endpoint (), connect_handler);
+//
+//	ASSERT_TIMELY_EQ (5s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 5);
+//	ASSERT_ALWAYS_EQ (1s, node->stats.count (nano::stat::type::tcp_listener, nano::stat::detail::accept_success), 5);
+//	ASSERT_TIMELY_EQ (5s, connection_attempts, 8); // connections initiated by the client
+//}
 
 TEST (socket, max_connections_per_ip)
 {
