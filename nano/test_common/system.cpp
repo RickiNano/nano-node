@@ -308,7 +308,7 @@ std::shared_ptr<nano::state_block> nano::test::system::upgrade_genesis_epoch (na
 
 void nano::test::system::deadline_set (std::chrono::duration<double, std::nano> const & delta_a)
 {
-	deadline = std::chrono::steady_clock::now () + delta_a;
+	deadline = std::chrono::steady_clock::now () + delta_a * 2;
 }
 
 std::error_code nano::test::system::poll (std::chrono::nanoseconds const & wait_time)
