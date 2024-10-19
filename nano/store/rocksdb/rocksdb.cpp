@@ -910,7 +910,7 @@ rocksdb::BlockBasedTableOptions nano::store::rocksdb::component::get_active_tabl
 	// Using format_version=4 significantly reduces the index block size, in some cases around 4-5x.
 	// This frees more space in block cache, which would result in higher hit rate for data and filter blocks,
 	// or offer the same performance with a smaller block cache size.
-	table_options.format_version = 4;
+	table_options.format_version = 5;
 	table_options.index_block_restart_interval = 16;
 
 	// Block cache for reads
