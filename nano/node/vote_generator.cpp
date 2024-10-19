@@ -288,11 +288,12 @@ void nano::vote_generator::run ()
 	nano::unique_lock<nano::mutex> lock{ mutex };
 	while (!stopped)
 	{
-		condition.wait_for (lock, config.vote_generator_delay, [this] () { return this->candidates.size () >= nano::network::confirm_ack_hashes_max || !requests.empty (); });
+		condition.wait_for (lock, config.vote_generator_delay, [this] () { return !requests.empty (); });
 
-		if (!candidates.empty ())
+		if (should_broadcast ())
 		{
 			broadcast (lock);
+			next_broadcast = std::chrono::steady_clock::now () + std::chrono::milliseconds (config.vote_generator_delay);
 		}
 		if (!requests.empty ())
 		{
@@ -301,6 +302,23 @@ void nano::vote_generator::run ()
 			reply (lock, std::move (request));
 		}
 	}
+}
+
+bool nano::vote_generator::should_broadcast () const
+{
+	if (candidates.size () == 0)
+	{
+		return false;
+	}
+	if (std::chrono::steady_clock::now () > next_broadcast)
+	{
+		return true;
+	}
+	if (candidates.size () >= nano::network::confirm_ack_hashes_max)
+	{
+		return true;
+	}
+	return false;
 }
 
 std::unique_ptr<nano::container_info_component> nano::vote_generator::collect_container_info (std::string const & name) const
