@@ -2888,46 +2888,41 @@ void nano::json_handler::decimal_nano_to_raw ()
 	nano::amount integer_amount (0);
 	nano::amount fractional_amount (0);
 
-	try
-	{
-		size_t decimal_point_position = amount_text.find ('.');
-		auto integer_string = amount_text.substr (0, decimal_point_position);
-
-		if (integer_amount.decode_dec (integer_string))
-		{
-			ec = nano::error_common::invalid_amount;
-		}
-
-		result = integer_amount.number () * nano::nano_ratio;
-
-		if (decimal_point_position != -1)
-		{
-			// Handle fractional part
-			auto fractional_string = amount_text.substr (decimal_point_position + 1);
-			if (fractional_string.size () > 30)
-			{
-				ec = nano::error_common::invalid_amount_decimals;
-			}
-			else
-			{
-				fractional_string.append (30 - fractional_string.length (), '0');
-				fractional_string.erase (0, fractional_string.find_first_not_of ('0'));
-
-				if (fractional_amount.decode_dec (fractional_string))
-				{
-					ec = nano::error_common::invalid_amount;
-				}
-				else
-				{
-					debug_assert (fractional_amount < 1 * nano::nano_ratio);
-					result = result.number () + fractional_amount.number ();
-				}
-			}
-		}
-	}
-	catch (const boost::bad_lexical_cast & e)
+	// validate input using boost lexical convert
+	float num;
+	if (!boost::conversion::try_lexical_convert (amount_text, num))
 	{
 		ec = nano::error_common::invalid_amount;
+		response_errors ();
+	}
+
+	size_t decimal_point_position = amount_text.find ('.');
+	auto integer_string = amount_text.substr (0, decimal_point_position);
+
+	// Handle integer part
+	if (integer_amount.decode_dec(integer_string))
+	{
+		ec = nano::error_common::invalid_amount;
+		response_errors ();
+	}
+	result = integer_amount.number () * nano::nano_ratio;
+
+	if (decimal_point_position != -1)
+	{
+		// Handle decimal part
+		auto fractional_string = amount_text.substr (decimal_point_position + 1);
+
+		fractional_string.append (30 - fractional_string.length (), '0');
+		fractional_string.erase (0, fractional_string.find_first_not_of ('0'));
+
+		if (fractional_amount.decode_dec (fractional_string))
+		{
+			ec = nano::error_common::invalid_amount;
+			response_errors ();
+		}
+
+		debug_assert (fractional_amount < 1 * nano::nano_ratio);
+		result = result.number () + fractional_amount.number ();
 	}
 
 	response_l.put ("amount", result.number ().convert_to<std::string> ());
