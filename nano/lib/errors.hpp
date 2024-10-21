@@ -43,6 +43,7 @@ enum class error_common
 	missing_work,
 	invalid_amount,
 	invalid_amount_big,
+	invalid_amount_decimals,
 	invalid_count,
 	invalid_index,
 	invalid_ip_address,
