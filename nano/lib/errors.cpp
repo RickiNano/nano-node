@@ -71,6 +71,8 @@ std::string nano::error_common_messages::message (int ev) const
 			return "Invalid amount number";
 		case nano::error_common::invalid_amount_big:
 			return "Amount too big";
+		case nano::error_common::invalid_amount_decimals:
+			return "Amount too many decimals";
 		case nano::error_common::invalid_count:
 			return "Invalid count";
 		case nano::error_common::invalid_ip_address:

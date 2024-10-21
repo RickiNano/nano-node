@@ -18,6 +18,7 @@
 #include <nano/secure/ledger_set_confirmed.hpp>
 #include <nano/secure/transaction.hpp>
 
+#include <boost/algorithm/string/find.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -107,6 +108,10 @@ void nano::json_handler::process_request (bool unsafe_a)
 				response_l.put ("deprecated", "1");
 				request.put ("head", request.get<std::string> ("hash"));
 				account_history ();
+			}
+			else if (action == "decimal_nano_to_raw")
+			{
+				decimal_nano_to_raw ();
 			}
 			else if (action == "nano_to_raw")
 			{
@@ -2873,6 +2878,59 @@ void nano::json_handler::ledger ()
 		}
 		response_l.add_child ("accounts", accounts);
 	}
+	response_errors ();
+}
+
+void nano::json_handler::decimal_nano_to_raw ()
+{
+	std::string amount_text (request.get<std::string> ("amount"));
+	nano::amount result (0);
+	nano::amount integer_amount (0);
+	nano::amount fractional_amount (0);
+
+	try
+	{
+		size_t decimal_point_position = amount_text.find ('.');
+		auto integer_string = amount_text.substr (0, decimal_point_position);
+
+		if (integer_amount.decode_dec (integer_string))
+		{
+			ec = nano::error_common::invalid_amount;
+		}
+
+		result = integer_amount.number () * nano::nano_ratio;
+
+		if (decimal_point_position != -1)
+		{
+			// Handle fractional part
+			auto fractional_string = amount_text.substr (decimal_point_position + 1);
+			if (fractional_string.size () > 30)
+			{
+				ec = nano::error_common::invalid_amount_decimals;
+			}
+			else
+			{
+				fractional_string.append (30 - fractional_string.length (), '0');
+				fractional_string.erase (0, fractional_string.find_first_not_of ('0'));
+
+				if (fractional_amount.decode_dec (fractional_string))
+				{
+					ec = nano::error_common::invalid_amount;
+				}
+				else
+				{
+					debug_assert (fractional_amount < 1 * nano::nano_ratio);
+					result = result.number () + fractional_amount.number ();
+				}
+			}
+		}
+	}
+	catch (const boost::bad_lexical_cast & e)
+	{
+		ec = nano::error_common::invalid_amount;
+	}
+
+	response_l.put ("amount", result.number ().convert_to<std::string> ());
 	response_errors ();
 }
 
