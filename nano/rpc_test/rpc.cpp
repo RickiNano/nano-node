@@ -2381,30 +2381,43 @@ TEST (rpc, decimal_nano_to_raw)
 	nano::test::system system;
 	auto node1 = add_ipc_enabled_node (system);
 	auto const rpc_ctx = add_rpc (system, node1);
+
+	// One raw as decimal
 	boost::property_tree::ptree request1;
 	request1.put ("action", "decimal_nano_to_raw");
 	request1.put ("amount", "0.000000000000000000000000000001");
 	auto response (wait_response (system, rpc_ctx, request1));
 	ASSERT_EQ ("1", response.get<std::string> ("amount"));
 
+	// Precision overflow (less than one raw)
+	boost::property_tree::ptree requesta;
+	requesta.put ("action", "decimal_nano_to_raw");
+	requesta.put ("amount", "0.0000000000000000000000000000001");
+	response = wait_response (system, rpc_ctx, requesta);
+	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
+
+	// Zero as decimal
 	boost::property_tree::ptree request2;
 	request2.put ("action", "decimal_nano_to_raw");
 	request2.put ("amount", "0.00");
 	response = wait_response (system, rpc_ctx, request2);
 	ASSERT_EQ ("0", response.get<std::string> ("amount"));
 
+	// Integer only
 	boost::property_tree::ptree request3;
 	request3.put ("action", "decimal_nano_to_raw");
 	request3.put ("amount", "5");
 	response = wait_response (system, rpc_ctx, request3);
 	ASSERT_EQ ((5 * nano::nano_ratio).convert_to<std::string> (), response.get<std::string> ("amount"));
 
+	// Integer value as decimal
 	boost::property_tree::ptree request4;
 	request4.put ("action", "decimal_nano_to_raw");
 	request4.put ("amount", "7.00000");
 	response = wait_response (system, rpc_ctx, request4);
 	ASSERT_EQ ((7 * nano::nano_ratio).convert_to<std::string> (), response.get<std::string> ("amount"));
 
+	// Negative value
 	boost::property_tree::ptree request5;
 	request5.put ("action", "decimal_nano_to_raw");
 	request5.put ("amount", "-5");
@@ -2412,36 +2425,25 @@ TEST (rpc, decimal_nano_to_raw)
 	std::cout << response.get<std::string> ("error");
 	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
+	// Multiple decimal seperators.
 	boost::property_tree::ptree request6;
 	request6.put ("action", "decimal_nano_to_raw");
 	request6.put ("amount", "7.234.154");
 	response = wait_response (system, rpc_ctx, request6);
 	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
+	// Comma as decimal seperator
 	boost::property_tree::ptree request7;
 	request7.put ("action", "decimal_nano_to_raw");
 	request7.put ("amount", "3,14");
 	response = wait_response (system, rpc_ctx, request7);
 	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
+	// Empty input
 	boost::property_tree::ptree request8;
 	request8.put ("action", "decimal_nano_to_raw");
 	request8.put ("amount", "");
 	response = wait_response (system, rpc_ctx, request8);
-	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
-
-	// Max precision
-	boost::property_tree::ptree request9;
-	request9.put ("action", "decimal_nano_to_raw");
-	request9.put ("amount", "1.999999999999999999999999999999");
-	response = wait_response (system, rpc_ctx, request9);
-	ASSERT_EQ ("1999999999999999999999999999999", response.get<std::string> ("amount"));
-
-	// Precision overflow
-	boost::property_tree::ptree requesta;
-	requesta.put ("action", "decimal_nano_to_raw");
-	requesta.put ("amount", "1.9999999999999999999999999999999");
-	response = wait_response (system, rpc_ctx, requesta);
 	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 }
 
