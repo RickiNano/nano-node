@@ -2912,6 +2912,12 @@ void nano::json_handler::decimal_nano_to_raw ()
 		// Handle decimal part
 		auto fractional_string = amount_text.substr (decimal_point_position + 1);
 
+		if (fractional_string.size () > 30)
+		{
+			ec = nano::error_common::invalid_amount;
+			response_errors ();
+		}
+
 		fractional_string.append (30 - fractional_string.length (), '0');
 		fractional_string.erase (0, fractional_string.find_first_not_of ('0'));
 
