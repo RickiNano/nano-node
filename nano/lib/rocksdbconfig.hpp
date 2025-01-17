@@ -21,7 +21,7 @@ public:
 	nano::error serialize_toml (nano::tomlconfig &) const;
 	nano::error deserialize_toml (nano::tomlconfig &);
 
-	/** To use RocksDB in tests make sure the environment variable TEST_USE_ROCKSDB=1 is set */
+	/** To use RocksDB in tests make sure the environment variable "BACKEND" is set to "rocksdb" */
 	static bool using_rocksdb_in_tests ();
 
 	bool enable{ false };
