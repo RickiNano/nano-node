@@ -1691,20 +1691,20 @@ TEST (block_store, rocksdb_force_test_env_variable)
 {
 	nano::logger logger;
 
-	// Set environment variable
-	constexpr auto env_var = "TEST_USE_ROCKSDB";
-	auto value = std::getenv (env_var);
-
+	auto backend = std::getenv ("BACKEND");
 	auto store = nano::make_store (logger, nano::unique_path (), nano::dev::constants);
 
-	auto mdb_cast = dynamic_cast<nano::store::lmdb::component *> (store.get ());
-	if (value && boost::lexical_cast<int> (value) == 1)
+	if (backend != nullptr && std::string (backend) == "lmdb")
+	{
+		ASSERT_NE (dynamic_cast<nano::store::lmdb::component *> (store.get ()), nullptr);
+	}
+	else if (backend != nullptr && std::string (backend) == "rocksdb")
 	{
 		ASSERT_NE (boost::polymorphic_downcast<nano::store::rocksdb::component *> (store.get ()), nullptr);
 	}
 	else
 	{
-		ASSERT_NE (mdb_cast, nullptr);
+		FAIL () << "Unexpected or unset BACKEND environment variable value: " << (backend ? backend : "nullptr");
 	}
 }
 
