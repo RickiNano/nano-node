@@ -2389,77 +2389,68 @@ TEST (rpc, decimal_nano_to_raw)
 	auto const rpc_ctx = add_rpc (system, node1);
 
 	// One raw as decimal
-	boost::property_tree::ptree request;
-	request.put ("action", "decimal_nano_to_raw");
-	request.put ("amount", "0.000000000000000000000000000001");
-	auto response (wait_response (system, rpc_ctx, request));
-	ASSERT_TIMELY (1s,"1", response.get<std::string> ("amount"));
+	boost::property_tree::ptree request1;
+	request1.put ("action", "decimal_nano_to_raw");
+	request1.put ("amount", "0.000000000000000000000000000001");
+	auto response (wait_response (system, rpc_ctx, request1));
+	ASSERT_EQ ("1", response.get<std::string> ("amount"));
 
-	// Precision overflow (More than 30 decimals)
+	// Precision overflow (less than one raw)
 	boost::property_tree::ptree requesta;
-	response.clear ();
 	requesta.put ("action", "decimal_nano_to_raw");
 	requesta.put ("amount", "0.0000000000000000000000000000001");
 	response = wait_response (system, rpc_ctx, requesta);
-	//ASSERT_TIMELY (1s,std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
+	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
 	// Zero as decimal
 	boost::property_tree::ptree request2;
-	response.clear ();
 	request2.put ("action", "decimal_nano_to_raw");
 	request2.put ("amount", "0.00");
 	response = wait_response (system, rpc_ctx, request2);
-	ASSERT_TIMELY (1s,"0", response.get<std::string> ("amount"));
+	ASSERT_EQ ("0", response.get<std::string> ("amount"));
 
 	// Integer only
 	boost::property_tree::ptree request3;
-	response.clear ();
 	request3.put ("action", "decimal_nano_to_raw");
 	request3.put ("amount", "5");
 	response = wait_response (system, rpc_ctx, request3);
-	//ASSERT_TIMELY (1s,(5 * nano::nano_ratio).convert_to<std::string> (), response.get<std::string> ("amount"));
+	ASSERT_EQ ((5 * nano::nano_ratio).convert_to<std::string> (), response.get<std::string> ("amount"));
 
 	// Integer value as decimal
 	boost::property_tree::ptree request4;
-	response.clear ();
 	request4.put ("action", "decimal_nano_to_raw");
 	request4.put ("amount", "7.00000");
 	response = wait_response (system, rpc_ctx, request4);
-	ASSERT_TIMELY (1s,(7 * nano::nano_ratio).convert_to<std::string> () == response.get<std::string> ("amount"));
+	ASSERT_EQ ((7 * nano::nano_ratio).convert_to<std::string> (), response.get<std::string> ("amount"));
 
 	// Negative value
 	boost::property_tree::ptree request5;
-	response.clear ();
 	request5.put ("action", "decimal_nano_to_raw");
 	request5.put ("amount", "-5");
 	response = wait_response (system, rpc_ctx, request5);
 	std::cout << response.get<std::string> ("error");
-	ASSERT_TIMELY (1s,std::error_code (nano::error_common::invalid_amount).message () == response.get<std::string> ("error"));
+	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
 	// Multiple decimal seperators.
 	boost::property_tree::ptree request6;
-	response.clear ();
 	request6.put ("action", "decimal_nano_to_raw");
 	request6.put ("amount", "7.234.154");
 	response = wait_response (system, rpc_ctx, request6);
-	ASSERT_TIMELY (1s,std::error_code (nano::error_common::invalid_amount).message () == response.get<std::string> ("error"));
+	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
 	// Comma as decimal seperator
 	boost::property_tree::ptree request7;
-	response.clear ();
 	request7.put ("action", "decimal_nano_to_raw");
 	request7.put ("amount", "3,14");
 	response = wait_response (system, rpc_ctx, request7);
-	ASSERT_TIMELY (1s,std::error_code (nano::error_common::invalid_amount).message () == response.get<std::string> ("error"));
+	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 
 	// Empty input
-	request.clear ();
-	response.clear ();
-	request.put ("action", "decimal_nano_to_raw");
-	request.put ("amount", "");
-	response = wait_response (system, rpc_ctx, request);
-	ASSERT_TIMELY (1s,std::error_code (nano::error_common::invalid_amount).message () == response.get<std::string> ("error"));
-	
+	boost::property_tree::ptree request8;
+	request8.put ("action", "decimal_nano_to_raw");
+	request8.put ("amount", "");
+	response = wait_response (system, rpc_ctx, request8);
+	ASSERT_EQ (std::error_code (nano::error_common::invalid_amount).message (), response.get<std::string> ("error"));
 }
 
 TEST (rpc, account_representative)
