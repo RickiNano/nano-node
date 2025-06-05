@@ -4,6 +4,7 @@
 #include <nano/store/tables.hpp>
 
 #include <memory>
+#include <chrono>
 
 namespace nano::store
 {
