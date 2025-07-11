@@ -5,6 +5,7 @@ echo "BUILD TYPE %BUILD_TYPE%"
 echo "RUN %RUN%"
 
 cmake .. ^
+  -T v143 ^
   -Ax64 ^
   %NANO_TEST% ^
   %CI% ^
