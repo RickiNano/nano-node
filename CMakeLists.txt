@@ -525,6 +525,9 @@ target_link_libraries(boost_property_tree INTERFACE Boost::format)
 target_link_libraries(boost_property_tree INTERFACE Boost::multi_index)
 
 # RocksDB
+if(MSVC)
+  add_compile_options(/wd4702)  # Suppress "unreachable code" warning
+endif()
 include_directories(submodules/rocksdb/include)
 set(USE_RTTI
     ON
