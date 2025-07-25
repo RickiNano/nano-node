@@ -527,7 +527,9 @@ target_link_libraries(boost_property_tree INTERFACE Boost::multi_index)
 # RocksDB
 include_directories(submodules/rocksdb/include)
 if(WIN32)
-  set(FAIL_ON_WARNINGS OFF CACHE BOOL "")
+  set(FAIL_ON_WARNINGS
+      OFF
+      CACHE BOOL "")
 endif()
 set(USE_RTTI
     ON
