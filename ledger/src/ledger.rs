@@ -11,7 +11,7 @@ use rsnano_core::{
     Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo, Epoch, Link,
     PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };
-use rsnano_nullable_lmdb::{LmdbEnv, Transaction, WriteTransaction};
+use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_stats::{DetailType, StatType, Stats};
 use rsnano_store_lmdb::{
     ConfiguredAccountDatabaseBuilder, ConfiguredBlockDatabaseBuilder,
@@ -179,7 +179,7 @@ impl NullLedgerBuilder {
 
     pub fn finish(self) -> Ledger {
         let (block_index, block_data) = self.blocks.build();
-        let env = LmdbEnv::null_builder()
+        let env = LmdbEnvironment::null_builder()
             .configured_database(block_index)
             .configured_database(block_data)
             .configured_database(self.accounts.build())
@@ -204,7 +204,7 @@ impl NullLedgerBuilder {
 impl Ledger {
     pub fn new_null() -> Self {
         Self::new(
-            LmdbEnv::new_null(),
+            LmdbEnvironment::new_null(),
             LedgerConstants::unit_test(),
             Amount::zero(),
             Arc::new(RepWeightCache::new()),
@@ -219,7 +219,7 @@ impl Ledger {
     }
 
     pub(crate) fn new(
-        env: LmdbEnv,
+        env: LmdbEnvironment,
         constants: LedgerConstants,
         min_rep_weight: Amount,
         rep_weights: Arc<RepWeightCache>,

@@ -34,7 +34,7 @@ impl NullLmdbEnvBuilder {
         self
     }
 
-    pub fn build(self) -> LmdbEnv {
+    pub fn build(self) -> LmdbEnvironment {
         self.env_builder.build()
     }
 }
@@ -71,28 +71,23 @@ impl LmdbEnvironmentFactory {
         Self { is_nulled: true }
     }
 
-    pub fn create(&self, options: EnvironmentOptions) -> Result<LmdbEnv> {
+    pub fn create(&self, options: EnvironmentOptions) -> Result<LmdbEnvironment> {
         if self.is_nulled {
-            Ok(LmdbEnv::new_null_with_options(options))
+            Ok(LmdbEnvironment::new_null_with_options(options))
         } else {
-            LmdbEnv::create(options)
+            LmdbEnvironment::create(options)
         }
     }
 }
 
-pub struct LmdbEnv {
+pub struct LmdbEnvironment {
     env_strategy: EnvironmentStrategy,
     path: PathBuf,
 }
 
-impl LmdbEnv {
+impl LmdbEnvironment {
     pub fn new_null() -> Self {
-        Self::new_null_with_options(EnvironmentOptions {
-            max_dbs: 42,
-            map_size: 1024,
-            flags: EnvironmentFlags::NO_SUB_DIR,
-            path: "/nulled/ledger.ldb".into(),
-        })
+        Self::new_null_with_data(Vec::new())
     }
 
     pub fn new_null_with_options(options: EnvironmentOptions) -> Self {
@@ -104,9 +99,7 @@ impl LmdbEnv {
 
     pub fn new_null_with_data(databases: Vec<ConfiguredDatabase>) -> Self {
         Self {
-            env_strategy: EnvironmentStrategy::Nulled(EnvironmentStub {
-                databases: Arc::new(Mutex::new(databases)),
-            }),
+            env_strategy: EnvironmentStrategy::Nulled(EnvironmentStub::new_with(databases)),
             path: "/nulled/ledger.ldb".into(),
         }
     }
@@ -292,8 +285,12 @@ struct EnvironmentStub {
 
 impl EnvironmentStub {
     fn new() -> Self {
+        Self::new_with(Vec::new())
+    }
+
+    fn new_with(databases: Vec<ConfiguredDatabase>) -> Self {
         Self {
-            databases: Arc::new(Mutex::new(Vec::new())),
+            databases: Arc::new(Mutex::new(databases)),
         }
     }
 
@@ -366,8 +363,8 @@ impl EnvironmentStubBuilder {
         self
     }
 
-    pub fn build(self) -> LmdbEnv {
-        LmdbEnv::new_null_with_data(self.databases)
+    pub fn build(self) -> LmdbEnvironment {
+        LmdbEnvironment::new_null_with_data(self.databases)
     }
 }
 
@@ -417,7 +414,7 @@ mod tests {
 
     #[test]
     fn can_track_puts() {
-        let env = LmdbEnv::new_null();
+        let env = LmdbEnvironment::new_null();
 
         let database = env
             .create_db(Some("testdb"), DatabaseFlags::empty())
@@ -448,7 +445,7 @@ mod tests {
         #[test]
         fn read_database() {
             let database = LmdbDatabase::new_null(1);
-            let env = LmdbEnv::null_builder()
+            let env = LmdbEnvironment::null_builder()
                 .database("foo", database)
                 .entry(&[1, 2], &[3, 4])
                 .build()
@@ -461,14 +458,14 @@ mod tests {
 
         #[test]
         fn open_unknown_database_fails() {
-            let env = LmdbEnv::new_null();
+            let env = LmdbEnvironment::new_null();
             let result = env.open_db(Some("UNKNOWN"));
             assert_eq!(result, Err(lmdb::Error::NotFound));
         }
 
         #[test]
         fn create_db() {
-            let env = LmdbEnv::new_null();
+            let env = LmdbEnvironment::new_null();
             env.create_db(Some("mydb"), DatabaseFlags::empty()).unwrap();
             let result = env.open_db(Some("mydb"));
             assert!(result.is_ok());
@@ -476,7 +473,7 @@ mod tests {
 
         #[test]
         fn write_key_value() {
-            let env = LmdbEnv::new_null();
+            let env = LmdbEnvironment::new_null();
             let dbi = env.create_db(Some("mydb"), DatabaseFlags::empty()).unwrap();
             {
                 let mut tx = env.begin_write();
@@ -489,7 +486,7 @@ mod tests {
         }
     }
 
-    fn create_lmdb_env(path: TempLmdbFile) -> LmdbEnv {
+    fn create_lmdb_env(path: TempLmdbFile) -> LmdbEnvironment {
         let opts = EnvironmentOptions {
             max_dbs: 3,
             map_size: 1024 * 1024,
@@ -499,7 +496,7 @@ mod tests {
                 | EnvironmentFlags::WRITE_MAP,
             path: path.to_path_buf(),
         };
-        LmdbEnv::create(opts).unwrap()
+        LmdbEnvironment::create(opts).unwrap()
     }
 
     static FILE_COUNTER: AtomicUsize = AtomicUsize::new(0);

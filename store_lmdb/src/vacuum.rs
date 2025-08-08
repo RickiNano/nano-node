@@ -1,10 +1,10 @@
 use std::fs;
 
 use anyhow::Context;
-use rsnano_nullable_lmdb::LmdbEnv;
+use rsnano_nullable_lmdb::LmdbEnvironment;
 use tracing::info;
 
-pub fn vacuum(env: LmdbEnv) -> anyhow::Result<()> {
+pub fn vacuum(env: LmdbEnvironment) -> anyhow::Result<()> {
     let data_path = env.file_path().parent().unwrap();
     let source_path = data_path.join("data.ldb");
     let backup_path = data_path.join("backup.vacuum.ldb");

@@ -5,7 +5,7 @@ use rsnano_core::{
     Account, BlockHash, PendingInfo, PendingKey,
 };
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags,
+    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -19,7 +19,7 @@ pub struct LmdbPendingStore {
 }
 
 impl LmdbPendingStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("pending"), DatabaseFlags::empty())?;
 
         Ok(Self {
@@ -149,7 +149,7 @@ mod tests {
     use rsnano_nullable_lmdb::{DeleteEvent, PutEvent};
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbPendingStore,
     }
 
@@ -159,7 +159,7 @@ mod tests {
         }
 
         pub fn with_stored_data(entries: Vec<(PendingKey, PendingInfo)>) -> Self {
-            let env = LmdbEnv::null_builder()
+            let env = LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredPendingDatabaseBuilder::create(entries))
                 .build();
 

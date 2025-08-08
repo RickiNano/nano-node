@@ -11,7 +11,7 @@ use rsnano_core::{
     BlockHash, SavedBlock,
 };
 use rsnano_nullable_lmdb::{
-    sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction,
+    sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction,
     WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -65,7 +65,7 @@ impl LmdbBlockStore {
         ConfiguredBlockDatabaseBuilder::new()
     }
 
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let index_db = env.create_db(Some(BLOCK_INDEX_DB_NAME), DatabaseFlags::empty())?;
         let block_db = env.create_db(Some(BLOCK_DATA_DB_NAME), DatabaseFlags::empty())?;
 
@@ -192,7 +192,7 @@ fn get_block_id(id_bytes: &[u8]) -> u64 {
     u64::from_be_bytes(id_bytes.try_into().expect("Invalid block ID"))
 }
 
-fn find_next_free_id(env: &LmdbEnv, block_db: LmdbDatabase) -> Result<u64, anyhow::Error> {
+fn find_next_free_id(env: &LmdbEnvironment, block_db: LmdbDatabase) -> Result<u64, anyhow::Error> {
     let tx = env.begin_read();
     let cursor = tx.open_ro_cursor(block_db)?;
     match cursor.get(None, None, MDB_LAST) {
@@ -212,16 +212,16 @@ mod tests {
     use rsnano_nullable_lmdb::PutEvent;
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbBlockStore,
     }
 
     impl Fixture {
         fn new() -> Self {
-            Self::with_env(LmdbEnv::new_null())
+            Self::with_env(LmdbEnvironment::new_null())
         }
 
-        fn with_env(env: LmdbEnv) -> Self {
+        fn with_env(env: LmdbEnvironment) -> Self {
             let env = Arc::new(env);
             Self {
                 env: env.clone(),
@@ -245,7 +245,7 @@ mod tests {
     fn load_block_by_hash() {
         let block = SavedBlock::new_test_instance();
 
-        let env = LmdbEnv::null_builder()
+        let env = LmdbEnvironment::null_builder()
             .database(BLOCK_INDEX_DB_NAME, LmdbDatabase::new_null(99))
             .entry(block.hash().as_bytes(), &1u64.to_be_bytes())
             .build()
@@ -307,7 +307,7 @@ mod tests {
         let (block_index, block_data) =
             LmdbBlockStore::configured_responses().block(&block).build();
 
-        let env = LmdbEnv::null_builder()
+        let env = LmdbEnvironment::null_builder()
             .configured_database(block_index)
             .configured_database(block_data)
             .build();

@@ -5,7 +5,7 @@ use rsnano_core::{
     Account, AccountInfo,
 };
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags,
+    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -22,7 +22,7 @@ pub struct LmdbAccountStore {
 }
 
 impl LmdbAccountStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("accounts"), DatabaseFlags::empty())?;
 
         Ok(Self {
@@ -98,7 +98,7 @@ impl LmdbAccountStore {
 
     pub fn for_each_par(
         &self,
-        env: &LmdbEnv,
+        env: &LmdbEnvironment,
         thread_count: usize,
         action: impl Fn(&mut dyn Iterator<Item = (Account, AccountInfo)>) + Send + Sync,
     ) {
@@ -158,7 +158,7 @@ mod tests {
     use std::sync::Mutex;
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbAccountStore,
     }
 
@@ -168,13 +168,13 @@ mod tests {
         }
 
         fn with_stored_accounts(accounts: Vec<(Account, AccountInfo)>) -> Self {
-            let env = LmdbEnv::null_builder()
+            let env = LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredAccountDatabaseBuilder::create(accounts))
                 .build();
             Self::with_env(env)
         }
 
-        fn with_env(env: LmdbEnv) -> Self {
+        fn with_env(env: LmdbEnvironment) -> Self {
             let env = Arc::new(env);
             let store = LmdbAccountStore::new(&env).unwrap();
 

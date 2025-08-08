@@ -19,13 +19,13 @@ use rsnano_node::{
     wallets::{WalletsError, WalletsExt},
     Node,
 };
-use rsnano_nullable_lmdb::{LmdbEnv, LmdbEnvironmentFactory};
+use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
 use test_helpers::{assert_timely, assert_timely2, assert_timely_eq, assert_timely_eq2, System};
 
 struct TestFixture {
     test_dir: PathBuf,
-    env: LmdbEnv,
+    env: LmdbEnvironment,
 }
 
 impl TestFixture {

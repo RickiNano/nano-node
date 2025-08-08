@@ -22,7 +22,7 @@ use rsnano_core::{
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_messages::{Message, Publish};
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_store_lmdb::{create_backup_file, KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
@@ -79,7 +79,7 @@ pub enum PreparedSend {
 pub struct Wallets {
     db: Option<LmdbDatabase>,
     send_action_ids_handle: Option<LmdbDatabase>,
-    env: Arc<LmdbEnv>,
+    env: Arc<LmdbEnvironment>,
     pub mutex: Mutex<HashMap<WalletId, Arc<Wallet>>>,
     node_config: NodeConfig,
     ledger: Arc<Ledger>,
@@ -101,7 +101,7 @@ pub struct Wallets {
 
 impl Wallets {
     pub fn new(
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         ledger: Arc<Ledger>,
         node_config: &NodeConfig,
         work: WorkThresholds,
@@ -145,7 +145,7 @@ impl Wallets {
 
     pub fn new_null() -> Self {
         let network = Networks::NanoLiveNetwork;
-        let env = Arc::new(LmdbEnv::new_null());
+        let env = Arc::new(LmdbEnvironment::new_null());
         let ledger = Arc::new(Ledger::new_null());
         let node_config = NodeConfig::default_for(network, 1);
         let work = WorkThresholds::default_for(network);

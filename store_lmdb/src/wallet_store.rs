@@ -16,7 +16,9 @@ use rsnano_core::{
     },
     Account, KeyDerivationFunction, PublicKey, RawKey, WorkNonce,
 };
-use rsnano_nullable_lmdb::{DatabaseFlags, LmdbEnv, Transaction, WriteFlags, WriteTransaction};
+use rsnano_nullable_lmdb::{
+    DatabaseFlags, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+};
 
 use crate::{Fan, LmdbDatabase, LmdbRangeIterator};
 
@@ -88,7 +90,7 @@ impl LmdbWalletStore {
     pub fn new(
         fanout: usize,
         kdf: KeyDerivationFunction,
-        env: &LmdbEnv,
+        env: &LmdbEnvironment,
         representative: &PublicKey,
         wallet: &Path,
     ) -> anyhow::Result<Self> {
@@ -155,7 +157,7 @@ impl LmdbWalletStore {
     pub fn new_from_json(
         fanout: usize,
         kdf: KeyDerivationFunction,
-        env: &LmdbEnv,
+        env: &LmdbEnvironment,
         wallet: &Path,
         json: &str,
     ) -> anyhow::Result<Self> {
@@ -249,7 +251,7 @@ impl LmdbWalletStore {
         PublicKey::from(7)
     }
 
-    pub fn initialize(&self, env: &LmdbEnv, path: &Path) -> anyhow::Result<()> {
+    pub fn initialize(&self, env: &LmdbEnvironment, path: &Path) -> anyhow::Result<()> {
         let path_str = path
             .as_os_str()
             .to_str()

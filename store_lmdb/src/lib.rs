@@ -105,11 +105,11 @@ pub const PEERS_TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(9);
 #[cfg(test)]
 mod test {
     use super::*;
-    use rsnano_nullable_lmdb::{DatabaseFlags, DeleteEvent, LmdbEnv};
+    use rsnano_nullable_lmdb::{DatabaseFlags, DeleteEvent, LmdbEnvironment};
 
     #[test]
     fn tracks_deletes() {
-        let env = LmdbEnv::new_null();
+        let env = LmdbEnvironment::new_null();
         let database = env.create_db(Some("foo"), DatabaseFlags::empty()).unwrap();
 
         let mut tx = env.begin_write();
@@ -123,7 +123,7 @@ mod test {
 
     #[test]
     fn tracks_clears() {
-        let env = LmdbEnv::new_null();
+        let env = LmdbEnvironment::new_null();
         let mut txn = env.begin_write();
         let clear_tracker = txn.track_clears();
 

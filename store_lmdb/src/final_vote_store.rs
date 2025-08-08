@@ -5,7 +5,7 @@ use rsnano_core::{
     BlockHash, QualifiedRoot,
 };
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::{LmdbIterator, LmdbRangeIterator};
@@ -17,7 +17,7 @@ pub struct LmdbFinalVoteStore {
 }
 
 impl LmdbFinalVoteStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("final_votes"), DatabaseFlags::empty())?;
 
         Ok(Self { database })
@@ -106,7 +106,7 @@ mod tests {
     const TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(100);
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbFinalVoteStore,
     }
 
@@ -116,14 +116,14 @@ mod tests {
         }
 
         fn with_stored_entries(entries: Vec<(QualifiedRoot, BlockHash)>) -> Self {
-            let mut env = LmdbEnv::null_builder().database("final_votes", TEST_DATABASE);
+            let mut env = LmdbEnvironment::null_builder().database("final_votes", TEST_DATABASE);
             for (key, value) in entries {
                 env = env.entry(&key.to_bytes(), value.as_bytes());
             }
             Self::with_env(env.build().build())
         }
 
-        fn with_env(env: LmdbEnv) -> Self {
+        fn with_env(env: LmdbEnvironment) -> Self {
             let env = Arc::new(env);
             Self {
                 store: LmdbFinalVoteStore::new(&env).unwrap(),

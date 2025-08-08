@@ -34,7 +34,9 @@ use rsnano_network_protocol::{
 };
 use rsnano_nullable_clock::{SteadyClock, SystemTimeFactory};
 use rsnano_nullable_fs::NullableFilesystem;
-use rsnano_nullable_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbEnv, LmdbEnvironmentFactory};
+use rsnano_nullable_lmdb::{
+    EnvironmentFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory,
+};
 use rsnano_output_tracker::OutputListenerMt;
 use rsnano_stats::{Direction, Stats, StatsCollection, StatsCollector};
 
@@ -496,7 +498,7 @@ impl Node {
         wallets_path.push("wallets.ldb");
 
         let wallets_env = if is_nulled {
-            Arc::new(LmdbEnv::new_null())
+            Arc::new(LmdbEnvironment::new_null())
         } else {
             let options = EnvironmentOptions {
                 path: wallets_path,

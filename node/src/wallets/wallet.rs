@@ -9,7 +9,7 @@ use tracing::warn;
 
 use rsnano_core::{KeyDerivationFunction, PrivateKey, PublicKey, Root, WorkNonce};
 use rsnano_ledger::{AnySet, Ledger};
-use rsnano_nullable_lmdb::{LmdbEnv, Transaction, WriteTransaction};
+use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_store_lmdb::LmdbWalletStore;
 use rsnano_work::WorkThresholds;
 
@@ -24,7 +24,7 @@ impl Wallet {
     pub fn new(
         ledger: Arc<Ledger>,
         work_thresholds: WorkThresholds,
-        env: &LmdbEnv,
+        env: &LmdbEnvironment,
         fanout: usize,
         kdf: KeyDerivationFunction,
         representative: PublicKey,
@@ -44,7 +44,7 @@ impl Wallet {
     pub fn new_from_json(
         ledger: Arc<Ledger>,
         work_thresholds: WorkThresholds,
-        env: &LmdbEnv,
+        env: &LmdbEnvironment,
         fanout: usize,
         kdf: KeyDerivationFunction,
         wallet_path: &Path,

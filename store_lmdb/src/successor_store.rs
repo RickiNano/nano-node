@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rsnano_core::BlockHash;
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -13,7 +13,7 @@ pub struct LmdbSuccessorStore {
 }
 
 impl LmdbSuccessorStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some(TABLE_NAME), DatabaseFlags::empty())?;
         Ok(Self {
             database,
@@ -140,7 +140,7 @@ mod tests {
     #[should_panic = "Could not load successor hash: PageNotFound"]
     fn get_unexpected_error() {
         let block_hash = BlockHash::from(1);
-        let env = LmdbEnv::null_builder()
+        let env = LmdbEnvironment::null_builder()
             .database(TABLE_NAME, TEST_DATABASE)
             .error(block_hash.as_bytes(), lmdb::Error::PageNotFound)
             .build()
@@ -170,8 +170,10 @@ mod tests {
 
     const TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(42);
 
-    fn create_test_store(entries: &[(BlockHash, BlockHash)]) -> (LmdbSuccessorStore, LmdbEnv) {
-        let mut env_builder = LmdbEnv::null_builder().database(TABLE_NAME, TEST_DATABASE);
+    fn create_test_store(
+        entries: &[(BlockHash, BlockHash)],
+    ) -> (LmdbSuccessorStore, LmdbEnvironment) {
+        let mut env_builder = LmdbEnvironment::null_builder().database(TABLE_NAME, TEST_DATABASE);
 
         for (block_hash, successor) in entries {
             env_builder = env_builder.entry(block_hash.as_bytes(), successor.as_bytes());

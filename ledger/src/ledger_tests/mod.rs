@@ -14,7 +14,7 @@ use crate::{
     AnySet, ConfirmedSet, Ledger, LedgerConstants, LedgerInserter, RepWeightCache,
     DEV_GENESIS_HASH,
 };
-use rsnano_nullable_lmdb::LmdbEnv;
+use rsnano_nullable_lmdb::LmdbEnvironment;
 
 mod empty_ledger;
 mod pruning;
@@ -352,7 +352,7 @@ fn block_confirmed() {
 
 #[test]
 fn ledger_cache() {
-    let env = LmdbEnv::null_builder().build();
+    let env = LmdbEnvironment::null_builder().build();
     {
         let pruned = LmdbPrunedStore::new(&env).unwrap();
         let accounts = LmdbAccountStore::new(&env).unwrap();

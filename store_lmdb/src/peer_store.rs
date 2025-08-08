@@ -8,7 +8,7 @@ use std::{
 
 use rsnano_core::utils::{BufferWriter, Serialize};
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags,
+    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -22,7 +22,7 @@ pub struct LmdbPeerStore {
 }
 
 impl LmdbPeerStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("peers"), DatabaseFlags::empty())?;
 
         Ok(Self {
@@ -314,17 +314,18 @@ mod tests {
         SocketAddrV6::new(Ipv6Addr::new(4, 4, 4, 4, 4, 4, 4, 4), 4000, 0, 0);
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbPeerStore,
     }
 
     impl Fixture {
         fn new() -> Self {
-            Self::with_env(LmdbEnv::new_null())
+            Self::with_env(LmdbEnvironment::new_null())
         }
 
         fn with_stored_data(entries: Vec<SocketAddrV6>) -> Self {
-            let mut env = LmdbEnv::null_builder().database("peers", LmdbDatabase::new_null(42));
+            let mut env =
+                LmdbEnvironment::null_builder().database("peers", LmdbDatabase::new_null(42));
 
             for entry in entries {
                 env = env.entry(&EndpointBytes::from(entry), &[]);
@@ -333,7 +334,7 @@ mod tests {
             Self::with_env(env.build().build())
         }
 
-        fn with_env(env: LmdbEnv) -> Self {
+        fn with_env(env: LmdbEnvironment) -> Self {
             let env = Arc::new(env);
             Self {
                 store: LmdbPeerStore::new(&env).unwrap(),

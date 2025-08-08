@@ -6,8 +6,8 @@ use rsnano_core::{
 };
 use rsnano_nullable_lmdb::{
     sys::{MDB_cursor_op, MDB_FIRST, MDB_NEXT},
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, RoCursor, Transaction, WriteFlags,
-    WriteTransaction,
+    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, RoCursor, Transaction,
+    WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -20,7 +20,7 @@ pub struct LmdbRepWeightStore {
 }
 
 impl LmdbRepWeightStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("rep_weights"), DatabaseFlags::empty())?;
 
         Ok(Self {
@@ -226,7 +226,7 @@ mod tests {
     }
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbRepWeightStore,
     }
 
@@ -236,7 +236,7 @@ mod tests {
         }
 
         pub fn with_stored_data(entries: Vec<(PublicKey, Amount)>) -> Self {
-            let env = LmdbEnv::null_builder()
+            let env = LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredRepWeightDatabaseBuilder::create(entries))
                 .build();
             let env = Arc::new(env);

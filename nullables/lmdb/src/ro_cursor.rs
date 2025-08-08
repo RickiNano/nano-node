@@ -133,7 +133,7 @@ impl<'a> Iterator for Iter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{LmdbDatabase, LmdbEnv, LmdbEnvironmentFactory, Transaction};
+    use crate::{LmdbDatabase, LmdbEnvironment, LmdbEnvironmentFactory, Transaction};
     use lmdb::{DatabaseFlags, EnvironmentFlags, WriteFlags};
     use std::path::{Path, PathBuf};
 
@@ -271,8 +271,8 @@ mod tests {
             assert_eq!(v, [7, 7, 7].as_slice());
         }
 
-        fn nulled_env_with_foo_database() -> LmdbEnv {
-            LmdbEnv::null_builder()
+        fn nulled_env_with_foo_database() -> LmdbEnvironment {
+            LmdbEnvironment::null_builder()
                 .database(TEST_DATABASE_NAME, TEST_DATABASE)
                 .entry(&[1, 1, 1], &[6, 6, 6])
                 .entry(&[2, 2, 2], &[7, 7, 7])
@@ -282,7 +282,7 @@ mod tests {
         }
     }
 
-    fn create_test_database(env: &LmdbEnv) {
+    fn create_test_database(env: &LmdbEnvironment) {
         env.create_db(Some("foo"), DatabaseFlags::empty()).unwrap();
         let database = env.open_db(Some("foo")).unwrap();
         {
@@ -315,7 +315,7 @@ mod tests {
         }
     }
 
-    fn create_real_lmdb_env(path: impl Into<PathBuf>) -> LmdbEnv {
+    fn create_real_lmdb_env(path: impl Into<PathBuf>) -> LmdbEnvironment {
         LmdbEnvironmentFactory::default()
             .create(crate::EnvironmentOptions {
                 max_dbs: 1,

@@ -1,6 +1,6 @@
 use rsnano_core::Amount;
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::LmdbIterator;
@@ -10,7 +10,7 @@ pub struct LmdbOnlineWeightStore {
 }
 
 impl LmdbOnlineWeightStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("online_weight"), DatabaseFlags::empty())?;
         Ok(Self { database })
     }
@@ -79,7 +79,7 @@ mod tests {
     use std::sync::Arc;
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbOnlineWeightStore,
     }
 
@@ -89,8 +89,8 @@ mod tests {
         }
 
         fn with_stored_data(entries: Vec<(u64, Amount)>) -> Self {
-            let mut env =
-                LmdbEnv::null_builder().database("online_weight", LmdbDatabase::new_null(42));
+            let mut env = LmdbEnvironment::null_builder()
+                .database("online_weight", LmdbDatabase::new_null(42));
 
             for (key, value) in entries {
                 env = env.entry(&key.to_be_bytes(), &value.to_be_bytes())
@@ -99,7 +99,7 @@ mod tests {
             Self::with_env(env.build().build())
         }
 
-        fn with_env(env: LmdbEnv) -> Self {
+        fn with_env(env: LmdbEnvironment) -> Self {
             let env = Arc::new(env);
             Self {
                 store: LmdbOnlineWeightStore::new(&env).unwrap(),

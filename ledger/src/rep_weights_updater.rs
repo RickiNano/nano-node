@@ -113,12 +113,12 @@ impl RepWeightsUpdater {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_nullable_lmdb::LmdbEnv;
+    use rsnano_nullable_lmdb::LmdbEnvironment;
     use rsnano_store_lmdb::ConfiguredRepWeightDatabaseBuilder;
 
     #[test]
     fn representation_changes() {
-        let env = Arc::new(LmdbEnv::new_null());
+        let env = Arc::new(LmdbEnvironment::new_null());
         let store = Arc::new(LmdbRepWeightStore::new(&env).unwrap());
         let account = PublicKey::from(1);
         let rep_weights = RepWeightCache::new();
@@ -138,7 +138,7 @@ mod tests {
         let weight = Amount::from(100);
 
         let env = Arc::new(
-            LmdbEnv::null_builder()
+            LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredRepWeightDatabaseBuilder::create(vec![(
                     representative,
                     weight,
@@ -170,7 +170,7 @@ mod tests {
         let weight = Amount::from(100);
 
         let env = Arc::new(
-            LmdbEnv::null_builder()
+            LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredRepWeightDatabaseBuilder::create(vec![
                     (rep1, weight),
                     (rep2, weight),
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn add_below_min_weight() {
-        let env = Arc::new(LmdbEnv::new_null());
+        let env = Arc::new(LmdbEnvironment::new_null());
         let store = Arc::new(LmdbRepWeightStore::new(&env).unwrap());
         let put_tracker = store.track_puts();
         let mut txn = env.begin_write();
@@ -221,7 +221,7 @@ mod tests {
         let representative = PublicKey::from(1);
         let weight = Amount::from(11);
         let env = Arc::new(
-            LmdbEnv::null_builder()
+            LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredRepWeightDatabaseBuilder::create(vec![(
                     representative,
                     weight,

@@ -5,7 +5,7 @@ use rsnano_core::{
     Account, ConfirmationHeightInfo,
 };
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags,
+    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
 
@@ -18,7 +18,7 @@ pub struct LmdbConfirmationHeightStore {
 }
 
 impl LmdbConfirmationHeightStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("confirmation_height"), DatabaseFlags::empty())?;
 
         Ok(Self { database })
@@ -97,7 +97,7 @@ impl LmdbConfirmationHeightStore {
 
     pub fn for_each_par(
         &self,
-        env: &LmdbEnv,
+        env: &LmdbEnvironment,
         thread_count: usize,
         action: impl Fn(&mut dyn Iterator<Item = (Account, ConfirmationHeightInfo)>) + Send + Sync,
     ) {
@@ -156,16 +156,16 @@ mod tests {
     use std::sync::Arc;
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbConfirmationHeightStore,
     }
 
     impl Fixture {
         fn new() -> Self {
-            Self::with_env(LmdbEnv::new_null())
+            Self::with_env(LmdbEnvironment::new_null())
         }
 
-        fn with_env(env: LmdbEnv) -> Self {
+        fn with_env(env: LmdbEnvironment) -> Self {
             let env = Arc::new(env);
             Self {
                 store: LmdbConfirmationHeightStore::new(&env).unwrap(),
@@ -211,7 +211,7 @@ mod tests {
         let account = Account::from(1);
         let info = ConfirmationHeightInfo::new(1, BlockHash::from(2));
 
-        let env = LmdbEnv::null_builder()
+        let env = LmdbEnvironment::null_builder()
             .database("confirmation_height", LmdbDatabase::new_null(100))
             .entry(account.as_bytes(), &info.to_bytes())
             .build()
@@ -229,7 +229,7 @@ mod tests {
         let account = Account::from(1);
         let info = ConfirmationHeightInfo::new(1, BlockHash::from(2));
 
-        let env = LmdbEnv::null_builder()
+        let env = LmdbEnvironment::null_builder()
             .database("confirmation_height", LmdbDatabase::new_null(100))
             .entry(account.as_bytes(), &info.to_bytes())
             .build()

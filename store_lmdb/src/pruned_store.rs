@@ -2,7 +2,7 @@ use std::ops::RangeBounds;
 
 use rsnano_core::{BlockHash, NoValue};
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnv, Transaction, WriteFlags,
+    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
 
@@ -13,7 +13,7 @@ pub struct LmdbPrunedStore {
 }
 
 impl LmdbPrunedStore {
-    pub fn new(env: &LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: &LmdbEnvironment) -> anyhow::Result<Self> {
         let database = env.create_db(Some("pruned"), DatabaseFlags::empty())?;
         Ok(Self { database })
     }
@@ -106,7 +106,7 @@ mod tests {
     use std::sync::Arc;
 
     struct Fixture {
-        env: Arc<LmdbEnv>,
+        env: Arc<LmdbEnvironment>,
         store: LmdbPrunedStore,
     }
 
@@ -116,7 +116,7 @@ mod tests {
         }
 
         pub fn with_stored_data(entries: Vec<BlockHash>) -> Self {
-            let env = LmdbEnv::null_builder()
+            let env = LmdbEnvironment::null_builder()
                 .configured_database(ConfiguredPrunedDatabaseBuilder::create(entries))
                 .build();
             let env = Arc::new(env);

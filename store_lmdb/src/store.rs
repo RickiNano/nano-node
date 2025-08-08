@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use rsnano_core::utils::UnixTimestamp;
-use rsnano_nullable_lmdb::{LmdbEnv, ReadTransaction, WriteTransaction};
+use rsnano_nullable_lmdb::{LmdbEnvironment, ReadTransaction, WriteTransaction};
 
 use crate::{
     successor_store::LmdbSuccessorStore, LmdbAccountStore, LmdbBlockStore,
@@ -44,7 +44,7 @@ impl LedgerCache {
 }
 
 pub struct LmdbStore {
-    pub env: LmdbEnv,
+    pub env: LmdbEnvironment,
     pub cache: Arc<LedgerCache>,
     pub block: LmdbBlockStore,
     pub account: LmdbAccountStore,
@@ -62,10 +62,10 @@ pub struct LmdbStore {
 
 impl LmdbStore {
     pub fn new_null() -> Self {
-        Self::new(LmdbEnv::new_null()).unwrap()
+        Self::new(LmdbEnvironment::new_null()).unwrap()
     }
 
-    pub fn new(env: LmdbEnv) -> anyhow::Result<Self> {
+    pub fn new(env: LmdbEnvironment) -> anyhow::Result<Self> {
         Ok(Self {
             cache: Arc::new(LedgerCache::new()),
             block: LmdbBlockStore::new(&env)?,
@@ -115,7 +115,7 @@ pub struct MemoryStats {
 }
 
 /// Takes a filepath, appends '_backup_<timestamp>' to the end (but before any extension) and saves that file in the same directory
-pub fn create_backup_file(env: &LmdbEnv) -> anyhow::Result<()> {
+pub fn create_backup_file(env: &LmdbEnvironment) -> anyhow::Result<()> {
     let source_path = env.file_path();
     let backup_path = backup_file_path(source_path)?;
 
