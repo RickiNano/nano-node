@@ -7,7 +7,7 @@ use std::{
 use lmdb::{DatabaseFlags, EnvironmentFlags, Stat};
 use lmdb_sys::{MDB_env, MDB_CP_COMPACT, MDB_SUCCESS};
 
-use super::{ConfiguredDatabase, LmdbDatabase, RwTransaction};
+use super::{ConfiguredDatabase, LmdbDatabase};
 use crate::{ConfiguredDatabaseBuilder, ReadTransaction, Result, Transaction, WriteTransaction};
 
 #[derive(Clone)]
@@ -127,12 +127,10 @@ impl LmdbEnvironment {
     }
 
     pub fn begin_write(&self) -> WriteTransaction {
-        let txn = match &self.env_strategy {
+        match &self.env_strategy {
             EnvironmentStrategy::Real(s) => s.begin_write(),
             EnvironmentStrategy::Nulled(s) => s.begin_write(),
-        };
-        let txn = txn.expect("Could not create LMDB read-write transaction");
-        WriteTransaction::new(txn)
+        }
     }
 
     pub fn file_path(&self) -> &Path {
@@ -236,14 +234,19 @@ impl EnvironmentWrapper {
             .expect("Could not create LMDB read-only transaction")
     }
 
-    fn begin_write(&self) -> lmdb::Result<RwTransaction> {
-        self.0.begin_rw_txn().map(|txn| {
-            // todo: don't use static life time
-            let txn = unsafe {
-                std::mem::transmute::<lmdb::RwTransaction<'_>, lmdb::RwTransaction<'static>>(txn)
-            };
-            RwTransaction::new(txn)
-        })
+    fn begin_write(&self) -> WriteTransaction {
+        self.0
+            .begin_rw_txn()
+            .map(|txn| {
+                // todo: don't use static life time
+                let txn = unsafe {
+                    std::mem::transmute::<lmdb::RwTransaction<'_>, lmdb::RwTransaction<'static>>(
+                        txn,
+                    )
+                };
+                WriteTransaction::new2(txn)
+            })
+            .expect("Could not create LMDB read-write transaction")
     }
 
     fn create_db(&self, name: Option<&str>, flags: DatabaseFlags) -> lmdb::Result<LmdbDatabase> {
@@ -286,8 +289,8 @@ impl EnvironmentStub {
         ReadTransaction::new_null(self.databases.lock().unwrap().clone())
     }
 
-    fn begin_write(&self) -> lmdb::Result<RwTransaction> {
-        Ok(RwTransaction::new_null(self.databases.clone()))
+    fn begin_write(&self) -> WriteTransaction {
+        WriteTransaction::new_null(self.databases.clone())
     }
 
     fn create_db(&self, name: Option<&str>, _flags: DatabaseFlags) -> lmdb::Result<LmdbDatabase> {

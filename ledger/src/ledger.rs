@@ -750,12 +750,12 @@ impl Ledger {
         let mut confirmed = Vec::new();
         let mut blocks_confirmed = 0;
         {
-            let mut tx = self.store.tx_begin_write();
+            let mut txn = self.store.tx_begin_write();
 
             for confirmation_root in batch.into_iter() {
                 let mut success = false;
                 loop {
-                    self.store.env.refresh_if_needed(&mut tx);
+                    self.store.env.refresh_if_needed(&mut txn);
 
                     // Cementing deep dependency chains might take a long time, allow for graceful shutdown, ignore notifications
                     if stopped.load(Ordering::Relaxed) {
@@ -764,26 +764,26 @@ impl Ledger {
 
                     // Issue notifications here, so that `confirmed` set is not too large before we add more blocks
                     if blocks_confirmed >= max_blocks {
-                        tx.commit();
+                        txn.commit();
                         blocks_confirmed = 0;
                         self.stats
                             .inc(StatType::ConfirmingSet, DetailType::NotifyIntermediate);
                         cementing_observer.batch_confirmed(confirmed);
                         confirmed = Vec::new();
-                        tx = self.store.env.begin_write();
+                        txn = self.store.env.begin_write();
                     }
 
                     self.stats
                         .inc(StatType::ConfirmingSet, DetailType::Cementing);
 
                     // The block might be rolled back before it's fully confirmed
-                    if !self.store.block.exists(&tx, confirmation_root) {
+                    if !self.store.block.exists(&txn, confirmation_root) {
                         self.stats
                             .inc(StatType::ConfirmingSet, DetailType::MissingBlock);
                         break;
                     }
 
-                    let added = self.confirm_max(&mut tx, *confirmation_root, max_blocks);
+                    let added = self.confirm_max(&mut txn, *confirmation_root, max_blocks);
 
                     if !added.is_empty() {
                         // Confirming this block may implicitly confirm more
@@ -796,7 +796,7 @@ impl Ledger {
                         for block in added {
                             confirmed.push((block, *confirmation_root));
                         }
-                    } else if BorrowingConfirmedSet::new(&self.store, &tx)
+                    } else if BorrowingConfirmedSet::new(&self.store, &txn)
                         .block_exists(&confirmation_root)
                     {
                         self.stats
@@ -805,9 +805,9 @@ impl Ledger {
                     }
 
                     success = {
-                        if let Some(block) = self.store.block.get(&tx, confirmation_root) {
+                        if let Some(block) = self.store.block.get(&txn, confirmation_root) {
                             if let Some(conf_info) =
-                                self.store.confirmation_height.get(&tx, &block.account())
+                                self.store.confirmation_height.get(&txn, &block.account())
                             {
                                 block.height() <= conf_info.height
                             } else {

@@ -286,14 +286,14 @@ mod tests {
         env.create_db(Some("foo"), DatabaseFlags::empty()).unwrap();
         let database = env.open_db(Some("foo")).unwrap();
         {
-            let mut tx = env.begin_write();
-            tx.put(database, b"hello", b"world", WriteFlags::empty())
+            let mut txn = env.begin_write();
+            txn.put(database, b"hello", b"world", WriteFlags::empty())
                 .unwrap();
-            tx.put(database, b"hello2", b"world2", WriteFlags::empty())
+            txn.put(database, b"hello2", b"world2", WriteFlags::empty())
                 .unwrap();
-            tx.put(database, b"hello3", b"world3", WriteFlags::empty())
+            txn.put(database, b"hello3", b"world3", WriteFlags::empty())
                 .unwrap();
-            tx.commit();
+            txn.commit();
         }
     }
 

@@ -10,7 +10,7 @@ use rsnano_output_tracker::{OutputListener, OutputTracker};
 use super::{ConfiguredDatabase, LmdbDatabase, RoCursor};
 use crate::{RwCursor, Transaction};
 
-enum RwTxnState {
+enum TxnState {
     Inactive,
     Active(RwTransaction),
     Transitioning,
@@ -31,7 +31,7 @@ pub struct DeleteEvent {
 }
 
 pub struct WriteTransaction {
-    txn: RwTxnState,
+    state: TxnState,
     put_listener: OutputListener<PutEvent>,
     delete_listener: OutputListener<DeleteEvent>,
     clear_listener: OutputListener<LmdbDatabase>,
@@ -39,9 +39,19 @@ pub struct WriteTransaction {
 }
 
 impl WriteTransaction {
-    pub fn new(tx: RwTransaction) -> Self {
+    pub fn new2(txn: lmdb::RwTransaction<'static>) -> Self {
         Self {
-            txn: RwTxnState::Active(tx),
+            state: TxnState::Active(RwTransaction::new(txn)),
+            put_listener: OutputListener::new(),
+            delete_listener: OutputListener::new(),
+            clear_listener: OutputListener::new(),
+            start: Instant::now(),
+        }
+    }
+
+    pub fn new_null(databases: Arc<Mutex<Vec<ConfiguredDatabase>>>) -> Self {
+        Self {
+            state: TxnState::Active(RwTransaction::new_null(databases)),
             put_listener: OutputListener::new(),
             delete_listener: OutputListener::new(),
             clear_listener: OutputListener::new(),
@@ -50,15 +60,15 @@ impl WriteTransaction {
     }
 
     fn rw_txn(&self) -> &RwTransaction {
-        match &self.txn {
-            RwTxnState::Active(t) => t,
+        match &self.state {
+            TxnState::Active(t) => t,
             _ => panic!("txn not active"),
         }
     }
 
     fn rw_txn_mut(&mut self) -> &mut RwTransaction {
-        match &mut self.txn {
-            RwTxnState::Active(t) => t,
+        match &mut self.state {
+            TxnState::Active(t) => t,
             _ => panic!("txn not active"),
         }
     }
@@ -68,15 +78,15 @@ impl WriteTransaction {
     }
 
     pub fn commit(&mut self) {
-        let t = std::mem::replace(&mut self.txn, RwTxnState::Transitioning);
+        let t = std::mem::replace(&mut self.state, TxnState::Transitioning);
         match t {
-            RwTxnState::Inactive => {}
-            RwTxnState::Active(t) => {
+            TxnState::Inactive => {}
+            TxnState::Active(t) => {
                 t.commit().unwrap();
             }
-            RwTxnState::Transitioning => unreachable!(),
+            TxnState::Transitioning => unreachable!(),
         };
-        self.txn = RwTxnState::Inactive;
+        self.state = TxnState::Inactive;
     }
 
     pub fn track_puts(&self) -> Rc<OutputTracker<PutEvent>> {
@@ -178,14 +188,14 @@ impl Transaction for WriteTransaction {
     }
 }
 
-pub struct RwTransaction {
+struct RwTransaction {
     strategy: RwTransactionStrategy,
 }
 
 impl RwTransaction {
-    pub fn new(tx: lmdb::RwTransaction<'static>) -> Self {
+    pub fn new(txn: lmdb::RwTransaction<'static>) -> Self {
         Self {
-            strategy: RwTransactionStrategy::Real(RwTransactionWrapper(tx)),
+            strategy: RwTransactionStrategy::Real(RwTransactionWrapper(txn)),
         }
     }
 
