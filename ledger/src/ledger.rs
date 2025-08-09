@@ -431,8 +431,9 @@ impl Ledger {
             let mut tx = self.store.tx_begin_write();
             while !targets.is_empty() && transaction_write_count < batch_size {
                 let pruning_hash = targets.front().unwrap();
-                let account_pruned_count =
-                    self.pruning_action(&mut tx, pruning_hash, batch_size as u64);
+                let (t, account_pruned_count) =
+                    self.pruning_action(tx, pruning_hash, batch_size as u64);
+                tx = t;
                 transaction_write_count += account_pruned_count as usize;
                 targets.pop_front();
             }
@@ -441,11 +442,17 @@ impl Ledger {
     }
 
     pub fn prune_one(&self, target: &BlockHash, batch_size: usize) -> usize {
-        let mut tx = self.store.tx_begin_write();
-        self.pruning_action(&mut tx, target, batch_size as u64) as usize
+        let txn = self.store.tx_begin_write();
+        let (_, count) = self.pruning_action(txn, target, batch_size as u64);
+        count as usize
     }
 
-    fn pruning_action(&self, txn: &mut WriteTransaction, hash: &BlockHash, batch_size: u64) -> u64 {
+    fn pruning_action(
+        &self,
+        mut txn: WriteTransaction,
+        hash: &BlockHash,
+        batch_size: u64,
+    ) -> (WriteTransaction, u64) {
         self.stats.inc(StatType::Pruning, DetailType::PruningTarget);
         let mut pruned_count = 0;
         let mut hash = *hash;
@@ -453,26 +460,26 @@ impl Ledger {
         let mut any = BorrowingAnySet {
             constants: &self.constants,
             store: &self.store,
-            tx: txn,
+            tx: &txn,
         };
 
         while !hash.is_zero() && hash != genesis_hash {
             if let Some(block) = any.get_block(&hash) {
                 assert!(any.confirmed().block_exists_or_pruned(&hash));
-                self.store.block.del(txn, &hash);
-                self.store.pruned.put(txn, &hash);
+                self.store.block.del(&mut txn, &hash);
+                self.store.pruned.put(&mut txn, &hash);
                 hash = block.previous();
                 pruned_count += 1;
                 self.store.cache.pruned_count.fetch_add(1, Ordering::SeqCst);
                 if pruned_count % batch_size == 0 {
-                    self.store.env.refresh(txn);
+                    txn = self.store.env.refresh(txn);
                 }
                 any = BorrowingAnySet {
                     constants: &self.constants,
                     store: &self.store,
-                    tx: txn,
+                    tx: &txn,
                 };
-            } else if self.store.pruned.exists(txn, &hash) {
+            } else if self.store.pruned.exists(&txn, &hash) {
                 hash = BlockHash::zero();
             } else {
                 panic!("Error finding block for pruning");
@@ -482,7 +489,7 @@ impl Ledger {
         self.stats
             .add(StatType::Pruning, DetailType::PrunedCount, pruned_count);
 
-        pruned_count
+        (txn, pruned_count)
     }
 
     /// Rollback blocks until `block' doesn't exist or it tries to penetrate the confirmation height
@@ -719,18 +726,19 @@ impl Ledger {
     }
 
     pub fn confirm(&self, hash: BlockHash) -> Vec<SavedBlock> {
-        let mut tx = self.store.tx_begin_write();
-        self.confirm_max(&mut tx, hash, 1024 * 128)
+        let txn = self.store.tx_begin_write();
+        let (_, blocks) = self.confirm_max(txn, hash, 1024 * 128);
+        blocks
     }
 
     /// Both stack and result set are bounded to limit maximum memory usage
     /// Callers must ensure that the target block was confirmed, and if not, call this function multiple times
     fn confirm_max(
         &self,
-        txn: &mut WriteTransaction,
+        txn: WriteTransaction,
         target_hash: BlockHash,
         max_blocks: usize,
-    ) -> Vec<SavedBlock> {
+    ) -> (WriteTransaction, Vec<SavedBlock>) {
         BlockCementer::new(&self.store, &self.constants, &self.stats).confirm(
             txn,
             target_hash,
@@ -755,7 +763,9 @@ impl Ledger {
             for confirmation_root in batch.into_iter() {
                 let mut success = false;
                 loop {
-                    self.store.env.refresh_if_needed(&mut txn);
+                    if txn.is_refresh_needed() {
+                        txn = self.store.env.refresh(txn);
+                    }
 
                     // Cementing deep dependency chains might take a long time, allow for graceful shutdown, ignore notifications
                     if stopped.load(Ordering::Relaxed) {
@@ -783,7 +793,8 @@ impl Ledger {
                         break;
                     }
 
-                    let added = self.confirm_max(&mut txn, *confirmation_root, max_blocks);
+                    let (t, added) = self.confirm_max(txn, *confirmation_root, max_blocks);
+                    txn = t;
 
                     if !added.is_empty() {
                         // Confirming this block may implicitly confirm more

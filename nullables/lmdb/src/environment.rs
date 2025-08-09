@@ -8,7 +8,7 @@ use lmdb::{DatabaseFlags, EnvironmentFlags, Stat};
 use lmdb_sys::{MDB_env, MDB_CP_COMPACT, MDB_SUCCESS};
 
 use super::{ConfiguredDatabase, LmdbDatabase};
-use crate::{ConfiguredDatabaseBuilder, ReadTransaction, Result, Transaction, WriteTransaction};
+use crate::{ConfiguredDatabaseBuilder, ReadTransaction, Result, WriteTransaction};
 
 #[derive(Clone)]
 pub struct EnvironmentOptions {
@@ -180,18 +180,10 @@ impl LmdbEnvironment {
         }
     }
 
-    pub fn refresh_if_needed(&self, txn: &mut WriteTransaction) -> bool {
-        if txn.is_refresh_needed() {
-            self.refresh(txn);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn refresh(&self, txn: &mut WriteTransaction) {
+    pub fn refresh(&self, mut txn: WriteTransaction) -> WriteTransaction {
         txn.commit();
-        *txn = self.begin_write();
+        drop(txn);
+        self.begin_write()
     }
 
     fn env(&self) -> *mut MDB_env {
@@ -358,7 +350,7 @@ impl EnvironmentStubBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PutEvent;
+    use crate::{PutEvent, Transaction};
     use lmdb::WriteFlags;
     use std::{
         env::temp_dir,
