@@ -254,12 +254,13 @@ impl Ledger {
         if self
             .store
             .account
-            .iter(&self.store.tx_begin_read())
+            .iter(&self.store.begin_read())
             .next()
             .is_none()
         {
-            let mut tx = self.store.tx_begin_write();
-            self.add_genesis_block(&mut tx);
+            let mut txn = self.store.begin_write();
+            self.add_genesis_block(&mut txn);
+            txn.commit();
         }
 
         if generate_cache.reps || generate_cache.account_count || generate_cache.block_count {
@@ -307,7 +308,7 @@ impl Ledger {
                 });
         }
 
-        let tx = self.store.tx_begin_read();
+        let tx = self.store.begin_read();
         self.store
             .cache
             .pruned_count
@@ -354,12 +355,12 @@ impl Ledger {
     }
 
     pub fn confirmed(&self) -> OwningConfirmedSet<'_> {
-        let tx = self.store.tx_begin_read();
+        let tx = self.store.begin_read();
         OwningConfirmedSet::new(&self.store, tx)
     }
 
     pub fn unconfirmed(&self) -> impl LedgerSet + use<'_> {
-        let tx = self.store.tx_begin_read();
+        let tx = self.store.begin_read();
         OwningUnconfirmedSet::new(&self.store, tx)
     }
 
@@ -428,22 +429,24 @@ impl Ledger {
         let mut transaction_write_count = 0;
         // TODO break loop if node stopped
         if !targets.is_empty() {
-            let mut tx = self.store.tx_begin_write();
+            let mut txn = self.store.begin_write();
             while !targets.is_empty() && transaction_write_count < batch_size {
                 let pruning_hash = targets.front().unwrap();
                 let (t, account_pruned_count) =
-                    self.pruning_action(tx, pruning_hash, batch_size as u64);
-                tx = t;
+                    self.pruning_action(txn, pruning_hash, batch_size as u64);
+                txn = t;
                 transaction_write_count += account_pruned_count as usize;
                 targets.pop_front();
             }
+            txn.commit();
         }
         transaction_write_count
     }
 
     pub fn prune_one(&self, target: &BlockHash, batch_size: usize) -> usize {
-        let txn = self.store.tx_begin_write();
-        let (_, count) = self.pruning_action(txn, target, batch_size as u64);
+        let txn = self.store.begin_write();
+        let (mut txn, count) = self.pruning_action(txn, target, batch_size as u64);
+        txn.commit();
         count as usize
     }
 
@@ -515,7 +518,7 @@ impl Ledger {
         let mut rolled_back_count = 0;
         let mut results = RollbackResults::new();
         {
-            let mut tx = self.store.tx_begin_write();
+            let mut txn = self.store.begin_write();
 
             for hash in targets {
                 // Skip the rollback if the block is being used by the node, this should be race free as it's checked while holding the ledger write lock
@@ -532,14 +535,14 @@ impl Ledger {
                 }
 
                 // Here we check that the block is still OK to rollback, there could be a delay between gathering the targets and performing the rollbacks
-                if let Some(block) = self.store.block.get(&tx, hash) {
+                if let Some(block) = self.store.block.get(&txn, hash) {
                     debug!(
                         "Rolling back: {}, account: {}",
                         hash,
                         block.account().encode_account()
                     );
 
-                    let (rollback_list, error) = self.roll_back_with_tx(&mut tx, &block.hash());
+                    let (rollback_list, error) = self.roll_back_with_tx(&mut txn, &block.hash());
                     if error.is_none() {
                         self.stats
                             .inc(StatType::BoundedBacklog, DetailType::Rollback);
@@ -572,6 +575,7 @@ impl Ledger {
                     });
                 }
             }
+            txn.commit();
         }
 
         results
@@ -607,7 +611,7 @@ impl Ledger {
 
         // Validate blocks
         {
-            let tx = self.store.tx_begin_read();
+            let tx = self.store.begin_read();
             for block in batch.into_iter() {
                 let any = BorrowingAnySet {
                     constants: &self.constants,
@@ -624,12 +628,12 @@ impl Ledger {
         // Insert blocks
         let mut processed = Vec::with_capacity(validation_results.len());
         {
-            let mut tx = self.store.tx_begin_write();
+            let mut txn = self.store.begin_write();
             for (result, block) in validation_results {
                 match result {
                     Ok(instructions) => {
                         if let Some(saved_block) =
-                            BlockInserter::new(self, &mut tx, block, &instructions).insert()
+                            BlockInserter::new(self, &mut txn, block, &instructions).insert()
                         {
                             processed.push((Ok(()), Some(saved_block.clone())));
                         } else {
@@ -642,6 +646,7 @@ impl Ledger {
                     }
                 }
             }
+            txn.commit();
         }
 
         BatchProcessResult { processed }
@@ -654,17 +659,18 @@ impl Ledger {
     {
         let mut rolled_back = RollbackResults::new();
         {
-            let mut tx = self.store.tx_begin_write();
+            let mut txn = self.store.begin_write();
             for block in blocks {
-                if tx.is_refresh_needed() {
-                    drop(tx);
+                if txn.is_refresh_needed() {
+                    txn.commit();
+                    drop(txn);
                     if !rolled_back.is_empty() {
                         rolled_back_callback(rolled_back);
                         rolled_back = RollbackResults::new();
                     }
-                    tx = self.store.tx_begin_write();
+                    txn = self.store.begin_write();
                 }
-                let rolled_back_blocks = self.rollback_competitor(&mut tx, block);
+                let rolled_back_blocks = self.rollback_competitor(&mut txn, block);
                 if !rolled_back_blocks.is_empty() {
                     rolled_back.push(RollbackResult {
                         target_hash: block.hash(),
@@ -674,6 +680,7 @@ impl Ledger {
                     });
                 }
             }
+            txn.commit();
         }
         if !rolled_back.is_empty() {
             rolled_back_callback(rolled_back);
@@ -726,8 +733,9 @@ impl Ledger {
     }
 
     pub fn confirm(&self, hash: BlockHash) -> Vec<SavedBlock> {
-        let txn = self.store.tx_begin_write();
-        let (_, blocks) = self.confirm_max(txn, hash, 1024 * 128);
+        let txn = self.store.begin_write();
+        let (mut txn, blocks) = self.confirm_max(txn, hash, 1024 * 128);
+        txn.commit();
         blocks
     }
 
@@ -758,7 +766,7 @@ impl Ledger {
         let mut confirmed = Vec::new();
         let mut blocks_confirmed = 0;
         {
-            let mut txn = self.store.tx_begin_write();
+            let mut txn = self.store.begin_write();
 
             for confirmation_root in batch.into_iter() {
                 let mut success = false;
@@ -769,6 +777,7 @@ impl Ledger {
 
                     // Cementing deep dependency chains might take a long time, allow for graceful shutdown, ignore notifications
                     if stopped.load(Ordering::Relaxed) {
+                        txn.commit();
                         return;
                     }
 
@@ -846,6 +855,7 @@ impl Ledger {
                     cementing_observer.cementing_failed(confirmation_root);
                 }
             }
+            txn.commit();
         }
 
         if !confirmed.is_empty() {
@@ -911,7 +921,7 @@ impl Ledger {
     }
 
     pub fn version(&self) -> u32 {
-        let tx = self.store.tx_begin_read();
+        let tx = self.store.begin_read();
         self.store.version.get(&tx).unwrap_or_default() as u32
     }
 

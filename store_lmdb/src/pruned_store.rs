@@ -142,11 +142,11 @@ mod tests {
     #[test]
     fn add_pruned_info() {
         let fixture = Fixture::new();
-        let mut tx = fixture.env.begin_write();
-        let put_tracker = tx.track_puts();
+        let mut txn = fixture.env.begin_write();
+        let put_tracker = txn.track_puts();
         let hash = BlockHash::from(1);
 
-        fixture.store.put(&mut tx, &hash);
+        fixture.store.put(&mut txn, &hash);
 
         assert_eq!(
             put_tracker.output(),
@@ -184,11 +184,11 @@ mod tests {
     #[test]
     fn delete() {
         let fixture = Fixture::new();
-        let mut tx = fixture.env.begin_write();
-        let delete_tracker = tx.track_deletions();
+        let mut txn = fixture.env.begin_write();
+        let delete_tracker = txn.track_deletions();
         let hash = BlockHash::from(1);
 
-        fixture.store.del(&mut tx, &hash);
+        fixture.store.del(&mut txn, &hash);
 
         assert_eq!(
             delete_tracker.output(),

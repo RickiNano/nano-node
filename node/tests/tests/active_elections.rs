@@ -785,7 +785,7 @@ fn bound_election_winners() {
 
     {
         // Prevent cementing of confirmed blocks
-        let _tx = node.ledger.store.tx_begin_write();
+        let mut txn = node.ledger.store.begin_write();
 
         // Ensure that when the number of election winners reaches the limit, AEC vacancy reflects that
         // Confirming more elections should make the vacancy negative
@@ -797,6 +797,7 @@ fn bound_election_winners() {
 
         assert_timely2(|| node.active.read().unwrap().vacancy() <= 0);
         // Release the guard to allow cementing, there should be some vacancy now
+        txn.commit();
     }
 
     assert_timely2(|| node.active.read().unwrap().vacancy() > 0);

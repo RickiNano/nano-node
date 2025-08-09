@@ -21,7 +21,7 @@ impl<'a> VoteVerifier<'a> {
         let mut verified = VecDeque::new();
 
         if is_final {
-            let mut txn = self.store.tx_begin_write();
+            let mut txn = self.store.begin_write();
             for (root, hash) in &candidates {
                 if txn.is_refresh_needed() {
                     txn = self.store.env.refresh(txn);
@@ -30,6 +30,7 @@ impl<'a> VoteVerifier<'a> {
                     verified.push_back((*root, *hash));
                 }
             }
+            txn.commit();
         } else {
             let mut any = OwningAnySet::new(self.store, self.constants);
             for (root, hash) in &candidates {

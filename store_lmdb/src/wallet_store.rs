@@ -151,6 +151,7 @@ impl LmdbWalletStore {
             let mut guard = store.fans.lock().unwrap();
             guard.wallet_key_mem.value_set(key);
         }
+        txn.commit();
         Ok(store)
     }
 
@@ -199,6 +200,7 @@ impl LmdbWalletStore {
         guard.password.value_set(RawKey::zero());
         let key = store.entry_get_raw(&txn, &Self::wallet_key_special()).key;
         guard.wallet_key_mem.value_set(key);
+        txn.commit();
         drop(guard);
         Ok(store)
     }

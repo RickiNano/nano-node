@@ -93,9 +93,10 @@ impl PeerCacheUpdater {
 impl Tickable for PeerCacheUpdater {
     fn tick(&mut self, _cancel_token: &CancellationToken) {
         self.stats.inc(StatType::PeerHistory, DetailType::Loop);
-        let mut tx = self.ledger.store.tx_begin_write();
-        self.save_peers(&mut tx);
-        self.delete_old_peers(&mut tx);
+        let mut txn = self.ledger.store.begin_write();
+        self.save_peers(&mut txn);
+        self.delete_old_peers(&mut txn);
+        txn.commit();
     }
 }
 

@@ -49,16 +49,18 @@ fn do_upgrades(env: &mut LmdbEnvironment) -> anyhow::Result<bool> {
     let version_store = LmdbVersionStore::new(env)?;
 
     let mut version = {
-        let mut tx = env.begin_write();
-        match version_store.get(&tx) {
+        let mut txn = env.begin_write();
+        let version = match version_store.get(&txn) {
             Some(v) => v,
             None => {
                 let new_version = STORE_VERSION_CURRENT;
                 info!("Setting db version to {}", new_version);
-                version_store.put(&mut tx, new_version);
+                version_store.put(&mut txn, new_version);
                 new_version
             }
-        }
+        };
+        txn.commit();
+        version
     };
 
     if version == STORE_VERSION_CURRENT {
@@ -101,8 +103,9 @@ fn do_upgrades(env: &mut LmdbEnvironment) -> anyhow::Result<bool> {
 
         version = next_version(version);
 
-        let mut tx = env.begin_write();
-        version_store.put(&mut tx, version);
+        let mut txn = env.begin_write();
+        version_store.put(&mut txn, version);
+        txn.commit();
     }
 
     if needs_vacuuming {
@@ -140,6 +143,10 @@ fn create_successor_table(env: &LmdbEnvironment) -> Result<(), anyhow::Error> {
             info!("Processed {processed} blocks");
         }
     }
+
+    drop(cursor);
+    tx_read.commit();
+    tx_write.commit();
 
     Ok(())
 }
@@ -190,11 +197,14 @@ fn remove_successor_from_sideband_and_upgrade_timestamp_and_split_table(
             Err(e) => bail!("Could not iter blocks table: {e:?}"),
         }
     }
+    drop(cursor);
+    tx_read.commit();
 
     info!("Dropping old block table...");
     unsafe {
         tx_write.drop_db(block_db)?;
     }
+    tx_write.commit();
 
     Ok(())
 }
@@ -354,6 +364,7 @@ mod tests {
         let version_store = LmdbVersionStore::new(env)?;
         let mut txn = env.begin_write();
         version_store.put(&mut txn, current_version);
+        txn.commit();
         Ok(())
     }
 }

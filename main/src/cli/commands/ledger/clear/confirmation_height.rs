@@ -45,9 +45,11 @@ impl ConfirmationHeightArgs {
         if let Some(account_hex) = &self.account {
             let account = Account::decode_account(account_hex)?;
             let mut conf_height_reset_num = 0;
+
             let mut info = confirmation_height_store
                 .get(&txn, &account)
                 .expect("Could not find account");
+
             if account == genesis_account {
                 conf_height_reset_num += 1;
                 info.height = conf_height_reset_num;
@@ -69,6 +71,7 @@ impl ConfirmationHeightArgs {
             );
             println!("Confirmation heights of all accounts (except genesis which is set to 1) are set to 0");
         }
+        txn.commit();
 
         Ok(())
     }

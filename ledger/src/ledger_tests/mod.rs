@@ -356,14 +356,15 @@ fn ledger_cache() {
     {
         let pruned = LmdbPrunedStore::new(&env).unwrap();
         let accounts = LmdbAccountStore::new(&env).unwrap();
-        let mut tx = env.begin_write();
+        let mut txn = env.begin_write();
 
-        pruned.put(&mut tx, &1.into());
-        pruned.put(&mut tx, &2.into());
+        pruned.put(&mut txn, &1.into());
+        pruned.put(&mut txn, &2.into());
 
-        accounts.put(&mut tx, &1.into(), &AccountInfo::new_test_instance());
-        accounts.put(&mut tx, &2.into(), &AccountInfo::new_test_instance());
-        accounts.put(&mut tx, &3.into(), &AccountInfo::new_test_instance());
+        accounts.put(&mut txn, &1.into(), &AccountInfo::new_test_instance());
+        accounts.put(&mut txn, &2.into(), &AccountInfo::new_test_instance());
+        accounts.put(&mut txn, &3.into(), &AccountInfo::new_test_instance());
+        txn.commit();
     }
 
     let ledger = Ledger::new(
@@ -415,7 +416,7 @@ fn configured_peers_response() {
     let endpoint = TEST_ENDPOINT_1;
     let now = new_test_timestamp();
     let ledger = Ledger::new_null_builder().peers([(endpoint, now)]).finish();
-    let tx = ledger.store.tx_begin_read();
+    let tx = ledger.store.begin_read();
     assert_eq!(ledger.store.peer.iter(&tx).next().unwrap(), (endpoint, now));
 }
 

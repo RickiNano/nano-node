@@ -282,11 +282,11 @@ mod tests {
     #[test]
     fn track_puts() {
         let fixture = Fixture::new();
-        let mut tx = fixture.env.begin_write();
+        let mut txn = fixture.env.begin_write();
         let time = UNIX_EPOCH + Duration::from_secs(1261440000);
         let put_tracker = fixture.store.track_puts();
 
-        fixture.store.put(&mut tx, TEST_PEER_A, time);
+        fixture.store.put(&mut txn, TEST_PEER_A, time);
 
         let output = put_tracker.output();
         assert_eq!(output, vec![(TEST_PEER_A, time)]);
@@ -295,10 +295,10 @@ mod tests {
     #[test]
     fn track_deletes() {
         let fixture = Fixture::new();
-        let mut tx = fixture.env.begin_write();
+        let mut txn = fixture.env.begin_write();
         let delete_tracker = fixture.store.track_deletions();
 
-        fixture.store.del(&mut tx, TEST_PEER_A);
+        fixture.store.del(&mut txn, TEST_PEER_A);
 
         let output = delete_tracker.output();
         assert_eq!(output, vec![TEST_PEER_A]);

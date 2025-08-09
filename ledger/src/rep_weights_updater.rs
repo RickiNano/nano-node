@@ -150,14 +150,15 @@ mod tests {
         let rep_weights = RepWeightCache::new();
         let rep_weights_updater = RepWeightsUpdater::new(store, Amount::zero(), &rep_weights);
         rep_weights_updater.representation_put(representative, weight);
-        let mut tx = env.begin_write();
+        let mut txn = env.begin_write();
 
         // set weight to 0
         rep_weights_updater.representation_add(
-            &mut tx,
+            &mut txn,
             representative,
             Amount::zero().wrapping_sub(weight),
         );
+        txn.commit();
 
         assert_eq!(rep_weights.len(), 0);
         assert_eq!(delete_tracker.output(), vec![representative]);
@@ -183,16 +184,17 @@ mod tests {
         let rep_weights_updater = RepWeightsUpdater::new(store, Amount::zero(), &rep_weights);
         rep_weights_updater.representation_put(rep1, weight);
         rep_weights_updater.representation_put(rep2, weight);
-        let mut tx = env.begin_write();
+        let mut txn = env.begin_write();
 
         // set weight to 0
         rep_weights_updater.representation_add_dual(
-            &mut tx,
+            &mut txn,
             rep1,
             Amount::zero().wrapping_sub(weight),
             rep2,
             Amount::zero().wrapping_sub(weight),
         );
+        txn.commit();
 
         assert_eq!(rep_weights.len(), 0);
         assert_eq!(delete_tracker.output(), vec![rep1, rep2]);
@@ -211,6 +213,7 @@ mod tests {
         let rep_weights_updater = RepWeightsUpdater::new(store, min_weight, &rep_weights);
 
         rep_weights_updater.representation_add(&mut txn, representative, rep_weight);
+        txn.commit();
 
         assert_eq!(rep_weights.len(), 0);
         assert_eq!(put_tracker.output(), vec![(representative, rep_weight)]);
@@ -240,6 +243,7 @@ mod tests {
             representative,
             Amount::zero().wrapping_sub(Amount::from(2)),
         );
+        txn.commit();
 
         assert_eq!(rep_weights.len(), 0);
         assert_eq!(put_tracker.output(), vec![(representative, 9.into())]);

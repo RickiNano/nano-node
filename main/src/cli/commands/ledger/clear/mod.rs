@@ -52,6 +52,7 @@ impl ClearCommand {
         let mut txn = env.begin_write();
 
         online_weight_store.clear(&mut txn);
+        txn.commit();
 
         println!("Online weight records were cleared from the database");
         Ok(())
@@ -65,6 +66,7 @@ impl ClearCommand {
         let mut txn = env.begin_write();
 
         peer_store.clear(&mut txn);
+        txn.commit();
 
         println!("Peers were cleared from the database");
         Ok(())
