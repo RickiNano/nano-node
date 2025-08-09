@@ -5,7 +5,7 @@ use rsnano_core::{
     BlockHash, QualifiedRoot,
 };
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::{LmdbIterator, LmdbRangeIterator};
@@ -31,7 +31,7 @@ impl LmdbFinalVoteStore {
     pub fn put(&self, txn: &mut WriteTransaction, root: &QualifiedRoot, hash: &BlockHash) -> bool {
         let root_bytes = root.to_bytes();
         match txn.get(self.database, &root_bytes) {
-            Err(lmdb::Error::NotFound) => {
+            Err(Error::NotFound) => {
                 txn.put(
                     self.database,
                     &root_bytes,
@@ -74,7 +74,7 @@ impl LmdbFinalVoteStore {
     pub fn get(&self, tx: &dyn Transaction, root: &QualifiedRoot) -> Option<BlockHash> {
         let result = tx.get(self.database, &root.to_bytes());
         match result {
-            Err(lmdb::Error::NotFound) => None,
+            Err(Error::NotFound) => None,
             Ok(bytes) => {
                 let mut stream = BufferReader::new(bytes);
                 BlockHash::deserialize(&mut stream).ok()

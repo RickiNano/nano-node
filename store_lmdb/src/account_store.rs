@@ -5,8 +5,8 @@ use rsnano_core::{
     Account, AccountInfo,
 };
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
-    WriteTransaction,
+    ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
+    WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -56,7 +56,7 @@ impl LmdbAccountStore {
     pub fn get(&self, transaction: &dyn Transaction, account: &Account) -> Option<AccountInfo> {
         let result = transaction.get(self.database, account.as_bytes());
         match result {
-            Err(lmdb::Error::NotFound) => None,
+            Err(Error::NotFound) => None,
             Ok(bytes) => {
                 let mut stream = BufferReader::new(bytes);
                 AccountInfo::deserialize(&mut stream).ok()
@@ -209,7 +209,7 @@ mod tests {
                 database: ACCOUNT_TEST_DATABASE.into(),
                 key: account.as_bytes().to_vec(),
                 value: info.to_bytes().to_vec(),
-                flags: lmdb::WriteFlags::empty()
+                flags: WriteFlags::empty()
             }]
         );
     }

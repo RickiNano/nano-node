@@ -160,8 +160,7 @@ fn backup_file_path(source_path: &Path) -> anyhow::Result<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lmdb::EnvironmentFlags;
-    use rsnano_nullable_lmdb::{EnvironmentOptions, LmdbEnvironmentFactory};
+    use rsnano_nullable_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbEnvironmentFactory};
 
     #[test]
     fn create_store() -> anyhow::Result<()> {

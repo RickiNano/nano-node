@@ -11,8 +11,8 @@ use rsnano_core::{
     BlockHash, SavedBlock,
 };
 use rsnano_nullable_lmdb::{
-    sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction,
-    WriteFlags, WriteTransaction,
+    sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment,
+    Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -106,7 +106,7 @@ impl LmdbBlockStore {
     pub fn del(&self, txn: &mut WriteTransaction, hash: &BlockHash) {
         let id = match txn.get(self.index_db, hash.as_bytes()) {
             Ok(id_bytes) => get_block_id(id_bytes),
-            Err(lmdb::Error::NotFound) => return,
+            Err(Error::NotFound) => return,
             Err(e) => panic!("Could not delete block: {e:?} (hash: {hash})"),
         };
 
@@ -178,7 +178,7 @@ impl LmdbBlockStore {
 
     fn block_raw_get<'a>(&self, txn: &'a dyn Transaction, hash: &BlockHash) -> Option<&'a [u8]> {
         match txn.get(self.index_db, hash.as_bytes()) {
-            Err(lmdb::Error::NotFound) => None,
+            Err(Error::NotFound) => None,
             Ok(id_bytes) => Some(
                 txn.get(self.block_db, id_bytes)
                     .expect("Block data missing"),
@@ -198,7 +198,7 @@ fn find_next_free_id(env: &LmdbEnvironment, block_db: LmdbDatabase) -> Result<u6
     match cursor.get(None, None, MDB_LAST) {
         Ok((Some(key), _)) => Ok(get_block_id(key) + 1),
         Ok((None, _)) => panic!("No key!"),
-        Err(lmdb::Error::NotFound) => Ok(0),
+        Err(Error::NotFound) => Ok(0),
         Err(e) => Err(anyhow!("Couldn't load highest block id: {e:?}")),
     }
 }
@@ -277,13 +277,13 @@ mod tests {
                     database: LmdbDatabase::new_null(42),
                     key: block.hash().as_bytes().to_vec(),
                     value: 0u64.to_be_bytes().to_vec(),
-                    flags: lmdb::WriteFlags::NO_OVERWRITE,
+                    flags: WriteFlags::NO_OVERWRITE,
                 },
                 PutEvent {
                     database: LmdbDatabase::new_null(43),
                     key: 0u64.to_be_bytes().to_vec(),
                     value: block.serialize_with_sideband(),
-                    flags: lmdb::WriteFlags::APPEND,
+                    flags: WriteFlags::APPEND,
                 }
             ]
         );

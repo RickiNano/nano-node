@@ -5,8 +5,8 @@ use rsnano_core::{
     Account, BlockHash, PendingInfo, PendingKey,
 };
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
-    WriteTransaction,
+    ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
+    WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -67,7 +67,7 @@ impl LmdbPendingStore {
                 let mut stream = BufferReader::new(bytes);
                 PendingInfo::deserialize(&mut stream).ok()
             }
-            Err(lmdb::Error::NotFound) => None,
+            Err(Error::NotFound) => None,
             Err(e) => {
                 panic!("Could not load pending info: {:?}", e);
             }

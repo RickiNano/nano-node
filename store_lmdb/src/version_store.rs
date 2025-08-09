@@ -1,5 +1,5 @@
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, Error, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::{LmdbDatabase, STORE_VERSION_CURRENT};
@@ -69,7 +69,7 @@ fn load_version(txn: &dyn Transaction, db: LmdbDatabase) -> Option<i32> {
     let key_bytes = version_key();
     match txn.get(db, &key_bytes) {
         Ok(value) => Some(i32::from_be_bytes(value[28..].try_into().unwrap())),
-        Err(lmdb::Error::NotFound) => None,
+        Err(Error::NotFound) => None,
         Err(_) => panic!("Error while loading db version"),
     }
 }

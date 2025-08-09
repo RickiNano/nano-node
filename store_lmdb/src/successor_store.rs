@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rsnano_core::BlockHash;
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -46,7 +46,7 @@ impl LmdbSuccessorStore {
     pub fn get(&self, tx: &dyn Transaction, block: &BlockHash) -> Option<BlockHash> {
         match tx.get(self.database, block.as_bytes()) {
             Ok(bytes) => BlockHash::from_slice(bytes),
-            Err(lmdb::Error::NotFound) => None,
+            Err(Error::NotFound) => None,
             Err(e) => panic!("Could not load successor hash: {:?}", e),
         }
     }
@@ -142,7 +142,7 @@ mod tests {
         let block_hash = BlockHash::from(1);
         let env = LmdbEnvironment::null_builder()
             .database(TABLE_NAME, TEST_DATABASE)
-            .error(block_hash.as_bytes(), lmdb::Error::PageNotFound)
+            .error(block_hash.as_bytes(), Error::PageNotFound)
             .build()
             .build();
         let store = LmdbSuccessorStore::new(&env).unwrap();

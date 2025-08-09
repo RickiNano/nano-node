@@ -5,8 +5,8 @@ use rsnano_core::{
     Account, ConfirmationHeightInfo,
 };
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
-    WriteTransaction,
+    ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
+    WriteFlags, WriteTransaction,
 };
 
 use crate::{
@@ -45,7 +45,7 @@ impl LmdbConfirmationHeightStore {
 
     pub fn get(&self, txn: &dyn Transaction, account: &Account) -> Option<ConfirmationHeightInfo> {
         match txn.get(self.database, account.as_bytes()) {
-            Err(lmdb::Error::NotFound) => None,
+            Err(Error::NotFound) => None,
             Ok(bytes) => {
                 let mut stream = BufferReader::new(bytes);
                 ConfirmationHeightInfo::deserialize(&mut stream).ok()

@@ -44,7 +44,7 @@ impl LmdbRepWeightStore {
                 let mut stream = BufferReader::new(bytes);
                 Amount::deserialize(&mut stream).ok()
             }
-            Err(lmdb::Error::NotFound) => None,
+            Err(rsnano_nullable_lmdb::Error::NotFound) => None,
             Err(e) => {
                 panic!("Could not load rep_weight: {:?}", e);
             }
@@ -93,7 +93,7 @@ impl<'txn> Iterator for RepWeightIterator<'txn> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.cursor.get(None, None, self.operation) {
-            Err(lmdb::Error::NotFound) => None,
+            Err(rsnano_nullable_lmdb::Error::NotFound) => None,
             Ok((Some(k), v)) => {
                 self.operation = MDB_NEXT;
                 Some((

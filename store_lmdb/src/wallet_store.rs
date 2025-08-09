@@ -17,7 +17,7 @@ use rsnano_core::{
     Account, KeyDerivationFunction, PublicKey, RawKey, WorkNonce,
 };
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+    DatabaseFlags, Error, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::{Fan, LmdbDatabase, LmdbRangeIterator};
@@ -102,7 +102,7 @@ impl LmdbWalletStore {
         store.initialize(env, wallet)?;
         let handle = store.db_handle();
         let mut txn = env.begin_write();
-        if let Err(lmdb::Error::NotFound) = txn.get(handle, Self::version_special().as_bytes()) {
+        if let Err(Error::NotFound) = txn.get(handle, Self::version_special().as_bytes()) {
             store.version_put(&mut txn, Self::VERSION_CURRENT);
             let salt = RawKey::random();
             store.entry_put_raw(
@@ -172,7 +172,7 @@ impl LmdbWalletStore {
         let mut txn = env.begin_write();
         match txn.get(handle, Self::version_special().as_bytes()) {
             Ok(_) => panic!("wallet store already initialized"),
-            Err(lmdb::Error::NotFound) => {}
+            Err(Error::NotFound) => {}
             Err(e) => panic!("unexpected wallet store error: {:?}", e),
         }
 

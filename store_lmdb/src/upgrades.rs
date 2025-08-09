@@ -193,7 +193,7 @@ fn remove_successor_from_sideband_and_upgrade_timestamp_and_split_table(
                 }
             }
             Ok((None, _)) => bail!("Block data without key found!"),
-            Err(lmdb::Error::NotFound) => break,
+            Err(rsnano_nullable_lmdb::Error::NotFound) => break,
             Err(e) => bail!("Could not iter blocks table: {e:?}"),
         }
     }
