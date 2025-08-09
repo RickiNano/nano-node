@@ -180,9 +180,8 @@ impl LmdbEnvironment {
         }
     }
 
-    pub fn refresh(&self, mut txn: WriteTransaction) -> WriteTransaction {
+    pub fn refresh(&self, txn: WriteTransaction) -> WriteTransaction {
         txn.commit();
-        drop(txn);
         self.begin_write()
     }
 

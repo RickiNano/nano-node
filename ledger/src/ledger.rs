@@ -445,7 +445,7 @@ impl Ledger {
 
     pub fn prune_one(&self, target: &BlockHash, batch_size: usize) -> usize {
         let txn = self.store.begin_write();
-        let (mut txn, count) = self.pruning_action(txn, target, batch_size as u64);
+        let (txn, count) = self.pruning_action(txn, target, batch_size as u64);
         txn.commit();
         count as usize
     }
@@ -663,7 +663,6 @@ impl Ledger {
             for block in blocks {
                 if txn.is_refresh_needed() {
                     txn.commit();
-                    drop(txn);
                     if !rolled_back.is_empty() {
                         rolled_back_callback(rolled_back);
                         rolled_back = RollbackResults::new();
@@ -734,7 +733,7 @@ impl Ledger {
 
     pub fn confirm(&self, hash: BlockHash) -> Vec<SavedBlock> {
         let txn = self.store.begin_write();
-        let (mut txn, blocks) = self.confirm_max(txn, hash, 1024 * 128);
+        let (txn, blocks) = self.confirm_max(txn, hash, 1024 * 128);
         txn.commit();
         blocks
     }

@@ -101,12 +101,12 @@ impl LmdbWalletStore {
         };
         store.initialize(env, wallet)?;
         let handle = store.db_handle();
-        let txn = &mut env.begin_write();
+        let mut txn = env.begin_write();
         if let Err(lmdb::Error::NotFound) = txn.get(handle, Self::version_special().as_bytes()) {
-            store.version_put(txn, Self::VERSION_CURRENT);
+            store.version_put(&mut txn, Self::VERSION_CURRENT);
             let salt = RawKey::random();
             store.entry_put_raw(
-                txn,
+                &mut txn,
                 &Self::salt_special(),
                 &WalletValue::new(salt, 0.into()),
             );
@@ -119,7 +119,7 @@ impl LmdbWalletStore {
             // Wallet key is encrypted by the user's password
             let encrypted = wallet_key.encrypt(&zero, &salt.initialization_vector_low());
             store.entry_put_raw(
-                txn,
+                &mut txn,
                 &Self::wallet_key_special(),
                 &WalletValue::new(encrypted, 0.into()),
             );
@@ -128,26 +128,26 @@ impl LmdbWalletStore {
             drop(guard);
             let check = zero.encrypt(&wallet_key, &salt.initialization_vector_low());
             store.entry_put_raw(
-                txn,
+                &mut txn,
                 &Self::check_special(),
                 &WalletValue::new(check, 0.into()),
             );
             let rep = RawKey::from_bytes(*representative.as_bytes());
             store.entry_put_raw(
-                txn,
+                &mut txn,
                 &Self::representative_special(),
                 &WalletValue::new(rep, 0.into()),
             );
             let seed = RawKey::random();
-            store.set_seed(txn, &seed);
+            store.set_seed(&mut txn, &seed);
             store.entry_put_raw(
-                txn,
+                &mut txn,
                 &Self::deterministic_index_special(),
                 &WalletValue::new(RawKey::zero(), 0.into()),
             );
         }
         {
-            let key = store.entry_get_raw(txn, &Self::wallet_key_special()).key;
+            let key = store.entry_get_raw(&txn, &Self::wallet_key_special()).key;
             let mut guard = store.fans.lock().unwrap();
             guard.wallet_key_mem.value_set(key);
         }

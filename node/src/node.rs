@@ -1367,7 +1367,7 @@ impl Node {
         let hash = block.hash();
         match self.try_process(block) {
             Ok(saved_block) => saved_block,
-            Err(BlockError::Old) => self.block(&hash).unwrap(),
+            Err(BlockError::Old) | Err(BlockError::Conflict) => self.block(&hash).unwrap(),
             Err(e) => {
                 panic!("Could not process block: {:?}", e);
             }

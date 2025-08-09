@@ -502,7 +502,7 @@ fn reopen_default_password() {
             &PathBuf::from("0"),
         )
         .unwrap();
-        let mut txn = fixture.env.begin_write();
+        let txn = fixture.env.begin_write();
         assert!(wallet.valid_password(&txn));
         txn.commit();
     }

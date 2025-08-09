@@ -785,7 +785,7 @@ fn bound_election_winners() {
 
     {
         // Prevent cementing of confirmed blocks
-        let mut txn = node.ledger.store.begin_write();
+        let txn = node.ledger.store.begin_write();
 
         // Ensure that when the number of election winners reaches the limit, AEC vacancy reflects that
         // Confirming more elections should make the vacancy negative

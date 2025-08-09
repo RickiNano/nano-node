@@ -207,7 +207,7 @@ impl Wallets {
         );
 
         let wallet_ids = {
-            let mut txn = self.env.begin_write();
+            let txn = self.env.begin_write();
             let ids = self.get_wallet_ids_with_tx(&txn);
             txn.commit();
             ids
@@ -455,7 +455,7 @@ impl Wallets {
     ) -> Result<(), WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, wallet_id)?;
-        let mut txn = self.env.begin_write();
+        let txn = self.env.begin_write();
         if wallet.store.attempt_password(&txn, password.as_ref()) {
             txn.commit();
             Ok(())
@@ -530,7 +530,7 @@ impl Wallets {
         let mut stored_items = HashSet::new();
 
         let wallet_ids = {
-            let mut txn = self.env.begin_write();
+            let txn = self.env.begin_write();
             let ids = self.get_wallet_ids_with_tx(&txn);
             txn.commit();
             ids
@@ -1775,7 +1775,7 @@ impl WalletsExt for Arc<Wallets> {
     ) -> Result<(), WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Wallets::get_wallet(&guard, &wallet_id)?;
-        let mut txn = self.env.begin_write();
+        let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
@@ -1882,7 +1882,7 @@ impl WalletsExt for Arc<Wallets> {
     ) -> Result<(), WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Wallets::get_wallet(&guard, &wallet_id)?;
-        let mut txn = self.env.begin_write();
+        let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
@@ -2198,7 +2198,7 @@ impl WalletsExt for Arc<Wallets> {
     ) -> Result<(), WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Wallets::get_wallet(&guard, &wallet_id)?;
-        let mut txn = self.env.begin_write();
+        let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
@@ -2274,7 +2274,7 @@ impl WalletsExt for Arc<Wallets> {
         let Some(existing) = guard.get(&wallet_id) else {
             return false;
         };
-        let mut txn = self.env.begin_write();
+        let txn = self.env.begin_write();
         let mut valid = existing.store.valid_password(&txn);
         if !valid {
             valid = self.enter_password_wallet(existing, &txn, password).is_ok();

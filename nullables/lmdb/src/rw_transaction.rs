@@ -77,7 +77,7 @@ impl WriteTransaction {
         self.start.elapsed()
     }
 
-    pub fn commit(&mut self) {
+    pub fn commit(mut self) {
         let t = std::mem::replace(&mut self.state, TxnState::Transitioning);
         match t {
             TxnState::Inactive => {}
@@ -86,7 +86,6 @@ impl WriteTransaction {
             }
             TxnState::Transitioning => unreachable!(),
         };
-        self.state = TxnState::Inactive;
     }
 
     pub fn track_puts(&self) -> Rc<OutputTracker<PutEvent>> {
@@ -157,12 +156,6 @@ impl WriteTransaction {
     /// should be used accordingly.
     pub unsafe fn drop_db(&mut self, database: LmdbDatabase) -> lmdb::Result<()> {
         self.rw_txn_mut().drop_db(database)
-    }
-}
-
-impl Drop for WriteTransaction {
-    fn drop(&mut self) {
-        self.commit();
     }
 }
 
