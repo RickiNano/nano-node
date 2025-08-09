@@ -4,35 +4,44 @@ use super::{ConfiguredDatabase, LmdbDatabase, RoCursor};
 use crate::{Transaction, EMPTY_DATABASE};
 
 pub struct ReadTransaction {
-    txn: RoTransaction,
+    strategy: TxnStrategy,
     start: Instant,
 }
 
 impl ReadTransaction {
     pub fn new(txn: lmdb::RoTransaction<'static>) -> Self {
         Self {
-            txn: RoTransaction::new(txn),
+            strategy: TxnStrategy::Real(RoTransactionWrapper(txn)),
             start: Instant::now(),
         }
     }
 
     pub fn new_null(configured_databases: Vec<ConfiguredDatabase>) -> Self {
         Self {
-            txn: RoTransaction::new_null(configured_databases),
+            strategy: TxnStrategy::Nulled(RoTransactionStub::new(configured_databases)),
             start: Instant::now(),
         }
     }
 
     pub fn commit(self) {
-        self.txn.commit().expect("Commit failed");
+        if let TxnStrategy::Real(s) = self.strategy {
+            s.commit().expect("Commit failed");
+        }
     }
 
     pub fn reset(self) -> InactiveTransaction {
-        self.txn.reset()
+        match self.strategy {
+            TxnStrategy::Real(s) => InactiveTransaction {
+                strategy: InactiveTransactionStrategy::Real(s.reset()),
+            },
+            TxnStrategy::Nulled(s) => InactiveTransaction {
+                strategy: InactiveTransactionStrategy::Nulled(s.reset()),
+            },
+        }
     }
 
     pub fn refresh(self) -> Self {
-        self.txn.reset().renew().unwrap()
+        self.reset().renew().expect("Could not renew transaction")
     }
 }
 
@@ -46,76 +55,28 @@ impl Transaction for ReadTransaction {
     }
 
     fn get(&self, database: LmdbDatabase, key: &[u8]) -> lmdb::Result<&[u8]> {
-        self.txn.get(database, key)
+        match &self.strategy {
+            TxnStrategy::Real(s) => s.get(database, key),
+            TxnStrategy::Nulled(s) => s.get(database, key),
+        }
     }
 
     fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
-        self.txn.open_ro_cursor(database)
+        match &self.strategy {
+            TxnStrategy::Real(s) => s.open_ro_cursor(database),
+            TxnStrategy::Nulled(s) => s.open_ro_cursor(database),
+        }
     }
 
     fn count(&self, database: LmdbDatabase) -> u64 {
-        self.txn.count(database)
-    }
-}
-
-struct RoTransaction {
-    strategy: RoTransactionStrategy,
-}
-
-impl RoTransaction {
-    pub fn new(tx: lmdb::RoTransaction<'static>) -> Self {
-        Self {
-            strategy: RoTransactionStrategy::Real(RoTransactionWrapper(tx)),
-        }
-    }
-
-    pub fn new_null(databases: Vec<ConfiguredDatabase>) -> Self {
-        Self {
-            strategy: RoTransactionStrategy::Nulled(RoTransactionStub { databases }),
-        }
-    }
-
-    pub fn commit(self) -> lmdb::Result<()> {
-        if let RoTransactionStrategy::Real(s) = self.strategy {
-            s.commit()?;
-        }
-        Ok(())
-    }
-
-    pub fn get(&self, database: LmdbDatabase, key: &[u8]) -> lmdb::Result<&[u8]> {
         match &self.strategy {
-            RoTransactionStrategy::Real(s) => s.get(database, key),
-            RoTransactionStrategy::Nulled(s) => s.get(database, key),
-        }
-    }
-
-    pub fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
-        match &self.strategy {
-            RoTransactionStrategy::Real(s) => s.open_ro_cursor(database),
-            RoTransactionStrategy::Nulled(s) => s.open_ro_cursor(database),
-        }
-    }
-
-    pub fn count(&self, database: LmdbDatabase) -> u64 {
-        match &self.strategy {
-            RoTransactionStrategy::Real(s) => s.count(database),
-            RoTransactionStrategy::Nulled(s) => s.count(database),
-        }
-    }
-
-    pub fn reset(self) -> InactiveTransaction {
-        match self.strategy {
-            RoTransactionStrategy::Real(s) => InactiveTransaction {
-                strategy: InactiveTransactionStrategy::Real(s.reset()),
-            },
-            RoTransactionStrategy::Nulled(s) => InactiveTransaction {
-                strategy: InactiveTransactionStrategy::Nulled(s.reset()),
-            },
+            TxnStrategy::Real(s) => s.count(database),
+            TxnStrategy::Nulled(s) => s.count(database),
         }
     }
 }
 
-enum RoTransactionStrategy {
+enum TxnStrategy {
     Real(RoTransactionWrapper),
     Nulled(RoTransactionStub),
 }
@@ -157,6 +118,10 @@ struct RoTransactionStub {
 }
 
 impl RoTransactionStub {
+    fn new(databases: Vec<ConfiguredDatabase>) -> Self {
+        Self { databases }
+    }
+
     fn get_database(&self, database: LmdbDatabase) -> Option<&ConfiguredDatabase> {
         self.databases.iter().find(|d| d.dbi == database)
     }
