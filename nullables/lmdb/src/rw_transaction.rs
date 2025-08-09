@@ -10,12 +10,6 @@ use rsnano_output_tracker::{OutputListener, OutputTracker};
 use super::{ConfiguredDatabase, LmdbDatabase, RoCursor};
 use crate::{RwCursor, Transaction};
 
-enum TxnState {
-    Inactive,
-    Active(RwTransaction),
-    Transitioning,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct PutEvent {
     pub database: LmdbDatabase,
@@ -31,7 +25,7 @@ pub struct DeleteEvent {
 }
 
 pub struct WriteTransaction {
-    state: TxnState,
+    txn: RwTransaction,
     put_listener: OutputListener<PutEvent>,
     delete_listener: OutputListener<DeleteEvent>,
     clear_listener: OutputListener<LmdbDatabase>,
@@ -40,36 +34,20 @@ pub struct WriteTransaction {
 
 impl WriteTransaction {
     pub fn new(txn: lmdb::RwTransaction<'static>) -> Self {
-        Self {
-            state: TxnState::Active(RwTransaction::new(txn)),
-            put_listener: OutputListener::new(),
-            delete_listener: OutputListener::new(),
-            clear_listener: OutputListener::new(),
-            start: Instant::now(),
-        }
+        Self::with_txn(RwTransaction::new(txn))
     }
 
     pub fn new_null(databases: Arc<Mutex<Vec<ConfiguredDatabase>>>) -> Self {
+        Self::with_txn(RwTransaction::new_null(databases))
+    }
+
+    fn with_txn(txn: RwTransaction) -> Self {
         Self {
-            state: TxnState::Active(RwTransaction::new_null(databases)),
+            txn,
             put_listener: OutputListener::new(),
             delete_listener: OutputListener::new(),
             clear_listener: OutputListener::new(),
             start: Instant::now(),
-        }
-    }
-
-    fn rw_txn(&self) -> &RwTransaction {
-        match &self.state {
-            TxnState::Active(t) => t,
-            _ => panic!("txn not active"),
-        }
-    }
-
-    fn rw_txn_mut(&mut self) -> &mut RwTransaction {
-        match &mut self.state {
-            TxnState::Active(t) => t,
-            _ => panic!("txn not active"),
         }
     }
 
@@ -77,15 +55,8 @@ impl WriteTransaction {
         self.start.elapsed()
     }
 
-    pub fn commit(mut self) {
-        let t = std::mem::replace(&mut self.state, TxnState::Transitioning);
-        match t {
-            TxnState::Inactive => {}
-            TxnState::Active(t) => {
-                t.commit().unwrap();
-            }
-            TxnState::Transitioning => unreachable!(),
-        };
+    pub fn commit(self) {
+        self.txn.commit().unwrap();
     }
 
     pub fn track_puts(&self) -> Rc<OutputTracker<PutEvent>> {
@@ -105,7 +76,7 @@ impl WriteTransaction {
         name: Option<&str>,
         flags: lmdb::DatabaseFlags,
     ) -> lmdb::Result<LmdbDatabase> {
-        self.rw_txn().create_db(name, flags)
+        self.txn.create_db(name, flags)
     }
 
     pub fn put(
@@ -123,7 +94,7 @@ impl WriteTransaction {
                 flags,
             });
         }
-        self.rw_txn_mut().put(database, key, value, flags)
+        self.txn.put(database, key, value, flags)
     }
 
     pub fn delete(
@@ -138,16 +109,16 @@ impl WriteTransaction {
                 key: key.to_vec(),
             });
         }
-        self.rw_txn_mut().del(database, key, flags)
+        self.txn.del(database, key, flags)
     }
 
     pub fn clear_db(&mut self, database: LmdbDatabase) -> lmdb::Result<()> {
         self.clear_listener.emit(database);
-        self.rw_txn_mut().clear_db(database)
+        self.txn.clear_db(database)
     }
 
     pub fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor> {
-        self.rw_txn_mut().open_rw_cursor(database)
+        self.txn.open_rw_cursor(database)
     }
 
     /// ## Safety
@@ -155,21 +126,21 @@ impl WriteTransaction {
     /// This method is unsafe in the same ways as `Environment::close_db`, and
     /// should be used accordingly.
     pub unsafe fn drop_db(&mut self, database: LmdbDatabase) -> lmdb::Result<()> {
-        self.rw_txn_mut().drop_db(database)
+        self.txn.drop_db(database)
     }
 }
 
 impl Transaction for WriteTransaction {
     fn get(&self, database: LmdbDatabase, key: &[u8]) -> lmdb::Result<&[u8]> {
-        self.rw_txn().get(database, key)
+        self.txn.get(database, key)
     }
 
     fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
-        self.rw_txn().open_ro_cursor(database)
+        self.txn.open_ro_cursor(database)
     }
 
     fn count(&self, database: LmdbDatabase) -> u64 {
-        self.rw_txn().count(database)
+        self.txn.count(database)
     }
 
     fn is_refresh_needed(&self) -> bool {
