@@ -31,7 +31,9 @@ impl<'a> VoteVerifier<'a> {
         } else {
             let mut any = OwningAnySet::new(self.store, self.constants);
             for (root, hash) in &candidates {
-                any.refresh_if_needed();
+                if any.is_refresh_needed() {
+                    any = any.refresh();
+                }
                 if self.should_vote_non_final(&any, root, hash) {
                     verified.push_back((*root, *hash));
                 }

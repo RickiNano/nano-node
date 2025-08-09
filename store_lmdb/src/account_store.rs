@@ -103,16 +103,17 @@ impl LmdbAccountStore {
         action: impl Fn(&mut dyn Iterator<Item = (Account, AccountInfo)>) + Send + Sync,
     ) {
         parallel_traversal(thread_count, &|start, end, is_last| {
-            let tx = env.begin_read();
+            let txn = env.begin_read();
             let start_account = Account::from(start);
             let end_account = Account::from(end);
             if is_last {
-                let mut iter = self.iter_range(&tx, start_account..);
+                let mut iter = self.iter_range(&txn, start_account..);
                 action(&mut iter);
             } else {
-                let mut iter = self.iter_range(&tx, start_account..end_account);
+                let mut iter = self.iter_range(&txn, start_account..end_account);
                 action(&mut iter);
             }
+            txn.commit();
         })
     }
 

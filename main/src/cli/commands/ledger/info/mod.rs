@@ -38,6 +38,7 @@ impl InfoCommand {
             println!("{:?}", peer.0);
         }
 
+        txn.commit();
         Ok(())
     }
 }

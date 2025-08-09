@@ -7,7 +7,7 @@ use std::{
 use lmdb::{DatabaseFlags, EnvironmentFlags, Stat};
 use lmdb_sys::{MDB_env, MDB_CP_COMPACT, MDB_SUCCESS};
 
-use super::{ConfiguredDatabase, LmdbDatabase, RoTransaction, RwTransaction};
+use super::{ConfiguredDatabase, LmdbDatabase, RwTransaction};
 use crate::{ConfiguredDatabaseBuilder, ReadTransaction, Result, Transaction, WriteTransaction};
 
 #[derive(Clone)]
@@ -120,22 +120,19 @@ impl LmdbEnvironment {
     }
 
     pub fn begin_read(&self) -> ReadTransaction {
-        let tx = match &self.env_strategy {
-            EnvironmentStrategy::Real(s) => s.begin_ro_txn(),
-            EnvironmentStrategy::Nulled(s) => s.begin_ro_txn(),
-        };
-
-        let tx = tx.expect("Could not create LMDB read-only transaction");
-        ReadTransaction::new(tx)
+        match &self.env_strategy {
+            EnvironmentStrategy::Real(s) => s.begin_read(),
+            EnvironmentStrategy::Nulled(s) => s.begin_read(),
+        }
     }
 
     pub fn begin_write(&self) -> WriteTransaction {
-        let tx = match &self.env_strategy {
-            EnvironmentStrategy::Real(s) => s.begin_rw_txn(),
-            EnvironmentStrategy::Nulled(s) => s.begin_rw_txn(),
+        let txn = match &self.env_strategy {
+            EnvironmentStrategy::Real(s) => s.begin_write(),
+            EnvironmentStrategy::Nulled(s) => s.begin_write(),
         };
-        let tx = tx.expect("Could not create LMDB read-write transaction");
-        WriteTransaction::new(tx)
+        let txn = txn.expect("Could not create LMDB read-write transaction");
+        WriteTransaction::new(txn)
     }
 
     pub fn file_path(&self) -> &Path {
@@ -185,32 +182,18 @@ impl LmdbEnvironment {
         }
     }
 
-    pub fn refresh_if_needed(&self, tx: &mut WriteTransaction) -> bool {
-        if tx.is_refresh_needed() {
-            self.refresh(tx);
+    pub fn refresh_if_needed(&self, txn: &mut WriteTransaction) -> bool {
+        if txn.is_refresh_needed() {
+            self.refresh(txn);
             true
         } else {
             false
         }
     }
 
-    pub fn refresh(&self, tx: &mut WriteTransaction) {
-        tx.commit();
-        *tx = self.begin_write();
-    }
-
-    pub fn refresh_if_needed_ro(&self, tx: &mut ReadTransaction) -> bool {
-        if tx.is_refresh_needed() {
-            self.refresh_ro(tx);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn refresh_ro(&self, tx: &mut ReadTransaction) {
-        tx.reset();
-        *tx = self.begin_read();
+    pub fn refresh(&self, txn: &mut WriteTransaction) {
+        txn.commit();
+        *txn = self.begin_write();
     }
 
     fn env(&self) -> *mut MDB_env {
@@ -238,17 +221,22 @@ impl EnvironmentWrapper {
         Ok(Self(env))
     }
 
-    fn begin_ro_txn(&self) -> lmdb::Result<RoTransaction> {
-        self.0.begin_ro_txn().map(|txn| {
-            // todo: don't use static life time
-            let txn = unsafe {
-                std::mem::transmute::<lmdb::RoTransaction<'_>, lmdb::RoTransaction<'static>>(txn)
-            };
-            RoTransaction::new(txn)
-        })
+    fn begin_read(&self) -> ReadTransaction {
+        self.0
+            .begin_ro_txn()
+            .map(|txn| {
+                // todo: don't use static life time
+                let txn = unsafe {
+                    std::mem::transmute::<lmdb::RoTransaction<'_>, lmdb::RoTransaction<'static>>(
+                        txn,
+                    )
+                };
+                ReadTransaction::new(txn)
+            })
+            .expect("Could not create LMDB read-only transaction")
     }
 
-    fn begin_rw_txn(&self) -> lmdb::Result<RwTransaction> {
+    fn begin_write(&self) -> lmdb::Result<RwTransaction> {
         self.0.begin_rw_txn().map(|txn| {
             // todo: don't use static life time
             let txn = unsafe {
@@ -294,15 +282,11 @@ impl EnvironmentStub {
         }
     }
 
-    fn begin_ro_txn(&self) -> lmdb::Result<RoTransaction> {
-        //todo  don't clone!
-        Ok(RoTransaction::new_null(
-            self.databases.lock().unwrap().clone(),
-        ))
+    fn begin_read(&self) -> ReadTransaction {
+        ReadTransaction::new_null(self.databases.lock().unwrap().clone())
     }
 
-    fn begin_rw_txn(&self) -> lmdb::Result<RwTransaction> {
-        //todo  don't clone!
+    fn begin_write(&self) -> lmdb::Result<RwTransaction> {
         Ok(RwTransaction::new_null(self.databases.clone()))
     }
 
@@ -403,12 +387,12 @@ mod tests {
         let env = create_lmdb_env(path);
         let dbi = env.create_db(Some("mydb"), DatabaseFlags::empty()).unwrap();
         {
-            let mut tx = env.begin_write();
-            tx.put(dbi, &[1, 2], &[3, 4], WriteFlags::empty()).unwrap();
-            tx.commit();
+            let mut txn = env.begin_write();
+            txn.put(dbi, &[1, 2], &[3, 4], WriteFlags::empty()).unwrap();
+            txn.commit();
         }
-        let tx = env.begin_read();
-        let result = tx.get(dbi, &[1, 2]).unwrap();
+        let txn = env.begin_read();
+        let result = txn.get(dbi, &[1, 2]).unwrap();
         assert_eq!(result, [3, 4]);
     }
 
@@ -451,8 +435,8 @@ mod tests {
                 .build()
                 .build();
 
-            let tx = env.begin_read();
-            let result = tx.get(database, &[1, 2]).unwrap();
+            let txn = env.begin_read();
+            let result = txn.get(database, &[1, 2]).unwrap();
             assert_eq!(result, [3, 4]);
         }
 
@@ -476,12 +460,12 @@ mod tests {
             let env = LmdbEnvironment::new_null();
             let dbi = env.create_db(Some("mydb"), DatabaseFlags::empty()).unwrap();
             {
-                let mut tx = env.begin_write();
-                tx.put(dbi, &[1, 2], &[3, 4], WriteFlags::empty()).unwrap();
-                tx.commit();
+                let mut txn = env.begin_write();
+                txn.put(dbi, &[1, 2], &[3, 4], WriteFlags::empty()).unwrap();
+                txn.commit();
             }
-            let tx = env.begin_read();
-            let result = tx.get(dbi, &[1, 2]).unwrap();
+            let txn = env.begin_read();
+            let result = txn.get(dbi, &[1, 2]).unwrap();
             assert_eq!(result, [3, 4]);
         }
     }

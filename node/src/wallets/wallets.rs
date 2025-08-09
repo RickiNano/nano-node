@@ -243,6 +243,7 @@ impl Wallets {
                     break;
                 }
             }
+            txn.commit();
         }
         if backup_required {
             create_backup_file(&self.env)?;
@@ -276,13 +277,17 @@ impl Wallets {
     }
 
     pub fn wallet_ids(&self) -> Vec<WalletId> {
-        let tx = self.env.begin_read();
-        self.get_wallet_ids_with_tx(&tx)
+        let txn = self.env.begin_read();
+        let ids = self.get_wallet_ids_with_tx(&txn);
+        txn.commit();
+        ids
     }
 
     pub fn get_wallet_ids(&self) -> Vec<WalletId> {
-        let tx = self.env.begin_read();
-        self.iter_wallets(&tx).collect()
+        let txn = self.env.begin_read();
+        let ids = self.iter_wallets(&txn).collect::<Vec<_>>();
+        txn.commit();
+        ids
     }
 
     pub fn get_wallet_ids_with_tx(&self, tx: &dyn Transaction) -> Vec<WalletId> {
@@ -330,17 +335,17 @@ impl Wallets {
         if self.node_config.enable_voting {
             let mut action_accounts_l: Vec<PrivateKey> = Vec::new();
             {
-                let transaction_l = self.env.begin_read();
+                let txn = self.env.begin_read();
                 let lock = self.mutex.lock().unwrap();
                 for (wallet_id, wallet) in lock.iter() {
                     let representatives_l = wallet.representatives.lock().unwrap().clone();
                     for account in representatives_l {
-                        if wallet.store.exists(&transaction_l, &account.into()) {
+                        if wallet.store.exists(&txn, &account.into()) {
                             if !self.ledger.weight(&account).is_zero() {
-                                if wallet.store.valid_password(&transaction_l) {
+                                if wallet.store.valid_password(&txn) {
                                     let prv = wallet
                                         .store
-                                        .fetch(&transaction_l, &account.into())
+                                        .fetch(&txn, &account.into())
                                         .expect("could not fetch account from wallet");
 
                                     action_accounts_l.push(prv.into());
@@ -359,6 +364,7 @@ impl Wallets {
                         }
                     }
                 }
+                txn.commit();
             }
             for keys in action_accounts_l {
                 action(&keys);
@@ -427,8 +433,10 @@ impl Wallets {
     pub fn valid_password(&self, wallet_id: &WalletId) -> Result<bool, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, wallet_id)?;
-        let tx = self.env.begin_read();
-        Ok(wallet.store.valid_password(&tx))
+        let txn = self.env.begin_read();
+        let valid = wallet.store.valid_password(&txn);
+        txn.commit();
+        Ok(valid)
     }
 
     pub fn attempt_password(
@@ -480,11 +488,11 @@ impl Wallets {
         let mut reps_guard = self.wallet_reps.lock().unwrap();
         reps_guard.clear();
         let half_principal_weight = self.online_reps.lock().unwrap().minimum_principal_weight() / 2;
-        let tx = self.env.begin_read();
+        let txn = self.env.begin_read();
         for (_, wallet) in wallets_guard.iter() {
             let mut representatives = HashSet::new();
 
-            for (pub_key, _) in wallet.store.iter(&tx) {
+            for (pub_key, _) in wallet.store.iter(&txn) {
                 if reps_guard.check_rep(pub_key, half_principal_weight) {
                     representatives.insert(pub_key.into());
                 }
@@ -492,14 +500,17 @@ impl Wallets {
 
             *wallet.representatives.lock().unwrap() = representatives;
         }
+        txn.commit();
     }
 
     pub fn exists(&self, pub_key: &PublicKey) -> bool {
         let guard = self.mutex.lock().unwrap();
-        let tx = self.env.begin_read();
-        guard
+        let txn = self.env.begin_read();
+        let exists = guard
             .values()
-            .any(|wallet| wallet.store.exists(&tx, pub_key))
+            .any(|wallet| wallet.store.exists(&txn, pub_key));
+        txn.commit();
+        exists
     }
 
     pub fn reload(&self) {
@@ -597,35 +608,40 @@ impl Wallets {
         let guard = self.mutex.lock().unwrap();
         let source = Self::get_wallet(&guard, source_id)?;
         let target = Self::get_wallet(&guard, target_id)?;
-        let tx = self.env.begin_read();
-        if !source.store.valid_password(&tx) || !target.store.valid_password(&tx) {
+        let txn = self.env.begin_read();
+        let is_locked = !source.store.valid_password(&txn) || !target.store.valid_password(&txn);
+        txn.commit();
+        if is_locked {
             return Err(WalletsError::WalletLocked);
         }
-        let mut tx = self.env.begin_write();
+        let mut txn = self.env.begin_write();
         target
             .store
-            .move_keys(&mut tx, &source.store, accounts)
+            .move_keys(&mut txn, &source.store, accounts)
             .map_err(|_| WalletsError::AccountNotFound)
     }
 
     pub fn backup(&self, path: &Path) -> anyhow::Result<()> {
         let guard = self.mutex.lock().unwrap();
-        let tx = self.env.begin_read();
+        let txn = self.env.begin_read();
         for (id, wallet) in guard.iter() {
             std::fs::create_dir_all(path)?;
             std::fs::set_permissions(path, Permissions::from_mode(0o700))?;
             let mut backup_path = PathBuf::from(path);
             backup_path.push(format!("{}.json", id));
-            wallet.store.write_backup(&tx, &backup_path)?;
+            wallet.store.write_backup(&txn, &backup_path)?;
         }
+        txn.commit();
         Ok(())
     }
 
     pub fn deterministic_index_get(&self, wallet_id: &WalletId) -> Result<u32, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, wallet_id)?;
-        let tx = self.env.begin_read();
-        Ok(wallet.store.deterministic_index_get(&tx))
+        let txn = self.env.begin_read();
+        let index = wallet.store.deterministic_index_get(&txn);
+        txn.commit();
+        Ok(index)
     }
 
     fn prepare_send(
@@ -731,11 +747,13 @@ impl Wallets {
 
     pub fn work_get(&self, wallet_id: &WalletId, pub_key: &PublicKey) -> WorkNonce {
         let guard = self.mutex.lock().unwrap();
-        let tx = self.env.begin_read();
         let Some(wallet) = guard.get(&wallet_id) else {
             return 1.into();
         };
-        wallet.store.work_get(&tx, pub_key).unwrap_or(1.into())
+        let txn = self.env.begin_read();
+        let work = wallet.store.work_get(&txn, pub_key).unwrap_or(1.into());
+        txn.commit();
+        work
     }
 
     pub fn work_get2(
@@ -744,20 +762,20 @@ impl Wallets {
         pub_key: &PublicKey,
     ) -> Result<WorkNonce, WalletsError> {
         let guard = self.mutex.lock().unwrap();
-        let tx = self.env.begin_read();
+        let txn = self.env.begin_read();
         let wallet = Self::get_wallet(&guard, wallet_id)?;
-        if wallet.store.find(&tx, pub_key).is_none() {
+        if wallet.store.find(&txn, pub_key).is_none() {
             return Err(WalletsError::AccountNotFound);
         }
-        Ok(wallet.store.work_get(&tx, pub_key).unwrap_or(1.into()))
+        Ok(wallet.store.work_get(&txn, pub_key).unwrap_or(1.into()))
     }
 
     pub fn get_accounts(&self, max_results: usize) -> Vec<Account> {
         let mut accounts = Vec::new();
         let guard = self.mutex.lock().unwrap();
-        let tx = self.env.begin_read();
+        let txn = self.env.begin_read();
         for wallet in guard.values() {
-            for (pub_key, _) in wallet.store.iter(&tx) {
+            for (pub_key, _) in wallet.store.iter(&txn) {
                 if accounts.len() >= max_results {
                     break;
                 }
@@ -765,6 +783,7 @@ impl Wallets {
                 accounts.push(pub_key.into());
             }
         }
+        txn.commit();
         accounts
     }
 
@@ -774,28 +793,31 @@ impl Wallets {
     ) -> Result<Vec<Account>, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, wallet_id)?;
-        let tx = self.env.begin_read();
+        let txn = self.env.begin_read();
         let mut accounts = Vec::new();
-        for (account, _) in wallet.store.iter(&tx) {
+        for (account, _) in wallet.store.iter(&txn) {
             accounts.push(account.into());
         }
+        txn.commit();
         Ok(accounts)
     }
 
     pub fn fetch(&self, wallet_id: &WalletId, pub_key: &PublicKey) -> Result<RawKey, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, wallet_id)?;
-        let tx = self.env.begin_read();
-        if !wallet.store.valid_password(&tx) {
+        let txn = self.env.begin_read();
+        if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
-        if wallet.store.find(&tx, pub_key).is_none() {
+        if wallet.store.find(&txn, pub_key).is_none() {
             return Err(WalletsError::AccountNotFound);
         }
-        wallet
+        let result = wallet
             .store
-            .fetch(&tx, pub_key)
-            .map_err(|_| WalletsError::Generic)
+            .fetch(&txn, pub_key)
+            .map_err(|_| WalletsError::Generic);
+        txn.commit();
+        result
     }
 
     pub fn import(&self, wallet_id: WalletId, json: &str) -> anyhow::Result<()> {
@@ -844,19 +866,23 @@ impl Wallets {
     pub fn get_seed(&self, wallet_id: WalletId) -> Result<RawKey, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, &wallet_id)?;
-        let tx = self.env.begin_read();
-        if !wallet.store.valid_password(&tx) {
+        let txn = self.env.begin_read();
+        if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
-        Ok(wallet.store.seed(&tx))
+        let seed = wallet.store.seed(&txn);
+        txn.commit();
+        Ok(seed)
     }
 
     pub fn key_type(&self, wallet_id: WalletId, pub_key: &PublicKey) -> KeyType {
         let guard = self.mutex.lock().unwrap();
         match guard.get(&wallet_id) {
             Some(wallet) => {
-                let tx = self.env.begin_read();
-                wallet.store.get_key_type(&tx, pub_key)
+                let txn = self.env.begin_read();
+                let key_type = wallet.store.get_key_type(&txn, pub_key);
+                txn.commit();
+                key_type
             }
             None => KeyType::Unknown,
         }
@@ -865,26 +891,27 @@ impl Wallets {
     pub fn get_representative(&self, wallet_id: WalletId) -> Result<PublicKey, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, &wallet_id)?;
-        let tx = self.env.begin_read();
-        Ok(wallet.store.representative(&tx))
+        let txn = self.env.begin_read();
+        Ok(wallet.store.representative(&txn))
     }
 
     pub fn decrypt(&self, wallet_id: WalletId) -> Result<Vec<(PublicKey, RawKey)>, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, &wallet_id)?;
-        let tx = self.env.begin_read();
-        if !wallet.store.valid_password(&tx) {
+        let txn = self.env.begin_read();
+        if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
 
         let mut result = Vec::new();
-        for (account, _) in wallet.store.iter(&tx) {
+        for (account, _) in wallet.store.iter(&txn) {
             let key = wallet
                 .store
-                .fetch(&tx, &account)
+                .fetch(&txn, &account)
                 .map_err(|_| WalletsError::Generic)?;
             result.push((account, key));
         }
+        txn.commit();
 
         Ok(result)
     }
@@ -892,8 +919,10 @@ impl Wallets {
     pub fn serialize(&self, wallet_id: WalletId) -> Result<String, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Self::get_wallet(&guard, &wallet_id)?;
-        let tx = self.env.begin_read();
-        Ok(wallet.store.serialize_json(&tx))
+        let txn = self.env.begin_read();
+        let json = wallet.store.serialize_json(&txn);
+        txn.commit();
+        Ok(json)
     }
 
     pub fn wallet_count(&self) -> usize {
@@ -1201,14 +1230,15 @@ impl WalletsExt for Arc<Wallets> {
     ) -> Result<Option<SavedBlock>, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Wallets::get_wallet(&guard, wallet_id)?;
-        let tx = self.env.begin_read();
-        if !wallet.store.valid_password(&tx) {
+        let txn = self.env.begin_read();
+        if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
 
-        if wallet.store.find(&tx, &account.into()).is_none() {
+        if wallet.store.find(&txn, &account.into()).is_none() {
             return Err(WalletsError::AccountNotFound);
         }
+        txn.commit();
 
         Ok(self.receive_action(
             wallet,
@@ -1314,11 +1344,11 @@ impl WalletsExt for Arc<Wallets> {
     ) -> Result<PublicKey, WalletsError> {
         let guard = self.mutex.lock().unwrap();
         let wallet = Wallets::get_wallet(&guard, wallet_id)?;
-        let mut tx = self.env.begin_read();
-        if !wallet.store.valid_password(&tx) {
+        let txn = self.env.begin_read();
+        if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
-        tx.reset();
+        txn.commit();
         Ok(self.insert_adhoc(wallet, key, generate_work))
     }
 
@@ -1485,8 +1515,8 @@ impl WalletsExt for Arc<Wallets> {
                 self.prepare_send_with_id(&mut tx, &id, wallet, source, destination, amount, work)?
             }
             None => {
-                let tx = self.env.begin_read();
-                self.prepare_send(&tx, wallet, source, destination, amount, work)?
+                let txn = self.env.begin_read();
+                self.prepare_send(&txn, wallet, source, destination, amount, work)?
             }
         };
 
@@ -1656,6 +1686,7 @@ impl WalletsExt for Arc<Wallets> {
                 send_hash
             );
         }
+        wallet_tx.commit();
 
         let block = block?;
         let details = BlockDetails::new(epoch, false, true, false);
@@ -1978,9 +2009,9 @@ impl WalletsExt for Arc<Wallets> {
     fn search_receivable_wallet(&self, wallet_id: WalletId) -> Result<(), WalletsError> {
         let guard = self.mutex.lock().unwrap();
         if let Some(wallet) = guard.get(&wallet_id) {
-            let tx = self.env.begin_read();
-            if wallet.store.valid_password(&tx) {
-                let _ = self.search_receivable(wallet, &tx);
+            let txn = self.env.begin_read();
+            if wallet.store.valid_password(&txn) {
+                let _ = self.search_receivable(wallet, &txn);
                 Ok(())
             } else {
                 Err(WalletsError::WalletLocked)
@@ -2022,8 +2053,9 @@ impl WalletsExt for Arc<Wallets> {
                 Arc::clone(wallet),
                 Box::new(move |wallet| {
                     // Wallets must survive node lifetime
-                    let tx = self_l.env.begin_read();
-                    let _ = self_l.search_receivable(&wallet, &tx);
+                    let txn = self_l.env.begin_read();
+                    let _ = self_l.search_receivable(&wallet, &txn);
+                    txn.commit();
                 }),
             );
             Ok(())
@@ -2166,15 +2198,16 @@ impl WalletsExt for Arc<Wallets> {
 
             // Change representative for all wallet accounts
             if update_existing_accounts {
-                let tx = self.env.begin_read();
+                let txn = self.env.begin_read();
                 let any = self.ledger.any();
-                for (account, _) in wallet.store.iter(&tx) {
+                for (account, _) in wallet.store.iter(&txn) {
                     if let Some(info) = any.get_account(&account.into()) {
                         if info.representative != rep {
                             accounts.push(account);
                         }
                     }
                 }
+                txn.commit();
             }
         }
 

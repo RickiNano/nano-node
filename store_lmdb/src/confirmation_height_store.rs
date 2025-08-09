@@ -102,16 +102,17 @@ impl LmdbConfirmationHeightStore {
         action: impl Fn(&mut dyn Iterator<Item = (Account, ConfirmationHeightInfo)>) + Send + Sync,
     ) {
         parallel_traversal(thread_count, &|start, end, is_last| {
-            let tx = env.begin_read();
+            let txn = env.begin_read();
             let start_account = Account::from(start);
             let end_account = Account::from(end);
             if is_last {
-                let mut iter = self.iter_range(&tx, start_account..);
+                let mut iter = self.iter_range(&txn, start_account..);
                 action(&mut iter);
             } else {
-                let mut iter = self.iter_range(&tx, start_account..end_account);
+                let mut iter = self.iter_range(&txn, start_account..end_account);
                 action(&mut iter);
             }
+            txn.commit();
         })
     }
 }
@@ -178,11 +179,11 @@ mod tests {
     fn empty_store() {
         let fixture = Fixture::new();
         let store = &fixture.store;
-        let tx = fixture.env.begin_read();
-        assert!(store.get(&tx, &Account::from(0)).is_none());
-        assert_eq!(store.exists(&tx, &Account::from(0)), false);
-        assert!(store.iter(&tx).next().is_none());
-        assert!(store.iter_range(&tx, Account::from(0)..).next().is_none());
+        let txn = fixture.env.begin_read();
+        assert!(store.get(&txn, &Account::from(0)).is_none());
+        assert_eq!(store.exists(&txn, &Account::from(0)), false);
+        assert!(store.iter(&txn).next().is_none());
+        assert!(store.iter_range(&txn, Account::from(0)..).next().is_none());
     }
 
     #[test]
@@ -236,8 +237,8 @@ mod tests {
             .build();
 
         let fixture = Fixture::with_env(env);
-        let tx = fixture.env.begin_read();
-        let mut it = fixture.store.iter(&tx);
+        let txn = fixture.env.begin_read();
+        let mut it = fixture.store.iter(&txn);
         assert_eq!(it.next(), Some((account, info)));
         assert!(it.next().is_none());
         Ok(())

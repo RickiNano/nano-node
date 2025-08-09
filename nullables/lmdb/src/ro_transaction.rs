@@ -3,59 +3,36 @@ use std::time::{Duration, Instant};
 use super::{ConfiguredDatabase, LmdbDatabase, RoCursor};
 use crate::{Transaction, EMPTY_DATABASE};
 
-enum RoTxnState {
-    Inactive(InactiveTransaction),
-    Active(RoTransaction),
-    Transitioning,
-}
-
 pub struct ReadTransaction {
-    txn: RoTxnState,
+    txn: RoTransaction,
     start: Instant,
 }
 
 impl ReadTransaction {
-    pub fn new(tx: RoTransaction) -> Self {
+    pub fn new(txn: lmdb::RoTransaction<'static>) -> Self {
         Self {
-            txn: RoTxnState::Active(tx),
+            txn: RoTransaction::new(txn),
             start: Instant::now(),
         }
     }
 
-    fn txn(&self) -> &RoTransaction {
-        match &self.txn {
-            RoTxnState::Active(t) => t,
-            _ => panic!("LMDB read transaction not active"),
+    pub fn new_null(configured_databases: Vec<ConfiguredDatabase>) -> Self {
+        Self {
+            txn: RoTransaction::new_null(configured_databases),
+            start: Instant::now(),
         }
     }
 
-    pub fn reset(&mut self) {
-        let t = std::mem::replace(&mut self.txn, RoTxnState::Transitioning);
-        self.txn = match t {
-            RoTxnState::Active(t) => RoTxnState::Inactive(t.reset()),
-            RoTxnState::Inactive(_) => panic!("Cannot reset inactive transaction"),
-            RoTxnState::Transitioning => unreachable!(),
-        };
+    pub fn commit(self) {
+        self.txn.commit().expect("Commit failed");
     }
 
-    pub fn renew(&mut self) {
-        let t = std::mem::replace(&mut self.txn, RoTxnState::Transitioning);
-        self.txn = match t {
-            RoTxnState::Active(_) => panic!("Cannot renew active transaction"),
-            RoTxnState::Inactive(t) => RoTxnState::Active(t.renew().unwrap()),
-            RoTxnState::Transitioning => unreachable!(),
-        };
-        self.start = Instant::now();
+    pub fn reset(self) -> InactiveTransaction {
+        self.txn.reset()
     }
-}
 
-impl Drop for ReadTransaction {
-    fn drop(&mut self) {
-        let t = std::mem::replace(&mut self.txn, RoTxnState::Transitioning);
-        // This uses commit rather than abort, as it is needed when opening databases with a read only transaction
-        if let RoTxnState::Active(t) = t {
-            t.commit().unwrap()
-        }
+    pub fn refresh(self) -> Self {
+        self.txn.reset().renew().unwrap()
     }
 }
 
@@ -69,19 +46,19 @@ impl Transaction for ReadTransaction {
     }
 
     fn get(&self, database: LmdbDatabase, key: &[u8]) -> lmdb::Result<&[u8]> {
-        self.txn().get(database, key)
+        self.txn.get(database, key)
     }
 
     fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
-        self.txn().open_ro_cursor(database)
+        self.txn.open_ro_cursor(database)
     }
 
     fn count(&self, database: LmdbDatabase) -> u64 {
-        self.txn().count(database)
+        self.txn.count(database)
     }
 }
 
-pub struct RoTransaction {
+struct RoTransaction {
     strategy: RoTransactionStrategy,
 }
 
@@ -95,17 +72,6 @@ impl RoTransaction {
     pub fn new_null(databases: Vec<ConfiguredDatabase>) -> Self {
         Self {
             strategy: RoTransactionStrategy::Nulled(RoTransactionStub { databases }),
-        }
-    }
-
-    pub fn reset(self) -> InactiveTransaction {
-        match self.strategy {
-            RoTransactionStrategy::Real(s) => InactiveTransaction {
-                strategy: InactiveTransactionStrategy::Real(s.reset()),
-            },
-            RoTransactionStrategy::Nulled(s) => InactiveTransaction {
-                strategy: InactiveTransactionStrategy::Nulled(s.reset()),
-            },
         }
     }
 
@@ -134,6 +100,17 @@ impl RoTransaction {
         match &self.strategy {
             RoTransactionStrategy::Real(s) => s.count(database),
             RoTransactionStrategy::Nulled(s) => s.count(database),
+        }
+    }
+
+    pub fn reset(self) -> InactiveTransaction {
+        match self.strategy {
+            RoTransactionStrategy::Real(s) => InactiveTransaction {
+                strategy: InactiveTransactionStrategy::Real(s.reset()),
+            },
+            RoTransactionStrategy::Nulled(s) => InactiveTransaction {
+                strategy: InactiveTransactionStrategy::Nulled(s.reset()),
+            },
         }
     }
 }
@@ -228,14 +205,10 @@ enum InactiveTransactionStrategy {
 }
 
 impl InactiveTransaction {
-    pub fn renew(self) -> lmdb::Result<RoTransaction> {
+    pub fn renew(self) -> lmdb::Result<ReadTransaction> {
         match self.strategy {
-            InactiveTransactionStrategy::Real(s) => Ok(RoTransaction {
-                strategy: RoTransactionStrategy::Real(s.renew()?),
-            }),
-            InactiveTransactionStrategy::Nulled(s) => Ok(RoTransaction {
-                strategy: RoTransactionStrategy::Nulled(s.renew()?),
-            }),
+            InactiveTransactionStrategy::Real(s) => s.renew(),
+            InactiveTransactionStrategy::Nulled(s) => s.renew(),
         }
     }
 }
@@ -245,8 +218,8 @@ pub struct InactiveTransactionWrapper {
 }
 
 impl InactiveTransactionWrapper {
-    fn renew(self) -> lmdb::Result<RoTransactionWrapper> {
-        self.inactive.renew().map(RoTransactionWrapper)
+    fn renew(self) -> lmdb::Result<ReadTransaction> {
+        self.inactive.renew().map(ReadTransaction::new)
     }
 }
 
@@ -255,9 +228,7 @@ pub struct NullInactiveTransaction {
 }
 
 impl NullInactiveTransaction {
-    fn renew(self) -> lmdb::Result<RoTransactionStub> {
-        Ok(RoTransactionStub {
-            databases: self.databases,
-        })
+    fn renew(self) -> lmdb::Result<ReadTransaction> {
+        Ok(ReadTransaction::new_null(self.databases))
     }
 }

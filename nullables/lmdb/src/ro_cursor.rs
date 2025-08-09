@@ -144,8 +144,8 @@ mod tests {
         let env = create_real_lmdb_env("/tmp/rsnano-cursor-test.ldb");
         create_test_database(&env);
         let database = env.open_db(Some("foo")).unwrap();
-        let tx = env.begin_read();
-        let mut cursor = tx.open_ro_cursor(database).unwrap();
+        let txn = env.begin_read();
+        let mut cursor = txn.open_ro_cursor(database).unwrap();
 
         let result: Vec<_> = cursor.iter_start().map(|i| i.unwrap()).collect();
 
@@ -165,8 +165,8 @@ mod tests {
         let env = create_real_lmdb_env("/tmp/rsnano-rev-cursor-test.ldb");
         create_test_database(&env);
         let database = env.open_db(Some("foo")).unwrap();
-        let tx = env.begin_read();
-        let cursor = tx.open_ro_cursor(database).unwrap();
+        let txn = env.begin_read();
+        let cursor = txn.open_ro_cursor(database).unwrap();
 
         assert_eq!(
             cursor.get(None, None, MDB_LAST).unwrap(),
