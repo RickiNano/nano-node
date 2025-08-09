@@ -244,7 +244,7 @@ impl EnvironmentWrapper {
                         txn,
                     )
                 };
-                WriteTransaction::new2(txn)
+                WriteTransaction::new(txn)
             })
             .expect("Could not create LMDB read-write transaction")
     }

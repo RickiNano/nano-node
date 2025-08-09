@@ -39,7 +39,7 @@ pub struct WriteTransaction {
 }
 
 impl WriteTransaction {
-    pub fn new2(txn: lmdb::RwTransaction<'static>) -> Self {
+    pub fn new(txn: lmdb::RwTransaction<'static>) -> Self {
         Self {
             state: TxnState::Active(RwTransaction::new(txn)),
             put_listener: OutputListener::new(),
