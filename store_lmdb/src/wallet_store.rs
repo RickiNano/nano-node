@@ -81,12 +81,13 @@ pub enum KeyType {
 
 pub struct LmdbWalletStore {
     db_handle: Mutex<Option<LmdbDatabase>>,
-    pub fans: Mutex<Fans>,
+    fans: Mutex<Fans>,
     kdf: KeyDerivationFunction,
 }
 
 impl LmdbWalletStore {
     pub const VERSION_CURRENT: u32 = 4;
+
     pub fn new(
         fanout: usize,
         kdf: KeyDerivationFunction,

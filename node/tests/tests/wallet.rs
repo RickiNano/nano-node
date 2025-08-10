@@ -442,7 +442,7 @@ fn find_existing() {
 fn rekey() {
     let fixture = TestFixture::new();
     let kdf = KeyDerivationFunction::new(TEST_KDF_WORK);
-    let wallet = LmdbWalletStore::new(
+    let store = LmdbWalletStore::new(
         0,
         kdf,
         &fixture.env,
@@ -450,30 +450,30 @@ fn rekey() {
         &PathBuf::from("0"),
     )
     .unwrap();
-    let password = wallet.password();
+    let password = store.password();
     assert!(password.is_zero());
     let mut txn = fixture.env.begin_write();
     let key1 = PrivateKey::new();
-    wallet.insert_adhoc(&mut txn, &key1.raw_key());
+    store.insert_adhoc(&mut txn, &key1.raw_key());
     assert_eq!(
-        wallet.fetch(&txn, &key1.public_key()).unwrap(),
+        store.fetch(&txn, &key1.public_key()).unwrap(),
         key1.raw_key()
     );
-    wallet.rekey(&mut txn, "1").unwrap();
-    let password = wallet.password();
-    let password1 = wallet.derive_key(&txn, "1");
+    store.rekey(&mut txn, "1").unwrap();
+    let password = store.password();
+    let password1 = store.derive_key(&txn, "1");
     assert_eq!(password1, password);
-    let prv2 = wallet.fetch(&txn, &key1.public_key()).unwrap();
+    let prv2 = store.fetch(&txn, &key1.public_key()).unwrap();
     assert_eq!(prv2, key1.raw_key());
-    wallet.set_password(RawKey::from(2));
-    assert!(wallet.rekey(&mut txn, "2").is_err());
+    store.set_password(RawKey::from(2));
+    assert!(store.rekey(&mut txn, "2").is_err());
 }
 
 #[test]
 fn hash_password() {
     let fixture = TestFixture::new();
     let kdf = KeyDerivationFunction::new(TEST_KDF_WORK);
-    let wallet = LmdbWalletStore::new(
+    let store = LmdbWalletStore::new(
         0,
         kdf,
         &fixture.env,
@@ -482,10 +482,10 @@ fn hash_password() {
     )
     .unwrap();
     let txn = fixture.env.begin_write();
-    let hash1 = wallet.derive_key(&txn, "");
-    let hash2 = wallet.derive_key(&txn, "");
+    let hash1 = store.derive_key(&txn, "");
+    let hash2 = store.derive_key(&txn, "");
     assert_eq!(hash1, hash2);
-    let hash3 = wallet.derive_key(&txn, "a");
+    let hash3 = store.derive_key(&txn, "a");
     assert_ne!(hash1, hash3);
 }
 
@@ -494,7 +494,7 @@ fn reopen_default_password() {
     let fixture = TestFixture::new();
     let kdf = KeyDerivationFunction::new(TEST_KDF_WORK);
     {
-        let wallet = LmdbWalletStore::new(
+        let store = LmdbWalletStore::new(
             0,
             kdf.clone(),
             &fixture.env,
@@ -503,11 +503,11 @@ fn reopen_default_password() {
         )
         .unwrap();
         let txn = fixture.env.begin_write();
-        assert!(wallet.valid_password(&txn));
+        assert!(store.valid_password(&txn));
         txn.commit();
     }
     {
-        let wallet = LmdbWalletStore::new(
+        let store = LmdbWalletStore::new(
             0,
             kdf.clone(),
             &fixture.env,
@@ -516,10 +516,10 @@ fn reopen_default_password() {
         )
         .unwrap();
         let txn = fixture.env.begin_write();
-        assert!(wallet.valid_password(&txn));
+        assert!(store.valid_password(&txn));
     }
     {
-        let wallet = LmdbWalletStore::new(
+        let store = LmdbWalletStore::new(
             0,
             kdf.clone(),
             &fixture.env,
@@ -528,12 +528,12 @@ fn reopen_default_password() {
         )
         .unwrap();
         let mut txn = fixture.env.begin_write();
-        wallet.rekey(&mut txn, "").unwrap();
-        assert!(wallet.valid_password(&txn));
+        store.rekey(&mut txn, "").unwrap();
+        assert!(store.valid_password(&txn));
         txn.commit();
     }
     {
-        let wallet = LmdbWalletStore::new(
+        let store = LmdbWalletStore::new(
             0,
             kdf.clone(),
             &fixture.env,
@@ -542,11 +542,11 @@ fn reopen_default_password() {
         )
         .unwrap();
         let txn = fixture.env.begin_write();
-        assert_eq!(wallet.valid_password(&txn), false);
-        wallet.attempt_password(&txn, " ");
-        assert_eq!(wallet.valid_password(&txn), false);
-        wallet.attempt_password(&txn, "");
-        assert!(wallet.valid_password(&txn));
+        assert_eq!(store.valid_password(&txn), false);
+        store.attempt_password(&txn, " ");
+        assert_eq!(store.valid_password(&txn), false);
+        store.attempt_password(&txn, "");
+        assert!(store.valid_password(&txn));
     }
 }
 
@@ -554,7 +554,7 @@ fn reopen_default_password() {
 fn representative() {
     let fixture = TestFixture::new();
     let kdf = KeyDerivationFunction::new(TEST_KDF_WORK);
-    let wallet = LmdbWalletStore::new(
+    let store = LmdbWalletStore::new(
         0,
         kdf,
         &fixture.env,
@@ -563,21 +563,21 @@ fn representative() {
     )
     .unwrap();
     let mut txn = fixture.env.begin_write();
-    assert_eq!(wallet.exists(&txn, &wallet.representative(&txn)), false);
-    assert_eq!(wallet.representative(&txn), *DEV_GENESIS_PUB_KEY);
+    assert_eq!(store.exists(&txn, &store.representative(&txn)), false);
+    assert_eq!(store.representative(&txn), *DEV_GENESIS_PUB_KEY);
     let key = PrivateKey::new();
-    wallet.representative_set(&mut txn, &key.public_key());
-    assert_eq!(wallet.representative(&txn), key.public_key());
-    assert_eq!(wallet.exists(&txn, &wallet.representative(&txn)), false);
-    wallet.insert_adhoc(&mut txn, &key.raw_key());
-    assert_eq!(wallet.exists(&txn, &wallet.representative(&txn)), true);
+    store.representative_set(&mut txn, &key.public_key());
+    assert_eq!(store.representative(&txn), key.public_key());
+    assert_eq!(store.exists(&txn, &store.representative(&txn)), false);
+    store.insert_adhoc(&mut txn, &key.raw_key());
+    assert_eq!(store.exists(&txn, &store.representative(&txn)), true);
 }
 
 #[test]
 fn serialize_json_empty() {
     let fixture = TestFixture::new();
     let kdf = KeyDerivationFunction::new(TEST_KDF_WORK);
-    let wallet1 = LmdbWalletStore::new(
+    let store1 = LmdbWalletStore::new(
         0,
         kdf.clone(),
         &fixture.env,
@@ -587,27 +587,27 @@ fn serialize_json_empty() {
     .unwrap();
     let serialized = {
         let txn = fixture.env.begin_write();
-        wallet1.serialize_json(&txn)
+        store1.serialize_json(&txn)
     };
-    let wallet2 =
+    let store2 =
         LmdbWalletStore::new_from_json(0, kdf, &fixture.env, &PathBuf::from("1"), &serialized)
             .unwrap();
     let txn = fixture.env.begin_write();
-    let password1 = wallet1.wallet_key(&txn);
-    let password2 = wallet2.wallet_key(&txn);
+    let password1 = store1.wallet_key(&txn);
+    let password2 = store2.wallet_key(&txn);
     assert_eq!(password1, password2);
-    assert_eq!(wallet1.salt(&txn), wallet2.salt(&txn));
-    assert_eq!(wallet1.check(&txn), wallet2.check(&txn));
-    assert_eq!(wallet1.representative(&txn), wallet2.representative(&txn));
-    assert!(wallet1.iter(&txn).next().is_none());
-    assert!(wallet2.iter(&txn).next().is_none());
+    assert_eq!(store1.salt(&txn), store2.salt(&txn));
+    assert_eq!(store1.check(&txn), store2.check(&txn));
+    assert_eq!(store1.representative(&txn), store2.representative(&txn));
+    assert!(store1.iter(&txn).next().is_none());
+    assert!(store2.iter(&txn).next().is_none());
 }
 
 #[test]
 fn serialize_json_one() {
     let fixture = TestFixture::new();
     let kdf = KeyDerivationFunction::new(TEST_KDF_WORK);
-    let wallet1 = LmdbWalletStore::new(
+    let store1 = LmdbWalletStore::new(
         0,
         kdf.clone(),
         &fixture.env,
@@ -618,24 +618,24 @@ fn serialize_json_one() {
     let key = PrivateKey::new();
     let serialized = {
         let mut txn = fixture.env.begin_write();
-        wallet1.insert_adhoc(&mut txn, &key.raw_key());
-        let json = wallet1.serialize_json(&txn);
+        store1.insert_adhoc(&mut txn, &key.raw_key());
+        let json = store1.serialize_json(&txn);
         txn.commit();
         json
     };
 
-    let wallet2 =
+    let store2 =
         LmdbWalletStore::new_from_json(0, kdf, &fixture.env, &PathBuf::from("1"), &serialized)
             .unwrap();
     let txn = fixture.env.begin_write();
-    let password1 = wallet1.wallet_key(&txn);
-    let password2 = wallet2.wallet_key(&txn);
+    let password1 = store1.wallet_key(&txn);
+    let password2 = store2.wallet_key(&txn);
     assert_eq!(password1, password2);
-    assert_eq!(wallet1.salt(&txn), wallet2.salt(&txn));
-    assert_eq!(wallet1.check(&txn), wallet2.check(&txn));
-    assert_eq!(wallet1.representative(&txn), wallet2.representative(&txn));
-    assert!(wallet2.exists(&txn, &key.public_key()));
-    let prv = wallet2.fetch(&txn, &key.public_key()).unwrap();
+    assert_eq!(store1.salt(&txn), store2.salt(&txn));
+    assert_eq!(store1.check(&txn), store2.check(&txn));
+    assert_eq!(store1.representative(&txn), store2.representative(&txn));
+    assert!(store2.exists(&txn, &key.public_key()));
+    let prv = store2.fetch(&txn, &key.public_key()).unwrap();
     assert_eq!(prv, key.raw_key());
 }
 

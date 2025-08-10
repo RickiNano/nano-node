@@ -218,8 +218,6 @@ impl Wallets {
             let representative = self.random_representative();
             let text = PathBuf::from(id.encode_hex());
             let wallet = Wallet::new(
-                self.ledger.clone(),
-                self.work_thresholds.clone(),
                 &self.env,
                 self.node_config.password_fanout as usize,
                 self.kdf.clone(),
@@ -394,7 +392,12 @@ impl Wallets {
             if let Some(work) = self.work_factory.generate_work(work_request) {
                 let mut txn = self.env.begin_write();
                 if wallet.live() && wallet.store.exists(&txn, pub_key) {
-                    wallet.work_update(&mut txn, pub_key, root, work);
+                    let latest = self.ledger.any().latest_root(&pub_key.into());
+                    if latest == *root {
+                        wallet.work_put(&mut txn, pub_key, work);
+                    } else {
+                        warn!("Cached work no longer valid, discarding");
+                    }
                 }
                 txn.commit();
             } else {
@@ -542,8 +545,6 @@ impl Wallets {
                 let text = PathBuf::from(id.encode_hex());
                 let representative = self.random_representative();
                 if let Ok(wallet) = Wallet::new(
-                    Arc::clone(&self.ledger),
-                    self.work_thresholds.clone(),
                     &self.env,
                     self.node_config.password_fanout as usize,
                     self.kdf.clone(),
@@ -846,8 +847,6 @@ impl Wallets {
     pub fn import(&self, wallet_id: WalletId, json: &str) -> anyhow::Result<()> {
         let _guard = self.mutex.lock().unwrap();
         let _wallet = Wallet::new_from_json(
-            Arc::clone(&self.ledger),
-            self.work_thresholds.clone(),
             &self.env,
             self.node_config.password_fanout as usize,
             self.kdf.clone(),
@@ -1482,7 +1481,7 @@ impl WalletsExt for Arc<Wallets> {
         wallet.store.set_seed(tx, prv_key);
         let mut account = self.deterministic_insert(wallet, tx, true);
         if count == 0 {
-            count = wallet.deterministic_check(tx, 0);
+            count = wallet.deterministic_check(tx, 0, &self.ledger);
             info!("Auto-detected {} accounts to generate", count);
         }
         for _ in 0..count {
@@ -2122,8 +2121,6 @@ impl WalletsExt for Arc<Wallets> {
         debug_assert!(!guard.contains_key(&wallet_id));
         let wallet = {
             let Ok(wallet) = Wallet::new(
-                Arc::clone(&self.ledger),
-                self.work_thresholds.clone(),
                 &self.env,
                 self.node_config.password_fanout as usize,
                 self.kdf.clone(),

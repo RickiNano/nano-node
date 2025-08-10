@@ -5,25 +5,19 @@ use std::{
 };
 
 use anyhow::Context;
-use tracing::warn;
 
-use rsnano_core::{KeyDerivationFunction, PrivateKey, PublicKey, Root, WorkNonce};
+use rsnano_core::{KeyDerivationFunction, PrivateKey, PublicKey, WorkNonce};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_store_lmdb::LmdbWalletStore;
-use rsnano_work::WorkThresholds;
 
 pub struct Wallet {
     pub representatives: Mutex<HashSet<PublicKey>>,
     pub store: Arc<LmdbWalletStore>,
-    ledger: Arc<Ledger>,
-    work_thresholds: WorkThresholds,
 }
 
 impl Wallet {
     pub fn new(
-        ledger: Arc<Ledger>,
-        work_thresholds: WorkThresholds,
         env: &LmdbEnvironment,
         fanout: usize,
         kdf: KeyDerivationFunction,
@@ -36,14 +30,10 @@ impl Wallet {
         Ok(Self {
             representatives: Mutex::new(HashSet::new()),
             store: Arc::new(store),
-            ledger,
-            work_thresholds,
         })
     }
 
     pub fn new_from_json(
-        ledger: Arc<Ledger>,
-        work_thresholds: WorkThresholds,
         env: &LmdbEnvironment,
         fanout: usize,
         kdf: KeyDerivationFunction,
@@ -56,31 +46,16 @@ impl Wallet {
         Ok(Self {
             representatives: Mutex::new(HashSet::new()),
             store: Arc::new(store),
-            ledger,
-            work_thresholds,
         })
     }
 
-    pub fn work_update(
-        &self,
-        txn: &mut WriteTransaction,
-        pub_key: &PublicKey,
-        root: &Root,
-        work: WorkNonce,
-    ) {
-        debug_assert!(self.work_thresholds.validate_entry(root, work));
-        debug_assert!(self.store.exists(txn, pub_key));
-        let latest = self.ledger.any().latest_root(&pub_key.into());
-        if latest == *root {
-            self.store.work_put(txn, pub_key, work);
-        } else {
-            warn!("Cached work no longer valid, discarding");
-        }
+    pub fn work_put(&self, txn: &mut WriteTransaction, pub_key: &PublicKey, work: WorkNonce) {
+        self.store.work_put(txn, pub_key, work);
     }
 
-    pub fn deterministic_check(&self, txn: &dyn Transaction, index: u32) -> u32 {
+    pub fn deterministic_check(&self, txn: &dyn Transaction, index: u32, ledger: &Ledger) -> u32 {
         let mut result = index;
-        let any = self.ledger.any();
+        let any = ledger.any();
         let mut i = index + 1;
         let mut n = index + 64;
         while i < n {
