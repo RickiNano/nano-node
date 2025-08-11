@@ -109,13 +109,13 @@ impl UncheckedMap {
         }
     }
 
-    pub fn get(&self, hash: &HashOrAccount) -> Vec<UncheckedInfo> {
+    pub fn get2(&self, hash: &HashOrAccount) -> Vec<Block> {
         let lock = self.mutable.lock().unwrap();
         let mut result = Vec::new();
         lock.entries_container.for_each_with_dependency(
             hash,
             |_, info| {
-                result.push(info.clone());
+                result.push(info.block.clone());
             },
             || true,
         );

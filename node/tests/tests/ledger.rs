@@ -107,9 +107,9 @@ fn epoch_open_pending() {
     // Waits for the block to get saved in the database
     assert_timely_eq(Duration::from_secs(10), || node1.unchecked.len(), 1);
     // Open block should be inserted into unchecked
-    let blocks = node1.unchecked.get(&key1.account().into());
+    let blocks = node1.unchecked.get2(&key1.account().into());
     assert_eq!(blocks.len(), 1);
-    assert_eq!(blocks[0].block.hash(), epoch_open.hash());
+    assert_eq!(blocks[0].hash(), epoch_open.hash());
     // New block to process epoch open
     node1.block_processor_queue.push(BlockContext::new(
         send1.into(),
@@ -366,14 +366,14 @@ fn unchecked_receive() {
         ChannelId::LOOPBACK,
     ));
     let check_block_is_listed =
-        |hash: &BlockHash| !node1.unchecked.get(&((*hash).into())).is_empty();
+        |hash: &BlockHash| !node1.unchecked.get2(&((*hash).into())).is_empty();
     // Previous block for receive1 is unknown, signature cannot be validated
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
     assert_timely(Duration::from_secs(15), || {
         check_block_is_listed(&receive1.previous())
     });
-    assert_eq!(node1.unchecked.get(&receive1.previous().into()).len(), 1);
+    assert_eq!(node1.unchecked.get2(&receive1.previous().into()).len(), 1);
 
     // Waits for the open1 block to pass through block_processor and unchecked.put queues
     node1.block_processor_queue.push(BlockContext::new(
@@ -386,7 +386,10 @@ fn unchecked_receive() {
     });
     // Previous block for receive1 is known, signature was validated
     assert_eq!(
-        node1.unchecked.get(&receive1.source_or_link().into()).len(),
+        node1
+            .unchecked
+            .get2(&receive1.source_or_link().into())
+            .len(),
         1
     );
     node1.block_processor_queue.push(BlockContext::new(
