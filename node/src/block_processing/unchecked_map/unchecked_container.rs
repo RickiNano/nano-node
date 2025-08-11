@@ -118,7 +118,7 @@ impl UncheckedContainer {
     pub fn for_each_with_dependency(
         &self,
         dependency: &HashOrAccount,
-        mut action: impl FnMut(&UncheckedKey, &UncheckedInfo),
+        mut action: impl FnMut(&UncheckedKey, &Block),
         mut predicate: impl FnMut() -> bool,
     ) {
         let key = UncheckedKey::new(dependency.into(), BlockHash::zero());
@@ -127,7 +127,7 @@ impl UncheckedContainer {
                 break;
             }
             let entry = self.by_id.get(id).unwrap();
-            action(&entry.key, &entry.info);
+            action(&entry.key, &entry.info.block);
         }
     }
 }

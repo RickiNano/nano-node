@@ -9,12 +9,12 @@ impl RpcCommandHandler {
 
         self.node.unchecked.for_each_with_dependency(
             &args.key,
-            |key, info| {
+            |key, block| {
                 let key_dto = UncheckedKeyDto {
                     key: key.previous,
-                    hash: info.block.hash(),
+                    hash: block.hash(),
                     modified_timestamp: 0.into(), // not supported in RsNano
-                    contents: info.block.json_representation(),
+                    contents: block.json_representation(),
                 };
                 unchecked_keys.borrow_mut().push(key_dto);
             },

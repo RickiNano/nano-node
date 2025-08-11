@@ -114,8 +114,8 @@ impl UncheckedMap {
         let mut result = Vec::new();
         lock.entries_container.for_each_with_dependency(
             hash,
-            |_, info| {
-                result.push(info.block.clone());
+            |_, block| {
+                result.push(block.clone());
             },
             || true,
         );
@@ -167,7 +167,7 @@ impl UncheckedMap {
     pub fn for_each_with_dependency(
         &self,
         dependency: &HashOrAccount,
-        action: impl FnMut(&UncheckedKey, &UncheckedInfo),
+        action: impl FnMut(&UncheckedKey, &Block),
         predicate: impl FnMut() -> bool,
     ) {
         let lock = self.mutable.lock().unwrap();
@@ -263,11 +263,11 @@ impl UncheckedMapLoop {
         let mut lock = self.state.lock().unwrap();
         lock.entries_container.for_each_with_dependency(
             hash,
-            |key, info| {
+            |key, block| {
                 delete_queue.push(key.clone());
                 self.stats.inc(StatType::Unchecked, DetailType::Satisfied);
                 if let Some(callback) = &lock.satisfied_callback {
-                    callback(&info.block);
+                    callback(&block);
                 }
             },
             || true,

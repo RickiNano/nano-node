@@ -12,9 +12,7 @@ use rsnano_ledger::{
 use rsnano_messages::{ConfirmAck, Message, Publish};
 use rsnano_network::{ChannelId, TrafficType};
 use rsnano_node::{
-    block_processing::{
-        BacklogScanConfig, BlockContext, BlockSource, BoundedBacklogConfig, UncheckedInfo,
-    },
+    block_processing::{BacklogScanConfig, BlockContext, BlockSource, BoundedBacklogConfig},
     config::{NodeConfig, NodeFlags},
     consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
     wallets::WalletsExt,
