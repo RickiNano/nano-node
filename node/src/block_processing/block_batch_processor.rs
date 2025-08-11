@@ -10,10 +10,7 @@ use std::{
 use strum::{EnumCount, IntoEnumIterator};
 use tracing::{debug, warn};
 
-use rsnano_core::{
-    utils::{backpressure_channel, BackpressureSender},
-    BlockType, Epoch,
-};
+use rsnano_core::utils::{backpressure_channel, BackpressureSender};
 use rsnano_ledger::{BlockError, Ledger};
 use rsnano_stats::{StatsCollection, StatsSource};
 
@@ -103,34 +100,18 @@ impl BlockBatchProcessor {
 
             self.stats.sources[block_ctx.source as usize].fetch_add(1, Relaxed);
 
-            let hash = &block_ctx.block.hash();
+            let hash = block_ctx.block.hash();
             let block = &block_ctx.block;
-            let saved_block = block_ctx.saved_block.lock().unwrap().clone();
 
             match status {
                 Ok(()) => {
-                    self.unchecked.trigger(&hash.into());
-
-                    /*
-                     * For send blocks check epoch open unchecked (gap pending).
-                     * For state blocks check only send subtype and only if block epoch is not last epoch.
-                     * If epoch is last, then pending entry shouldn't trigger same epoch open block for destination account.
-                     * */
-                    let block = saved_block.unwrap();
-                    if block.block_type() == BlockType::LegacySend
-                        || block.block_type() == BlockType::State
-                            && block.is_send()
-                            && block.epoch() < Epoch::MAX
-                    {
-                        self.unchecked.trigger(&block.destination_or_link().into());
-                    }
+                    self.unchecked.trigger(hash);
                 }
                 Err(BlockError::GapPrevious) => {
-                    self.unchecked.put(block.previous().into(), block.clone());
+                    self.unchecked.put(block.previous(), block.clone());
                 }
                 Err(BlockError::GapSource) => {
-                    self.unchecked
-                        .put(block.source_or_link().into(), block.clone());
+                    self.unchecked.put(block.source_or_link(), block.clone());
                 }
                 Err(BlockError::GapEpochOpenPending) => {}
                 Err(BlockError::Old) => {

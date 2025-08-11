@@ -2348,7 +2348,7 @@ fn block_processor_signatures() {
     send5.set_signature(Signature::new());
 
     // Invalid signature to unchecked
-    node.unchecked.put(send5.previous().into(), send5.clone());
+    node.unchecked.put(send5.previous(), send5.clone());
 
     // Create a valid receive block
     let receive1 = lattice.account(&key1).receive(&send1);

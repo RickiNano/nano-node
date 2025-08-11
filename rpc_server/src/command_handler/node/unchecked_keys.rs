@@ -8,7 +8,7 @@ impl RpcCommandHandler {
         let unchecked_keys = RefCell::new(Vec::new());
 
         self.node.unchecked.for_each_with_dependency(
-            &args.key,
+            args.key.into(),
             |key, block| {
                 let key_dto = UncheckedKeyDto {
                     key: key.previous,

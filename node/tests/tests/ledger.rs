@@ -356,15 +356,14 @@ fn unchecked_receive() {
         BlockSource::Live,
         ChannelId::LOOPBACK,
     ));
-    let check_block_is_listed =
-        |hash: &BlockHash| !node1.unchecked.get(&((*hash).into())).is_empty();
+    let check_block_is_listed = |hash: &BlockHash| !node1.unchecked.get(*hash).is_empty();
     // Previous block for receive1 is unknown, signature cannot be validated
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
     assert_timely(Duration::from_secs(15), || {
         check_block_is_listed(&receive1.previous())
     });
-    assert_eq!(node1.unchecked.get(&receive1.previous().into()).len(), 1);
+    assert_eq!(node1.unchecked.get(receive1.previous()).len(), 1);
 
     // Waits for the open1 block to pass through block_processor and unchecked.put queues
     node1.block_processor_queue.push(BlockContext::new(
@@ -376,10 +375,7 @@ fn unchecked_receive() {
         check_block_is_listed(&receive1.source_or_link())
     });
     // Previous block for receive1 is known, signature was validated
-    assert_eq!(
-        node1.unchecked.get(&receive1.source_or_link().into()).len(),
-        1
-    );
+    assert_eq!(node1.unchecked.get(receive1.source_or_link()).len(), 1);
     node1.block_processor_queue.push(BlockContext::new(
         send2.clone().into(),
         BlockSource::Live,

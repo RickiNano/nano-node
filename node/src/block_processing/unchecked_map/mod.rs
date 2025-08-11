@@ -10,7 +10,7 @@ use std::{
 
 use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
-    Block, BlockHash, HashOrAccount,
+    Block, BlockHash,
 };
 use rsnano_stats::{DetailType, StatType, Stats};
 use unchecked_container::{Entry, UncheckedContainer};
@@ -81,9 +81,9 @@ impl UncheckedMap {
         }
     }
 
-    pub fn put(&self, dependency: HashOrAccount, block: Block) {
+    pub fn put(&self, dependency: BlockHash, block: Block) {
         let mut lock = self.mutable.lock().unwrap();
-        let key = UncheckedKey::new(dependency.into(), block.hash());
+        let key = UncheckedKey::new(dependency, block.hash());
         let inserted = lock.entries_container.insert(Entry::new(key, block));
         if lock.entries_container.len() > self.max_unchecked_blocks {
             lock.entries_container.pop_front();
@@ -95,7 +95,7 @@ impl UncheckedMap {
         }
     }
 
-    pub fn get(&self, hash: &HashOrAccount) -> Vec<Block> {
+    pub fn get(&self, hash: BlockHash) -> Vec<Block> {
         let lock = self.mutable.lock().unwrap();
         let mut result = Vec::new();
         lock.entries_container.for_each_with_dependency(
@@ -113,9 +113,9 @@ impl UncheckedMap {
         lock.entries_container.clear();
     }
 
-    pub fn trigger(&self, dependency: &HashOrAccount) {
+    pub fn trigger(&self, dependency: BlockHash) {
         let mut lock = self.mutable.lock().unwrap();
-        lock.processed_queue.push_back(*dependency);
+        lock.processed_queue.push_back(dependency);
         drop(lock);
         self.stats.inc(StatType::Unchecked, DetailType::Trigger);
         self.condition.notify_all(); // Notify run ()
@@ -152,7 +152,7 @@ impl UncheckedMap {
 
     pub fn for_each_with_dependency(
         &self,
-        dependency: &HashOrAccount,
+        dependency: BlockHash,
         action: impl FnMut(&UncheckedKey, &Block),
         predicate: impl FnMut() -> bool,
     ) {
@@ -191,7 +191,7 @@ impl Drop for UncheckedMap {
 
 struct UncheckedState {
     stopped: bool,
-    processed_queue: VecDeque<HashOrAccount>,
+    processed_queue: VecDeque<BlockHash>,
     entries_container: UncheckedContainer,
     satisfied_callback: Option<Box<dyn Fn(&Block) + Send>>,
 }
@@ -212,7 +212,7 @@ pub struct UncheckedMapLoop {
     state: Arc<Mutex<UncheckedState>>,
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
-    back_buffer: Mutex<VecDeque<HashOrAccount>>,
+    back_buffer: Mutex<VecDeque<BlockHash>>,
 }
 
 impl UncheckedMapLoop {
@@ -223,9 +223,8 @@ impl UncheckedMapLoop {
                 let mut back_buffer_lock = self.back_buffer.lock().unwrap();
                 std::mem::swap(&mut lock.processed_queue, back_buffer_lock.deref_mut());
                 drop(lock);
-                self.process_queries(&back_buffer_lock);
+                self.process_queries(&mut back_buffer_lock);
                 lock = self.state.lock().unwrap();
-                back_buffer_lock.clear();
             }
 
             lock = self
@@ -238,13 +237,13 @@ impl UncheckedMapLoop {
         }
     }
 
-    fn process_queries(&self, back_buffer: &VecDeque<HashOrAccount>) {
-        for item in back_buffer {
+    fn process_queries(&self, back_buffer: &mut VecDeque<BlockHash>) {
+        for item in back_buffer.drain(..) {
             self.query_impl(item);
         }
     }
 
-    pub fn query_impl(&self, hash: &HashOrAccount) {
+    pub fn query_impl(&self, hash: BlockHash) {
         let mut delete_queue = Vec::new();
         let mut lock = self.state.lock().unwrap();
         lock.entries_container.for_each_with_dependency(

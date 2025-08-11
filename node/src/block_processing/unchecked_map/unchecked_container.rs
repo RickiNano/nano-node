@@ -117,11 +117,11 @@ impl UncheckedContainer {
 
     pub fn for_each_with_dependency(
         &self,
-        dependency: &HashOrAccount,
+        dependency: BlockHash,
         mut action: impl FnMut(&UncheckedKey, &Block),
         mut predicate: impl FnMut() -> bool,
     ) {
-        let key = UncheckedKey::new(dependency.into(), BlockHash::zero());
+        let key = UncheckedKey::new(dependency, BlockHash::zero());
         for (key, id) in self.by_key.range(key..) {
             if !predicate() || key.previous != dependency.into() {
                 break;
