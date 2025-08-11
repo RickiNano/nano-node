@@ -157,7 +157,7 @@ impl UncheckedMap {
 
     pub fn for_each(
         &self,
-        action: impl FnMut(&UncheckedKey, &UncheckedInfo),
+        action: impl FnMut(&UncheckedKey, &Block),
         predicate: impl FnMut() -> bool,
     ) {
         let lock = self.mutable.lock().unwrap();

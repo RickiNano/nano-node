@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
-use rsnano_core::{BlockHash, HashOrAccount};
+use rsnano_core::{Block, BlockHash, HashOrAccount};
 
 use super::{UncheckedInfo, UncheckedKey};
 
@@ -104,14 +104,14 @@ impl UncheckedContainer {
 
     pub fn for_each(
         &self,
-        mut action: impl FnMut(&UncheckedKey, &UncheckedInfo),
+        mut action: impl FnMut(&UncheckedKey, &Block),
         mut predicate: impl FnMut() -> bool,
     ) {
         for entry in self.by_id.values() {
             if !predicate() {
                 break;
             }
-            action(&entry.key, &entry.info);
+            action(&entry.key, &entry.info.block);
         }
     }
 
