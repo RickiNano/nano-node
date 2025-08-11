@@ -1,6 +1,8 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
-use rsnano_core::{BlockHash, HashOrAccount, UncheckedInfo, UncheckedKey};
+use rsnano_core::{BlockHash, HashOrAccount};
+
+use super::{UncheckedInfo, UncheckedKey};
 
 #[derive(Clone, Debug)]
 pub(super) struct Entry {

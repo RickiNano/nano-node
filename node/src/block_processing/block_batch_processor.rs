@@ -12,13 +12,13 @@ use tracing::{debug, warn};
 
 use rsnano_core::{
     utils::{backpressure_channel, BackpressureSender},
-    BlockType, Epoch, UncheckedInfo,
+    BlockType, Epoch,
 };
 use rsnano_ledger::{BlockError, Ledger};
 use rsnano_stats::{StatsCollection, StatsSource};
 
 use super::{BlockContext, BlockSource, LedgerEvent, UncheckedMap};
-use crate::block_processing::ProcessedResult;
+use crate::block_processing::{ProcessedResult, UncheckedInfo};
 
 pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,

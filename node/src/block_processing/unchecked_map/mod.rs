@@ -2,19 +2,51 @@ mod unchecked_container;
 
 use std::{
     collections::VecDeque,
-    mem::size_of,
     ops::DerefMut,
     sync::{Arc, Condvar, Mutex},
     thread::JoinHandle,
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
-    HashOrAccount, UncheckedInfo, UncheckedKey,
+    Block, BlockHash, HashOrAccount,
 };
 use rsnano_stats::{DetailType, StatType, Stats};
 use unchecked_container::{Entry, UncheckedContainer};
+
+/// Information on an unchecked block
+#[derive(Clone, Debug)]
+pub struct UncheckedInfo {
+    pub block: Block,
+
+    /// Seconds since posix epoch
+    pub modified: u64,
+}
+
+impl UncheckedInfo {
+    pub fn new(block: Block) -> Self {
+        Self {
+            block,
+            modified: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct UncheckedKey {
+    pub previous: BlockHash,
+    pub hash: BlockHash,
+}
+
+impl UncheckedKey {
+    pub fn new(previous: BlockHash, hash: BlockHash) -> Self {
+        Self { previous, hash }
+    }
+}
 
 pub struct UncheckedMap {
     join_handle: Mutex<Option<JoinHandle<()>>>,
@@ -32,7 +64,7 @@ impl UncheckedMap {
 
         let thread = Arc::new(UncheckedMapLoop {
             disable_delete,
-            mutable: mutable.clone(),
+            state: mutable.clone(),
             condition: condition.clone(),
             stats: stats.clone(),
             back_buffer: Mutex::new(VecDeque::new()),
@@ -198,7 +230,7 @@ impl UncheckedState {
 
 pub struct UncheckedMapLoop {
     disable_delete: bool,
-    mutable: Arc<Mutex<UncheckedState>>,
+    state: Arc<Mutex<UncheckedState>>,
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
     back_buffer: Mutex<VecDeque<HashOrAccount>>,
@@ -206,14 +238,14 @@ pub struct UncheckedMapLoop {
 
 impl UncheckedMapLoop {
     fn run(&self) {
-        let mut lock = self.mutable.lock().unwrap();
+        let mut lock = self.state.lock().unwrap();
         while !lock.stopped {
             if !lock.processed_queue.is_empty() {
                 let mut back_buffer_lock = self.back_buffer.lock().unwrap();
                 std::mem::swap(&mut lock.processed_queue, back_buffer_lock.deref_mut());
                 drop(lock);
                 self.process_queries(&back_buffer_lock);
-                lock = self.mutable.lock().unwrap();
+                lock = self.state.lock().unwrap();
                 back_buffer_lock.clear();
             }
 
@@ -235,7 +267,7 @@ impl UncheckedMapLoop {
 
     pub fn query_impl(&self, hash: &HashOrAccount) {
         let mut delete_queue = Vec::new();
-        let mut lock = self.mutable.lock().unwrap();
+        let mut lock = self.state.lock().unwrap();
         lock.entries_container.for_each_with_dependency(
             hash,
             |key, info| {
