@@ -88,7 +88,10 @@ impl BlockBatchProcessor {
             })
             .collect();
 
-        for (status, block_ctx) in &result {
+        // Iterate in reverse order so that when consecutive blocks where processed with
+        // gap_previous, that the successful insert of the first block is processed last
+        // and the unchecked_map trigger succeeds.
+        for (status, block_ctx) in result.iter().rev() {
             match status {
                 Ok(()) => {
                     self.stats.progress.fetch_add(1, Relaxed);
@@ -128,10 +131,7 @@ impl BlockBatchProcessor {
                 }
                 Err(BlockError::GapSource) => {
                     self.unchecked.put(
-                        block
-                            .source_field()
-                            .unwrap_or(block.link_field().unwrap_or_default().into())
-                            .into(),
+                        block.source_or_link().into(),
                         UncheckedInfo::new(block.clone()),
                     );
                 }
