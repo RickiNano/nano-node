@@ -2,17 +2,17 @@ use std::{cmp::Ordering, collections::BTreeMap};
 
 use rsnano_core::{Block, BlockHash, HashOrAccount};
 
-use super::{UncheckedInfo, UncheckedKey};
+use super::UncheckedKey;
 
 #[derive(Clone, Debug)]
 pub(super) struct Entry {
     key: UncheckedKey,
-    info: UncheckedInfo,
+    block: Block,
 }
 
 impl Entry {
-    pub fn new(key: UncheckedKey, info: UncheckedInfo) -> Self {
-        Self { key, info }
+    pub fn new(key: UncheckedKey, block: Block) -> Self {
+        Self { key, block }
     }
 }
 
@@ -111,7 +111,7 @@ impl UncheckedContainer {
             if !predicate() {
                 break;
             }
-            action(&entry.key, &entry.info.block);
+            action(&entry.key, &entry.block);
         }
     }
 
@@ -127,7 +127,7 @@ impl UncheckedContainer {
                 break;
             }
             let entry = self.by_id.get(id).unwrap();
-            action(&entry.key, &entry.info.block);
+            action(&entry.key, &entry.block);
         }
     }
 }
@@ -239,7 +239,7 @@ mod tests {
     fn test_entry<T: Into<BlockHash>>(hash: T) -> Entry {
         Entry::new(
             UncheckedKey::new(hash.into(), BlockHash::default()),
-            UncheckedInfo::new(Block::new_test_instance()),
+            Block::new_test_instance(),
         )
     }
 }

@@ -15,18 +15,6 @@ use rsnano_core::{
 use rsnano_stats::{DetailType, StatType, Stats};
 use unchecked_container::{Entry, UncheckedContainer};
 
-/// Information on an unchecked block
-#[derive(Clone, Debug)]
-pub struct UncheckedInfo {
-    pub block: Block,
-}
-
-impl UncheckedInfo {
-    pub fn new(block: Block) -> Self {
-        Self { block }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UncheckedKey {
     pub previous: BlockHash,
@@ -96,9 +84,7 @@ impl UncheckedMap {
     pub fn put(&self, dependency: HashOrAccount, block: Block) {
         let mut lock = self.mutable.lock().unwrap();
         let key = UncheckedKey::new(dependency.into(), block.hash());
-        let inserted = lock
-            .entries_container
-            .insert(Entry::new(key, UncheckedInfo { block }));
+        let inserted = lock.entries_container.insert(Entry::new(key, block));
         if lock.entries_container.len() > self.max_unchecked_blocks {
             lock.entries_container.pop_front();
         }
