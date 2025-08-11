@@ -969,10 +969,10 @@ impl Node {
 
         // Requeue blocks that could not be immediately processed
         let queue_w = Arc::downgrade(&block_processor_queue);
-        unchecked.set_satisfied_observer(Box::new(move |info| {
+        unchecked.set_satisfied_observer(Box::new(move |block| {
             if let Some(queue) = queue_w.upgrade() {
                 queue.push(BlockContext::new(
-                    info.block.clone().into(),
+                    block.clone(),
                     BlockSource::Unchecked,
                     ChannelId::LOOPBACK,
                 ));

@@ -109,7 +109,7 @@ impl UncheckedMap {
         }
     }
 
-    pub fn get2(&self, hash: &HashOrAccount) -> Vec<Block> {
+    pub fn get(&self, hash: &HashOrAccount) -> Vec<Block> {
         let lock = self.mutable.lock().unwrap();
         let mut result = Vec::new();
         lock.entries_container.for_each_with_dependency(
@@ -175,7 +175,7 @@ impl UncheckedMap {
             .for_each_with_dependency(dependency, action, predicate)
     }
 
-    pub fn set_satisfied_observer(&self, callback: Box<dyn Fn(&UncheckedInfo) + Send>) {
+    pub fn set_satisfied_observer(&self, callback: Box<dyn Fn(&Block) + Send>) {
         self.mutable.lock().unwrap().satisfied_callback = Some(callback);
     }
 }
@@ -207,7 +207,7 @@ struct UncheckedState {
     stopped: bool,
     processed_queue: VecDeque<HashOrAccount>,
     entries_container: UncheckedContainer,
-    satisfied_callback: Option<Box<dyn Fn(&UncheckedInfo) + Send>>,
+    satisfied_callback: Option<Box<dyn Fn(&Block) + Send>>,
 }
 
 impl UncheckedState {
@@ -267,7 +267,7 @@ impl UncheckedMapLoop {
                 delete_queue.push(key.clone());
                 self.stats.inc(StatType::Unchecked, DetailType::Satisfied);
                 if let Some(callback) = &lock.satisfied_callback {
-                    callback(info);
+                    callback(&info.block);
                 }
             },
             || true,
