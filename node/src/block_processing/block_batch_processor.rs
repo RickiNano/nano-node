@@ -132,11 +132,7 @@ impl BlockBatchProcessor {
                     self.unchecked
                         .put(block.source_or_link().into(), block.clone());
                 }
-                Err(BlockError::GapEpochOpenPending) => {
-                    // Specific unchecked key starting with epoch open block account public key
-                    self.unchecked
-                        .put(block.account_field().unwrap().into(), block.clone());
-                }
+                Err(BlockError::GapEpochOpenPending) => {}
                 Err(BlockError::Old) => {
                     debug!("Block is old: {}", hash)
                 }

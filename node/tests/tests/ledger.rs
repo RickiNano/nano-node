@@ -99,26 +99,17 @@ fn epoch_open_pending() {
 
     let status = node1.try_process(epoch_open.clone()).unwrap_err();
     assert_eq!(status, BlockError::GapEpochOpenPending);
+
+    // New block to process epoch open
+    node1.process(send1);
+
     node1.block_processor_queue.push(BlockContext::new(
         epoch_open.clone().into(),
         BlockSource::Live,
         ChannelId::LOOPBACK,
     ));
-    // Waits for the block to get saved in the database
-    assert_timely_eq(Duration::from_secs(10), || node1.unchecked.len(), 1);
-    // Open block should be inserted into unchecked
-    let blocks = node1.unchecked.get(&key1.account().into());
-    assert_eq!(blocks.len(), 1);
-    assert_eq!(blocks[0].hash(), epoch_open.hash());
-    // New block to process epoch open
-    node1.block_processor_queue.push(BlockContext::new(
-        send1.into(),
-        BlockSource::Live,
-        ChannelId::LOOPBACK,
-    ));
-    assert_timely(Duration::from_secs(10), || {
-        node1.block_exists(&epoch_open.hash())
-    });
+
+    assert_timely2(|| node1.block_exists(&epoch_open.hash()));
 }
 
 #[test]
