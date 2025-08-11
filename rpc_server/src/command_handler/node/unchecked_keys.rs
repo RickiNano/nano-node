@@ -13,7 +13,7 @@ impl RpcCommandHandler {
                 let key_dto = UncheckedKeyDto {
                     key: key.previous,
                     hash: info.block.hash(),
-                    modified_timestamp: info.modified.into(),
+                    modified_timestamp: 0.into(), // not supported in RsNano
                     contents: info.block.json_representation(),
                 };
                 unchecked_keys.borrow_mut().push(key_dto);

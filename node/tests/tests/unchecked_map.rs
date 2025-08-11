@@ -4,7 +4,7 @@ use rsnano_core::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY,
 };
-use rsnano_node::block_processing::{UncheckedInfo, UncheckedKey, UncheckedMap};
+use rsnano_node::block_processing::{UncheckedKey, UncheckedMap};
 use rsnano_stats::Stats;
 use test_helpers::{assert_timely, assert_timely_eq};
 
@@ -13,7 +13,7 @@ fn one_bootstrap() {
     let unchecked = UncheckedMap::new(65536, Arc::new(Stats::default()), false);
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let block1 = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
-    unchecked.put(block1.hash().into(), UncheckedInfo::new(block1.clone()));
+    unchecked.put(block1.hash().into(), block1.clone());
 
     // Waits for the block1 to get saved in the database
     assert_timely(Duration::from_secs(10), || {
@@ -45,7 +45,7 @@ fn simple() {
     let block_listing1 = unchecked.get(&block.previous().into());
     assert!(block_listing1.is_empty());
     // Enqueues a block to be saved on the unchecked table
-    unchecked.put(block.previous().into(), UncheckedInfo::new(block.clone()));
+    unchecked.put(block.previous().into(), block.clone());
     // Waits for the block to get written in the database
     assert_timely(Duration::from_secs(5), || {
         unchecked.get(&block.previous().into()).len() > 0
@@ -73,9 +73,9 @@ fn multiple() {
     assert!(block_listing1.is_empty());
 
     // Enqueues the first block
-    unchecked.put(block.previous().into(), UncheckedInfo::new(block.clone()));
+    unchecked.put(block.previous().into(), block.clone());
     // Enqueues a second block
-    unchecked.put(6.into(), UncheckedInfo::new(block.clone()));
+    unchecked.put(6.into(), block.clone());
     // Waits for the block to get written in the database
     assert_timely(Duration::from_secs(5), || {
         unchecked.get(&block.previous().into()).len() > 0
@@ -97,9 +97,9 @@ fn double_put() {
     assert!(block_listing1.is_empty());
 
     // Enqueues the block to be saved in the unchecked table
-    unchecked.put(block.previous().into(), UncheckedInfo::new(block.clone()));
+    unchecked.put(block.previous().into(), block.clone());
     // Enqueues the block again in an attempt to have it there twice
-    unchecked.put(block.previous().into(), UncheckedInfo::new(block.clone()));
+    unchecked.put(block.previous().into(), block.clone());
 
     // Waits for and asserts the block was added at least once
     assert_timely(Duration::from_secs(5), || {
@@ -148,14 +148,14 @@ fn multiple_get() {
     }
     .into();
     // Add the blocks' info to the unchecked table
-    unchecked.put(block1.previous().into(), UncheckedInfo::new(block1.clone())); // unchecked1
-    unchecked.put(block1.hash().into(), UncheckedInfo::new(block1.clone())); // unchecked2
-    unchecked.put(block2.previous().into(), UncheckedInfo::new(block2.clone())); // unchecked3
-    unchecked.put(block1.previous().into(), UncheckedInfo::new(block2.clone())); // unchecked1
-    unchecked.put(block1.hash().into(), UncheckedInfo::new(block2.clone())); // unchecked2
-    unchecked.put(block3.previous().into(), UncheckedInfo::new(block3.clone()));
-    unchecked.put(block3.hash().into(), UncheckedInfo::new(block3.clone())); // unchecked4
-    unchecked.put(block1.previous().into(), UncheckedInfo::new(block3.clone()));
+    unchecked.put(block1.previous().into(), block1.clone()); // unchecked1
+    unchecked.put(block1.hash().into(), block1.clone()); // unchecked2
+    unchecked.put(block2.previous().into(), block2.clone()); // unchecked3
+    unchecked.put(block1.previous().into(), block2.clone()); // unchecked1
+    unchecked.put(block1.hash().into(), block2.clone()); // unchecked2
+    unchecked.put(block3.previous().into(), block3.clone());
+    unchecked.put(block3.hash().into(), block3.clone()); // unchecked4
+    unchecked.put(block1.previous().into(), block3.clone());
     // unchecked1
 
     // count the number of blocks in the unchecked table by counting them one by one

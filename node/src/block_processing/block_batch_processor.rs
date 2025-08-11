@@ -18,7 +18,7 @@ use rsnano_ledger::{BlockError, Ledger};
 use rsnano_stats::{StatsCollection, StatsSource};
 
 use super::{BlockContext, BlockSource, LedgerEvent, UncheckedMap};
-use crate::block_processing::{ProcessedResult, UncheckedInfo};
+use crate::block_processing::ProcessedResult;
 
 pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,
@@ -126,21 +126,16 @@ impl BlockBatchProcessor {
                     }
                 }
                 Err(BlockError::GapPrevious) => {
-                    self.unchecked
-                        .put(block.previous().into(), UncheckedInfo::new(block.clone()));
+                    self.unchecked.put(block.previous().into(), block.clone());
                 }
                 Err(BlockError::GapSource) => {
-                    self.unchecked.put(
-                        block.source_or_link().into(),
-                        UncheckedInfo::new(block.clone()),
-                    );
+                    self.unchecked
+                        .put(block.source_or_link().into(), block.clone());
                 }
                 Err(BlockError::GapEpochOpenPending) => {
                     // Specific unchecked key starting with epoch open block account public key
-                    self.unchecked.put(
-                        block.account_field().unwrap().into(),
-                        UncheckedInfo::new(block.clone()),
-                    );
+                    self.unchecked
+                        .put(block.account_field().unwrap().into(), block.clone());
                 }
                 Err(BlockError::Old) => {
                     debug!("Block is old: {}", hash)

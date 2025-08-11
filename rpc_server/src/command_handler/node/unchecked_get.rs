@@ -18,11 +18,9 @@ impl RpcCommandHandler {
         self.node.unchecked.for_each(
             |key: &UncheckedKey, info: &UncheckedInfo| {
                 if key.hash == args.hash {
-                    let modified_timestamp = info.modified;
-                    let contents = info.block.json_representation();
                     result = Some(UncheckedGetResponse {
-                        modified_timestamp: modified_timestamp.into(),
-                        contents,
+                        modified_timestamp: 0.into(), // not supported in RsNano
+                        contents: info.block.json_representation(),
                     });
                     *done.borrow_mut() = true;
                 }

@@ -5,7 +5,7 @@ use std::{
     ops::DerefMut,
     sync::{Arc, Condvar, Mutex},
     thread::JoinHandle,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::Duration,
 };
 
 use rsnano_core::{
@@ -19,20 +19,11 @@ use unchecked_container::{Entry, UncheckedContainer};
 #[derive(Clone, Debug)]
 pub struct UncheckedInfo {
     pub block: Block,
-
-    /// Seconds since posix epoch
-    pub modified: u64,
 }
 
 impl UncheckedInfo {
     pub fn new(block: Block) -> Self {
-        Self {
-            block,
-            modified: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-        }
+        Self { block }
     }
 }
 
@@ -102,10 +93,12 @@ impl UncheckedMap {
         }
     }
 
-    pub fn put(&self, dependency: HashOrAccount, info: UncheckedInfo) {
+    pub fn put(&self, dependency: HashOrAccount, block: Block) {
         let mut lock = self.mutable.lock().unwrap();
-        let key = UncheckedKey::new(dependency.into(), info.block.hash());
-        let inserted = lock.entries_container.insert(Entry::new(key, info));
+        let key = UncheckedKey::new(dependency.into(), block.hash());
+        let inserted = lock
+            .entries_container
+            .insert(Entry::new(key, UncheckedInfo { block }));
         if lock.entries_container.len() > self.max_unchecked_blocks {
             lock.entries_container.pop_front();
         }
