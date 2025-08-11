@@ -40,7 +40,7 @@ use crate::{
     },
     wallets_factory::create_wallets,
 };
-use rand::{rng, thread_rng, Rng};
+use rand::{rng, Rng};
 
 const MAX_BUFFERED_BLOCKS: usize = 1024;
 const DEFAULT_RATE: &str = "1+50@3s";

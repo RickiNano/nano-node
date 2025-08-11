@@ -5,6 +5,7 @@ use std::{
     ops::DerefMut,
     sync::{Arc, Condvar, Mutex},
     thread::JoinHandle,
+    time::Duration,
 };
 
 use rsnano_core::{
@@ -15,8 +16,8 @@ use rsnano_stats::{DetailType, StatType, Stats};
 
 pub struct UncheckedMap {
     join_handle: Mutex<Option<JoinHandle<()>>>,
-    thread: Arc<UncheckedMapThread>,
-    mutable: Arc<Mutex<ThreadMutableData>>,
+    thread: Arc<UncheckedMapLoop>,
+    mutable: Arc<Mutex<UncheckedState>>,
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
     max_unchecked_blocks: usize,
@@ -24,10 +25,10 @@ pub struct UncheckedMap {
 
 impl UncheckedMap {
     pub fn new(max_unchecked_blocks: usize, stats: Arc<Stats>, disable_delete: bool) -> Self {
-        let mutable = Arc::new(Mutex::new(ThreadMutableData::new()));
+        let mutable = Arc::new(Mutex::new(UncheckedState::new()));
         let condition = Arc::new(Condvar::new());
 
-        let thread = Arc::new(UncheckedMapThread {
+        let thread = Arc::new(UncheckedMapLoop {
             disable_delete,
             mutable: mutable.clone(),
             condition: condition.clone(),
@@ -67,11 +68,6 @@ impl UncheckedMap {
         }
     }
 
-    pub fn exists(&self, key: &UncheckedKey) -> bool {
-        let lock = self.mutable.lock().unwrap();
-        lock.entries_container.exists(key)
-    }
-
     pub fn put(&self, dependency: HashOrAccount, info: UncheckedInfo) {
         let mut lock = self.mutable.lock().unwrap();
         let key = UncheckedKey::new(dependency.into(), info.block.hash());
@@ -81,6 +77,8 @@ impl UncheckedMap {
         }
         if inserted {
             self.stats.inc(StatType::Unchecked, DetailType::Put);
+        } else {
+            self.stats.inc(StatType::Unchecked, DetailType::Duplicate);
         }
     }
 
@@ -104,7 +102,7 @@ impl UncheckedMap {
 
     pub fn trigger(&self, dependency: &HashOrAccount) {
         let mut lock = self.mutable.lock().unwrap();
-        lock.buffer.push_back(*dependency);
+        lock.processed_queue.push_back(*dependency);
         drop(lock);
         self.stats.inc(StatType::Unchecked, DetailType::Trigger);
         self.condition.notify_all(); // Notify run ()
@@ -131,7 +129,7 @@ impl UncheckedMap {
 
     pub fn buffer_count(&self) -> usize {
         let lock = self.mutable.lock().unwrap();
-        lock.buffer.len()
+        lock.processed_queue.len()
     }
 
     pub fn buffer_entry_size() -> usize {
@@ -186,55 +184,52 @@ impl Drop for UncheckedMap {
     }
 }
 
-struct ThreadMutableData {
+struct UncheckedState {
     stopped: bool,
-    buffer: VecDeque<HashOrAccount>,
-    writing_back_buffer: bool,
+    processed_queue: VecDeque<HashOrAccount>,
     entries_container: EntriesContainer,
     satisfied_callback: Option<Box<dyn Fn(&UncheckedInfo) + Send>>,
 }
 
-impl ThreadMutableData {
+impl UncheckedState {
     fn new() -> Self {
         Self {
             stopped: false,
-            buffer: VecDeque::new(),
-            writing_back_buffer: false,
+            processed_queue: VecDeque::new(),
             entries_container: EntriesContainer::new(),
             satisfied_callback: None,
         }
     }
 }
 
-pub struct UncheckedMapThread {
+pub struct UncheckedMapLoop {
     disable_delete: bool,
-    mutable: Arc<Mutex<ThreadMutableData>>,
+    mutable: Arc<Mutex<UncheckedState>>,
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
     back_buffer: Mutex<VecDeque<HashOrAccount>>,
 }
 
-impl UncheckedMapThread {
+impl UncheckedMapLoop {
     fn run(&self) {
         let mut lock = self.mutable.lock().unwrap();
         while !lock.stopped {
-            if !lock.buffer.is_empty() {
+            if !lock.processed_queue.is_empty() {
                 let mut back_buffer_lock = self.back_buffer.lock().unwrap();
-                std::mem::swap(&mut lock.buffer, back_buffer_lock.deref_mut());
-                lock.writing_back_buffer = true;
+                std::mem::swap(&mut lock.processed_queue, back_buffer_lock.deref_mut());
                 drop(lock);
                 self.process_queries(&back_buffer_lock);
                 lock = self.mutable.lock().unwrap();
-                lock.writing_back_buffer = false;
                 back_buffer_lock.clear();
-            } else {
-                lock = self
-                    .condition
-                    .wait_while(lock, |other_lock| {
-                        !other_lock.stopped && other_lock.buffer.is_empty()
-                    })
-                    .unwrap();
             }
+
+            lock = self
+                .condition
+                .wait_timeout_while(lock, Duration::from_secs(3), |other_lock| {
+                    !other_lock.stopped && other_lock.processed_queue.is_empty()
+                })
+                .unwrap()
+                .0;
         }
     }
 
@@ -258,6 +253,7 @@ impl UncheckedMapThread {
             },
             || true,
         );
+
         if !self.disable_delete {
             for key in &delete_queue {
                 lock.entries_container.remove(key);
