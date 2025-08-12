@@ -448,7 +448,7 @@ impl Node {
             ledger: ledger.clone(),
             network: network.clone(),
             node_id_key: node_id_key.clone(),
-            unchecked: unchecked_reenqueuer.clone(),
+            unchecked: unchecked.clone(),
             startup_time: steady_clock.now(),
             clock: steady_clock.clone(),
         };
@@ -1265,7 +1265,7 @@ impl Node {
         container_info.add("vote_cache", vote_cache.clone());
         container_info.add("vote_generators", vote_generators.clone());
         container_info.add("bootstrapper", bootstrapper.clone());
-        container_info.add("unchecked", unchecked_reenqueuer.clone());
+        container_info.add("unchecked", unchecked.clone());
         container_info.add("local_block_broadcaster", local_block_broadcaster.clone());
         container_info.add("rep_tiers", rep_tiers.clone());
         container_info.add("inbound_msg_queue", inbound_message_queue.clone());

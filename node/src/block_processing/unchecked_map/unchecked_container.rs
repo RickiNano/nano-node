@@ -1,6 +1,9 @@
 use std::{cmp::Ordering, collections::BTreeMap, sync::Arc};
 
-use rsnano_core::{Block, BlockHash};
+use rsnano_core::{
+    utils::{ContainerInfo, ContainerInfoProvider},
+    Block, BlockHash,
+};
 
 use super::UncheckedKey;
 use rsnano_stats::{DetailType, StatType, Stats};
@@ -130,17 +133,19 @@ impl UncheckedMap {
             .map(|(_, id)| &self.by_id.get(id).unwrap().block)
     }
 
-    pub fn for_each(
+    pub fn iter(&self) -> impl Iterator<Item = (&BlockHash, &Block)> {
+        self.by_id
+            .values()
+            .map(|i| (&i.key.dependency_hash, &i.block))
+    }
+
+    pub fn iter_start(
         &self,
-        mut action: impl FnMut(&UncheckedKey, &Block),
-        mut predicate: impl FnMut() -> bool,
-    ) {
-        for entry in self.by_id.values() {
-            if !predicate() {
-                break;
-            }
-            action(&entry.key, &entry.block);
-        }
+        start_dependency: BlockHash,
+    ) -> impl Iterator<Item = (&BlockHash, &Block)> {
+        self.by_key
+            .range(UncheckedKey::new(start_dependency, BlockHash::zero())..)
+            .map(|(key, id)| (&key.dependency_hash, &self.by_id.get(id).unwrap().block))
     }
 
     pub fn for_each_with_dependency(
@@ -166,12 +171,19 @@ impl Default for UncheckedMap {
     }
 }
 
+impl ContainerInfoProvider for UncheckedMap {
+    fn container_info(&self) -> ContainerInfo {
+        [("entries", self.len(), 0)].into()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rsnano_core::Block;
 
     use super::*;
     use ntest::assert_false;
+    use tracing::Instrument;
 
     #[test]
     fn empty() {
@@ -183,6 +195,7 @@ mod tests {
         assert_false!(unchecked.contains_dependency(1.into()));
         assert!(unchecked.is_empty());
         assert_eq!(unchecked.blocks_dependend_on(1.into()).count(), 0);
+        assert!(unchecked.iter().next().is_none());
     }
 
     #[test]
@@ -205,6 +218,7 @@ mod tests {
                 .count(),
             1
         );
+        assert_eq!(unchecked.iter().count(), 1);
     }
 
     #[test]
@@ -220,6 +234,7 @@ mod tests {
         assert_eq!(unchecked.by_key.len(), 1);
         assert_eq!(new_insert1, true);
         assert_eq!(new_insert2, false);
+        assert_eq!(unchecked.iter().count(), 1);
     }
 
     #[test]
@@ -236,6 +251,7 @@ mod tests {
         assert_eq!(new_insert2, true);
         assert!(unchecked.contains_dependency(1.into()));
         assert!(unchecked.contains_dependency(2.into()));
+        assert_eq!(unchecked.iter().count(), 2);
     }
 
     #[test]

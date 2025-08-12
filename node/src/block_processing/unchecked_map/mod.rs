@@ -8,11 +8,9 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Block, BlockHash,
-};
+use rsnano_core::{Block, BlockHash};
 use rsnano_stats::{DetailType, StatType, Stats};
+
 pub use unchecked_container::UncheckedMap;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -24,10 +22,10 @@ pub struct UncheckedKey {
 }
 
 impl UncheckedKey {
-    pub fn new(previous: BlockHash, hash: BlockHash) -> Self {
+    pub fn new(dependency_hash: BlockHash, unchecked_hash: BlockHash) -> Self {
         Self {
-            dependency_hash: previous,
-            unchecked_hash: hash,
+            dependency_hash,
+            unchecked_hash,
         }
     }
 }
@@ -87,10 +85,6 @@ impl UncheckedBlockReenqueuer {
         }
     }
 
-    pub fn clear(&self) {
-        self.unchecked.lock().unwrap().clear();
-    }
-
     pub fn block_processed(&self, block_hash: BlockHash) {
         let mut lock = self.mutable.lock().unwrap();
         lock.processed_queue.push_back(block_hash);
@@ -99,54 +93,8 @@ impl UncheckedBlockReenqueuer {
         self.condition.notify_all(); // Notify run ()
     }
 
-    pub fn remove(&self, key: &UncheckedKey) {
-        self.unchecked.lock().unwrap().remove(key);
-    }
-
-    pub fn len(&self) -> usize {
-        self.unchecked.lock().unwrap().len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.unchecked.lock().unwrap().is_empty()
-    }
-
-    pub fn buffer_count(&self) -> usize {
-        self.mutable.lock().unwrap().processed_queue.len()
-    }
-
-    pub fn for_each(
-        &self,
-        action: impl FnMut(&UncheckedKey, &Block),
-        predicate: impl FnMut() -> bool,
-    ) {
-        self.unchecked.lock().unwrap().for_each(action, predicate)
-    }
-
-    pub fn for_each_with_dependency(
-        &self,
-        dependency: BlockHash,
-        action: impl FnMut(&UncheckedKey, &Block),
-        predicate: impl FnMut() -> bool,
-    ) {
-        self.unchecked
-            .lock()
-            .unwrap()
-            .for_each_with_dependency(dependency, action, predicate)
-    }
-
     pub fn set_satisfied_observer(&self, callback: Box<dyn Fn(&Block) + Send>) {
         self.mutable.lock().unwrap().satisfied_callback = Some(callback);
-    }
-}
-
-impl ContainerInfoProvider for UncheckedBlockReenqueuer {
-    fn container_info(&self) -> ContainerInfo {
-        [
-            ("entries", self.len(), 0),
-            ("queries", self.buffer_count(), 0),
-        ]
-        .into()
     }
 }
 
