@@ -404,7 +404,7 @@ impl Node {
             stats.clone(),
         )));
 
-        let unchecked_reenqueuer = UncheckedBlockReenqueuer::new(unchecked.clone(), stats.clone());
+        let unchecked_reenqueuer = UncheckedBlockReenqueuer::new(unchecked.clone());
 
         let online_reps = Arc::new(Mutex::new(
             OnlineReps::builder()
@@ -969,18 +969,6 @@ impl Node {
                     }
                 }));
         }
-
-        // Requeue blocks that could not be immediately processed
-        let queue_w = Arc::downgrade(&block_processor_queue);
-        unchecked_reenqueuer.set_satisfied_observer(Box::new(move |block| {
-            if let Some(queue) = queue_w.upgrade() {
-                queue.push(BlockContext::new(
-                    block.clone(),
-                    BlockSource::Unchecked,
-                    ChannelId::LOOPBACK,
-                ));
-            }
-        }));
 
         let vote_rebroadcast_queue = Arc::new(
             VoteRebroadcastQueue::build()

@@ -119,6 +119,7 @@ impl BlockBatchProcessor {
                         .pop_dependend_blocks(hash, &mut self.satisfied_blocks);
 
                     for satisifed in self.satisfied_blocks.drain(..) {
+                        self.stats.unchecked_satisfied.fetch_add(1, Relaxed);
                         self.process_queue.push(BlockContext::new(
                             satisifed,
                             BlockSource::Unchecked,
@@ -209,6 +210,7 @@ pub(crate) struct BlockBatchProcessorStats {
     progress: AtomicU64,
     errors: [AtomicU64; BlockError::COUNT],
     sources: [AtomicU64; BlockSource::COUNT],
+    unchecked_satisfied: AtomicU64,
 }
 
 impl StatsSource for BlockBatchProcessorStats {
@@ -234,5 +236,11 @@ impl StatsSource for BlockBatchProcessorStats {
                 self.sources[s as usize].load(Relaxed),
             );
         }
+
+        result.insert(
+            "unchecked",
+            "satisfied",
+            self.unchecked_satisfied.load(Relaxed),
+        );
     }
 }
