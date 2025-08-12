@@ -10,36 +10,40 @@ use std::{
 use strum::{EnumCount, IntoEnumIterator};
 use tracing::{debug, warn};
 
-use rsnano_core::utils::{backpressure_channel, BackpressureSender};
+use rsnano_core::{
+    utils::{backpressure_channel, BackpressureSender},
+    Block,
+};
 use rsnano_ledger::{BlockError, Ledger};
-use rsnano_stats::{Stats, StatsCollection, StatsSource};
+use rsnano_stats::{StatsCollection, StatsSource};
 
-use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap};
+use super::{BlockContext, BlockProcessorQueue, BlockSource, LedgerEvent, UncheckedMap};
 use crate::block_processing::ProcessedResult;
+use rsnano_network::ChannelId;
 
 pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,
-    pub unchecked_reenqueuer: Arc<UncheckedBlockReenqueuer>,
     pub unchecked: Arc<Mutex<UncheckedMap>>,
+    pub process_queue: Arc<BlockProcessorQueue>,
     pub stats: Arc<BlockBatchProcessorStats>,
     pub event_publisher: BackpressureSender<LedgerEvent>,
+    pub satisfied_blocks: Vec<Block>,
 }
 
 impl BlockBatchProcessor {
     #[allow(dead_code)]
     pub fn new_null() -> Self {
-        let stats = Arc::new(Stats::default());
-        let unchecked = Arc::new(Mutex::new(UncheckedMap::default()));
         Self {
             ledger: Arc::new(Ledger::new_null()),
-            unchecked_reenqueuer: Arc::new(UncheckedBlockReenqueuer::new(unchecked.clone(), stats)),
-            unchecked,
+            unchecked: Arc::new(Mutex::new(UncheckedMap::default())),
+            process_queue: Arc::new(BlockProcessorQueue::new_null()),
             stats: Arc::new(BlockBatchProcessorStats::default()),
             event_publisher: backpressure_channel(0).0,
+            satisfied_blocks: Vec::new(),
         }
     }
 
-    pub(crate) fn process_blocks(&self, mut batch: VecDeque<Arc<BlockContext>>) {
+    pub(crate) fn process_blocks(&mut self, mut batch: VecDeque<Arc<BlockContext>>) {
         let timer = Instant::now();
 
         self.roll_back_competitor_blocks(&batch);
@@ -109,7 +113,18 @@ impl BlockBatchProcessor {
 
             match status {
                 Ok(()) => {
-                    self.unchecked_reenqueuer.block_processed(hash);
+                    self.unchecked
+                        .lock()
+                        .unwrap()
+                        .pop_dependend_blocks(hash, &mut self.satisfied_blocks);
+
+                    for satisifed in self.satisfied_blocks.drain(..) {
+                        self.process_queue.push(BlockContext::new(
+                            satisifed,
+                            BlockSource::Unchecked,
+                            ChannelId::LOOPBACK,
+                        ));
+                    }
                 }
                 Err(BlockError::GapPrevious) => {
                     self.unchecked

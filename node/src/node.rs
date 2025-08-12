@@ -106,7 +106,7 @@ pub struct Node {
     pub flags: NodeFlags,
     pub work_factory: Arc<WorkFactory>,
     pub unchecked: Arc<Mutex<UncheckedMap>>,
-    pub unchecked_reenqueuer: Arc<UncheckedBlockReenqueuer>,
+    unchecked_reenqueuer: UncheckedBlockReenqueuer,
     pub ledger: Arc<Ledger>,
     pub network: Arc<RwLock<Network>>,
     pub telemetry: Arc<Telemetry>,
@@ -404,10 +404,7 @@ impl Node {
             stats.clone(),
         )));
 
-        let unchecked_reenqueuer = Arc::new(UncheckedBlockReenqueuer::new(
-            unchecked.clone(),
-            stats.clone(),
-        ));
+        let unchecked_reenqueuer = UncheckedBlockReenqueuer::new(unchecked.clone(), stats.clone());
 
         let online_reps = Arc::new(Mutex::new(
             OnlineReps::builder()
@@ -889,7 +886,6 @@ impl Node {
             block_processor_queue.clone(),
             ledger.clone(),
             unchecked.clone(),
-            unchecked_reenqueuer.clone(),
             backlog_waiter.clone(),
             ledger_tx_clone,
         ));

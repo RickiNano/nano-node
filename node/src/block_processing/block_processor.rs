@@ -9,16 +9,15 @@ use rsnano_stats::{StatsCollection, StatsSource};
 
 use super::{
     backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,
-    BlockProcessorQueue, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap,
+    BlockProcessorQueue, LedgerEvent, UncheckedMap,
 };
 use crate::block_processing::block_batch_processor::BlockBatchProcessor;
 
 pub struct BlockProcessor {
     threads: Mutex<Vec<JoinHandle<()>>>,
-    queue: Arc<BlockProcessorQueue>,
+    process_queue: Arc<BlockProcessorQueue>,
     ledger: Arc<Ledger>,
     unchecked: Arc<Mutex<UncheckedMap>>,
-    unchecked_enqueuer: Arc<UncheckedBlockReenqueuer>,
     process_stats: Arc<BlockBatchProcessorStats>,
     backlog_waiter: Arc<BacklogWaiter>,
     event_publisher: Mutex<Option<BackpressureSender<LedgerEvent>>>,
@@ -26,18 +25,16 @@ pub struct BlockProcessor {
 
 impl BlockProcessor {
     pub(crate) fn new(
-        queue: Arc<BlockProcessorQueue>,
+        process_queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
         unchecked: Arc<Mutex<UncheckedMap>>,
-        unchecked_enqueuer: Arc<UncheckedBlockReenqueuer>,
         backlog_waiter: Arc<BacklogWaiter>,
         event_publisher: BackpressureSender<LedgerEvent>,
     ) -> Self {
         Self {
-            queue,
+            process_queue,
             ledger,
             unchecked,
-            unchecked_enqueuer,
             process_stats: Arc::new(BlockBatchProcessorStats::default()),
             threads: Mutex::new(Vec::new()),
             backlog_waiter,
@@ -63,7 +60,7 @@ impl BlockProcessor {
 
     fn create_loop(&self) -> BlockProcessorLoop {
         BlockProcessorLoop {
-            queue: self.queue.clone(),
+            queue: self.process_queue.clone(),
             process: self.create_block_batch_processor(),
             backlog_waiter: self.backlog_waiter.clone(),
         }
@@ -73,7 +70,7 @@ impl BlockProcessor {
         BlockBatchProcessor {
             ledger: self.ledger.clone(),
             unchecked: self.unchecked.clone(),
-            unchecked_reenqueuer: self.unchecked_enqueuer.clone(),
+            process_queue: self.process_queue.clone(),
             stats: self.process_stats.clone(),
             event_publisher: self
                 .event_publisher
@@ -82,12 +79,13 @@ impl BlockProcessor {
                 .as_ref()
                 .unwrap()
                 .clone(),
+            satisfied_blocks: Vec::new(),
         }
     }
 
     pub fn stop(&self) {
         drop(self.event_publisher.lock().unwrap().take());
-        self.queue.stop();
+        self.process_queue.stop();
         let mut threads = self.threads.lock().unwrap();
         for join_handle in threads.drain(..) {
             join_handle.join().unwrap();
