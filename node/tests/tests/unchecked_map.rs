@@ -4,13 +4,13 @@ use rsnano_core::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY,
 };
-use rsnano_node::block_processing::{UncheckedKey, UncheckedMap};
+use rsnano_node::block_processing::{UncheckedBlockReenqueuer, UncheckedKey};
 use rsnano_stats::Stats;
 use test_helpers::{assert_timely2, assert_timely_eq};
 
 #[test]
 fn one_bootstrap() {
-    let unchecked = UncheckedMap::new(65536, Arc::new(Stats::default()), false);
+    let unchecked = UncheckedBlockReenqueuer::new(65536, Arc::new(Stats::default()), false);
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let block1 = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
     unchecked.put(block1.hash(), block1.clone());
@@ -20,7 +20,7 @@ fn one_bootstrap() {
     let mut dependencies = Vec::new();
     unchecked.for_each(
         |key, _| {
-            dependencies.push(key.hash);
+            dependencies.push(key.unchecked_hash);
         },
         || true,
     );
@@ -36,7 +36,7 @@ fn one_bootstrap() {
 // deleting it from the database
 #[test]
 fn simple() {
-    let unchecked = UncheckedMap::new(65536, Arc::new(Stats::default()), false);
+    let unchecked = UncheckedBlockReenqueuer::new(65536, Arc::new(Stats::default()), false);
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let block = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
     // Asserts the block wasn't added yet to the unchecked table
@@ -61,7 +61,7 @@ fn simple() {
 // This test ensures the unchecked table is able to receive more than one block
 #[test]
 fn multiple() {
-    let unchecked = UncheckedMap::new(65536, Arc::new(Stats::default()), false);
+    let unchecked = UncheckedBlockReenqueuer::new(65536, Arc::new(Stats::default()), false);
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let block = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
     // Asserts the block wasn't added yet to the unchecked table
@@ -81,7 +81,7 @@ fn multiple() {
 // This test ensures that a block can't occur twice in the unchecked table.
 #[test]
 fn double_put() {
-    let unchecked = UncheckedMap::new(65536, Arc::new(Stats::default()), false);
+    let unchecked = UncheckedBlockReenqueuer::new(65536, Arc::new(Stats::default()), false);
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let block = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
     // Asserts the block wasn't added yet to the unchecked table
@@ -103,7 +103,7 @@ fn double_put() {
 // Tests that recurrent get calls return the correct values
 #[test]
 fn multiple_get() {
-    let unchecked = UncheckedMap::new(65536, Arc::new(Stats::default()), false);
+    let unchecked = UncheckedBlockReenqueuer::new(65536, Arc::new(Stats::default()), false);
     // Instantiates three blocks
     let key1 = PrivateKey::new();
     let block1: Block = StateBlockArgs {

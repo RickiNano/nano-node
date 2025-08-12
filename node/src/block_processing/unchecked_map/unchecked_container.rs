@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
-use rsnano_core::{Block, BlockHash, HashOrAccount};
+use rsnano_core::{Block, BlockHash};
 
 use super::UncheckedKey;
 
@@ -36,14 +36,15 @@ impl Ord for Entry {
     }
 }
 
+/// A map of unchecked blocks and the hash of their missing dependency block
 #[derive(Default, Clone, Debug)]
-pub(super) struct UncheckedContainer {
+pub(super) struct UncheckedMap {
     next_id: usize,
     by_key: BTreeMap<UncheckedKey, usize>,
     by_id: BTreeMap<usize, Entry>,
 }
 
-impl UncheckedContainer {
+impl UncheckedMap {
     pub fn new() -> Self {
         Self {
             by_id: BTreeMap::new(),
@@ -123,7 +124,7 @@ impl UncheckedContainer {
     ) {
         let key = UncheckedKey::new(dependency, BlockHash::zero());
         for (key, id) in self.by_key.range(key..) {
-            if !predicate() || key.previous != dependency.into() {
+            if !predicate() || key.dependency != dependency.into() {
                 break;
             }
             let entry = self.by_id.get(id).unwrap();
@@ -140,7 +141,7 @@ mod tests {
 
     #[test]
     fn empty_container() {
-        let container = UncheckedContainer::new();
+        let container = UncheckedMap::new();
         assert_eq!(container.next_id, 0);
         assert_eq!(container.by_id.len(), 0);
         assert_eq!(container.by_key.len(), 0);
@@ -148,7 +149,7 @@ mod tests {
 
     #[test]
     fn insert_one_entry() {
-        let mut container = UncheckedContainer::new();
+        let mut container = UncheckedMap::new();
 
         let entry = test_entry(1);
         let new_insert = container.insert(entry.clone());
@@ -163,7 +164,7 @@ mod tests {
 
     #[test]
     fn insert_two_entries_with_same_key() {
-        let mut container = UncheckedContainer::new();
+        let mut container = UncheckedMap::new();
 
         let entry = test_entry(1);
         let new_insert1 = container.insert(entry.clone());
@@ -178,7 +179,7 @@ mod tests {
 
     #[test]
     fn insert_two_entries_with_different_key() {
-        let mut container = UncheckedContainer::new();
+        let mut container = UncheckedMap::new();
 
         let new_insert1 = container.insert(test_entry(1));
         let new_insert2 = container.insert(test_entry(2));
@@ -192,7 +193,7 @@ mod tests {
 
     #[test]
     fn pop_front() {
-        let mut container = UncheckedContainer::new();
+        let mut container = UncheckedMap::new();
 
         container.insert(test_entry(1));
         let entry = test_entry(2);
@@ -210,7 +211,7 @@ mod tests {
 
     #[test]
     fn pop_front_twice() {
-        let mut container = UncheckedContainer::new();
+        let mut container = UncheckedMap::new();
 
         container.insert(test_entry(1));
         container.insert(test_entry(2));
@@ -223,7 +224,7 @@ mod tests {
 
     #[test]
     fn remove_by_key() {
-        let mut container = UncheckedContainer::new();
+        let mut container = UncheckedMap::new();
         container.insert(test_entry(1));
         let entry = test_entry(2);
         container.insert(entry.clone());

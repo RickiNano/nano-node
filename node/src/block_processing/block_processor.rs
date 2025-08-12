@@ -9,7 +9,7 @@ use rsnano_stats::{StatsCollection, StatsSource};
 
 use super::{
     backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,
-    BlockProcessorQueue, LedgerEvent, UncheckedMap,
+    BlockProcessorQueue, LedgerEvent, UncheckedBlockReenqueuer,
 };
 use crate::block_processing::block_batch_processor::BlockBatchProcessor;
 
@@ -17,7 +17,7 @@ pub struct BlockProcessor {
     threads: Mutex<Vec<JoinHandle<()>>>,
     queue: Arc<BlockProcessorQueue>,
     ledger: Arc<Ledger>,
-    unchecked: Arc<UncheckedMap>,
+    unchecked: Arc<UncheckedBlockReenqueuer>,
     process_stats: Arc<BlockBatchProcessorStats>,
     backlog_waiter: Arc<BacklogWaiter>,
     event_publisher: Mutex<Option<BackpressureSender<LedgerEvent>>>,
@@ -27,7 +27,7 @@ impl BlockProcessor {
     pub(crate) fn new(
         queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
-        unchecked: Arc<UncheckedMap>,
+        unchecked: Arc<UncheckedBlockReenqueuer>,
         backlog_waiter: Arc<BacklogWaiter>,
         event_publisher: BackpressureSender<LedgerEvent>,
     ) -> Self {

@@ -13,40 +13,49 @@ use rsnano_core::{
     Block, BlockHash,
 };
 use rsnano_stats::{DetailType, StatType, Stats};
-use unchecked_container::{Entry, UncheckedContainer};
+use unchecked_container::{Entry, UncheckedMap};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UncheckedKey {
-    pub previous: BlockHash,
-    pub hash: BlockHash,
+    /// Hash of the unfulfilled dependency (corresponding send block or previous block)
+    pub dependency_hash: BlockHash,
+    /// Hash of the unchceked block
+    pub unchecked_hash: BlockHash,
 }
 
 impl UncheckedKey {
     pub fn new(previous: BlockHash, hash: BlockHash) -> Self {
-        Self { previous, hash }
+        Self {
+            dependency_hash: previous,
+            unchecked_hash: hash,
+        }
     }
 }
 
-pub struct UncheckedMap {
+/// Re-enqueues an unchecked block when its missing dependency block got inserted into the ledger
+pub struct UncheckedBlockReenqueuer {
     join_handle: Mutex<Option<JoinHandle<()>>>,
     thread: Arc<UncheckedMapLoop>,
     mutable: Arc<Mutex<UncheckedState>>,
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
     max_unchecked_blocks: usize,
+    unchecked: Arc<Mutex<UncheckedMap>>,
 }
 
-impl UncheckedMap {
+impl UncheckedBlockReenqueuer {
     pub fn new(max_unchecked_blocks: usize, stats: Arc<Stats>, disable_delete: bool) -> Self {
         let mutable = Arc::new(Mutex::new(UncheckedState::new()));
         let condition = Arc::new(Condvar::new());
 
+        let unchecked = Arc::new(Mutex::new(UncheckedMap::new()));
         let thread = Arc::new(UncheckedMapLoop {
             disable_delete,
             state: mutable.clone(),
             condition: condition.clone(),
             stats: stats.clone(),
             back_buffer: Mutex::new(VecDeque::new()),
+            unchecked: unchecked.clone(),
         });
 
         Self {
@@ -56,6 +65,7 @@ impl UncheckedMap {
             condition,
             stats,
             max_unchecked_blocks,
+            unchecked,
         }
     }
 
@@ -82,11 +92,11 @@ impl UncheckedMap {
     }
 
     pub fn put(&self, dependency: BlockHash, block: Block) {
-        let mut lock = self.mutable.lock().unwrap();
+        let mut unchecked = self.unchecked.lock().unwrap();
         let key = UncheckedKey::new(dependency, block.hash());
-        let inserted = lock.entries_container.insert(Entry::new(key, block));
-        if lock.entries_container.len() > self.max_unchecked_blocks {
-            lock.entries_container.pop_front();
+        let inserted = unchecked.insert(Entry::new(key, block));
+        if unchecked.len() > self.max_unchecked_blocks {
+            unchecked.pop_front();
         }
         if inserted {
             self.stats.inc(StatType::Unchecked, DetailType::Put);
@@ -96,9 +106,9 @@ impl UncheckedMap {
     }
 
     pub fn get(&self, hash: BlockHash) -> Vec<Block> {
-        let lock = self.mutable.lock().unwrap();
+        let unchecked = self.unchecked.lock().unwrap();
         let mut result = Vec::new();
-        lock.entries_container.for_each_with_dependency(
+        unchecked.for_each_with_dependency(
             hash,
             |_, block| {
                 result.push(block.clone());
@@ -109,36 +119,31 @@ impl UncheckedMap {
     }
 
     pub fn clear(&self) {
-        let mut lock = self.mutable.lock().unwrap();
-        lock.entries_container.clear();
+        self.unchecked.lock().unwrap().clear();
     }
 
-    pub fn trigger(&self, dependency: BlockHash) {
+    pub fn block_processed(&self, block_hash: BlockHash) {
         let mut lock = self.mutable.lock().unwrap();
-        lock.processed_queue.push_back(dependency);
+        lock.processed_queue.push_back(block_hash);
         drop(lock);
         self.stats.inc(StatType::Unchecked, DetailType::Trigger);
         self.condition.notify_all(); // Notify run ()
     }
 
     pub fn remove(&self, key: &UncheckedKey) {
-        let mut lock = self.mutable.lock().unwrap();
-        lock.entries_container.remove(key);
+        self.unchecked.lock().unwrap().remove(key);
     }
 
     pub fn len(&self) -> usize {
-        let lock = self.mutable.lock().unwrap();
-        lock.entries_container.len()
+        self.unchecked.lock().unwrap().len()
     }
 
     pub fn is_empty(&self) -> bool {
-        let lock = self.mutable.lock().unwrap();
-        lock.entries_container.is_empty()
+        self.unchecked.lock().unwrap().is_empty()
     }
 
     pub fn buffer_count(&self) -> usize {
-        let lock = self.mutable.lock().unwrap();
-        lock.processed_queue.len()
+        self.mutable.lock().unwrap().processed_queue.len()
     }
 
     pub fn for_each(
@@ -146,8 +151,7 @@ impl UncheckedMap {
         action: impl FnMut(&UncheckedKey, &Block),
         predicate: impl FnMut() -> bool,
     ) {
-        let lock = self.mutable.lock().unwrap();
-        lock.entries_container.for_each(action, predicate)
+        self.unchecked.lock().unwrap().for_each(action, predicate)
     }
 
     pub fn for_each_with_dependency(
@@ -156,8 +160,9 @@ impl UncheckedMap {
         action: impl FnMut(&UncheckedKey, &Block),
         predicate: impl FnMut() -> bool,
     ) {
-        let lock = self.mutable.lock().unwrap();
-        lock.entries_container
+        self.unchecked
+            .lock()
+            .unwrap()
             .for_each_with_dependency(dependency, action, predicate)
     }
 
@@ -166,7 +171,7 @@ impl UncheckedMap {
     }
 }
 
-impl ContainerInfoProvider for UncheckedMap {
+impl ContainerInfoProvider for UncheckedBlockReenqueuer {
     fn container_info(&self) -> ContainerInfo {
         [
             ("entries", self.len(), 0),
@@ -176,13 +181,13 @@ impl ContainerInfoProvider for UncheckedMap {
     }
 }
 
-impl Default for UncheckedMap {
+impl Default for UncheckedBlockReenqueuer {
     fn default() -> Self {
         Self::new(65536, Arc::new(Stats::default()), false)
     }
 }
 
-impl Drop for UncheckedMap {
+impl Drop for UncheckedBlockReenqueuer {
     fn drop(&mut self) {
         debug_assert!(self.join_handle.lock().unwrap().is_none());
         self.stop()
@@ -192,7 +197,6 @@ impl Drop for UncheckedMap {
 struct UncheckedState {
     stopped: bool,
     processed_queue: VecDeque<BlockHash>,
-    entries_container: UncheckedContainer,
     satisfied_callback: Option<Box<dyn Fn(&Block) + Send>>,
 }
 
@@ -201,7 +205,6 @@ impl UncheckedState {
         Self {
             stopped: false,
             processed_queue: VecDeque::new(),
-            entries_container: UncheckedContainer::new(),
             satisfied_callback: None,
         }
     }
@@ -213,6 +216,7 @@ pub struct UncheckedMapLoop {
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
     back_buffer: Mutex<VecDeque<BlockHash>>,
+    unchecked: Arc<Mutex<UncheckedMap>>,
 }
 
 impl UncheckedMapLoop {
@@ -245,13 +249,13 @@ impl UncheckedMapLoop {
 
     pub fn query_impl(&self, hash: BlockHash) {
         let mut delete_queue = Vec::new();
-        let mut lock = self.state.lock().unwrap();
-        lock.entries_container.for_each_with_dependency(
+        let mut unchecked = self.unchecked.lock().unwrap();
+        unchecked.for_each_with_dependency(
             hash,
             |key, block| {
                 delete_queue.push(key.clone());
                 self.stats.inc(StatType::Unchecked, DetailType::Satisfied);
-                if let Some(callback) = &lock.satisfied_callback {
+                if let Some(callback) = &self.state.lock().unwrap().satisfied_callback {
                     callback(&block);
                 }
             },
@@ -260,7 +264,7 @@ impl UncheckedMapLoop {
 
         if !self.disable_delete {
             for key in &delete_queue {
-                lock.entries_container.remove(key);
+                unchecked.remove(key);
             }
         }
     }

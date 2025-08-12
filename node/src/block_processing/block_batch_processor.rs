@@ -14,12 +14,12 @@ use rsnano_core::utils::{backpressure_channel, BackpressureSender};
 use rsnano_ledger::{BlockError, Ledger};
 use rsnano_stats::{StatsCollection, StatsSource};
 
-use super::{BlockContext, BlockSource, LedgerEvent, UncheckedMap};
+use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer};
 use crate::block_processing::ProcessedResult;
 
 pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,
-    pub unchecked: Arc<UncheckedMap>,
+    pub unchecked: Arc<UncheckedBlockReenqueuer>,
     pub stats: Arc<BlockBatchProcessorStats>,
     pub event_publisher: BackpressureSender<LedgerEvent>,
 }
@@ -29,7 +29,7 @@ impl BlockBatchProcessor {
     pub fn new_null() -> Self {
         Self {
             ledger: Arc::new(Ledger::new_null()),
-            unchecked: Arc::new(UncheckedMap::default()),
+            unchecked: Arc::new(UncheckedBlockReenqueuer::default()),
             stats: Arc::new(BlockBatchProcessorStats::default()),
             event_publisher: backpressure_channel(0).0,
         }
@@ -105,7 +105,7 @@ impl BlockBatchProcessor {
 
             match status {
                 Ok(()) => {
-                    self.unchecked.trigger(hash);
+                    self.unchecked.block_processed(hash);
                 }
                 Err(BlockError::GapPrevious) => {
                     self.unchecked.put(block.previous(), block.clone());

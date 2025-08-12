@@ -45,7 +45,7 @@ use crate::{
     block_processing::{
         BacklogScan, BacklogWaiter, BlockContext, BlockProcessor, BlockProcessorQueue, BlockSource,
         BoundedBacklog, BoundedBacklogPlugin, LocalBlockBroadcaster, LocalBlockBroadcasterExt,
-        LocalBlockBroadcasterPlugin, ProcessQueueConfig, ProcessedResult, UncheckedMap,
+        LocalBlockBroadcasterPlugin, ProcessQueueConfig, ProcessedResult, UncheckedBlockReenqueuer,
     },
     block_rate_calculator::{BlockRateCalculator, CurrentBlockRates},
     bootstrap::{
@@ -104,7 +104,7 @@ pub struct Node {
     wallet_workers: Arc<dyn ThreadPool>,
     pub flags: NodeFlags,
     pub work_factory: Arc<WorkFactory>,
-    pub unchecked: Arc<UncheckedMap>,
+    pub unchecked: Arc<UncheckedBlockReenqueuer>,
     pub ledger: Arc<Ledger>,
     pub network: Arc<RwLock<Network>>,
     pub telemetry: Arc<Telemetry>,
@@ -397,7 +397,7 @@ impl Node {
         network_filter.age_cutoff = config.network_duplicate_filter_cutoff;
         let network_filter = Arc::new(network_filter);
 
-        let unchecked = Arc::new(UncheckedMap::new(
+        let unchecked = Arc::new(UncheckedBlockReenqueuer::new(
             config.max_unchecked_blocks as usize,
             stats.clone(),
             flags.disable_block_processor_unchecked_deletion,

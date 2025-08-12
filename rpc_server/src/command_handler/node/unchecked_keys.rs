@@ -11,7 +11,7 @@ impl RpcCommandHandler {
             args.key.into(),
             |key, block| {
                 let key_dto = UncheckedKeyDto {
-                    key: key.previous,
+                    key: key.dependency,
                     hash: block.hash(),
                     modified_timestamp: 0.into(), // not supported in RsNano
                     contents: block.json_representation(),

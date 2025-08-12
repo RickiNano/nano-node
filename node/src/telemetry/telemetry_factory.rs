@@ -9,7 +9,7 @@ use rsnano_messages::{TelemetryData, TelemetryMaker};
 use rsnano_network::{ChannelMode, Network};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 
-use crate::block_processing::UncheckedMap;
+use crate::block_processing::UncheckedBlockReenqueuer;
 
 use super::{get_pre_release_version, rsnano_version};
 
@@ -18,7 +18,7 @@ pub struct TelemetryFactory {
     pub ledger: Arc<Ledger>,
     pub network: Arc<RwLock<Network>>,
     pub node_id_key: PrivateKey,
-    pub unchecked: Arc<UncheckedMap>,
+    pub unchecked: Arc<UncheckedBlockReenqueuer>,
     pub startup_time: Timestamp,
     pub clock: Arc<SteadyClock>,
 }
