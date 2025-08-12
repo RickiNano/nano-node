@@ -1,11 +1,10 @@
-use std::{cmp::Ordering, collections::BTreeMap, sync::Arc};
+use std::{cmp::Ordering, collections::BTreeMap};
 
 use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
     Block, BlockHash,
 };
-
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_stats::{StatsCollection, StatsSource};
 
 /// A map of unchecked blocks and the hash of their missing dependency block
 #[derive(Clone)]
@@ -14,17 +13,19 @@ pub struct UncheckedMap {
     by_key: BTreeMap<UncheckedKey, usize>,
     by_id: BTreeMap<usize, Entry>,
     max_blocks: usize,
-    stats: Arc<Stats>,
+    inserted: u64,
+    duplicate: u64,
 }
 
 impl UncheckedMap {
-    pub fn new(max_blocks: usize, stats: Arc<Stats>) -> Self {
+    pub fn new(max_blocks: usize) -> Self {
         Self {
             by_id: BTreeMap::new(),
             by_key: BTreeMap::new(),
             next_id: 0,
             max_blocks,
-            stats,
+            inserted: 0,
+            duplicate: 0,
         }
     }
 
@@ -35,9 +36,9 @@ impl UncheckedMap {
             self.pop_front();
         }
         if inserted {
-            self.stats.inc(StatType::Unchecked, DetailType::Put);
+            self.inserted += 1;
         } else {
-            self.stats.inc(StatType::Unchecked, DetailType::Duplicate);
+            self.duplicate += 1;
         }
     }
 
@@ -122,13 +123,20 @@ impl UncheckedMap {
 
 impl Default for UncheckedMap {
     fn default() -> Self {
-        Self::new(1024 * 64, Arc::new(Stats::default()))
+        Self::new(1024 * 64)
     }
 }
 
 impl ContainerInfoProvider for UncheckedMap {
     fn container_info(&self) -> ContainerInfo {
         [("entries", self.len(), 0)].into()
+    }
+}
+
+impl StatsSource for UncheckedMap {
+    fn collect_stats(&self, result: &mut StatsCollection) {
+        result.insert("unchecked", "put", self.inserted);
+        result.insert("unchecked", "duplicate", self.duplicate);
     }
 }
 

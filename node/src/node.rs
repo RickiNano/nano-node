@@ -106,7 +106,6 @@ pub struct Node {
     pub flags: NodeFlags,
     pub work_factory: Arc<WorkFactory>,
     pub unchecked: Arc<Mutex<UncheckedMap>>,
-    unchecked_reenqueuer: UncheckedBlockReenqueuer,
     pub ledger: Arc<Ledger>,
     pub network: Arc<RwLock<Network>>,
     pub telemetry: Arc<Telemetry>,
@@ -163,6 +162,7 @@ pub struct Node {
     block_rate_calculator: TimerThread<BlockRateCalculator>,
     pub block_rates: Arc<CurrentBlockRates>,
     aec_voter: TimerThread<AecVoter>,
+    unchecked_reenqueuer: TimerThread<UncheckedBlockReenqueuer>,
 }
 
 pub(crate) struct NodeArgs {
@@ -401,10 +401,7 @@ impl Node {
 
         let unchecked = Arc::new(Mutex::new(UncheckedMap::new(
             config.max_unchecked_blocks as usize,
-            stats.clone(),
         )));
-
-        let unchecked_reenqueuer = UncheckedBlockReenqueuer::new(unchecked.clone());
 
         let online_reps = Arc::new(Mutex::new(
             OnlineReps::builder()
@@ -496,6 +493,12 @@ impl Node {
 
         let block_processor_config = ProcessQueueConfig::from(global_config);
         let block_processor_queue = Arc::new(BlockProcessorQueue::new(block_processor_config));
+
+        let unchecked_reenqueuer = UncheckedBlockReenqueuer::new(
+            unchecked.clone(),
+            ledger.clone(),
+            block_processor_queue.clone(),
+        );
 
         let mut wallets_path = application_path.clone();
         wallets_path.push("wallets.ldb");
@@ -1228,6 +1231,7 @@ impl Node {
         stats_collector.add_source(conf_time_stats);
         stats_collector.add_source(winner_block_broadcaster.clone());
         stats_collector.add_source(bootstrapper.clone());
+        stats_collector.add_source(unchecked.clone());
 
         let mut container_info = ContainerInfoFactory::new();
         container_info.add("work", work_factory.clone());
@@ -1268,7 +1272,7 @@ impl Node {
             workers,
             wallet_workers,
             work_factory,
-            unchecked_reenqueuer,
+            unchecked_reenqueuer: TimerThread::new("Unchecked", unchecked_reenqueuer),
             unchecked,
             telemetry,
             network,
@@ -1563,7 +1567,7 @@ impl Node {
             self.receivable_search.start();
         }
 
-        self.unchecked_reenqueuer.start();
+        self.unchecked_reenqueuer.start(Duration::from_millis(1000));
         self.wallets.start();
         self.rep_tiers_calculator.start(if is_dev_network {
             Duration::from_millis(500)
@@ -1769,6 +1773,23 @@ mod tests {
             vec![TimerStartEvent {
                 thread_name: "Blk rate".to_string(),
                 interval: Duration::from_millis(500),
+                start_type: TimerStartType::Start
+            }]
+        );
+    }
+
+    #[test]
+    fn start_unchecked_reenqueuer() {
+        let mut node = TestNode::new();
+        let start_tracker = node.unchecked_reenqueuer.track_start();
+
+        node.start();
+
+        assert_eq!(
+            start_tracker.output(),
+            vec![TimerStartEvent {
+                thread_name: "Unchecked".to_string(),
+                interval: Duration::from_millis(1000),
                 start_type: TimerStartType::Start
             }]
         );
