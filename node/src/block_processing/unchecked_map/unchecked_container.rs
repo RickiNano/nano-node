@@ -89,6 +89,14 @@ impl UncheckedMap {
         self.blocks_dependend_on(dependency_hash).next().is_some()
     }
 
+    pub fn pop_dependend_blocks(&mut self, dependency_hash: BlockHash, result: &mut Vec<Block>) {
+        result.clear();
+        result.extend(self.blocks_dependend_on(dependency_hash).cloned());
+        for block in result.iter() {
+            self.remove(dependency_hash, block.hash());
+        }
+    }
+
     pub fn blocks_dependend_on(&self, dependency_hash: BlockHash) -> impl Iterator<Item = &Block> {
         self.by_key
             .range(UncheckedKey::new(dependency_hash, BlockHash::zero())..)
