@@ -31,7 +31,7 @@ fn test_unchecked() {
 
     assert_timely_msg(
         Duration::from_secs(10),
-        || node.unchecked.len() == 2,
+        || node.unchecked_reenqueuer.len() == 2,
         "Expected 2 unchecked blocks after 10 seconds",
     );
 

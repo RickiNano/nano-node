@@ -87,10 +87,6 @@ impl UncheckedBlockReenqueuer {
         }
     }
 
-    pub fn put(&self, dependency: BlockHash, block: Block) {
-        self.unchecked.lock().unwrap().put(dependency, block);
-    }
-
     pub fn get(&self, hash: BlockHash) -> Vec<Block> {
         let unchecked = self.unchecked.lock().unwrap();
         let mut result = Vec::new();

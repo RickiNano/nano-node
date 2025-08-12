@@ -7,7 +7,7 @@ impl RpcCommandHandler {
         let count = args.count.unwrap_or(u64::MAX.into()).inner();
         let unchecked_keys = RefCell::new(Vec::new());
 
-        self.node.unchecked.for_each_with_dependency(
+        self.node.unchecked_reenqueuer.for_each_with_dependency(
             args.key.into(),
             |key, block| {
                 let key_dto = UncheckedKeyDto {

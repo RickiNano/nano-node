@@ -16,7 +16,7 @@ impl RpcCommandHandler {
         let mut result = None;
         let done = RefCell::new(false);
 
-        self.node.unchecked.for_each(
+        self.node.unchecked_reenqueuer.for_each(
             |key: &UncheckedKey, block: &Block| {
                 if key.unchecked_hash == args.hash {
                     result = Some(UncheckedGetResponse {

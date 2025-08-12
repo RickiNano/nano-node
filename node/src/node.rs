@@ -105,7 +105,8 @@ pub struct Node {
     wallet_workers: Arc<dyn ThreadPool>,
     pub flags: NodeFlags,
     pub work_factory: Arc<WorkFactory>,
-    pub unchecked: Arc<UncheckedBlockReenqueuer>,
+    pub unchecked: Arc<Mutex<UncheckedMap>>,
+    pub unchecked_reenqueuer: Arc<UncheckedBlockReenqueuer>,
     pub ledger: Arc<Ledger>,
     pub network: Arc<RwLock<Network>>,
     pub telemetry: Arc<Telemetry>,
@@ -403,8 +404,10 @@ impl Node {
             stats.clone(),
         )));
 
-        let unchecked_reenqueuer =
-            Arc::new(UncheckedBlockReenqueuer::new(unchecked, stats.clone()));
+        let unchecked_reenqueuer = Arc::new(UncheckedBlockReenqueuer::new(
+            unchecked.clone(),
+            stats.clone(),
+        ));
 
         let online_reps = Arc::new(Mutex::new(
             OnlineReps::builder()
@@ -885,6 +888,7 @@ impl Node {
         let block_processor = Arc::new(BlockProcessor::new(
             block_processor_queue.clone(),
             ledger.clone(),
+            unchecked.clone(),
             unchecked_reenqueuer.clone(),
             backlog_waiter.clone(),
             ledger_tx_clone,
@@ -1280,7 +1284,8 @@ impl Node {
             workers,
             wallet_workers,
             work_factory,
-            unchecked: unchecked_reenqueuer,
+            unchecked_reenqueuer,
+            unchecked,
             telemetry,
             network,
             ledger,
@@ -1574,7 +1579,7 @@ impl Node {
             self.receivable_search.start();
         }
 
-        self.unchecked.start();
+        self.unchecked_reenqueuer.start();
         self.wallets.start();
         self.rep_tiers_calculator.start(if is_dev_network {
             Duration::from_millis(500)
@@ -1651,7 +1656,7 @@ impl Node {
         self.bootstrapper.stop();
         self.bounded_backlog.stop();
         self.rep_crawler.stop();
-        self.unchecked.stop();
+        self.unchecked_reenqueuer.stop();
         self.block_processor.stop();
         self.request_aggregator.stop();
         self.vote_cache_processor.stop();

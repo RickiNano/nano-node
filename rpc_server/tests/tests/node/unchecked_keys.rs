@@ -32,7 +32,7 @@ fn test_unchecked_keys() {
     assert_timely_msg(
         Duration::from_secs(30),
         || {
-            let len = node.unchecked.len();
+            let len = node.unchecked_reenqueuer.len();
             len == 1
         },
         "Expected 1 unchecked block after 30 seconds",
@@ -43,7 +43,7 @@ fn test_unchecked_keys() {
     assert_timely_msg(
         Duration::from_secs(30),
         || {
-            let len = node.unchecked.len();
+            let len = node.unchecked_reenqueuer.len();
             len == 2
         },
         "Expected 2 unchecked blocks after 30 seconds",

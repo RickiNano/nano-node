@@ -19,7 +19,8 @@ use crate::block_processing::ProcessedResult;
 
 pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,
-    pub unchecked: Arc<UncheckedBlockReenqueuer>,
+    pub unchecked_reenqueuer: Arc<UncheckedBlockReenqueuer>,
+    pub unchecked: Arc<Mutex<UncheckedMap>>,
     pub stats: Arc<BlockBatchProcessorStats>,
     pub event_publisher: BackpressureSender<LedgerEvent>,
 }
@@ -31,7 +32,8 @@ impl BlockBatchProcessor {
         let unchecked = Arc::new(Mutex::new(UncheckedMap::default()));
         Self {
             ledger: Arc::new(Ledger::new_null()),
-            unchecked: Arc::new(UncheckedBlockReenqueuer::new(unchecked, stats)),
+            unchecked_reenqueuer: Arc::new(UncheckedBlockReenqueuer::new(unchecked.clone(), stats)),
+            unchecked,
             stats: Arc::new(BlockBatchProcessorStats::default()),
             event_publisher: backpressure_channel(0).0,
         }
@@ -107,13 +109,19 @@ impl BlockBatchProcessor {
 
             match status {
                 Ok(()) => {
-                    self.unchecked.block_processed(hash);
+                    self.unchecked_reenqueuer.block_processed(hash);
                 }
                 Err(BlockError::GapPrevious) => {
-                    self.unchecked.put(block.previous(), block.clone());
+                    self.unchecked
+                        .lock()
+                        .unwrap()
+                        .put(block.previous(), block.clone());
                 }
                 Err(BlockError::GapSource) => {
-                    self.unchecked.put(block.source_or_link(), block.clone());
+                    self.unchecked
+                        .lock()
+                        .unwrap()
+                        .put(block.source_or_link(), block.clone());
                 }
                 Err(BlockError::GapEpochOpenPending) => {}
                 Err(BlockError::Old) => {

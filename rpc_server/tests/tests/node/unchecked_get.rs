@@ -24,7 +24,7 @@ fn unchecked_get() {
 
     assert_timely_msg(
         Duration::from_secs(10),
-        || node.unchecked.len() == 1,
+        || node.unchecked_reenqueuer.len() == 1,
         "Expected 1 unchecked block after 10 seconds",
     );
 

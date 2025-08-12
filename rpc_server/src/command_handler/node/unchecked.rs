@@ -10,7 +10,7 @@ impl RpcCommandHandler {
         let mut blocks = HashMap::new();
 
         let mut iterations = 0;
-        self.node.unchecked.for_each(
+        self.node.unchecked_reenqueuer.for_each(
             |_key, block| {
                 let json_block = block.json_representation();
                 blocks.insert(block.hash(), json_block);

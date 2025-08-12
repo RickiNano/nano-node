@@ -198,7 +198,11 @@ fn unchecked_epoch() {
     ));
 
     // Waits for the epoch1 block to pass through block_processor and unchecked.put queues
-    assert_timely_eq(Duration::from_secs(10), || node1.unchecked.len(), 1);
+    assert_timely_eq(
+        Duration::from_secs(10),
+        || node1.unchecked_reenqueuer.len(),
+        1,
+    );
     node1.block_processor_queue.push(BlockContext::new(
         send1.into(),
         BlockSource::Live,
@@ -212,7 +216,11 @@ fn unchecked_epoch() {
     assert_timely2(|| node1.ledger.any().block_exists(&epoch1.hash()));
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
-    assert_timely_eq(Duration::from_secs(10), || node1.unchecked.len(), 0);
+    assert_timely_eq(
+        Duration::from_secs(10),
+        || node1.unchecked_reenqueuer.len(),
+        0,
+    );
     let info = node1
         .ledger
         .any()
@@ -269,7 +277,11 @@ fn unchecked_epoch_invalid() {
     ));
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
-    assert_timely_eq(Duration::from_secs(10), || node1.unchecked.len(), 2);
+    assert_timely_eq(
+        Duration::from_secs(10),
+        || node1.unchecked_reenqueuer.len(),
+        2,
+    );
     node1.block_processor_queue.push(BlockContext::new(
         send1.into(),
         BlockSource::Live,
@@ -288,7 +300,7 @@ fn unchecked_epoch_invalid() {
 
     let any = node1.ledger.any();
     assert_eq!(any.block_exists(&epoch1.hash()), false);
-    assert_eq!(node1.unchecked.len(), 0);
+    assert_eq!(node1.unchecked_reenqueuer.len(), 0);
     let info = any.get_account(&destination.account()).unwrap();
     assert_eq!(info.epoch, Epoch::Epoch0);
     let epoch2_store = node1.block(&epoch2.hash()).unwrap();
@@ -323,7 +335,7 @@ fn unchecked_open() {
     ));
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
-    assert_timely_eq2(|| node1.unchecked.len(), 1);
+    assert_timely_eq2(|| node1.unchecked_reenqueuer.len(), 1);
     // When open1 existists in unchecked, we know open2 has been processed.
     node1.block_processor_queue.push(BlockContext::new(
         send1.into(),
@@ -332,7 +344,7 @@ fn unchecked_open() {
     ));
     // Waits for the send1 block to pass through block_processor and unchecked.put queues
     assert_timely2(|| node1.block_exists(&open1.hash()));
-    assert_eq!(node1.unchecked.len(), 0);
+    assert_eq!(node1.unchecked_reenqueuer.len(), 0);
 }
 
 #[test]
@@ -356,14 +368,15 @@ fn unchecked_receive() {
         BlockSource::Live,
         ChannelId::LOOPBACK,
     ));
-    let check_block_is_listed = |hash: &BlockHash| !node1.unchecked.get(*hash).is_empty();
+    let check_block_is_listed =
+        |hash: &BlockHash| !node1.unchecked_reenqueuer.get(*hash).is_empty();
     // Previous block for receive1 is unknown, signature cannot be validated
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
     assert_timely(Duration::from_secs(15), || {
         check_block_is_listed(&receive1.previous())
     });
-    assert_eq!(node1.unchecked.get(receive1.previous()).len(), 1);
+    assert_eq!(node1.unchecked_reenqueuer.get(receive1.previous()).len(), 1);
 
     // Waits for the open1 block to pass through block_processor and unchecked.put queues
     node1.block_processor_queue.push(BlockContext::new(
@@ -375,7 +388,13 @@ fn unchecked_receive() {
         check_block_is_listed(&receive1.source_or_link())
     });
     // Previous block for receive1 is known, signature was validated
-    assert_eq!(node1.unchecked.get(receive1.source_or_link()).len(), 1);
+    assert_eq!(
+        node1
+            .unchecked_reenqueuer
+            .get(receive1.source_or_link())
+            .len(),
+        1
+    );
     node1.block_processor_queue.push(BlockContext::new(
         send2.clone().into(),
         BlockSource::Live,
@@ -384,5 +403,5 @@ fn unchecked_receive() {
     assert_timely(Duration::from_secs(10), || {
         node1.block_exists(&receive1.hash())
     });
-    assert_eq!(node1.unchecked.len(), 0);
+    assert_eq!(node1.unchecked_reenqueuer.len(), 0);
 }
