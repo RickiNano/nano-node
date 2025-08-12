@@ -119,6 +119,17 @@ impl UncheckedMap {
         self.by_key.contains_key(key)
     }
 
+    pub fn contains_dependency(&self, dependency_hash: BlockHash) -> bool {
+        self.blocks_dependend_on(dependency_hash).next().is_some()
+    }
+
+    pub fn blocks_dependend_on(&self, dependency_hash: BlockHash) -> impl Iterator<Item = &Block> {
+        self.by_key
+            .range(UncheckedKey::new(dependency_hash, BlockHash::zero())..)
+            .take_while(move |(k, _)| k.dependency_hash == dependency_hash)
+            .map(|(_, id)| &self.by_id.get(id).unwrap().block)
+    }
+
     pub fn for_each(
         &self,
         mut action: impl FnMut(&UncheckedKey, &Block),
@@ -160,6 +171,7 @@ mod tests {
     use rsnano_core::Block;
 
     use super::*;
+    use ntest::assert_false;
 
     #[test]
     fn empty() {
@@ -168,7 +180,9 @@ mod tests {
         assert_eq!(unchecked.by_id.len(), 0);
         assert_eq!(unchecked.by_key.len(), 0);
         assert_eq!(unchecked.len(), 0);
+        assert_false!(unchecked.contains_dependency(1.into()));
         assert!(unchecked.is_empty());
+        assert_eq!(unchecked.blocks_dependend_on(1.into()).count(), 0);
     }
 
     #[test]
@@ -184,6 +198,13 @@ mod tests {
         assert_eq!(unchecked.by_key.len(), 1);
         assert_eq!(unchecked.by_key.get(&entry.key).unwrap(), &0);
         assert_eq!(new_insert, true);
+        assert!(unchecked.contains_dependency(entry.key.dependency_hash));
+        assert_eq!(
+            unchecked
+                .blocks_dependend_on(entry.key.dependency_hash)
+                .count(),
+            1
+        );
     }
 
     #[test]
@@ -213,6 +234,8 @@ mod tests {
         assert_eq!(unchecked.by_key.len(), 2);
         assert_eq!(new_insert1, true);
         assert_eq!(new_insert2, true);
+        assert!(unchecked.contains_dependency(1.into()));
+        assert!(unchecked.contains_dependency(2.into()));
     }
 
     #[test]

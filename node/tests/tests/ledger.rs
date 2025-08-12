@@ -369,14 +369,20 @@ fn unchecked_receive() {
         ChannelId::LOOPBACK,
     ));
     let check_block_is_listed =
-        |hash: &BlockHash| !node1.unchecked_reenqueuer.get(*hash).is_empty();
+        |hash: &BlockHash| node1.unchecked.lock().unwrap().contains_dependency(*hash);
     // Previous block for receive1 is unknown, signature cannot be validated
 
     // Waits for the last blocks to pass through block_processor and unchecked.put queues
-    assert_timely(Duration::from_secs(15), || {
-        check_block_is_listed(&receive1.previous())
-    });
-    assert_eq!(node1.unchecked_reenqueuer.get(receive1.previous()).len(), 1);
+    assert_timely2(|| check_block_is_listed(&receive1.previous()));
+    assert_eq!(
+        node1
+            .unchecked
+            .lock()
+            .unwrap()
+            .blocks_dependend_on(receive1.previous())
+            .count(),
+        1
+    );
 
     // Waits for the open1 block to pass through block_processor and unchecked.put queues
     node1.block_processor_queue.push(BlockContext::new(
@@ -384,15 +390,15 @@ fn unchecked_receive() {
         BlockSource::Live,
         ChannelId::LOOPBACK,
     ));
-    assert_timely(Duration::from_secs(15), || {
-        check_block_is_listed(&receive1.source_or_link())
-    });
+    assert_timely2(|| check_block_is_listed(&receive1.source_or_link()));
     // Previous block for receive1 is known, signature was validated
     assert_eq!(
         node1
-            .unchecked_reenqueuer
-            .get(receive1.source_or_link())
-            .len(),
+            .unchecked
+            .lock()
+            .unwrap()
+            .blocks_dependend_on(receive1.source_or_link())
+            .count(),
         1
     );
     node1.block_processor_queue.push(BlockContext::new(
@@ -400,8 +406,6 @@ fn unchecked_receive() {
         BlockSource::Live,
         ChannelId::LOOPBACK,
     ));
-    assert_timely(Duration::from_secs(10), || {
-        node1.block_exists(&receive1.hash())
-    });
+    assert_timely2(|| node1.block_exists(&receive1.hash()));
     assert_eq!(node1.unchecked_reenqueuer.len(), 0);
 }
