@@ -2,7 +2,7 @@ use std::{
     collections::VecDeque,
     sync::{
         atomic::{AtomicU64, Ordering::Relaxed},
-        Arc,
+        Arc, Mutex,
     },
     time::{Duration, Instant},
 };
@@ -12,9 +12,9 @@ use tracing::{debug, warn};
 
 use rsnano_core::utils::{backpressure_channel, BackpressureSender};
 use rsnano_ledger::{BlockError, Ledger};
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_stats::{Stats, StatsCollection, StatsSource};
 
-use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer};
+use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap};
 use crate::block_processing::ProcessedResult;
 
 pub(crate) struct BlockBatchProcessor {
@@ -27,9 +27,11 @@ pub(crate) struct BlockBatchProcessor {
 impl BlockBatchProcessor {
     #[allow(dead_code)]
     pub fn new_null() -> Self {
+        let stats = Arc::new(Stats::default());
+        let unchecked = Arc::new(Mutex::new(UncheckedMap::default()));
         Self {
             ledger: Arc::new(Ledger::new_null()),
-            unchecked: Arc::new(UncheckedBlockReenqueuer::default()),
+            unchecked: Arc::new(UncheckedBlockReenqueuer::new(unchecked, stats)),
             stats: Arc::new(BlockBatchProcessorStats::default()),
             event_publisher: backpressure_channel(0).0,
         }

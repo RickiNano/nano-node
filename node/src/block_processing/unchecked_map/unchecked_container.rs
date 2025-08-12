@@ -39,7 +39,7 @@ impl Ord for Entry {
 
 /// A map of unchecked blocks and the hash of their missing dependency block
 #[derive(Clone)]
-pub(super) struct UncheckedMap {
+pub struct UncheckedMap {
     next_id: usize,
     by_key: BTreeMap<UncheckedKey, usize>,
     by_id: BTreeMap<usize, Entry>,
@@ -162,101 +162,103 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empty_container() {
-        let container = UncheckedMap::default();
-        assert_eq!(container.next_id, 0);
-        assert_eq!(container.by_id.len(), 0);
-        assert_eq!(container.by_key.len(), 0);
+    fn empty() {
+        let unchecked = UncheckedMap::default();
+        assert_eq!(unchecked.next_id, 0);
+        assert_eq!(unchecked.by_id.len(), 0);
+        assert_eq!(unchecked.by_key.len(), 0);
+        assert_eq!(unchecked.len(), 0);
+        assert!(unchecked.is_empty());
     }
 
     #[test]
     fn insert_one_entry() {
-        let mut container = UncheckedMap::default();
+        let mut unchecked = UncheckedMap::default();
 
         let entry = test_entry(1);
-        let new_insert = container.insert(entry.clone());
+        let new_insert = unchecked.insert(entry.clone());
 
-        assert_eq!(container.next_id, 1);
-        assert_eq!(container.by_id.len(), 1);
-        assert_eq!(container.by_id.get(&0).unwrap(), &entry);
-        assert_eq!(container.by_key.len(), 1);
-        assert_eq!(container.by_key.get(&entry.key).unwrap(), &0);
+        assert_eq!(unchecked.next_id, 1);
+        assert_eq!(unchecked.by_id.len(), 1);
+        assert_eq!(unchecked.by_id.get(&0).unwrap(), &entry);
+        assert_eq!(unchecked.by_key.len(), 1);
+        assert_eq!(unchecked.by_key.get(&entry.key).unwrap(), &0);
         assert_eq!(new_insert, true);
     }
 
     #[test]
     fn insert_two_entries_with_same_key() {
-        let mut container = UncheckedMap::default();
+        let mut unchecked = UncheckedMap::default();
 
         let entry = test_entry(1);
-        let new_insert1 = container.insert(entry.clone());
-        let new_insert2 = container.insert(entry);
+        let new_insert1 = unchecked.insert(entry.clone());
+        let new_insert2 = unchecked.insert(entry);
 
-        assert_eq!(container.next_id, 1);
-        assert_eq!(container.by_id.len(), 1);
-        assert_eq!(container.by_key.len(), 1);
+        assert_eq!(unchecked.next_id, 1);
+        assert_eq!(unchecked.by_id.len(), 1);
+        assert_eq!(unchecked.by_key.len(), 1);
         assert_eq!(new_insert1, true);
         assert_eq!(new_insert2, false);
     }
 
     #[test]
     fn insert_two_entries_with_different_key() {
-        let mut container = UncheckedMap::default();
+        let mut unchecked = UncheckedMap::default();
 
-        let new_insert1 = container.insert(test_entry(1));
-        let new_insert2 = container.insert(test_entry(2));
+        let new_insert1 = unchecked.insert(test_entry(1));
+        let new_insert2 = unchecked.insert(test_entry(2));
 
-        assert_eq!(container.next_id, 2);
-        assert_eq!(container.by_id.len(), 2);
-        assert_eq!(container.by_key.len(), 2);
+        assert_eq!(unchecked.next_id, 2);
+        assert_eq!(unchecked.by_id.len(), 2);
+        assert_eq!(unchecked.by_key.len(), 2);
         assert_eq!(new_insert1, true);
         assert_eq!(new_insert2, true);
     }
 
     #[test]
     fn pop_front() {
-        let mut container = UncheckedMap::default();
+        let mut unchecked = UncheckedMap::default();
 
-        container.insert(test_entry(1));
+        unchecked.insert(test_entry(1));
         let entry = test_entry(2);
-        container.insert(entry.clone());
+        unchecked.insert(entry.clone());
 
-        container.pop_front();
+        unchecked.pop_front();
 
-        assert_eq!(container.next_id, 2);
-        assert_eq!(container.by_id.len(), 1);
-        assert_eq!(container.by_id.get(&1).is_some(), true);
-        assert_eq!(container.by_key.len(), 1);
-        assert_eq!(container.by_key.get(&entry.key).unwrap(), &1);
-        assert_eq!(container.len(), 1);
+        assert_eq!(unchecked.next_id, 2);
+        assert_eq!(unchecked.by_id.len(), 1);
+        assert_eq!(unchecked.by_id.get(&1).is_some(), true);
+        assert_eq!(unchecked.by_key.len(), 1);
+        assert_eq!(unchecked.by_key.get(&entry.key).unwrap(), &1);
+        assert_eq!(unchecked.len(), 1);
     }
 
     #[test]
     fn pop_front_twice() {
-        let mut container = UncheckedMap::default();
+        let mut unchecked = UncheckedMap::default();
 
-        container.insert(test_entry(1));
-        container.insert(test_entry(2));
+        unchecked.insert(test_entry(1));
+        unchecked.insert(test_entry(2));
 
-        container.pop_front();
-        container.pop_front();
+        unchecked.pop_front();
+        unchecked.pop_front();
 
-        assert_eq!(container.len(), 0);
+        assert_eq!(unchecked.len(), 0);
     }
 
     #[test]
     fn remove_by_key() {
-        let mut container = UncheckedMap::default();
-        container.insert(test_entry(1));
+        let mut unchecked = UncheckedMap::default();
+        unchecked.insert(test_entry(1));
         let entry = test_entry(2);
-        container.insert(entry.clone());
+        unchecked.insert(entry.clone());
 
-        container.remove(&entry.key);
+        unchecked.remove(&entry.key);
 
-        assert_eq!(container.len(), 1);
-        assert_eq!(container.by_id.len(), 1);
-        assert_eq!(container.by_key.len(), 1);
-        assert_eq!(container.exists(&entry.key), false);
+        assert_eq!(unchecked.len(), 1);
+        assert_eq!(unchecked.by_id.len(), 1);
+        assert_eq!(unchecked.by_key.len(), 1);
+        assert_eq!(unchecked.exists(&entry.key), false);
     }
 
     fn test_entry<T: Into<BlockHash>>(hash: T) -> Entry {

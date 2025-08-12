@@ -46,6 +46,7 @@ use crate::{
         BacklogScan, BacklogWaiter, BlockContext, BlockProcessor, BlockProcessorQueue, BlockSource,
         BoundedBacklog, BoundedBacklogPlugin, LocalBlockBroadcaster, LocalBlockBroadcasterExt,
         LocalBlockBroadcasterPlugin, ProcessQueueConfig, ProcessedResult, UncheckedBlockReenqueuer,
+        UncheckedMap,
     },
     block_rate_calculator::{BlockRateCalculator, CurrentBlockRates},
     bootstrap::{
@@ -397,11 +398,13 @@ impl Node {
         network_filter.age_cutoff = config.network_duplicate_filter_cutoff;
         let network_filter = Arc::new(network_filter);
 
-        let unchecked = Arc::new(UncheckedBlockReenqueuer::new(
+        let unchecked = Arc::new(Mutex::new(UncheckedMap::new(
             config.max_unchecked_blocks as usize,
             stats.clone(),
-            flags.disable_block_processor_unchecked_deletion,
-        ));
+        )));
+
+        let unchecked_reenqueuer =
+            Arc::new(UncheckedBlockReenqueuer::new(unchecked, stats.clone()));
 
         let online_reps = Arc::new(Mutex::new(
             OnlineReps::builder()
@@ -442,7 +445,7 @@ impl Node {
             ledger: ledger.clone(),
             network: network.clone(),
             node_id_key: node_id_key.clone(),
-            unchecked: unchecked.clone(),
+            unchecked: unchecked_reenqueuer.clone(),
             startup_time: steady_clock.now(),
             clock: steady_clock.clone(),
         };
@@ -882,7 +885,7 @@ impl Node {
         let block_processor = Arc::new(BlockProcessor::new(
             block_processor_queue.clone(),
             ledger.clone(),
-            unchecked.clone(),
+            unchecked_reenqueuer.clone(),
             backlog_waiter.clone(),
             ledger_tx_clone,
         ));
@@ -969,7 +972,7 @@ impl Node {
 
         // Requeue blocks that could not be immediately processed
         let queue_w = Arc::downgrade(&block_processor_queue);
-        unchecked.set_satisfied_observer(Box::new(move |block| {
+        unchecked_reenqueuer.set_satisfied_observer(Box::new(move |block| {
             if let Some(queue) = queue_w.upgrade() {
                 queue.push(BlockContext::new(
                     block.clone(),
@@ -1258,7 +1261,7 @@ impl Node {
         container_info.add("vote_cache", vote_cache.clone());
         container_info.add("vote_generators", vote_generators.clone());
         container_info.add("bootstrapper", bootstrapper.clone());
-        container_info.add("unchecked", unchecked.clone());
+        container_info.add("unchecked", unchecked_reenqueuer.clone());
         container_info.add("local_block_broadcaster", local_block_broadcaster.clone());
         container_info.add("rep_tiers", rep_tiers.clone());
         container_info.add("inbound_msg_queue", inbound_message_queue.clone());
@@ -1277,7 +1280,7 @@ impl Node {
             workers,
             wallet_workers,
             work_factory,
-            unchecked,
+            unchecked: unchecked_reenqueuer,
             telemetry,
             network,
             ledger,
