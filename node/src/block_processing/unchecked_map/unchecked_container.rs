@@ -1,11 +1,12 @@
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::{cmp::Ordering, collections::BTreeMap, sync::Arc};
 
 use rsnano_core::{Block, BlockHash};
 
 use super::UncheckedKey;
+use rsnano_stats::{DetailType, StatType, Stats};
 
 #[derive(Clone, Debug)]
-pub(super) struct Entry {
+struct Entry {
     key: UncheckedKey,
     block: Block,
 }
@@ -37,23 +38,40 @@ impl Ord for Entry {
 }
 
 /// A map of unchecked blocks and the hash of their missing dependency block
-#[derive(Default, Clone, Debug)]
+#[derive(Clone)]
 pub(super) struct UncheckedMap {
     next_id: usize,
     by_key: BTreeMap<UncheckedKey, usize>,
     by_id: BTreeMap<usize, Entry>,
+    max_blocks: usize,
+    stats: Arc<Stats>,
 }
 
 impl UncheckedMap {
-    pub fn new() -> Self {
+    pub fn new(max_blocks: usize, stats: Arc<Stats>) -> Self {
         Self {
             by_id: BTreeMap::new(),
             by_key: BTreeMap::new(),
             next_id: 0,
+            max_blocks,
+            stats,
         }
     }
 
-    pub fn insert(&mut self, entry: Entry) -> bool {
+    pub fn put(&mut self, dependency: BlockHash, block: Block) {
+        let key = UncheckedKey::new(dependency, block.hash());
+        let inserted = self.insert(Entry::new(key, block));
+        if self.len() > self.max_blocks {
+            self.pop_front();
+        }
+        if inserted {
+            self.stats.inc(StatType::Unchecked, DetailType::Put);
+        } else {
+            self.stats.inc(StatType::Unchecked, DetailType::Duplicate);
+        }
+    }
+
+    fn insert(&mut self, entry: Entry) -> bool {
         match self.by_key.get(&entry.key) {
             Some(_key) => false,
             None => {
@@ -71,11 +89,9 @@ impl UncheckedMap {
         self.len() == 0
     }
 
-    pub fn remove(&mut self, key: &UncheckedKey) -> Option<Entry> {
+    pub fn remove(&mut self, key: &UncheckedKey) {
         if let Some(id) = self.by_key.remove(key) {
-            self.by_id.remove(&id)
-        } else {
-            None
+            self.by_id.remove(&id);
         }
     }
 
@@ -83,7 +99,7 @@ impl UncheckedMap {
         self.by_id.len()
     }
 
-    pub fn pop_front(&mut self) -> Option<Entry> {
+    fn pop_front(&mut self) -> Option<Entry> {
         if let Some((_id, entry)) = self.by_id.pop_first() {
             self.by_key.remove(&entry.key);
             Some(entry)
@@ -124,12 +140,18 @@ impl UncheckedMap {
     ) {
         let key = UncheckedKey::new(dependency, BlockHash::zero());
         for (key, id) in self.by_key.range(key..) {
-            if !predicate() || key.dependency != dependency.into() {
+            if !predicate() || key.dependency_hash != dependency.into() {
                 break;
             }
             let entry = self.by_id.get(id).unwrap();
             action(&entry.key, &entry.block);
         }
+    }
+}
+
+impl Default for UncheckedMap {
+    fn default() -> Self {
+        Self::new(1024 * 64, Arc::new(Stats::default()))
     }
 }
 
@@ -141,7 +163,7 @@ mod tests {
 
     #[test]
     fn empty_container() {
-        let container = UncheckedMap::new();
+        let container = UncheckedMap::default();
         assert_eq!(container.next_id, 0);
         assert_eq!(container.by_id.len(), 0);
         assert_eq!(container.by_key.len(), 0);
@@ -149,7 +171,7 @@ mod tests {
 
     #[test]
     fn insert_one_entry() {
-        let mut container = UncheckedMap::new();
+        let mut container = UncheckedMap::default();
 
         let entry = test_entry(1);
         let new_insert = container.insert(entry.clone());
@@ -164,7 +186,7 @@ mod tests {
 
     #[test]
     fn insert_two_entries_with_same_key() {
-        let mut container = UncheckedMap::new();
+        let mut container = UncheckedMap::default();
 
         let entry = test_entry(1);
         let new_insert1 = container.insert(entry.clone());
@@ -179,7 +201,7 @@ mod tests {
 
     #[test]
     fn insert_two_entries_with_different_key() {
-        let mut container = UncheckedMap::new();
+        let mut container = UncheckedMap::default();
 
         let new_insert1 = container.insert(test_entry(1));
         let new_insert2 = container.insert(test_entry(2));
@@ -193,7 +215,7 @@ mod tests {
 
     #[test]
     fn pop_front() {
-        let mut container = UncheckedMap::new();
+        let mut container = UncheckedMap::default();
 
         container.insert(test_entry(1));
         let entry = test_entry(2);
@@ -211,7 +233,7 @@ mod tests {
 
     #[test]
     fn pop_front_twice() {
-        let mut container = UncheckedMap::new();
+        let mut container = UncheckedMap::default();
 
         container.insert(test_entry(1));
         container.insert(test_entry(2));
@@ -224,7 +246,7 @@ mod tests {
 
     #[test]
     fn remove_by_key() {
-        let mut container = UncheckedMap::new();
+        let mut container = UncheckedMap::default();
         container.insert(test_entry(1));
         let entry = test_entry(2);
         container.insert(entry.clone());
