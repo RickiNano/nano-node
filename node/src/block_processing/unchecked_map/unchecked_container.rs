@@ -8,38 +8,6 @@ use rsnano_core::{
 use super::UncheckedKey;
 use rsnano_stats::{DetailType, StatType, Stats};
 
-#[derive(Clone, Debug)]
-struct Entry {
-    key: UncheckedKey,
-    block: Block,
-}
-
-impl Entry {
-    pub fn new(key: UncheckedKey, block: Block) -> Self {
-        Self { key, block }
-    }
-}
-
-impl PartialEq for Entry {
-    fn eq(&self, other: &Self) -> bool {
-        self.key.eq(&other.key)
-    }
-}
-
-impl Eq for Entry {}
-
-impl PartialOrd for Entry {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.key.partial_cmp(&other.key)
-    }
-}
-
-impl Ord for Entry {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.key.cmp(&other.key)
-    }
-}
-
 /// A map of unchecked blocks and the hash of their missing dependency block
 #[derive(Clone)]
 pub struct UncheckedMap {
@@ -147,22 +115,6 @@ impl UncheckedMap {
             .range(UncheckedKey::new(start_dependency, BlockHash::zero())..)
             .map(|(key, id)| (&key.dependency_hash, &self.by_id.get(id).unwrap().block))
     }
-
-    pub fn for_each_with_dependency(
-        &self,
-        dependency: BlockHash,
-        mut action: impl FnMut(&UncheckedKey, &Block),
-        mut predicate: impl FnMut() -> bool,
-    ) {
-        let key = UncheckedKey::new(dependency, BlockHash::zero());
-        for (key, id) in self.by_key.range(key..) {
-            if !predicate() || key.dependency_hash != dependency.into() {
-                break;
-            }
-            let entry = self.by_id.get(id).unwrap();
-            action(&entry.key, &entry.block);
-        }
-    }
 }
 
 impl Default for UncheckedMap {
@@ -177,13 +129,43 @@ impl ContainerInfoProvider for UncheckedMap {
     }
 }
 
+#[derive(Clone, Debug)]
+struct Entry {
+    key: UncheckedKey,
+    block: Block,
+}
+
+impl Entry {
+    pub fn new(key: UncheckedKey, block: Block) -> Self {
+        Self { key, block }
+    }
+}
+
+impl PartialEq for Entry {
+    fn eq(&self, other: &Self) -> bool {
+        self.key.eq(&other.key)
+    }
+}
+
+impl Eq for Entry {}
+
+impl PartialOrd for Entry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.key.partial_cmp(&other.key)
+    }
+}
+
+impl Ord for Entry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use rsnano_core::Block;
-
     use super::*;
     use ntest::assert_false;
-    use tracing::Instrument;
+    use rsnano_core::Block;
 
     #[test]
     fn empty() {

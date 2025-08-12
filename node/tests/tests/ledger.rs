@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use rsnano_core::{
     Account, Amount, Block, BlockHash, Epoch, PrivateKey, QualifiedRoot, Signature, StateBlockArgs,
@@ -10,9 +10,7 @@ use rsnano_ledger::{
 use rsnano_network::ChannelId;
 
 use rsnano_node::block_processing::{BlockContext, BlockSource};
-use test_helpers::{
-    assert_timely, assert_timely2, assert_timely_eq, assert_timely_eq2, start_elections, System,
-};
+use test_helpers::{assert_timely2, assert_timely_eq2, start_elections, System};
 
 mod votes {
     use super::*;

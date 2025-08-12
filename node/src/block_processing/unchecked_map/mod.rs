@@ -37,7 +37,6 @@ pub struct UncheckedBlockReenqueuer {
     mutable: Arc<Mutex<UncheckedState>>,
     condition: Arc<Condvar>,
     stats: Arc<Stats>,
-    unchecked: Arc<Mutex<UncheckedMap>>,
 }
 
 impl UncheckedBlockReenqueuer {
@@ -59,7 +58,6 @@ impl UncheckedBlockReenqueuer {
             mutable,
             condition,
             stats,
-            unchecked,
         }
     }
 
@@ -157,23 +155,19 @@ impl UncheckedMapLoop {
         }
     }
 
-    pub fn query_impl(&self, hash: BlockHash) {
-        let mut delete_queue = Vec::new();
+    pub fn query_impl(&self, processed_hash: BlockHash) {
+        let mut satisfied_blocks = Vec::new();
         let mut unchecked = self.unchecked.lock().unwrap();
-        unchecked.for_each_with_dependency(
-            hash,
-            |key, block| {
-                delete_queue.push(key.clone());
-                self.stats.inc(StatType::Unchecked, DetailType::Satisfied);
-                if let Some(callback) = &self.state.lock().unwrap().satisfied_callback {
-                    callback(&block);
-                }
-            },
-            || true,
-        );
+        for block in unchecked.blocks_dependend_on(processed_hash) {
+            satisfied_blocks.push((processed_hash, block.clone()));
+        }
 
-        for key in &delete_queue {
-            unchecked.remove(key);
+        for (dependency_hash, unchecked_block) in satisfied_blocks {
+            self.stats.inc(StatType::Unchecked, DetailType::Satisfied);
+            if let Some(callback) = &self.state.lock().unwrap().satisfied_callback {
+                callback(&unchecked_block);
+            }
+            unchecked.remove(&UncheckedKey::new(dependency_hash, unchecked_block.hash()));
         }
     }
 }
