@@ -5,7 +5,6 @@ use rsnano_core::{
     Block, BlockHash,
 };
 
-use super::UncheckedKey;
 use rsnano_stats::{DetailType, StatType, Stats};
 
 /// A map of unchecked blocks and the hash of their missing dependency block
@@ -60,8 +59,9 @@ impl UncheckedMap {
         self.len() == 0
     }
 
-    pub fn remove(&mut self, key: &UncheckedKey) {
-        if let Some(id) = self.by_key.remove(key) {
+    pub fn remove(&mut self, dependency_hash: BlockHash, unchecked_hash: BlockHash) {
+        let key = UncheckedKey::new(dependency_hash, unchecked_hash);
+        if let Some(id) = self.by_key.remove(&key) {
             self.by_id.remove(&id);
         }
     }
@@ -83,11 +83,6 @@ impl UncheckedMap {
         self.by_id.clear();
         self.by_key.clear();
         self.next_id = 0;
-    }
-
-    #[allow(dead_code)]
-    pub fn exists(&self, key: &UncheckedKey) -> bool {
-        self.by_key.contains_key(key)
     }
 
     pub fn contains_dependency(&self, dependency_hash: BlockHash) -> bool {
@@ -126,6 +121,23 @@ impl Default for UncheckedMap {
 impl ContainerInfoProvider for UncheckedMap {
     fn container_info(&self) -> ContainerInfo {
         [("entries", self.len(), 0)].into()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct UncheckedKey {
+    /// Hash of the unfulfilled dependency (corresponding send block or previous block)
+    pub dependency_hash: BlockHash,
+    /// Hash of the unchceked block
+    pub unchecked_hash: BlockHash,
+}
+
+impl UncheckedKey {
+    pub fn new(dependency_hash: BlockHash, unchecked_hash: BlockHash) -> Self {
+        Self {
+            dependency_hash,
+            unchecked_hash,
+        }
     }
 }
 
@@ -274,12 +286,11 @@ mod tests {
         let entry = test_entry(2);
         unchecked.insert(entry.clone());
 
-        unchecked.remove(&entry.key);
+        unchecked.remove(entry.key.dependency_hash, entry.key.unchecked_hash);
 
         assert_eq!(unchecked.len(), 1);
         assert_eq!(unchecked.by_id.len(), 1);
         assert_eq!(unchecked.by_key.len(), 1);
-        assert_eq!(unchecked.exists(&entry.key), false);
     }
 
     fn test_entry<T: Into<BlockHash>>(hash: T) -> Entry {

@@ -13,23 +13,6 @@ use rsnano_stats::{DetailType, StatType, Stats};
 
 pub use unchecked_container::UncheckedMap;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct UncheckedKey {
-    /// Hash of the unfulfilled dependency (corresponding send block or previous block)
-    pub dependency_hash: BlockHash,
-    /// Hash of the unchceked block
-    pub unchecked_hash: BlockHash,
-}
-
-impl UncheckedKey {
-    pub fn new(dependency_hash: BlockHash, unchecked_hash: BlockHash) -> Self {
-        Self {
-            dependency_hash,
-            unchecked_hash,
-        }
-    }
-}
-
 /// Re-enqueues an unchecked block when its missing dependency block got inserted into the ledger
 pub struct UncheckedBlockReenqueuer {
     join_handle: Mutex<Option<JoinHandle<()>>>,
@@ -167,7 +150,7 @@ impl UncheckedMapLoop {
             if let Some(callback) = &self.state.lock().unwrap().satisfied_callback {
                 callback(&unchecked_block);
             }
-            unchecked.remove(&UncheckedKey::new(dependency_hash, unchecked_block.hash()));
+            unchecked.remove(dependency_hash, unchecked_block.hash());
         }
     }
 }
