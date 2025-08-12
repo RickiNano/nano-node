@@ -1,4 +1,4 @@
-mod unchecked_container;
+mod unchecked_map;
 
 use std::{
     collections::VecDeque,
@@ -11,7 +11,7 @@ use std::{
 use rsnano_core::{Block, BlockHash};
 use rsnano_stats::{DetailType, StatType, Stats};
 
-pub use unchecked_container::UncheckedMap;
+pub use unchecked_map::UncheckedMap;
 
 /// Re-enqueues an unchecked block when its missing dependency block got inserted into the ledger
 pub struct UncheckedBlockReenqueuer {
