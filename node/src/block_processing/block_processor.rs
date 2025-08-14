@@ -9,9 +9,10 @@ use rsnano_stats::{StatsCollection, StatsSource};
 
 use super::{
     backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,
-    BlockProcessorQueue, LedgerEvent, UncheckedMap,
+    BlockProcessorQueue, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap,
 };
 use crate::block_processing::block_batch_processor::BlockBatchProcessor;
+use rsnano_nullable_clock::SteadyClock;
 
 pub struct BlockProcessor {
     threads: Mutex<Vec<JoinHandle<()>>>,
@@ -21,6 +22,8 @@ pub struct BlockProcessor {
     process_stats: Arc<BlockBatchProcessorStats>,
     backlog_waiter: Arc<BacklogWaiter>,
     event_publisher: Mutex<Option<BackpressureSender<LedgerEvent>>>,
+    unchecked_reenqueuer: UncheckedBlockReenqueuer,
+    clock: Arc<SteadyClock>,
 }
 
 impl BlockProcessor {
@@ -28,17 +31,21 @@ impl BlockProcessor {
         process_queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
         unchecked: Arc<Mutex<UncheckedMap>>,
+        unchecked_reenqueuer: UncheckedBlockReenqueuer,
         backlog_waiter: Arc<BacklogWaiter>,
         event_publisher: BackpressureSender<LedgerEvent>,
+        clock: Arc<SteadyClock>,
     ) -> Self {
         Self {
             process_queue,
             ledger,
             unchecked,
+            unchecked_reenqueuer,
             process_stats: Arc::new(BlockBatchProcessorStats::default()),
             threads: Mutex::new(Vec::new()),
             backlog_waiter,
             event_publisher: Mutex::new(Some(event_publisher)),
+            clock,
         }
     }
 
@@ -70,7 +77,6 @@ impl BlockProcessor {
         BlockBatchProcessor {
             ledger: self.ledger.clone(),
             unchecked: self.unchecked.clone(),
-            process_queue: self.process_queue.clone(),
             stats: self.process_stats.clone(),
             event_publisher: self
                 .event_publisher
@@ -79,7 +85,8 @@ impl BlockProcessor {
                 .as_ref()
                 .unwrap()
                 .clone(),
-            satisfied_blocks: Vec::new(),
+            unchecked_reenqueuer: self.unchecked_reenqueuer.clone(),
+            clock: self.clock.clone(),
         }
     }
 

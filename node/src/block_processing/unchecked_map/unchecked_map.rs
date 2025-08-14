@@ -4,6 +4,7 @@ use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
     Block, BlockHash,
 };
+use rsnano_nullable_clock::Timestamp;
 use rsnano_stats::{StatsCollection, StatsSource};
 
 /// A map of unchecked blocks and the hash of their missing dependency block
@@ -29,9 +30,9 @@ impl UncheckedMap {
         }
     }
 
-    pub fn put(&mut self, dependency: BlockHash, block: Block) {
+    pub fn put(&mut self, dependency: BlockHash, block: Block, now: Timestamp) {
         let key = UncheckedKey::new(dependency, block.hash());
-        let inserted = self.insert(Entry::new(key, block));
+        let inserted = self.insert(Entry::new(key, block, now));
         if self.len() > self.max_blocks {
             self.pop_front();
         }
@@ -91,9 +92,9 @@ impl UncheckedMap {
     }
 
     pub fn pop_dependend_blocks(&mut self, dependency_hash: BlockHash, result: &mut Vec<Block>) {
-        result.clear();
+        let start = result.len();
         result.extend(self.blocks_dependend_on(dependency_hash).cloned());
-        for block in result.iter() {
+        for block in &result[start..] {
             self.remove(dependency_hash, block.hash());
         }
     }
@@ -118,6 +119,17 @@ impl UncheckedMap {
         self.by_key
             .range(UncheckedKey::new(start_dependency, BlockHash::zero())..)
             .map(|(key, id)| (&key.dependency_hash, &self.by_id.get(id).unwrap().block))
+    }
+
+    pub fn discard_old_entries(&mut self, cutoff: Timestamp) {
+        while let Some(entry) = self.by_id.first_entry() {
+            if entry.get().added <= cutoff {
+                let e = entry.remove();
+                self.by_key.remove(&e.key);
+            } else {
+                break;
+            }
+        }
     }
 }
 
@@ -161,11 +173,12 @@ impl UncheckedKey {
 struct Entry {
     key: UncheckedKey,
     block: Block,
+    added: Timestamp,
 }
 
 impl Entry {
-    pub fn new(key: UncheckedKey, block: Block) -> Self {
-        Self { key, block }
+    pub fn new(key: UncheckedKey, block: Block, added: Timestamp) -> Self {
+        Self { key, block, added }
     }
 }
 
@@ -313,6 +326,7 @@ mod tests {
         Entry::new(
             UncheckedKey::new(hash.into(), BlockHash::default()),
             Block::new_test_instance(),
+            Timestamp::new_test_instance(),
         )
     }
 }

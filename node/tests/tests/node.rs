@@ -2351,7 +2351,7 @@ fn block_processor_signatures() {
     node.unchecked
         .lock()
         .unwrap()
-        .put(send5.previous(), send5.clone());
+        .put(send5.previous(), send5.clone(), node.steady_clock.now());
 
     // Create a valid receive block
     let receive1 = lattice.account(&key1).receive(&send1);

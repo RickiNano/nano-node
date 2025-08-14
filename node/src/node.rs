@@ -498,6 +498,7 @@ impl Node {
             unchecked.clone(),
             ledger.clone(),
             block_processor_queue.clone(),
+            steady_clock.clone(),
         );
 
         let mut wallets_path = application_path.clone();
@@ -889,8 +890,10 @@ impl Node {
             block_processor_queue.clone(),
             ledger.clone(),
             unchecked.clone(),
+            unchecked_reenqueuer.clone(),
             backlog_waiter.clone(),
             ledger_tx_clone,
+            steady_clock.clone(),
         ));
 
         let mut dead_channel_cleanup = DeadChannelCleanup::new(
@@ -1232,6 +1235,7 @@ impl Node {
         stats_collector.add_source(winner_block_broadcaster.clone());
         stats_collector.add_source(bootstrapper.clone());
         stats_collector.add_source(unchecked.clone());
+        stats_collector.add_source(unchecked_reenqueuer.stats().clone());
 
         let mut container_info = ContainerInfoFactory::new();
         container_info.add("work", work_factory.clone());
@@ -1567,8 +1571,7 @@ impl Node {
             self.receivable_search.start();
         }
 
-        // TODO
-        //self.unchecked_reenqueuer.start(Duration::from_millis(1000));
+        self.unchecked_reenqueuer.start(Duration::from_millis(1000));
         self.wallets.start();
         self.rep_tiers_calculator.start(if is_dev_network {
             Duration::from_millis(500)
@@ -1780,7 +1783,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "TODO"]
     fn start_unchecked_reenqueuer() {
         let mut node = TestNode::new();
         let start_tracker = node.unchecked_reenqueuer.track_start();

@@ -4,30 +4,26 @@ use std::{
         atomic::{AtomicU64, Ordering::Relaxed},
         Arc, Mutex,
     },
-    time::{Duration, Instant},
 };
 
 use strum::{EnumCount, IntoEnumIterator};
 use tracing::{debug, warn};
 
-use rsnano_core::{
-    utils::{backpressure_channel, BackpressureSender},
-    Block,
-};
+use rsnano_core::utils::{backpressure_channel, BackpressureSender};
 use rsnano_ledger::{BlockError, Ledger};
+use rsnano_nullable_clock::SteadyClock;
 use rsnano_stats::{StatsCollection, StatsSource};
 
-use super::{BlockContext, BlockProcessorQueue, BlockSource, LedgerEvent, UncheckedMap};
+use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap};
 use crate::block_processing::ProcessedResult;
-use rsnano_network::ChannelId;
 
 pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,
     pub unchecked: Arc<Mutex<UncheckedMap>>,
-    pub process_queue: Arc<BlockProcessorQueue>,
     pub stats: Arc<BlockBatchProcessorStats>,
     pub event_publisher: BackpressureSender<LedgerEvent>,
-    pub satisfied_blocks: Vec<Block>,
+    pub unchecked_reenqueuer: UncheckedBlockReenqueuer,
+    pub clock: Arc<SteadyClock>,
 }
 
 impl BlockBatchProcessor {
@@ -36,15 +32,15 @@ impl BlockBatchProcessor {
         Self {
             ledger: Arc::new(Ledger::new_null()),
             unchecked: Arc::new(Mutex::new(UncheckedMap::default())),
-            process_queue: Arc::new(BlockProcessorQueue::new_null()),
             stats: Arc::new(BlockBatchProcessorStats::default()),
             event_publisher: backpressure_channel(0).0,
-            satisfied_blocks: Vec::new(),
+            unchecked_reenqueuer: UncheckedBlockReenqueuer::new_null(),
+            clock: Arc::new(SteadyClock::new_null()),
         }
     }
 
     pub(crate) fn process_blocks(&mut self, mut batch: VecDeque<Arc<BlockContext>>) {
-        let timer = Instant::now();
+        let now = self.clock.now();
 
         self.roll_back_competitor_blocks(&batch);
 
@@ -69,14 +65,6 @@ impl BlockBatchProcessor {
             {
                 warn!("Failed to publish blocks processed event: {e:?}");
             }
-        }
-
-        if result.processed.len() > 0 && timer.elapsed() > Duration::from_millis(100) {
-            debug!(
-                "Processed {} blocks in {} ms",
-                result.processed.len(),
-                timer.elapsed().as_millis(),
-            );
         }
 
         assert_eq!(result.processed.len(), batch.len());
@@ -113,31 +101,20 @@ impl BlockBatchProcessor {
 
             match status {
                 Ok(()) => {
-                    self.unchecked
-                        .lock()
-                        .unwrap()
-                        .pop_dependend_blocks(hash, &mut self.satisfied_blocks);
-
-                    for satisifed in self.satisfied_blocks.drain(..) {
-                        self.stats.unchecked_satisfied.fetch_add(1, Relaxed);
-                        self.process_queue.push(BlockContext::new(
-                            satisifed,
-                            BlockSource::Unchecked,
-                            ChannelId::LOOPBACK,
-                        ));
-                    }
+                    self.unchecked_reenqueuer
+                        .enqueue_blocks_with_dependency(hash);
                 }
                 Err(BlockError::GapPrevious) => {
                     self.unchecked
                         .lock()
                         .unwrap()
-                        .put(block.previous(), block.clone());
+                        .put(block.previous(), block.clone(), now);
                 }
                 Err(BlockError::GapSource) => {
                     self.unchecked
                         .lock()
                         .unwrap()
-                        .put(block.source_or_link(), block.clone());
+                        .put(block.source_or_link(), block.clone(), now);
                 }
                 Err(BlockError::GapEpochOpenPending) => {}
                 Err(BlockError::Old) => {
@@ -210,7 +187,6 @@ pub(crate) struct BlockBatchProcessorStats {
     progress: AtomicU64,
     errors: [AtomicU64; BlockError::COUNT],
     sources: [AtomicU64; BlockSource::COUNT],
-    unchecked_satisfied: AtomicU64,
 }
 
 impl StatsSource for BlockBatchProcessorStats {
@@ -236,11 +212,5 @@ impl StatsSource for BlockBatchProcessorStats {
                 self.sources[s as usize].load(Relaxed),
             );
         }
-
-        result.insert(
-            "unchecked",
-            "satisfied",
-            self.unchecked_satisfied.load(Relaxed),
-        );
     }
 }
