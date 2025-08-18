@@ -529,7 +529,6 @@ impl Node {
             &config,
             network_params.work.clone(),
             work_factory.clone(),
-            network_params.clone(),
             block_processor_queue.clone(),
             online_reps.clone(),
             confirming_set.clone(),

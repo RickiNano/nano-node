@@ -34,7 +34,7 @@ use super::{Wallet, WalletActionThread, WalletRepresentatives};
 use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
     cementation::ConfirmingSet,
-    config::{NetworkParams, NodeConfig},
+    config::NodeConfig,
     representatives::OnlineReps,
     transport::MessageFlooder,
     utils::{ThreadPool, ThreadPoolImpl},
@@ -89,7 +89,6 @@ pub struct Wallets {
     last_log: Mutex<Option<Instant>>,
     work_factory: Arc<WorkFactory>,
     work_thresholds: WorkThresholds,
-    network_params: NetworkParams,
     pub delayed_work: Mutex<HashMap<Account, Root>>,
     workers: Arc<dyn ThreadPool>,
     wallet_actions: WalletActionThread,
@@ -110,7 +109,6 @@ impl Wallets {
         node_config: &NodeConfig,
         work: WorkThresholds,
         work_factory: Arc<WorkFactory>,
-        network_params: NetworkParams,
         block_processor_queue: Arc<BlockProcessorQueue>,
         online_reps: Arc<Mutex<OnlineReps>>,
         confirming_set: Arc<ConfirmingSet>,
@@ -128,8 +126,7 @@ impl Wallets {
             ledger: Arc::clone(&ledger),
             last_log: Mutex::new(None),
             work_factory,
-            work_thresholds: work.clone(),
-            network_params,
+            work_thresholds: work,
             delayed_work: Mutex::new(HashMap::new()),
             workers: Arc::new(ThreadPoolImpl::create(1, "wallet work")),
             wallet_actions: WalletActionThread::new(),
@@ -154,7 +151,6 @@ impl Wallets {
         let node_config = NodeConfig::default_for(network, 1);
         let work = WorkThresholds::default_for(network);
         let work_factory = Arc::new(WorkFactory::disabled());
-        let network_params = NetworkParams::new(network);
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
         let online_reps = Arc::new(Mutex::new(OnlineReps::default()));
         let confirming_set = Arc::new(ConfirmingSet::new_null());
@@ -165,7 +161,6 @@ impl Wallets {
             &node_config,
             work,
             work_factory,
-            network_params,
             block_processor_queue,
             online_reps,
             confirming_set,
@@ -197,7 +192,7 @@ impl Wallets {
     fn random_representative(&self) -> PublicKey {
         self.node_config
             .random_representative()
-            .unwrap_or(self.network_params.ledger.genesis_account.into())
+            .unwrap_or(self.ledger.constants.genesis_account.into())
     }
 
     pub fn enter_initial_password(&self, wallet: &Arc<Wallet>) {
@@ -1433,8 +1428,8 @@ impl WalletsExt for Arc<Wallets> {
         // Unschedule any work caching for this account
         self.delayed_work.lock().unwrap().remove(&account);
         let hash = block.hash();
-        let required_difficulty = self.network_params.work.threshold(details);
-        if self.network_params.work.difficulty_block(&block) < required_difficulty {
+        let required_difficulty = self.work_thresholds.threshold(details);
+        if self.work_thresholds.difficulty_block(&block) < required_difficulty {
             info!(
                 "Cached or provided work for block {} account {} is invalid, regenerating...",
                 block.hash(),
