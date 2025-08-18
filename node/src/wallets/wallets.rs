@@ -420,30 +420,28 @@ impl Wallets {
 
         let mut rep_priv_keys: Vec<PrivateKey> = Vec::new();
         {
-            let wallet_reps = self.wallet_reps.lock().unwrap();
             let txn = self.env.begin_read();
             let lock = self.mutex.lock().unwrap();
+            let wallet_reps = self.wallet_reps.lock().unwrap();
             for (wallet_id, wallet) in lock.iter() {
                 for rep_key in wallet_reps.rep_keys() {
                     if wallet.store.exists(&txn, &rep_key) {
-                        if !self.ledger.weight(&rep_key).is_zero() {
-                            if wallet.store.valid_password(&txn) {
-                                let prv = wallet
-                                    .store
-                                    .fetch(&txn, &rep_key.into())
-                                    .expect("could not fetch account from wallet");
+                        if wallet.store.valid_password(&txn) {
+                            let prv = wallet
+                                .store
+                                .fetch(&txn, &rep_key.into())
+                                .expect("could not fetch account from wallet");
 
-                                rep_priv_keys.push(prv.into());
-                            } else {
-                                let mut last_log_guard = self.last_log.lock().unwrap();
-                                let should_log = match last_log_guard.as_ref() {
-                                    Some(i) => i.elapsed() >= Duration::from_secs(60),
-                                    None => true,
-                                };
-                                if should_log {
-                                    *last_log_guard = Some(Instant::now());
-                                    warn!("Representative locked inside wallet {}", wallet_id);
-                                }
+                            rep_priv_keys.push(prv.into());
+                        } else {
+                            let mut last_log_guard = self.last_log.lock().unwrap();
+                            let should_log = match last_log_guard.as_ref() {
+                                Some(i) => i.elapsed() >= Duration::from_secs(60),
+                                None => true,
+                            };
+                            if should_log {
+                                *last_log_guard = Some(Instant::now());
+                                warn!("Representative locked inside wallet {}", wallet_id);
                             }
                         }
                     }
