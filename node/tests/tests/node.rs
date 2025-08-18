@@ -368,11 +368,7 @@ fn no_voting() {
         )
         .unwrap();
 
-    assert_timely_eq(
-        Duration::from_secs(10),
-        || node0.active.read().unwrap().len(),
-        0,
-    );
+    assert_timely_eq2(|| node0.active.read().unwrap().len(), 0);
     assert_eq!(
         node0
             .stats

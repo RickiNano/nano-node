@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rand::Rng;
+use rand::{seq::IndexedRandom, Rng};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
@@ -73,12 +73,21 @@ pub enum PreparedSend {
     New(Block, BlockDetails),
 }
 
+pub struct WalletsConfig {}
+
+impl Default for WalletsConfig {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
 pub struct Wallets {
     db: Option<LmdbDatabase>,
     send_action_ids_handle: Option<LmdbDatabase>,
     env: Arc<LmdbEnvironment>,
     pub mutex: Mutex<HashMap<WalletId, Arc<Wallet>>>,
     node_config: NodeConfig,
+    wallets_config: WalletsConfig,
     ledger: Arc<Ledger>,
     last_log: Mutex<Option<Instant>>,
     work_factory: Arc<WorkFactory>,
@@ -99,6 +108,7 @@ impl Wallets {
         env: Arc<LmdbEnvironment>,
         ledger: Arc<Ledger>,
         node_config: &NodeConfig,
+        wallets_config: WalletsConfig,
         work: WorkThresholds,
         work_factory: Arc<WorkFactory>,
         block_processor_queue: Arc<BlockProcessorQueue>,
@@ -113,6 +123,7 @@ impl Wallets {
             mutex: Mutex::new(HashMap::new()),
             env,
             node_config: node_config.clone(),
+            wallets_config,
             ledger: Arc::clone(&ledger),
             last_log: Mutex::new(None),
             work_factory,
@@ -137,6 +148,7 @@ impl Wallets {
         let env = Arc::new(LmdbEnvironment::new_null());
         let ledger = Arc::new(Ledger::new_null());
         let node_config = NodeConfig::default_for(network, 1);
+        let wallets_config = WalletsConfig::default();
         let work = WorkThresholds::default_for(network);
         let work_factory = Arc::new(WorkFactory::disabled());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
@@ -145,6 +157,7 @@ impl Wallets {
             env,
             ledger,
             &node_config,
+            wallets_config,
             work,
             work_factory,
             block_processor_queue,
@@ -175,7 +188,9 @@ impl Wallets {
 
     fn random_representative(&self) -> PublicKey {
         self.node_config
-            .random_representative()
+            .preconfigured_representatives
+            .choose(&mut rand::rng())
+            .cloned()
             .unwrap_or(self.ledger.constants.genesis_account.into())
     }
 

@@ -86,7 +86,9 @@ use crate::{
         RealtimeMessageHandler,
     },
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
-    wallets::{LocalRepsComputation, ReceivableSearch, WalletBackup, Wallets, WalletsExt},
+    wallets::{
+        LocalRepsComputation, ReceivableSearch, WalletBackup, Wallets, WalletsConfig, WalletsExt,
+    },
     work::{WorkFactory, WorkRequest},
     NodeCallbacks, OnlineWeightSampler,
 };
@@ -523,10 +525,13 @@ impl Node {
             )
         };
 
+        let wallets_config = WalletsConfig::from(&config);
+
         let mut wallets = Wallets::new(
             wallets_env,
             ledger.clone(),
             &config,
+            wallets_config,
             network_params.work.clone(),
             work_factory.clone(),
             block_processor_queue.clone(),
