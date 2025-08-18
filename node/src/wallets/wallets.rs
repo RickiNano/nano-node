@@ -14,7 +14,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
-    utils::{get_env_or_default_string, ContainerInfo, ContainerInfoProvider},
+    utils::{
+        get_env_or_default_string, CancellationToken, ContainerInfo, ContainerInfoProvider,
+        Tickable,
+    },
     Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce,
@@ -200,6 +203,20 @@ impl Wallets {
             .unwrap_or(self.network_params.ledger.genesis_account.into())
     }
 
+    pub fn enter_initial_password(&self, wallet: &Arc<Wallet>) {
+        let password = wallet.store.password();
+        if password.is_zero() {
+            let mut txn = self.env.begin_write();
+            if wallet.store.valid_password(&txn) {
+                // Newly created wallets have a zero key
+                let _ = wallet.store.rekey(&mut txn, "");
+            } else {
+                let _ = self.enter_password_wallet(wallet, &txn, "");
+            }
+            txn.commit();
+        }
+    }
+
     fn enter_password_wallet(
         &self,
         wallet: &Arc<Wallet>,
@@ -216,55 +233,64 @@ impl Wallets {
     }
 
     pub fn initialize(&mut self) -> anyhow::Result<()> {
-        let mut guard = self.mutex.lock().unwrap();
-        self.db = Some(self.env.create_db(None, DatabaseFlags::empty())?);
-        self.send_action_ids_handle = Some(
-            self.env
-                .create_db(Some("send_action_ids"), DatabaseFlags::empty())?,
-        );
+        {
+            let mut guard = self.mutex.lock().unwrap();
+            self.db = Some(self.env.create_db(None, DatabaseFlags::empty())?);
+            self.send_action_ids_handle = Some(
+                self.env
+                    .create_db(Some("send_action_ids"), DatabaseFlags::empty())?,
+            );
 
-        let wallet_ids = {
-            let txn = self.env.begin_write();
-            let ids = self.get_wallet_ids_with_tx(&txn);
-            txn.commit();
-            ids
-        };
+            let wallet_ids = {
+                let txn = self.env.begin_write();
+                let ids = self.get_wallet_ids_with_tx(&txn);
+                txn.commit();
+                ids
+            };
 
-        for id in wallet_ids {
-            assert!(!guard.contains_key(&id));
-            let representative = self.random_representative();
-            let text = PathBuf::from(id.encode_hex());
-            let wallet = Wallet::new(
-                &self.env,
-                self.node_config.password_fanout as usize,
-                self.kdf.clone(),
-                representative,
-                &text,
-            )?;
+            for id in wallet_ids {
+                assert!(!guard.contains_key(&id));
+                let representative = self.random_representative();
+                let text = PathBuf::from(id.encode_hex());
+                let wallet = Wallet::new(
+                    &self.env,
+                    self.node_config.password_fanout as usize,
+                    self.kdf.clone(),
+                    representative,
+                    &text,
+                )?;
 
-            guard.insert(id, Arc::new(wallet));
-        }
-
-        info!("Found {} wallet(s)", guard.len());
-        for i in guard.keys() {
-            info!("Wallet: {}", i);
-        }
-
-        // Backup before upgrade wallets
-        let mut backup_required = false;
-        if self.node_config.backup_before_upgrade {
-            let txn = self.env.begin_read();
-            for wallet in guard.values() {
-                if wallet.store.version(&txn) != LmdbWalletStore::VERSION_CURRENT {
-                    backup_required = true;
-                    break;
-                }
+                guard.insert(id, Arc::new(wallet));
             }
-            txn.commit();
+
+            info!("Found {} wallet(s)", guard.len());
+            for i in guard.keys() {
+                info!("Wallet: {}", i);
+            }
+
+            // Backup before upgrade wallets
+            let mut backup_required = false;
+            if self.node_config.backup_before_upgrade {
+                let txn = self.env.begin_read();
+                for wallet in guard.values() {
+                    if wallet.store.version(&txn) != LmdbWalletStore::VERSION_CURRENT {
+                        backup_required = true;
+                        break;
+                    }
+                }
+                txn.commit();
+            }
+            if backup_required {
+                create_backup_file(&self.env)?;
+            }
+
+            for (_, wallet) in guard.iter() {
+                self.enter_initial_password(wallet);
+            }
         }
-        if backup_required {
-            create_backup_file(&self.env)?;
-        }
+
+        self.compute_reps();
+
         Ok(())
     }
 
@@ -1195,7 +1221,6 @@ pub trait WalletsExt {
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
 
-    fn enter_initial_password(&self, wallet: &Arc<Wallet>);
     fn create(&self, wallet_id: WalletId);
     fn change_async_wallet(
         &self,
@@ -1233,7 +1258,6 @@ pub trait WalletsExt {
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
 
-    fn initialize2(&self);
     fn try_receive(&self, confirmed: &[(SavedBlock, BlockHash)]);
 }
 
@@ -2086,20 +2110,6 @@ impl WalletsExt for Arc<Wallets> {
         result
     }
 
-    fn enter_initial_password(&self, wallet: &Arc<Wallet>) {
-        let password = wallet.store.password();
-        if password.is_zero() {
-            let mut txn = self.env.begin_write();
-            if wallet.store.valid_password(&txn) {
-                // Newly created wallets have a zero key
-                let _ = wallet.store.rekey(&mut txn, "");
-            } else {
-                let _ = self.enter_password_wallet(wallet, &txn, "");
-            }
-            txn.commit();
-        }
-    }
-
     fn create(&self, wallet_id: WalletId) {
         let mut guard = self.mutex.lock().unwrap();
         debug_assert!(!guard.contains_key(&wallet_id));
@@ -2264,21 +2274,23 @@ impl WalletsExt for Arc<Wallets> {
 
         valid
     }
-
-    fn initialize2(&self) {
-        {
-            let guard = self.mutex.lock().unwrap();
-            for (_, wallet) in guard.iter() {
-                self.enter_initial_password(wallet);
-            }
-        }
-        if self.node_config.enable_voting {
-            self.ongoing_compute_reps();
-        }
-    }
 }
 
 fn test_scan_wallet_reps_delay() -> Duration {
     let test_env = get_env_or_default_string("NANO_TEST_WALLET_SCAN_REPS_DELAY", "10000"); // 10 seconds by default
     Duration::from_millis(test_env.parse().unwrap())
+}
+
+pub(crate) struct LocalRepsComputation(Arc<Wallets>);
+
+impl LocalRepsComputation {
+    pub fn new(wallets: Arc<Wallets>) -> Self {
+        Self(wallets)
+    }
+}
+
+impl Tickable for LocalRepsComputation {
+    fn tick(&mut self, _: &CancellationToken) {
+        self.0.compute_reps();
+    }
 }

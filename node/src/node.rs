@@ -86,7 +86,7 @@ use crate::{
         RealtimeMessageHandler,
     },
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
-    wallets::{ReceivableSearch, WalletBackup, Wallets, WalletsExt},
+    wallets::{LocalRepsComputation, ReceivableSearch, WalletBackup, Wallets, WalletsExt},
     work::{WorkFactory, WorkRequest},
     NodeCallbacks, OnlineWeightSampler,
 };
@@ -163,6 +163,7 @@ pub struct Node {
     pub block_rates: Arc<CurrentBlockRates>,
     aec_voter: TimerThread<AecVoter>,
     unchecked_reenqueuer: TimerThread<UncheckedBlockReenqueuer>,
+    local_reps_computation: TimerThread<LocalRepsComputation>,
 }
 
 pub(crate) struct NodeArgs {
@@ -540,9 +541,6 @@ impl Node {
             wallets.initialize().expect("Could not create wallet");
         }
         let wallets = Arc::new(wallets);
-        if !is_nulled {
-            wallets.initialize2();
-        }
 
         let vote_broadcaster = Arc::new(VoteBroadcaster::new(
             vote_processor_queue.clone(),
@@ -1126,6 +1124,8 @@ impl Node {
         let receivable_search =
             ReceivableSearch::new(wallets.clone(), workers.clone(), current_network);
 
+        let local_reps_computation = LocalRepsComputation::new(wallets.clone());
+
         let message_flooder = Arc::new(Mutex::new(message_flooder.clone()));
 
         let block_flooder = BlockFlooder {
@@ -1336,6 +1336,7 @@ impl Node {
             block_rate_calculator: TimerThread::new("Blk rate", block_rate_calculator),
             block_rates,
             aec_voter: TimerThread::new("AEC voter", aec_voter),
+            local_reps_computation: TimerThread::new("Reps comp", local_reps_computation),
         }
     }
 
@@ -1539,6 +1540,11 @@ impl Node {
             .run_once_then_start(OnlineReps::default_interval_for(
                 self.network_params.network.current_network,
             ));
+        self.local_reps_computation.start(if is_dev_network {
+            Duration::from_millis(10)
+        } else {
+            Duration::from_secs(10)
+        });
         self.wallet_reps_checker.start(if is_dev_network {
             Duration::from_millis(500)
         } else {
@@ -1635,6 +1641,7 @@ impl Node {
 
         self.tcp_listener.stop();
         self.aec_voter.stop();
+        self.local_reps_computation.stop();
         self.wallet_reps_checker.stop();
         self.online_weight_calculation.stop();
         self.peer_connector.stop();
