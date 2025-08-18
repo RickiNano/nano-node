@@ -14,16 +14,12 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
-    utils::{
-        get_env_or_default_string, CancellationToken, ContainerInfo, ContainerInfoProvider,
-        Tickable,
-    },
+    utils::{CancellationToken, ContainerInfo, ContainerInfoProvider, Tickable},
     Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce,
 };
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
-use rsnano_messages::{Message, Publish};
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
@@ -35,7 +31,6 @@ use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
     config::NodeConfig,
     representatives::OnlineReps,
-    transport::MessageFlooder,
     utils::{ThreadPool, ThreadPoolImpl},
     work::{WorkFactory, WorkRequest},
 };
@@ -96,7 +91,6 @@ pub struct Wallets {
     online_reps: Arc<Mutex<OnlineReps>>,
     kdf: KeyDerivationFunction,
     start_election: Mutex<Option<Box<dyn Fn(SavedBlock) + Send + Sync>>>,
-    message_flooder: Mutex<MessageFlooder>,
     current_network: Networks,
 }
 
@@ -109,7 +103,6 @@ impl Wallets {
         work_factory: Arc<WorkFactory>,
         block_processor_queue: Arc<BlockProcessorQueue>,
         online_reps: Arc<Mutex<OnlineReps>>,
-        message_flooder: MessageFlooder,
         current_network: Networks,
     ) -> Self {
         let kdf = KeyDerivationFunction::new(Self::kdf_work_for(current_network));
@@ -135,7 +128,6 @@ impl Wallets {
             online_reps,
             kdf: kdf.clone(),
             start_election: Mutex::new(None),
-            message_flooder: Mutex::new(message_flooder),
             current_network,
         }
     }
@@ -149,7 +141,6 @@ impl Wallets {
         let work_factory = Arc::new(WorkFactory::disabled());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
         let online_reps = Arc::new(Mutex::new(OnlineReps::default()));
-        let message_flooder = MessageFlooder::new_null();
         Self::new(
             env,
             ledger,
@@ -158,7 +149,6 @@ impl Wallets {
             work_factory,
             block_processor_queue,
             online_reps,
-            message_flooder,
             network,
         )
     }
@@ -756,12 +746,6 @@ impl Wallets {
         };
 
         if let Some(block) = block {
-            let msg = Message::Publish(Publish::new_forward(block.clone().into()));
-            self.message_flooder.lock().unwrap().flood(
-                &msg,
-                rsnano_network::TrafficType::BlockBroadcastInitial,
-                1.0,
-            );
             Ok(PreparedSend::Cached(block))
         } else {
             if !wallet.store.valid_password(tx) {
@@ -2213,11 +2197,6 @@ impl WalletsExt for Arc<Wallets> {
 
         valid
     }
-}
-
-fn test_scan_wallet_reps_delay() -> Duration {
-    let test_env = get_env_or_default_string("NANO_TEST_WALLET_SCAN_REPS_DELAY", "10000"); // 10 seconds by default
-    Duration::from_millis(test_env.parse().unwrap())
 }
 
 pub(crate) struct LocalRepsComputation(Arc<Wallets>);

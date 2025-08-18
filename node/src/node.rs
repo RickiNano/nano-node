@@ -531,7 +531,6 @@ impl Node {
             work_factory.clone(),
             block_processor_queue.clone(),
             online_reps.clone(),
-            message_flooder.clone(),
             current_network,
         );
         if !is_nulled {
