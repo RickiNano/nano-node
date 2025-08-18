@@ -33,7 +33,6 @@ use rsnano_work::WorkThresholds;
 use super::{Wallet, WalletActionThread, WalletRepresentatives};
 use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
-    cementation::ConfirmingSet,
     config::NodeConfig,
     representatives::OnlineReps,
     transport::MessageFlooder,
@@ -97,7 +96,6 @@ pub struct Wallets {
     online_reps: Arc<Mutex<OnlineReps>>,
     kdf: KeyDerivationFunction,
     start_election: Mutex<Option<Box<dyn Fn(SavedBlock) + Send + Sync>>>,
-    confirming_set: Arc<ConfirmingSet>,
     message_flooder: Mutex<MessageFlooder>,
     current_network: Networks,
 }
@@ -111,7 +109,6 @@ impl Wallets {
         work_factory: Arc<WorkFactory>,
         block_processor_queue: Arc<BlockProcessorQueue>,
         online_reps: Arc<Mutex<OnlineReps>>,
-        confirming_set: Arc<ConfirmingSet>,
         message_flooder: MessageFlooder,
         current_network: Networks,
     ) -> Self {
@@ -138,7 +135,6 @@ impl Wallets {
             online_reps,
             kdf: kdf.clone(),
             start_election: Mutex::new(None),
-            confirming_set,
             message_flooder: Mutex::new(message_flooder),
             current_network,
         }
@@ -153,7 +149,6 @@ impl Wallets {
         let work_factory = Arc::new(WorkFactory::disabled());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
         let online_reps = Arc::new(Mutex::new(OnlineReps::default()));
-        let confirming_set = Arc::new(ConfirmingSet::new_null());
         let message_flooder = MessageFlooder::new_null();
         Self::new(
             env,
@@ -163,7 +158,6 @@ impl Wallets {
             work_factory,
             block_processor_queue,
             online_reps,
-            confirming_set,
             message_flooder,
             network,
         )
@@ -1969,15 +1963,6 @@ impl WalletsExt for Arc<Wallets> {
                                 0.into(),
                                 true,
                             );
-                        } else if !self.confirming_set.contains(&hash) {
-                            let block = any.get_block(&hash);
-                            if let Some(block) = block {
-                                // Request confirmation for block which is not being processed yet
-                                let guard = self.start_election.lock().unwrap();
-                                if let Some(callback) = guard.as_ref() {
-                                    callback(block);
-                                }
-                            }
                         }
                     }
                 }

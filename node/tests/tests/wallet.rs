@@ -21,7 +21,7 @@ use rsnano_node::{
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
-use test_helpers::{assert_timely, assert_timely2, assert_timely_eq, assert_timely_eq2, System};
+use test_helpers::{assert_always_eq, assert_timely, assert_timely_eq2, System};
 
 struct TestFixture {
     test_dir: PathBuf,
@@ -1495,34 +1495,12 @@ fn search_receivable() {
         .genesis()
         .send(&*DEV_GENESIS_KEY, node.config.receive_minimum);
     node.process(send.clone());
-
-    // Pending search should start an election
-    assert_eq!(node.active.read().unwrap().len(), 0);
     node.wallets.search_receivable_wallet(wallet_id).unwrap();
-    assert_timely2(|| node.is_active_root(&send.qualified_root()));
+    assert_always_eq(Duration::from_millis(300), || node.ledger.block_count(), 2);
 
-    // Erase the key so the confirmation does not trigger an automatic receive
-    node.wallets
-        .remove_key(&wallet_id, &DEV_GENESIS_PUB_KEY)
-        .unwrap();
-
-    // Now confirm the election
-    node.force_confirm(&send.hash());
-    assert_timely2(|| node.block_confirmed(&send.hash()) && node.active.read().unwrap().len() == 0);
-
-    // Re-insert the key
-    node.wallets
-        .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)
-        .unwrap();
-
-    // Pending search should create the receive block
-    assert_eq!(node.ledger.block_count(), 2);
+    node.confirm(send.hash());
     node.wallets.search_receivable_wallet(wallet_id).unwrap();
-    assert_timely_eq(
-        Duration::from_secs(3),
-        || node.balance(&DEV_GENESIS_ACCOUNT),
-        Amount::MAX,
-    );
+    assert_timely_eq2(|| node.balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
     let receive_hash = node
         .ledger
         .any()

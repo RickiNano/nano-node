@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use rsnano_core::{Amount, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY,
@@ -6,8 +8,7 @@ use rsnano_node::{
     config::{NodeConfig, NodeFlags},
     wallets::WalletsExt,
 };
-use std::time::Duration;
-use test_helpers::{assert_timely, assert_timely2, assert_timely_eq, System};
+use test_helpers::{assert_timely_eq, System};
 
 #[test]
 fn open_create() {
@@ -133,26 +134,18 @@ fn search_receivable() {
             .send(&*DEV_GENESIS_KEY, node.config.receive_minimum);
         node.process(send.clone());
 
-        // Pending search should start an election
-        assert_eq!(node.active.read().unwrap().len(), 0);
         if search_all {
             node.wallets.search_receivable_all();
         } else {
             node.wallets.search_receivable_wallet(wallet_id).unwrap();
         }
-        assert_timely2(|| node.is_active_root(&send.qualified_root()));
-
         // Erase the key so the confirmation does not trigger an automatic receive
         node.wallets
             .remove_key(&wallet_id, &DEV_GENESIS_PUB_KEY)
             .unwrap();
 
-        // Now confirm the election
-        node.force_confirm(&send.hash());
-
-        assert_timely(Duration::from_secs(5), || {
-            node.block_confirmed(&send.hash()) && node.active.read().unwrap().len() == 0
-        });
+        // Now confirm the send block
+        node.confirm(send.hash());
 
         // Re-insert the key
         node.wallets
