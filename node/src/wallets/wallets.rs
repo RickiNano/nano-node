@@ -97,6 +97,7 @@ pub struct Wallets {
     start_election: Mutex<Option<Box<dyn Fn(SavedBlock) + Send + Sync>>>,
     confirming_set: Arc<ConfirmingSet>,
     message_flooder: Mutex<MessageFlooder>,
+    current_network: Networks,
 }
 
 impl Wallets {
@@ -140,6 +141,7 @@ impl Wallets {
             start_election: Mutex::new(None),
             confirming_set,
             message_flooder: Mutex::new(message_flooder),
+            current_network,
         }
     }
 
@@ -196,6 +198,21 @@ impl Wallets {
         self.node_config
             .random_representative()
             .unwrap_or(self.network_params.ledger.genesis_account.into())
+    }
+
+    fn enter_password_wallet(
+        &self,
+        wallet: &Arc<Wallet>,
+        wallet_tx: &dyn Transaction,
+        password: &str,
+    ) -> Result<(), ()> {
+        if !wallet.store.attempt_password(wallet_tx, password) {
+            warn!("Invalid password, wallet locked");
+            Err(())
+        } else {
+            info!("Wallet unlocked");
+            Ok(())
+        }
     }
 
     pub fn initialize(&mut self) -> anyhow::Result<()> {
@@ -1178,13 +1195,6 @@ pub trait WalletsExt {
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
 
-    fn enter_password_wallet(
-        &self,
-        wallet: &Arc<Wallet>,
-        wallet_tx: &dyn Transaction,
-        password: &str,
-    ) -> Result<(), ()>;
-
     fn enter_initial_password(&self, wallet: &Arc<Wallet>);
     fn create(&self, wallet_id: WalletId);
     fn change_async_wallet(
@@ -1379,7 +1389,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root) {
-        let precache_delay = if self.network_params.network.is_dev_network() {
+        let precache_delay = if self.current_network == Networks::NanoDevNetwork {
             Duration::from_secs(1)
         } else {
             Duration::from_secs(10)
@@ -1453,9 +1463,9 @@ impl WalletsExt for Arc<Wallets> {
         self.compute_reps();
 
         // Representation drifts quickly on the test network but very slowly on the live network
-        let compute_delay = if self.network_params.network.is_dev_network() {
+        let compute_delay = if self.current_network == Networks::NanoDevNetwork {
             Duration::from_millis(10)
-        } else if self.network_params.network.is_test_network() {
+        } else if self.current_network == Networks::NanoTestNetwork {
             test_scan_wallet_reps_delay()
         } else {
             Duration::from_secs(10)
@@ -2074,32 +2084,6 @@ impl WalletsExt for Arc<Wallets> {
             warn!("Invalid password, wallet locked");
         }
         result
-    }
-
-    fn enter_password_wallet(
-        &self,
-        wallet: &Arc<Wallet>,
-        wallet_tx: &dyn Transaction,
-        password: &str,
-    ) -> Result<(), ()> {
-        if !wallet.store.attempt_password(wallet_tx, password) {
-            warn!("Invalid password, wallet locked");
-            Err(())
-        } else {
-            info!("Wallet unlocked");
-            let self_l = Arc::clone(self);
-            self.wallet_actions.queue_wallet_action(
-                HIGH_PRIORITY,
-                Arc::clone(wallet),
-                Box::new(move |wallet| {
-                    // Wallets must survive node lifetime
-                    let txn = self_l.env.begin_read();
-                    let _ = self_l.search_receivable(&wallet, &txn);
-                    txn.commit();
-                }),
-            );
-            Ok(())
-        }
     }
 
     fn enter_initial_password(&self, wallet: &Arc<Wallet>) {
