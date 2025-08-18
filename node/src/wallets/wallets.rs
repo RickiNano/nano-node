@@ -330,14 +330,6 @@ impl Wallets {
         Ok(())
     }
 
-    pub fn voting_enabled(&self) -> bool {
-        self.wallets_config.voting_enabled && self.voting_reps_count() > 0
-    }
-
-    pub fn voting_reps_count(&self) -> usize {
-        self.wallet_reps.lock().unwrap().voting_reps()
-    }
-
     fn iter_wallets<'tx>(&self, tx: &'tx dyn Transaction) -> impl Iterator<Item = WalletId> + 'tx {
         let cursor = tx
             .open_ro_cursor(self.db.unwrap())
@@ -1387,15 +1379,7 @@ impl WalletsExt for Arc<Wallets> {
                 self.ledger.any().latest_root(&key.into()),
             );
         }
-        let half_principal_weight = self.online_reps.lock().unwrap().minimum_principal_weight() / 2;
-        // Makes sure that the representatives container will
-        // be in sync with any added keys.
         tx.commit();
-
-        self.wallet_reps
-            .lock()
-            .unwrap()
-            .check_rep(key, half_principal_weight);
 
         key
     }

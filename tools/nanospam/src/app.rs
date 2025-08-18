@@ -2,8 +2,8 @@ use std::{
     ffi::OsString,
     net::{Ipv6Addr, SocketAddrV6},
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Mutex,
+        atomic::{AtomicUsize, Ordering},
     },
     thread::yield_now,
     time::{Duration, Instant},
@@ -40,7 +40,7 @@ use crate::{
     },
     wallets_factory::create_wallets,
 };
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 
 const MAX_BUFFERED_BLOCKS: usize = 1024;
 const DEFAULT_RATE: &str = "1+50@3s";

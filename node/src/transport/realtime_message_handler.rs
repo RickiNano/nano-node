@@ -123,7 +123,7 @@ impl RealtimeMessageHandler {
             Message::ConfirmReq(req) => {
                 // Don't load nodes with disabled voting
                 // TODO: This check should be cached somewhere
-                if self.wallets.voting_enabled() {
+                if self.wallets.wallet_reps.lock().unwrap().voting_enabled() {
                     let aggregator_req = AggregatorRequest {
                         channel: channel.clone(),
                         roots_hashes: req.roots_hashes,

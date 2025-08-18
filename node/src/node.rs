@@ -1036,11 +1036,9 @@ impl Node {
 
         if has_local_reps {
             if config.enable_voting {
-                info!(
-                "Voting is enabled, more system resources will be used, local representatives: {}",
-                wallets.voting_reps_count()
-            );
-                if wallets.voting_reps_count() > 1 {
+                let voting_reps = wallets.wallet_reps.lock().unwrap().voting_reps();
+                info!("Voting is enabled, more system resources will be used, local representatives: {voting_reps}");
+                if voting_reps > 1 {
                     warn!("Voting with more than one representative can limit performance");
                 }
             } else {
