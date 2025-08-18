@@ -111,7 +111,6 @@ impl Wallets {
         work: WorkThresholds,
         work_factory: Arc<WorkFactory>,
         network_params: NetworkParams,
-        workers: Arc<dyn ThreadPool>,
         block_processor_queue: Arc<BlockProcessorQueue>,
         online_reps: Arc<Mutex<OnlineReps>>,
         confirming_set: Arc<ConfirmingSet>,
@@ -132,7 +131,7 @@ impl Wallets {
             work_thresholds: work.clone(),
             network_params,
             delayed_work: Mutex::new(HashMap::new()),
-            workers,
+            workers: Arc::new(ThreadPoolImpl::create(1, "wallet work")),
             wallet_actions: WalletActionThread::new(),
             block_processor_queue,
             wallet_reps: Arc::new(Mutex::new(WalletRepresentatives::new(
@@ -156,7 +155,6 @@ impl Wallets {
         let work = WorkThresholds::default_for(network);
         let work_factory = Arc::new(WorkFactory::disabled());
         let network_params = NetworkParams::new(network);
-        let workers = Arc::new(ThreadPoolImpl::new_null());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
         let online_reps = Arc::new(Mutex::new(OnlineReps::default()));
         let confirming_set = Arc::new(ConfirmingSet::new_null());
@@ -168,7 +166,6 @@ impl Wallets {
             work,
             work_factory,
             network_params,
-            workers,
             block_processor_queue,
             online_reps,
             confirming_set,
@@ -1060,8 +1057,6 @@ pub trait WalletsExt {
         details: &BlockDetails,
     ) -> anyhow::Result<SavedBlock>;
 
-    fn ongoing_compute_reps(&self);
-
     fn change_seed(
         &self,
         wallet_id: WalletId,
@@ -1257,24 +1252,9 @@ pub trait WalletsExt {
     ) -> Result<(), WalletsError>;
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
-
-    fn try_receive(&self, confirmed: &[(SavedBlock, BlockHash)]);
 }
 
 impl WalletsExt for Arc<Wallets> {
-    fn try_receive(&self, confirmed: &[(SavedBlock, BlockHash)]) {
-        for (block, _) in confirmed {
-            // TODO: Is it neccessary to call this for all blocks?
-            if block.is_send() {
-                let block = block.clone();
-                let wallets = self.clone();
-                self.workers.post(Box::new(move || {
-                    wallets.receive_confirmed(block.hash(), block.destination().unwrap())
-                }));
-            }
-        }
-    }
-
     fn receive_action2(
         &self,
         wallet_id: &WalletId,
@@ -1481,27 +1461,6 @@ impl WalletsExt for Arc<Wallets> {
             self.work_ensure(&wallet, account, hash.into());
         }
         Ok(saved_block)
-    }
-
-    fn ongoing_compute_reps(&self) {
-        self.compute_reps();
-
-        // Representation drifts quickly on the test network but very slowly on the live network
-        let compute_delay = if self.current_network == Networks::NanoDevNetwork {
-            Duration::from_millis(10)
-        } else if self.current_network == Networks::NanoTestNetwork {
-            test_scan_wallet_reps_delay()
-        } else {
-            Duration::from_secs(10)
-        };
-
-        let self_l = Arc::clone(self);
-        self.workers.post_delayed(
-            compute_delay,
-            Box::new(move || {
-                self_l.ongoing_compute_reps();
-            }),
-        );
     }
 
     fn change_seed_wallet(
