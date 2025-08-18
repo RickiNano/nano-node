@@ -502,10 +502,7 @@ fn rep_self_vote() {
     // Insert representatives into the node to allow voting
     node0.insert_into_wallet(&rep_big);
     node0.insert_into_wallet(&DEV_GENESIS_KEY);
-    assert_timely_eq2(
-        || node0.wallets.wallet_reps.lock().unwrap().voting_reps(),
-        2,
-    );
+    assert_timely_eq2(|| node0.wallet_reps.lock().unwrap().voting_reps(), 2);
 
     let block0 = lattice.genesis().send_all_except(
         &rep_big,
