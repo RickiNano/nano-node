@@ -7,8 +7,6 @@ pub struct WalletRepresentatives {
     voting_enabled: bool,
     /// has representatives with at least 50% of principal representative requirements
     half_principal: bool,
-    /// Number of representatives with at least the configured minimum voting weight
-    voting: u64,
     /// Representatives with at least the configured minimum voting weight
     rep_keys: Vec<PublicKey>,
     vote_minimum: Amount,
@@ -24,7 +22,6 @@ impl WalletRepresentatives {
         Self {
             voting_enabled,
             half_principal: false,
-            voting: 0,
             rep_keys: Vec::new(),
             vote_minimum,
             rep_weights,
@@ -44,12 +41,16 @@ impl WalletRepresentatives {
         self.voting_enabled && self.voting_reps() > 0
     }
 
-    pub fn voting_reps(&self) -> u64 {
-        self.voting
+    pub fn voting_reps(&self) -> usize {
+        self.rep_keys.len()
     }
 
     pub fn exists(&self, rep: &Account) -> bool {
         self.rep_keys.iter().any(|k| k.as_account() == *rep)
+    }
+
+    pub fn rep_keys(&self) -> impl Iterator<Item = PublicKey> + use<'_> {
+        self.rep_keys.iter().cloned()
     }
 
     pub fn rep_accounts(&self) -> impl Iterator<Item = Account> + use<'_> {
@@ -57,7 +58,6 @@ impl WalletRepresentatives {
     }
 
     pub fn clear(&mut self) {
-        self.voting = 0;
         self.half_principal = false;
         self.rep_keys.clear();
     }
@@ -83,8 +83,6 @@ impl WalletRepresentatives {
         }
 
         self.rep_keys.push(rep_key);
-
-        self.voting += 1;
         true
     }
 }

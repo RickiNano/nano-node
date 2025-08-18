@@ -44,19 +44,7 @@ fn vote_minimum() {
     node.process(open2.clone());
 
     let wallet_id = node.wallets.wallet_ids()[0];
-    assert_eq!(
-        node.wallets
-            .mutex
-            .lock()
-            .unwrap()
-            .get(&wallet_id)
-            .unwrap()
-            .representatives
-            .lock()
-            .unwrap()
-            .len(),
-        0
-    );
+    assert_eq!(node.wallets.wallet_reps.lock().unwrap().voting_reps(), 0);
 
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)
@@ -68,19 +56,7 @@ fn vote_minimum() {
         .insert_adhoc2(&wallet_id, &key2.raw_key(), false)
         .unwrap();
     node.wallets.compute_reps();
-    assert_eq!(
-        node.wallets
-            .mutex
-            .lock()
-            .unwrap()
-            .get(&wallet_id)
-            .unwrap()
-            .representatives
-            .lock()
-            .unwrap()
-            .len(),
-        2
-    );
+    assert_eq!(node.wallets.wallet_reps.lock().unwrap().voting_reps(), 2);
 }
 
 #[test]

@@ -336,7 +336,7 @@ impl Wallets {
         self.wallets_config.voting_enabled && self.voting_reps_count() > 0
     }
 
-    pub fn voting_reps_count(&self) -> u64 {
+    pub fn voting_reps_count(&self) -> usize {
         self.wallet_reps.lock().unwrap().voting_reps()
     }
 
@@ -420,17 +420,17 @@ impl Wallets {
 
         let mut rep_priv_keys: Vec<PrivateKey> = Vec::new();
         {
+            let wallet_reps = self.wallet_reps.lock().unwrap();
             let txn = self.env.begin_read();
             let lock = self.mutex.lock().unwrap();
             for (wallet_id, wallet) in lock.iter() {
-                let rep_pub_keys = wallet.representatives.lock().unwrap().clone();
-                for account in rep_pub_keys {
-                    if wallet.store.exists(&txn, &account.into()) {
-                        if !self.ledger.weight(&account).is_zero() {
+                for rep_key in wallet_reps.rep_keys() {
+                    if wallet.store.exists(&txn, &rep_key) {
+                        if !self.ledger.weight(&rep_key).is_zero() {
                             if wallet.store.valid_password(&txn) {
                                 let prv = wallet
                                     .store
-                                    .fetch(&txn, &account.into())
+                                    .fetch(&txn, &rep_key.into())
                                     .expect("could not fetch account from wallet");
 
                                 rep_priv_keys.push(prv.into());
@@ -583,23 +583,25 @@ impl Wallets {
     }
 
     pub fn compute_reps(&self) {
-        let wallets_guard = self.mutex.lock().unwrap();
-        let mut reps_guard = self.wallet_reps.lock().unwrap();
-        reps_guard.clear();
         let half_principal_weight = self.online_reps.lock().unwrap().minimum_principal_weight() / 2;
-        let txn = self.env.begin_read();
-        for (_, wallet) in wallets_guard.iter() {
-            let mut representatives = HashSet::new();
 
-            for (pub_key, _) in wallet.store.iter(&txn) {
-                if reps_guard.check_rep(pub_key, half_principal_weight) {
-                    representatives.insert(pub_key.into());
+        let mut wallet_keys = Vec::new();
+        {
+            let wallets_guard = self.mutex.lock().unwrap();
+            let txn = self.env.begin_read();
+            for (_, wallet) in wallets_guard.iter() {
+                for (pub_key, _) in wallet.store.iter(&txn) {
+                    wallet_keys.push(pub_key);
                 }
             }
-
-            *wallet.representatives.lock().unwrap() = representatives;
+            txn.commit();
         }
-        txn.commit();
+
+        let mut reps_guard = self.wallet_reps.lock().unwrap();
+        reps_guard.clear();
+        for pub_key in wallet_keys {
+            reps_guard.check_rep(pub_key, half_principal_weight);
+        }
     }
 
     pub fn exists(&self, pub_key: &PublicKey) -> bool {
@@ -1346,7 +1348,6 @@ impl WalletsExt for Arc<Wallets> {
         let mut reps = self.wallet_reps.lock().unwrap();
         if reps.check_rep(key, half_principal_weight) {
             info!(account=%key.as_account().encode_account(), "New account qualified as representative");
-            wallet.representatives.lock().unwrap().insert(key);
         }
         key
     }
@@ -1407,10 +1408,12 @@ impl WalletsExt for Arc<Wallets> {
         // Makes sure that the representatives container will
         // be in sync with any added keys.
         tx.commit();
-        let mut rep_guard = self.wallet_reps.lock().unwrap();
-        if rep_guard.check_rep(key, half_principal_weight) {
-            wallet.representatives.lock().unwrap().insert(key);
-        }
+
+        self.wallet_reps
+            .lock()
+            .unwrap()
+            .check_rep(key, half_principal_weight);
+
         key
     }
 
