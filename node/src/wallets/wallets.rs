@@ -418,36 +418,40 @@ impl Wallets {
             return;
         }
 
-        let mut rep_priv_keys: Vec<PrivateKey> = Vec::new();
+        let mut all_priv_keys: Vec<PrivateKey> = Vec::new();
         {
             let txn = self.env.begin_read();
             let lock = self.mutex.lock().unwrap();
-            let wallet_reps = self.wallet_reps.lock().unwrap();
             for (wallet_id, wallet) in lock.iter() {
-                for rep_key in wallet_reps.rep_keys() {
-                    if wallet.store.exists(&txn, &rep_key) {
-                        if wallet.store.valid_password(&txn) {
-                            let prv = wallet
-                                .store
-                                .fetch(&txn, &rep_key.into())
-                                .expect("could not fetch account from wallet");
-
-                            rep_priv_keys.push(prv.into());
-                        } else {
-                            let mut last_log_guard = self.last_log.lock().unwrap();
-                            let should_log = match last_log_guard.as_ref() {
-                                Some(i) => i.elapsed() >= Duration::from_secs(60),
-                                None => true,
-                            };
-                            if should_log {
-                                *last_log_guard = Some(Instant::now());
-                                warn!("Representative locked inside wallet {}", wallet_id);
-                            }
+                if wallet.store.valid_password(&txn) {
+                    for (pub_key, _) in wallet.store.iter(&txn) {
+                        if let Ok(prv_key) = wallet.store.fetch(&txn, &pub_key) {
+                            all_priv_keys.push(prv_key.into());
                         }
+                    }
+                } else {
+                    let mut last_log_guard = self.last_log.lock().unwrap();
+                    let should_log = match last_log_guard.as_ref() {
+                        Some(i) => i.elapsed() >= Duration::from_secs(60),
+                        None => true,
+                    };
+                    if should_log {
+                        *last_log_guard = Some(Instant::now());
+                        warn!("Representative locked inside wallet {}", wallet_id);
                     }
                 }
             }
             txn.commit();
+        }
+
+        let mut rep_priv_keys: Vec<PrivateKey> = Vec::new();
+        {
+            let wallet_reps = self.wallet_reps.lock().unwrap();
+            for rep_key in wallet_reps.rep_keys() {
+                if let Some(k) = all_priv_keys.iter().find(|k| k.public_key() == rep_key) {
+                    rep_priv_keys.push(k.clone());
+                }
+            }
         }
 
         for keys in rep_priv_keys {
