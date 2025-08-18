@@ -18,6 +18,8 @@ impl From<&GlobalConfig> for BacklogScanConfig {
 
 impl From<&NodeConfig> for WalletsConfig {
     fn from(value: &NodeConfig) -> Self {
-        Self {}
+        Self {
+            preconfigured_representatives: value.preconfigured_representatives.clone(),
+        }
     }
 }
