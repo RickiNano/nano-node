@@ -525,7 +525,7 @@ impl Node {
             )
         };
 
-        let wallets_config = WalletsConfig::from(&config);
+        let wallets_config = WalletsConfig::from(global_config);
 
         let mut wallets = Wallets::new(
             wallets_env,

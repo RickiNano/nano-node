@@ -78,6 +78,8 @@ pub struct WalletsConfig {
     pub receive_minimum: Amount,
     pub vote_minimum: Amount,
     pub enable_voting: bool,
+    /// How long to wait until the next cached work is created
+    pub cached_work_generation_delay: Duration,
 }
 
 impl WalletsConfig {
@@ -98,6 +100,7 @@ impl WalletsConfig {
             receive_minimum: Amount::micronano(1),
             vote_minimum: Amount::nano(1000),
             enable_voting: false,
+            cached_work_generation_delay: Duration::from_secs(10),
         }
     }
 
@@ -105,6 +108,7 @@ impl WalletsConfig {
         Self {
             enable_voting: true,
             preconfigured_representatives: vec![*DEV_GENESIS_PUB_KEY],
+            cached_work_generation_delay: Duration::from_secs(1),
             ..Self::defaults_live()
         }
     }
@@ -170,7 +174,6 @@ pub struct Wallets {
     online_reps: Arc<Mutex<OnlineReps>>,
     kdf: KeyDerivationFunction,
     start_election: Mutex<Option<Box<dyn Fn(SavedBlock) + Send + Sync>>>,
-    current_network: Networks,
 }
 
 impl Wallets {
@@ -207,7 +210,6 @@ impl Wallets {
             online_reps,
             kdf: kdf.clone(),
             start_election: Mutex::new(None),
-            current_network,
         }
     }
 
@@ -1431,11 +1433,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root) {
-        let precache_delay = if self.current_network == Networks::NanoDevNetwork {
-            Duration::from_secs(1)
-        } else {
-            Duration::from_secs(10)
-        };
+        let precache_delay = self.wallets_config.cached_work_generation_delay;
         self.delayed_work.lock().unwrap().insert(account, root);
         let self_clone = Arc::clone(self);
         let wallet = Arc::clone(wallet);
