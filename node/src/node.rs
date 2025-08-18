@@ -528,13 +528,13 @@ impl Node {
         let wallets_config = WalletsConfig::from(global_config);
 
         let mut wallets = Wallets::new(
+            wallets_config,
             wallets_env,
             ledger.clone(),
-            wallets_config,
-            network_params.work.clone(),
-            work_factory.clone(),
             block_processor_queue.clone(),
             online_reps.clone(),
+            network_params.work.clone(),
+            work_factory.clone(),
         );
         if !is_nulled {
             wallets.initialize().expect("Could not create wallet");

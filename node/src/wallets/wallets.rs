@@ -181,13 +181,13 @@ pub struct Wallets {
 
 impl Wallets {
     pub fn new(
+        wallets_config: WalletsConfig,
         env: Arc<LmdbEnvironment>,
         ledger: Arc<Ledger>,
-        wallets_config: WalletsConfig,
-        work: WorkThresholds,
-        work_factory: Arc<WorkFactory>,
         block_processor_queue: Arc<BlockProcessorQueue>,
         online_reps: Arc<Mutex<OnlineReps>>,
+        work: WorkThresholds,
+        work_factory: Arc<WorkFactory>,
     ) -> Self {
         let kdf = KeyDerivationFunction::new(wallets_config.kdf_work);
 
@@ -220,18 +220,18 @@ impl Wallets {
         let env = Arc::new(LmdbEnvironment::new_null());
         let ledger = Arc::new(Ledger::new_null());
         let wallets_config = WalletsConfig::default();
-        let work = WorkThresholds::default_for(network);
-        let work_factory = Arc::new(WorkFactory::disabled());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
         let online_reps = Arc::new(Mutex::new(OnlineReps::default()));
+        let work = WorkThresholds::default_for(network);
+        let work_factory = Arc::new(WorkFactory::disabled());
         Self::new(
+            wallets_config,
             env,
             ledger,
-            wallets_config,
-            work,
-            work_factory,
             block_processor_queue,
             online_reps,
+            work,
+            work_factory,
         )
     }
 
