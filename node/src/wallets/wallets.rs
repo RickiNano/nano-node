@@ -80,6 +80,7 @@ pub struct WalletsConfig {
     pub enable_voting: bool,
     /// How long to wait until the next cached work is created
     pub cached_work_generation_delay: Duration,
+    pub kdf_work: u32,
 }
 
 impl WalletsConfig {
@@ -101,6 +102,7 @@ impl WalletsConfig {
             vote_minimum: Amount::nano(1000),
             enable_voting: false,
             cached_work_generation_delay: Duration::from_secs(10),
+            kdf_work: 1024 * 64,
         }
     }
 
@@ -109,6 +111,7 @@ impl WalletsConfig {
             enable_voting: true,
             preconfigured_representatives: vec![*DEV_GENESIS_PUB_KEY],
             cached_work_generation_delay: Duration::from_secs(1),
+            kdf_work: 8,
             ..Self::defaults_live()
         }
     }
@@ -185,9 +188,8 @@ impl Wallets {
         work_factory: Arc<WorkFactory>,
         block_processor_queue: Arc<BlockProcessorQueue>,
         online_reps: Arc<Mutex<OnlineReps>>,
-        current_network: Networks,
     ) -> Self {
-        let kdf = KeyDerivationFunction::new(Self::kdf_work_for(current_network));
+        let kdf = KeyDerivationFunction::new(wallets_config.kdf_work);
 
         Self {
             db: None,
@@ -230,15 +232,7 @@ impl Wallets {
             work_factory,
             block_processor_queue,
             online_reps,
-            network,
         )
-    }
-
-    fn kdf_work_for(network: Networks) -> u32 {
-        match network {
-            Networks::NanoDevNetwork => 8,
-            _ => 1024 * 64,
-        }
     }
 
     pub fn start(&self) {

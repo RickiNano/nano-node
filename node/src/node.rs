@@ -535,7 +535,6 @@ impl Node {
             work_factory.clone(),
             block_processor_queue.clone(),
             online_reps.clone(),
-            current_network,
         );
         if !is_nulled {
             wallets.initialize().expect("Could not create wallet");

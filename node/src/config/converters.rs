@@ -31,6 +31,11 @@ impl From<&GlobalConfig> for WalletsConfig {
             } else {
                 Duration::from_secs(10)
             },
+            kdf_work: if value.network_params.network.is_dev_network() {
+                8
+            } else {
+                1024 * 64
+            },
         }
     }
 }
