@@ -1332,11 +1332,6 @@ impl WalletsExt for Arc<Wallets> {
         if generate_work {
             self.work_ensure(wallet, key.into(), key.into());
         }
-        let half_principal_weight = self.online_reps.lock().unwrap().minimum_principal_weight() / 2;
-        let mut reps = self.wallet_reps.lock().unwrap();
-        if reps.check_rep(key, half_principal_weight) {
-            info!(account=%key.as_account().encode_account(), "New account qualified as representative");
-        }
         key
     }
 
