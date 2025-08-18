@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
@@ -15,7 +18,7 @@ use crate::{
     config::{NetworkParams, NodeConfig},
     consensus::{election::VoteType, VoteBroadcaster},
     transport::MessageSender,
-    wallets::Wallets,
+    wallets::{WalletRepresentatives, Wallets},
 };
 
 #[derive(Clone)]
@@ -30,7 +33,7 @@ pub struct VoteGenerators {
     final_vote_generator: VoteGenerator,
     vote_listener: OutputListenerMt<VoteGenerationEvent>,
     voting_delay: Duration,
-    wallets: Arc<Wallets>,
+    wallet_reps: Arc<Mutex<WalletRepresentatives>>,
     stats: Arc<Stats>,
 }
 
@@ -86,7 +89,7 @@ impl VoteGenerators {
             final_vote_generator,
             vote_listener: OutputListenerMt::new(),
             voting_delay,
-            wallets,
+            wallet_reps: wallets.wallet_reps.clone(),
             stats,
         }
     }
@@ -168,7 +171,7 @@ impl VoteGenerators {
     }
 
     pub fn voting_enabled(&self) -> bool {
-        self.wallets.voting_enabled()
+        self.wallet_reps.lock().unwrap().voting_enabled()
     }
 }
 

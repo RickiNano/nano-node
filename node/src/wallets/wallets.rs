@@ -77,7 +77,7 @@ pub struct WalletsConfig {
     pub password_fanout: usize,
     pub receive_minimum: Amount,
     pub vote_minimum: Amount,
-    pub enable_voting: bool,
+    pub voting_enabled: bool,
     /// How long to wait until the next cached work is created
     pub cached_work_generation_delay: Duration,
     pub kdf_work: u32,
@@ -100,7 +100,7 @@ impl WalletsConfig {
             password_fanout: 1024,
             receive_minimum: Amount::micronano(1),
             vote_minimum: Amount::nano(1000),
-            enable_voting: false,
+            voting_enabled: false,
             cached_work_generation_delay: Duration::from_secs(10),
             kdf_work: 1024 * 64,
         }
@@ -108,7 +108,7 @@ impl WalletsConfig {
 
     pub fn defaults_dev() -> Self {
         Self {
-            enable_voting: true,
+            voting_enabled: true,
             preconfigured_representatives: vec![*DEV_GENESIS_PUB_KEY],
             cached_work_generation_delay: Duration::from_secs(1),
             kdf_work: 8,
@@ -197,6 +197,7 @@ impl Wallets {
             mutex: Mutex::new(HashMap::new()),
             env,
             wallet_reps: Arc::new(Mutex::new(WalletRepresentatives::new(
+                wallets_config.voting_enabled,
                 wallets_config.vote_minimum,
                 ledger.rep_weights.clone(),
             ))),
@@ -332,7 +333,7 @@ impl Wallets {
     }
 
     pub fn voting_enabled(&self) -> bool {
-        self.wallets_config.enable_voting && self.voting_reps_count() > 0
+        self.wallets_config.voting_enabled && self.voting_reps_count() > 0
     }
 
     pub fn voting_reps_count(&self) -> u64 {
@@ -413,43 +414,46 @@ impl Wallets {
     where
         F: FnMut(&PrivateKey),
     {
-        if self.wallets_config.enable_voting {
-            let mut action_accounts_l: Vec<PrivateKey> = Vec::new();
-            {
-                let txn = self.env.begin_read();
-                let lock = self.mutex.lock().unwrap();
-                for (wallet_id, wallet) in lock.iter() {
-                    let representatives_l = wallet.representatives.lock().unwrap().clone();
-                    for account in representatives_l {
-                        if wallet.store.exists(&txn, &account.into()) {
-                            if !self.ledger.weight(&account).is_zero() {
-                                if wallet.store.valid_password(&txn) {
-                                    let prv = wallet
-                                        .store
-                                        .fetch(&txn, &account.into())
-                                        .expect("could not fetch account from wallet");
+        if !self.wallets_config.voting_enabled {
+            return;
+        }
 
-                                    action_accounts_l.push(prv.into());
-                                } else {
-                                    let mut last_log_guard = self.last_log.lock().unwrap();
-                                    let should_log = match last_log_guard.as_ref() {
-                                        Some(i) => i.elapsed() >= Duration::from_secs(60),
-                                        None => true,
-                                    };
-                                    if should_log {
-                                        *last_log_guard = Some(Instant::now());
-                                        warn!("Representative locked inside wallet {}", wallet_id);
-                                    }
+        let mut rep_priv_keys: Vec<PrivateKey> = Vec::new();
+        {
+            let txn = self.env.begin_read();
+            let lock = self.mutex.lock().unwrap();
+            for (wallet_id, wallet) in lock.iter() {
+                let rep_pub_keys = wallet.representatives.lock().unwrap().clone();
+                for account in rep_pub_keys {
+                    if wallet.store.exists(&txn, &account.into()) {
+                        if !self.ledger.weight(&account).is_zero() {
+                            if wallet.store.valid_password(&txn) {
+                                let prv = wallet
+                                    .store
+                                    .fetch(&txn, &account.into())
+                                    .expect("could not fetch account from wallet");
+
+                                rep_priv_keys.push(prv.into());
+                            } else {
+                                let mut last_log_guard = self.last_log.lock().unwrap();
+                                let should_log = match last_log_guard.as_ref() {
+                                    Some(i) => i.elapsed() >= Duration::from_secs(60),
+                                    None => true,
+                                };
+                                if should_log {
+                                    *last_log_guard = Some(Instant::now());
+                                    warn!("Representative locked inside wallet {}", wallet_id);
                                 }
                             }
                         }
                     }
                 }
-                txn.commit();
             }
-            for keys in action_accounts_l {
-                action(&keys);
-            }
+            txn.commit();
+        }
+
+        for keys in rep_priv_keys {
+            action(&keys);
         }
     }
 

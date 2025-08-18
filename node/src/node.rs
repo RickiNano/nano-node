@@ -1026,7 +1026,7 @@ impl Node {
                     "Found {} local representatives in wallets",
                     wallet_reps.voting_reps()
                 );
-                for rep in &wallet_reps.accounts {
+                for rep in wallet_reps.rep_accounts() {
                     info!("Local representative: {}", rep.encode_account());
                 }
             }

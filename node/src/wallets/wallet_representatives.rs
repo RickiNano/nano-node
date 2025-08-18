@@ -1,31 +1,47 @@
 use rsnano_core::{Account, Amount, PublicKey};
 use rsnano_ledger::RepWeightCache;
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct WalletRepresentatives {
+    voting_enabled: bool,
     /// has representatives with at least 50% of principal representative requirements
     half_principal: bool,
     /// Number of representatives with at least the configured minimum voting weight
     voting: u64,
     /// Representatives with at least the configured minimum voting weight
-    pub accounts: HashSet<Account>,
+    rep_keys: Vec<PublicKey>,
     vote_minimum: Amount,
     rep_weights: Arc<RepWeightCache>,
 }
 
 impl WalletRepresentatives {
-    pub fn new(vote_minimum: Amount, rep_weights: Arc<RepWeightCache>) -> Self {
+    pub fn new(
+        voting_enabled: bool,
+        vote_minimum: Amount,
+        rep_weights: Arc<RepWeightCache>,
+    ) -> Self {
         Self {
+            voting_enabled,
             half_principal: false,
             voting: 0,
-            accounts: HashSet::new(),
+            rep_keys: Vec::new(),
             vote_minimum,
             rep_weights,
         }
     }
+
     pub fn have_half_rep(&self) -> bool {
         self.half_principal
+    }
+
+    #[cfg(test)]
+    pub fn set_have_half_rep(&mut self, value: bool) {
+        self.half_principal = value;
+    }
+
+    pub fn voting_enabled(&self) -> bool {
+        self.voting_enabled && self.voting_reps() > 0
     }
 
     pub fn voting_reps(&self) -> u64 {
@@ -33,13 +49,17 @@ impl WalletRepresentatives {
     }
 
     pub fn exists(&self, rep: &Account) -> bool {
-        self.accounts.contains(rep)
+        self.rep_keys.iter().any(|k| k.as_account() == *rep)
+    }
+
+    pub fn rep_accounts(&self) -> impl Iterator<Item = Account> + use<'_> {
+        self.rep_keys.iter().map(|k| k.as_account())
     }
 
     pub fn clear(&mut self) {
         self.voting = 0;
         self.half_principal = false;
-        self.accounts.clear();
+        self.rep_keys.clear();
     }
 
     pub fn check_rep(&mut self, pub_key: PublicKey, half_principal_weight: Amount) -> bool {
@@ -56,15 +76,13 @@ impl WalletRepresentatives {
         self.insert(pub_key)
     }
 
-    #[cfg(test)]
-    pub fn set_have_half_rep(&mut self, value: bool) {
-        self.half_principal = value;
-    }
-
-    pub fn insert(&mut self, pub_key: impl Into<PublicKey>) -> bool {
-        if !self.accounts.insert(pub_key.into().into()) {
-            return false; // account already exists
+    fn insert(&mut self, pub_key: impl Into<PublicKey>) -> bool {
+        let rep_key = pub_key.into();
+        if self.rep_keys.contains(&rep_key) {
+            return false;
         }
+
+        self.rep_keys.push(rep_key);
 
         self.voting += 1;
         true
@@ -73,6 +91,6 @@ impl WalletRepresentatives {
 
 impl Default for WalletRepresentatives {
     fn default() -> Self {
-        Self::new(Amount::nano(1), Arc::new(RepWeightCache::new()))
+        Self::new(false, Amount::nano(1), Arc::new(RepWeightCache::new()))
     }
 }

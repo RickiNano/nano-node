@@ -25,7 +25,7 @@ impl From<&GlobalConfig> for WalletsConfig {
             password_fanout: node.password_fanout as usize,
             receive_minimum: node.receive_minimum,
             vote_minimum: node.vote_minimum,
-            enable_voting: node.enable_voting,
+            voting_enabled: node.enable_voting,
             cached_work_generation_delay: if value.network_params.network.is_dev_network() {
                 Duration::from_secs(1)
             } else {
