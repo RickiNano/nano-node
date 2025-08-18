@@ -6,7 +6,7 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
     sync::{Arc, Condvar, Mutex},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use rand::{seq::IndexedRandom, Rng};
@@ -166,7 +166,6 @@ pub struct Wallets {
     pub mutex: Mutex<HashMap<WalletId, Arc<Wallet>>>,
     wallets_config: WalletsConfig,
     ledger: Arc<Ledger>,
-    last_log: Mutex<Option<Instant>>,
     work_factory: Arc<WorkFactory>,
     work_thresholds: WorkThresholds,
     pub delayed_work: Mutex<HashMap<Account, Root>>,
@@ -203,7 +202,6 @@ impl Wallets {
             ))),
             wallets_config,
             ledger: Arc::clone(&ledger),
-            last_log: Mutex::new(None),
             work_factory,
             work_thresholds: work,
             delayed_work: Mutex::new(HashMap::new()),
@@ -410,53 +408,41 @@ impl Wallets {
         txn.commit();
     }
 
-    pub fn foreach_representative<F>(&self, mut action: F)
-    where
-        F: FnMut(&PrivateKey),
-    {
+    pub fn rep_keys(&self, result: &mut Vec<PrivateKey>) {
+        result.clear();
+
         if !self.wallets_config.voting_enabled {
             return;
         }
 
+        let all_priv_keys = self.get_all_private_keys();
+        {
+            let wallet_reps = self.wallet_reps.lock().unwrap();
+            for rep_key in wallet_reps.rep_keys() {
+                if let Some(k) = all_priv_keys.iter().find(|k| k.public_key() == rep_key) {
+                    result.push(k.clone());
+                }
+            }
+        }
+    }
+
+    fn get_all_private_keys(&self) -> Vec<PrivateKey> {
         let mut all_priv_keys: Vec<PrivateKey> = Vec::new();
         {
             let txn = self.env.begin_read();
             let lock = self.mutex.lock().unwrap();
-            for (wallet_id, wallet) in lock.iter() {
+            for (_, wallet) in lock.iter() {
                 if wallet.store.valid_password(&txn) {
                     for (pub_key, _) in wallet.store.iter(&txn) {
                         if let Ok(prv_key) = wallet.store.fetch(&txn, &pub_key) {
                             all_priv_keys.push(prv_key.into());
                         }
                     }
-                } else {
-                    let mut last_log_guard = self.last_log.lock().unwrap();
-                    let should_log = match last_log_guard.as_ref() {
-                        Some(i) => i.elapsed() >= Duration::from_secs(60),
-                        None => true,
-                    };
-                    if should_log {
-                        *last_log_guard = Some(Instant::now());
-                        warn!("Representative locked inside wallet {}", wallet_id);
-                    }
                 }
             }
             txn.commit();
         }
-
-        let mut rep_priv_keys: Vec<PrivateKey> = Vec::new();
-        {
-            let wallet_reps = self.wallet_reps.lock().unwrap();
-            for rep_key in wallet_reps.rep_keys() {
-                if let Some(k) = all_priv_keys.iter().find(|k| k.public_key() == rep_key) {
-                    rep_priv_keys.push(k.clone());
-                }
-            }
-        }
-
-        for keys in rep_priv_keys {
-            action(&keys);
-        }
+        all_priv_keys
     }
 
     pub fn work_cache_blocking2(

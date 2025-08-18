@@ -292,8 +292,10 @@ impl SharedState {
         F: Fn(Arc<Vote>),
     {
         debug_assert_eq!(hashes.len(), roots.len());
+        let mut rep_keys = Vec::new();
+        self.wallets.rep_keys(&mut rep_keys);
         let mut votes = Vec::new();
-        self.wallets.foreach_representative(|keys| {
+        for rep_key in rep_keys.drain(..) {
             let timestamp = if self.is_final {
                 Vote::TIMESTAMP_MAX
             } else {
@@ -305,12 +307,12 @@ impl SharedState {
                 0x9 /*8192ms*/
             };
             votes.push(Arc::new(Vote::new(
-                keys,
+                &rep_key,
                 timestamp,
                 duration,
                 hashes.clone(),
             )));
-        });
+        }
 
         for vote in votes {
             {
