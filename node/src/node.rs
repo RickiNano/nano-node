@@ -87,7 +87,8 @@ use crate::{
     },
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
     wallets::{
-        LocalRepsComputation, ReceivableSearch, WalletBackup, Wallets, WalletsConfig, WalletsExt,
+        LocalRepsComputation, ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets,
+        WalletsConfig, WalletsExt,
     },
     work::{WorkFactory, WorkRequest},
     NodeCallbacks, OnlineWeightSampler,
@@ -166,6 +167,7 @@ pub struct Node {
     aec_voter: TimerThread<AecVoter>,
     unchecked_reenqueuer: TimerThread<UncheckedBlockReenqueuer>,
     local_reps_computation: TimerThread<LocalRepsComputation>,
+    pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
 }
 
 pub(crate) struct NodeArgs {
@@ -540,6 +542,7 @@ impl Node {
             wallets.initialize().expect("Could not create wallet");
         }
         let wallets = Arc::new(wallets);
+        let wallet_reps = wallets.wallet_reps.clone();
 
         let vote_broadcaster = Arc::new(VoteBroadcaster::new(
             vote_processor_queue.clone(),
@@ -1019,14 +1022,14 @@ impl Node {
         );
 
         let has_local_reps = {
-            let wallet_reps = wallets.wallet_reps.lock().unwrap();
-            let has_local_reps = wallet_reps.voting_reps() > 0;
+            let reps = wallet_reps.lock().unwrap();
+            let has_local_reps = reps.voting_reps() > 0;
             if has_local_reps {
                 info!(
                     "Found {} local representatives in wallets",
-                    wallet_reps.voting_reps()
+                    reps.voting_reps()
                 );
-                for rep in wallet_reps.rep_accounts() {
+                for rep in reps.rep_accounts() {
                     info!("Local representative: {}", rep.encode_account());
                 }
             }
@@ -1036,7 +1039,7 @@ impl Node {
 
         if has_local_reps {
             if config.enable_voting {
-                let voting_reps = wallets.wallet_reps.lock().unwrap().voting_reps();
+                let voting_reps = wallet_reps.lock().unwrap().voting_reps();
                 info!("Voting is enabled, more system resources will be used, local representatives: {voting_reps}");
                 if voting_reps > 1 {
                     warn!("Voting with more than one representative can limit performance");
@@ -1102,7 +1105,7 @@ impl Node {
             ),
         );
 
-        let mut wallet_reps_checker = WalletRepsChecker::new(wallets.wallet_reps.clone());
+        let mut wallet_reps_checker = WalletRepsChecker::new(wallet_reps.clone());
         wallet_reps_checker.add_consumer(vote_rebroadcast_queue.clone());
 
         let rep_tiers = Arc::new(CurrentRepTiers::new());
@@ -1334,6 +1337,7 @@ impl Node {
             block_rates,
             aec_voter: TimerThread::new("AEC voter", aec_voter),
             local_reps_computation: TimerThread::new("Reps comp", local_reps_computation),
+            wallet_reps,
         }
     }
 
