@@ -26,7 +26,7 @@ use crate::{
         RequestAggregatorConfig, VoteCacheConfig, VoteProcessorConfig, VoteRebroadcastQueue,
     },
     transport::MessageProcessorConfig,
-    wallets::default_preconfigured_representatives,
+    wallets::default_preconfigured_representatives_for_live,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -71,7 +71,6 @@ pub struct NodeConfig {
     pub bootstrap: BootstrapConfig,
     pub bootstrap_server: BootstrapServerConfig,
     pub confirming_set_batch_time: Duration,
-    pub backup_before_upgrade: bool,
     pub max_work_generate_multiplier: f64,
     pub max_queued_requests: u32,
     pub request_aggregator_threads: u32,
@@ -175,7 +174,7 @@ impl NodeConfig {
                 preconfigured_peers
                     .push(Peer::new(DEFAULT_LIVE_PEER_NETWORK.clone(), default_port));
 
-                preconfigured_representatives = default_preconfigured_representatives();
+                preconfigured_representatives = default_preconfigured_representatives_for_live();
             }
             Networks::NanoTestNetwork => {
                 preconfigured_peers
@@ -225,7 +224,6 @@ impl NodeConfig {
             bootstrap: Default::default(),
             bootstrap_server: Default::default(),
             confirming_set_batch_time: Duration::from_millis(250),
-            backup_before_upgrade: false,
             max_work_generate_multiplier: 64_f64,
             max_queued_requests: 512,
             request_aggregator_threads: max(parallelism, 4) as u32,

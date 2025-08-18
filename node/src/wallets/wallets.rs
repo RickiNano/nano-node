@@ -19,17 +19,16 @@ use rsnano_core::{
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce,
 };
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
+use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet, DEV_GENESIS_PUB_KEY};
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
-use rsnano_store_lmdb::{create_backup_file, KeyType, LmdbIterator, LmdbWalletStore};
+use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
 
 use super::{Wallet, WalletActionThread, WalletRepresentatives};
 use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
-    config::NodeConfig,
     representatives::OnlineReps,
     utils::{ThreadPool, ThreadPoolImpl},
     work::{WorkFactory, WorkRequest},
@@ -75,13 +74,63 @@ pub enum PreparedSend {
 
 pub struct WalletsConfig {
     pub preconfigured_representatives: Vec<PublicKey>,
+    pub password_fanout: usize,
+    pub receive_minimum: Amount,
+    pub vote_minimum: Amount,
+    pub enable_voting: bool,
+}
+
+impl WalletsConfig {
+    pub fn default_for(network: Networks) -> Self {
+        match network {
+            Networks::Invalid => unreachable!(),
+            Networks::NanoDevNetwork => Self::defaults_dev(),
+            Networks::NanoBetaNetwork => Self::defaults_beta(),
+            Networks::NanoLiveNetwork => Self::defaults_live(),
+            Networks::NanoTestNetwork => Self::defaults_test(),
+        }
+    }
+
+    pub fn defaults_live() -> Self {
+        Self {
+            preconfigured_representatives: default_preconfigured_representatives_for_live(),
+            password_fanout: 1024,
+            receive_minimum: Amount::micronano(1),
+            vote_minimum: Amount::nano(1000),
+            enable_voting: false,
+        }
+    }
+
+    pub fn defaults_dev() -> Self {
+        Self {
+            enable_voting: true,
+            preconfigured_representatives: vec![*DEV_GENESIS_PUB_KEY],
+            ..Self::defaults_live()
+        }
+    }
+
+    pub fn defaults_beta() -> Self {
+        Self {
+            preconfigured_representatives: vec![Account::decode_account(
+                "nano_1defau1t9off1ine9rep99999999999999999999999999999999wgmuzxxy",
+            )
+            .unwrap()
+            .into()],
+            ..Self::defaults_live()
+        }
+    }
+
+    pub fn defaults_test() -> Self {
+        Self {
+            preconfigured_representatives: Vec::new(),
+            ..Self::defaults_live()
+        }
+    }
 }
 
 impl Default for WalletsConfig {
     fn default() -> Self {
-        Self {
-            preconfigured_representatives: default_preconfigured_representatives_for_live(),
-        }
+        Self::defaults_live()
     }
 }
 
@@ -108,7 +157,6 @@ pub struct Wallets {
     send_action_ids_handle: Option<LmdbDatabase>,
     env: Arc<LmdbEnvironment>,
     pub mutex: Mutex<HashMap<WalletId, Arc<Wallet>>>,
-    node_config: NodeConfig,
     wallets_config: WalletsConfig,
     ledger: Arc<Ledger>,
     last_log: Mutex<Option<Instant>>,
@@ -129,7 +177,6 @@ impl Wallets {
     pub fn new(
         env: Arc<LmdbEnvironment>,
         ledger: Arc<Ledger>,
-        node_config: &NodeConfig,
         wallets_config: WalletsConfig,
         work: WorkThresholds,
         work_factory: Arc<WorkFactory>,
@@ -144,7 +191,10 @@ impl Wallets {
             send_action_ids_handle: None,
             mutex: Mutex::new(HashMap::new()),
             env,
-            node_config: node_config.clone(),
+            wallet_reps: Arc::new(Mutex::new(WalletRepresentatives::new(
+                wallets_config.vote_minimum,
+                ledger.rep_weights.clone(),
+            ))),
             wallets_config,
             ledger: Arc::clone(&ledger),
             last_log: Mutex::new(None),
@@ -154,10 +204,6 @@ impl Wallets {
             workers: Arc::new(ThreadPoolImpl::create(1, "wallet work")),
             wallet_actions: WalletActionThread::new(),
             block_processor_queue,
-            wallet_reps: Arc::new(Mutex::new(WalletRepresentatives::new(
-                node_config.vote_minimum,
-                ledger.rep_weights.clone(),
-            ))),
             online_reps,
             kdf: kdf.clone(),
             start_election: Mutex::new(None),
@@ -169,7 +215,6 @@ impl Wallets {
         let network = Networks::NanoLiveNetwork;
         let env = Arc::new(LmdbEnvironment::new_null());
         let ledger = Arc::new(Ledger::new_null());
-        let node_config = NodeConfig::default_for(network, 1);
         let wallets_config = WalletsConfig::default();
         let work = WorkThresholds::default_for(network);
         let work_factory = Arc::new(WorkFactory::disabled());
@@ -178,7 +223,6 @@ impl Wallets {
         Self::new(
             env,
             ledger,
-            &node_config,
             wallets_config,
             work,
             work_factory,
@@ -267,7 +311,7 @@ impl Wallets {
                 let text = PathBuf::from(id.encode_hex());
                 let wallet = Wallet::new(
                     &self.env,
-                    self.node_config.password_fanout as usize,
+                    self.wallets_config.password_fanout as usize,
                     self.kdf.clone(),
                     representative,
                     &text,
@@ -281,22 +325,6 @@ impl Wallets {
                 info!("Wallet: {}", i);
             }
 
-            // Backup before upgrade wallets
-            let mut backup_required = false;
-            if self.node_config.backup_before_upgrade {
-                let txn = self.env.begin_read();
-                for wallet in guard.values() {
-                    if wallet.store.version(&txn) != LmdbWalletStore::VERSION_CURRENT {
-                        backup_required = true;
-                        break;
-                    }
-                }
-                txn.commit();
-            }
-            if backup_required {
-                create_backup_file(&self.env)?;
-            }
-
             for (_, wallet) in guard.iter() {
                 self.enter_initial_password(wallet);
             }
@@ -308,7 +336,7 @@ impl Wallets {
     }
 
     pub fn voting_enabled(&self) -> bool {
-        self.node_config.enable_voting && self.voting_reps_count() > 0
+        self.wallets_config.enable_voting && self.voting_reps_count() > 0
     }
 
     pub fn voting_reps_count(&self) -> u64 {
@@ -389,7 +417,7 @@ impl Wallets {
     where
         F: FnMut(&PrivateKey),
     {
-        if self.node_config.enable_voting {
+        if self.wallets_config.enable_voting {
             let mut action_accounts_l: Vec<PrivateKey> = Vec::new();
             {
                 let txn = self.env.begin_read();
@@ -602,7 +630,7 @@ impl Wallets {
                 let representative = self.random_representative();
                 if let Ok(wallet) = Wallet::new(
                     &self.env,
-                    self.node_config.password_fanout as usize,
+                    self.wallets_config.password_fanout as usize,
                     self.kdf.clone(),
                     representative,
                     &text,
@@ -898,7 +926,7 @@ impl Wallets {
         let _guard = self.mutex.lock().unwrap();
         let _wallet = Wallet::new_from_json(
             &self.env,
-            self.node_config.password_fanout as usize,
+            self.wallets_config.password_fanout as usize,
             self.kdf.clone(),
             &PathBuf::from(wallet_id.to_string()),
             json,
@@ -1653,7 +1681,7 @@ impl WalletsExt for Arc<Wallets> {
         mut work: WorkNonce,
         generate_work: bool,
     ) -> Option<SavedBlock> {
-        if amount < self.node_config.receive_minimum {
+        if amount < self.wallets_config.receive_minimum {
             warn!(
                 "Not receiving block {} due to minimum receive threshold",
                 send_hash
@@ -1965,7 +1993,7 @@ impl WalletsExt for Arc<Wallets> {
                 {
                     let hash = key.send_block_hash;
                     let amount = info.amount;
-                    if self.node_config.receive_minimum <= amount {
+                    if self.wallets_config.receive_minimum <= amount {
                         info!(
                             "Found a receivable block {} for account {}",
                             hash,
@@ -2076,7 +2104,7 @@ impl WalletsExt for Arc<Wallets> {
         let wallet = {
             let Ok(wallet) = Wallet::new(
                 &self.env,
-                self.node_config.password_fanout as usize,
+                self.wallets_config.password_fanout as usize,
                 self.kdf.clone(),
                 self.random_representative(),
                 &PathBuf::from(wallet_id.to_string()),

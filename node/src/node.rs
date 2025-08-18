@@ -530,7 +530,6 @@ impl Node {
         let mut wallets = Wallets::new(
             wallets_env,
             ledger.clone(),
-            &config,
             wallets_config,
             network_params.work.clone(),
             work_factory.clone(),
