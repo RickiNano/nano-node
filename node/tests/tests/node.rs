@@ -819,7 +819,7 @@ fn search_receivable_confirmed() {
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
         .unwrap();
 
-    node.wallets.search_receivable_wallet(wallet_id).unwrap();
+    node.wallets.search_receivable2(&wallet_id).wait().unwrap();
 
     assert_timely2(|| !node.is_active_root(&send1.qualified_root()));
     assert_timely2(|| !node.is_active_root(&send2.qualified_root()));
@@ -901,9 +901,13 @@ fn search_receivable_pruned() {
         .insert_adhoc2(&wallet_id2, &key2.raw_key(), true)
         .unwrap();
 
-    node2.wallets.search_receivable_wallet(wallet_id2).unwrap();
-    assert_timely_eq(
-        Duration::from_secs(10),
+    node2
+        .wallets
+        .search_receivable2(&wallet_id2)
+        .wait()
+        .unwrap();
+
+    assert_timely_eq2(
         || node2.balance(&key2.account()),
         node2.config.receive_minimum * 2,
     );
@@ -935,7 +939,7 @@ fn search_receivable() {
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
         .unwrap();
 
-    node.wallets.search_receivable_wallet(wallet_id).unwrap();
+    node.wallets.search_receivable2(&wallet_id).wait().unwrap();
 
     assert_timely_msg(
         Duration::from_secs(10),
@@ -982,7 +986,7 @@ fn search_receivable_same() {
     node.wallets
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
         .unwrap();
-    node.wallets.search_receivable_wallet(wallet_id).unwrap();
+    node.wallets.search_receivable2(&wallet_id).wait().unwrap();
 
     assert_timely_msg(
         Duration::from_secs(10),
@@ -1048,13 +1052,9 @@ fn search_receivable_multiple() {
     node.wallets
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
         .unwrap();
-    node.wallets.search_receivable_wallet(wallet_id).unwrap();
+    node.wallets.search_receivable2(&wallet_id).wait().unwrap();
 
-    assert_timely_msg(
-        Duration::from_secs(10),
-        || node.balance(&key2.account()) == node.config.receive_minimum * 2,
-        "key2 balance is not equal to twice the receive minimum",
-    );
+    assert_timely2(|| node.balance(&key2.account()) == node.config.receive_minimum * 2);
 }
 
 #[test]

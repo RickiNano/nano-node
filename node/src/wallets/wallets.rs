@@ -1100,7 +1100,6 @@ pub trait WalletsExt {
     ) -> Result<(), ()>;
 
     fn search_receivable_all(&self);
-    fn search_receivable_wallet(&self, wallet_id: WalletId) -> Result<(), WalletsError>;
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
     fn create(&self, wallet_id: WalletId);
@@ -1609,7 +1608,7 @@ impl WalletsExt for Arc<Wallets> {
     fn search_receivable2(&self, wallet_id: &WalletId) -> MultiBlockPromise {
         let wallet = match self.get_wallet(wallet_id) {
             Some(w) => w,
-            None => return MultiBlockPromise::new_failed(WalletsError::Generic),
+            None => return MultiBlockPromise::new_failed(WalletsError::WalletNotFound),
         };
 
         let txn = self.env.begin_read();
@@ -1716,22 +1715,6 @@ impl WalletsExt for Arc<Wallets> {
         let wallet_tx = self.env.begin_read();
         for (_, wallet) in wallets {
             let _ = self.search_receivable(&wallet, &wallet_tx);
-        }
-    }
-
-    fn search_receivable_wallet(&self, wallet_id: WalletId) -> Result<(), WalletsError> {
-        let guard = self.wallets.lock().unwrap();
-        if let Some(wallet) = guard.get(&wallet_id) {
-            let txn = self.env.begin_read();
-            if wallet.store.valid_password(&txn) {
-                let _ = self.search_receivable(wallet, &txn);
-                txn.commit();
-                Ok(())
-            } else {
-                Err(WalletsError::WalletLocked)
-            }
-        } else {
-            Err(WalletsError::WalletNotFound)
         }
     }
 

@@ -113,7 +113,7 @@ fn search_receivable() {
         if search_all {
             node.wallets.search_receivable_all();
         } else {
-            node.wallets.search_receivable_wallet(wallet_id).unwrap();
+            node.wallets.search_receivable2(&wallet_id).wait().unwrap();
         }
         // Erase the key so the confirmation does not trigger an automatic receive
         node.wallets
@@ -133,7 +133,7 @@ fn search_receivable() {
         if search_all {
             node.wallets.search_receivable_all();
         } else {
-            node.wallets.search_receivable_wallet(wallet_id).unwrap();
+            node.wallets.search_receivable2(&wallet_id).wait().unwrap();
         }
         assert_timely_eq(
             Duration::from_secs(3),
