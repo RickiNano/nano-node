@@ -1045,6 +1045,17 @@ pub trait WalletsExt {
         count: u32,
     ) -> PublicKey;
 
+    fn send(
+        &self,
+        wallet_id: WalletId,
+        source: Account,
+        account: Account,
+        amount: Amount,
+        work: WorkNonce,
+        generate_work: bool,
+        id: Option<String>,
+    ) -> BlockPromise;
+
     fn send_action(
         &self,
         wallet: &Arc<Wallet>,
@@ -1085,6 +1096,17 @@ pub trait WalletsExt {
         generate_work: bool,
     ) -> Option<Block>;
 
+    fn receive(
+        &self,
+        wallet_id: WalletId,
+        block: BlockHash,
+        representative: PublicKey,
+        amount: Amount,
+        account: Account,
+        work: WorkNonce,
+        generate_work: bool,
+    ) -> BlockPromise;
+
     fn receive_action2(
         &self,
         wallet_id: &WalletId,
@@ -1118,51 +1140,6 @@ pub trait WalletsExt {
         work: WorkNonce,
         generate_work: bool,
     );
-
-    fn receive(
-        &self,
-        wallet_id: WalletId,
-        block: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> BlockPromise;
-
-    fn send_async_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    );
-
-    fn send(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> BlockPromise;
-
-    fn send_sync(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> BlockHash;
 
     fn search_receivable(
         &self,
@@ -1730,39 +1707,6 @@ impl WalletsExt for Arc<Wallets> {
         block_promise
     }
 
-    fn send_async_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) {
-        let self_l = Arc::clone(self);
-        self.wallet_actions.queue_wallet_action(
-            HIGH_PRIORITY,
-            wallet,
-            Box::new(move |wallet| {
-                let block = self_l
-                    .send_action(
-                        &wallet,
-                        source,
-                        account,
-                        amount,
-                        work,
-                        generate_work,
-                        id.clone(),
-                    )
-                    .ok()
-                    .map(|b| b.into());
-                action(block);
-            }),
-        );
-    }
-
     fn send(
         &self,
         wallet_id: WalletId,
@@ -1810,44 +1754,6 @@ impl WalletsExt for Arc<Wallets> {
         );
 
         promise
-    }
-
-    fn send_sync(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> BlockHash {
-        let guard = self.wallets.lock().unwrap();
-        let Some(wallet) = guard.get(&wallet_id) else {
-            panic!("wallet not found")
-        };
-
-        let result = Arc::new((Condvar::new(), Mutex::new((false, BlockHash::zero())))); // done, result
-        let result_clone = Arc::clone(&result);
-
-        self.send_async_wallet(
-            Arc::clone(wallet),
-            source,
-            account,
-            amount,
-            Box::new(move |block| {
-                *result_clone.1.lock().unwrap() =
-                    (true, block.map(|b| b.hash()).unwrap_or_default());
-                result_clone.0.notify_all();
-            }),
-            work,
-            generate_work,
-            id,
-        );
-
-        let mut guard = result.1.lock().unwrap();
-        guard = result.0.wait_while(guard, |i| !i.0).unwrap();
-        guard.1
     }
 
     fn search_receivable(

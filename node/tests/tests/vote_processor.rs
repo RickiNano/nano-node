@@ -203,34 +203,47 @@ fn weights() {
         .set_representative(wallet_id3, key3.public_key(), false)
         .unwrap();
 
-    node0.wallets.send_sync(
-        wallet_id0,
-        *DEV_GENESIS_ACCOUNT,
-        key1.account(),
-        level0,
-        0.into(),
-        true,
-        None,
-    );
-    node0.wallets.send_sync(
-        wallet_id0,
-        *DEV_GENESIS_ACCOUNT,
-        key2.account(),
-        level1,
-        0.into(),
-        true,
-        None,
-    );
+    node0
+        .wallets
+        .send(
+            wallet_id0,
+            *DEV_GENESIS_ACCOUNT,
+            key1.account(),
+            level0,
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
 
-    node0.wallets.send_sync(
-        wallet_id0,
-        *DEV_GENESIS_ACCOUNT,
-        key3.account(),
-        level2,
-        0.into(),
-        true,
-        None,
-    );
+    node0
+        .wallets
+        .send(
+            wallet_id0,
+            *DEV_GENESIS_ACCOUNT,
+            key2.account(),
+            level1,
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
+
+    node0
+        .wallets
+        .send(
+            wallet_id0,
+            *DEV_GENESIS_ACCOUNT,
+            key3.account(),
+            level2,
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
 
     // Wait for representatives
     assert_timely2(|| node0.ledger.rep_weights.len() == 4);

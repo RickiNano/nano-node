@@ -159,36 +159,48 @@ fn vote_generator_multiple_representatives() {
         .unwrap();
 
     let amount = Amount::nano(100_000);
-    node.wallets.send_sync(
-        wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        key1.account(),
-        amount,
-        0.into(),
-        true,
-        None,
-    );
-    node.wallets.send_sync(
-        wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        key2.account(),
-        amount,
-        0.into(),
-        true,
-        None,
-    );
-    node.wallets.send_sync(
-        wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        key3.account(),
-        amount,
-        0.into(),
-        true,
-        None,
-    );
+
+    node.wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            key1.account(),
+            amount,
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
+
+    node.wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            key2.account(),
+            amount,
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
+
+    node.wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            key3.account(),
+            amount,
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
 
     // Assert balances
-    assert_timely(Duration::from_secs(3), || {
+    assert_timely2(|| {
         node.balance(&key1.account()) == amount
             && node.balance(&key2.account()) == amount
             && node.balance(&key3.account()) == amount
@@ -224,16 +236,19 @@ fn vote_generator_multiple_representatives() {
     node.wallet_reps.lock().unwrap().compute_reps();
     assert_eq!(node.wallet_reps.lock().unwrap().voting_reps(), 4);
 
-    let hash = node.wallets.send_sync(
-        wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        *DEV_GENESIS_ACCOUNT,
-        Amount::raw(1),
-        0.into(),
-        true,
-        None,
-    );
-    let send = node.block(&hash).unwrap();
+    let send = node
+        .wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            *DEV_GENESIS_ACCOUNT,
+            Amount::raw(1),
+            0.into(),
+            true,
+            None,
+        )
+        .wait()
+        .unwrap();
 
     // Wait until the votes are available
     assert_timely(Duration::from_secs(5), || {
