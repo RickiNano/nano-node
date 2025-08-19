@@ -1,6 +1,11 @@
-use rsnano_core::{Account, Amount, PublicKey};
+use super::Wallets;
+use crate::representatives::OnlineReps;
+use rsnano_core::{
+    utils::{CancellationToken, Tickable},
+    Account, Amount, PrivateKey, PublicKey,
+};
 use rsnano_ledger::RepWeightCache;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct WalletRepresentatives {
@@ -11,6 +16,8 @@ pub struct WalletRepresentatives {
     rep_keys: Vec<PublicKey>,
     vote_minimum: Amount,
     rep_weights: Arc<RepWeightCache>,
+    wallets: Arc<Wallets>,
+    online_reps: Arc<Mutex<OnlineReps>>,
 }
 
 impl WalletRepresentatives {
@@ -18,6 +25,8 @@ impl WalletRepresentatives {
         voting_enabled: bool,
         vote_minimum: Amount,
         rep_weights: Arc<RepWeightCache>,
+        wallets: Arc<Wallets>,
+        online_reps: Arc<Mutex<OnlineReps>>,
     ) -> Self {
         Self {
             voting_enabled,
@@ -25,7 +34,19 @@ impl WalletRepresentatives {
             rep_keys: Vec::new(),
             vote_minimum,
             rep_weights,
+            wallets,
+            online_reps,
         }
+    }
+
+    pub fn new_null() -> Self {
+        Self::new(
+            false,
+            Amount::zero(),
+            Arc::new(RepWeightCache::new()),
+            Arc::new(Wallets::new_null()),
+            Arc::new(Mutex::new(OnlineReps::new_test_instance())),
+        )
     }
 
     pub fn have_half_rep(&self) -> bool {
@@ -49,8 +70,25 @@ impl WalletRepresentatives {
         self.rep_keys.iter().any(|k| k.as_account() == *rep)
     }
 
-    pub fn rep_keys(&self) -> impl Iterator<Item = PublicKey> + use<'_> {
+    pub fn rep_pub_keys(&self) -> impl Iterator<Item = PublicKey> + use<'_> {
         self.rep_keys.iter().cloned()
+    }
+
+    pub fn rep_priv_keys(&self, result: &mut Vec<PrivateKey>) {
+        result.clear();
+
+        if !self.voting_enabled {
+            return;
+        }
+
+        let all_priv_keys = self.wallets.get_all_private_keys();
+        {
+            for rep_key in self.rep_pub_keys() {
+                if let Some(k) = all_priv_keys.iter().find(|k| k.public_key() == rep_key) {
+                    result.push(k.clone());
+                }
+            }
+        }
     }
 
     pub fn rep_accounts(&self) -> impl Iterator<Item = Account> + use<'_> {
@@ -60,6 +98,15 @@ impl WalletRepresentatives {
     pub fn clear(&mut self) {
         self.half_principal = false;
         self.rep_keys.clear();
+    }
+
+    pub fn compute_reps(&mut self) {
+        let half_principal_weight = self.online_reps.lock().unwrap().minimum_principal_weight() / 2;
+        let wallet_keys = self.wallets.get_all_pub_keys();
+        self.clear();
+        for pub_key in wallet_keys {
+            self.check_rep(pub_key, half_principal_weight);
+        }
     }
 
     pub fn check_rep(&mut self, pub_key: PublicKey, half_principal_weight: Amount) -> bool {
@@ -87,8 +134,16 @@ impl WalletRepresentatives {
     }
 }
 
-impl Default for WalletRepresentatives {
-    fn default() -> Self {
-        Self::new(false, Amount::nano(1), Arc::new(RepWeightCache::new()))
+pub(crate) struct LocalRepsComputation(Arc<Mutex<WalletRepresentatives>>);
+
+impl LocalRepsComputation {
+    pub fn new(wallet_reps: Arc<Mutex<WalletRepresentatives>>) -> Self {
+        Self(wallet_reps)
+    }
+}
+
+impl Tickable for LocalRepsComputation {
+    fn tick(&mut self, _: &CancellationToken) {
+        self.0.lock().unwrap().compute_reps();
     }
 }

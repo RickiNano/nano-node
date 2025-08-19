@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
-    utils::{CancellationToken, ContainerInfo, ContainerInfoProvider, Tickable},
+    utils::{ContainerInfo, ContainerInfoProvider},
     Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce,
@@ -26,7 +26,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
 
-use super::{Wallet, WalletActionThread, WalletRepresentatives};
+use super::{Wallet, WalletActionThread};
 use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
     representatives::OnlineReps,
@@ -72,6 +72,7 @@ pub enum PreparedSend {
     New(Block, BlockDetails),
 }
 
+#[derive(Clone)]
 pub struct WalletsConfig {
     pub preconfigured_representatives: Vec<PublicKey>,
     pub password_fanout: usize,
@@ -172,7 +173,6 @@ pub struct Wallets {
     workers: Arc<dyn ThreadPool>,
     wallet_actions: WalletActionThread,
     block_processor_queue: Arc<BlockProcessorQueue>,
-    pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
     online_reps: Arc<Mutex<OnlineReps>>,
     kdf: KeyDerivationFunction,
     start_election: Mutex<Option<Box<dyn Fn(SavedBlock) + Send + Sync>>>,
@@ -195,11 +195,6 @@ impl Wallets {
             send_action_ids_handle: None,
             mutex: Mutex::new(HashMap::new()),
             env,
-            wallet_reps: Arc::new(Mutex::new(WalletRepresentatives::new(
-                wallets_config.voting_enabled,
-                wallets_config.vote_minimum,
-                ledger.rep_weights.clone(),
-            ))),
             wallets_config,
             ledger: Arc::clone(&ledger),
             work_factory,
@@ -325,8 +320,6 @@ impl Wallets {
             }
         }
 
-        self.compute_reps();
-
         Ok(())
     }
 
@@ -400,25 +393,23 @@ impl Wallets {
         txn.commit();
     }
 
-    pub fn rep_keys(&self, result: &mut Vec<PrivateKey>) {
-        result.clear();
-
-        if !self.wallets_config.voting_enabled {
-            return;
-        }
-
-        let all_priv_keys = self.get_all_private_keys();
+    pub fn get_all_pub_keys(&self) -> Vec<PublicKey> {
+        let mut wallet_keys = Vec::new();
         {
-            let wallet_reps = self.wallet_reps.lock().unwrap();
-            for rep_key in wallet_reps.rep_keys() {
-                if let Some(k) = all_priv_keys.iter().find(|k| k.public_key() == rep_key) {
-                    result.push(k.clone());
+            let wallets_guard = self.mutex.lock().unwrap();
+            let txn = self.env.begin_read();
+            for (_, wallet) in wallets_guard.iter() {
+                for (pub_key, _) in wallet.store.iter(&txn) {
+                    wallet_keys.push(pub_key);
                 }
             }
+            txn.commit();
         }
+
+        wallet_keys
     }
 
-    fn get_all_private_keys(&self) -> Vec<PrivateKey> {
+    pub fn get_all_private_keys(&self) -> Vec<PrivateKey> {
         let mut all_priv_keys: Vec<PrivateKey> = Vec::new();
         {
             let txn = self.env.begin_read();
@@ -560,28 +551,6 @@ impl Wallets {
 
     pub fn set_observer(&self, observer: Box<dyn Fn(bool) + Send>) {
         self.wallet_actions.set_observer(observer);
-    }
-
-    pub fn compute_reps(&self) {
-        let half_principal_weight = self.online_reps.lock().unwrap().minimum_principal_weight() / 2;
-
-        let mut wallet_keys = Vec::new();
-        {
-            let wallets_guard = self.mutex.lock().unwrap();
-            let txn = self.env.begin_read();
-            for (_, wallet) in wallets_guard.iter() {
-                for (pub_key, _) in wallet.store.iter(&txn) {
-                    wallet_keys.push(pub_key);
-                }
-            }
-            txn.commit();
-        }
-
-        let mut reps_guard = self.wallet_reps.lock().unwrap();
-        reps_guard.clear();
-        for pub_key in wallet_keys {
-            reps_guard.check_rep(pub_key, half_principal_weight);
-        }
     }
 
     pub fn exists(&self, pub_key: &PublicKey) -> bool {
@@ -2227,19 +2196,5 @@ impl WalletsExt for Arc<Wallets> {
         txn.commit();
 
         valid
-    }
-}
-
-pub(crate) struct LocalRepsComputation(Arc<Wallets>);
-
-impl LocalRepsComputation {
-    pub fn new(wallets: Arc<Wallets>) -> Self {
-        Self(wallets)
-    }
-}
-
-impl Tickable for LocalRepsComputation {
-    fn tick(&mut self, _: &CancellationToken) {
-        self.0.compute_reps();
     }
 }

@@ -21,7 +21,8 @@ use rsnano_stats::{DetailType, Direction, Sample, StatType, Stats};
 
 use super::{LocalVoteHistory, VoteSpacing};
 use crate::{
-    consensus::VoteBroadcaster, transport::MessageSender, utils::ProcessingQueue, wallets::Wallets,
+    consensus::VoteBroadcaster, transport::MessageSender, utils::ProcessingQueue,
+    wallets::WalletRepresentatives,
 };
 
 pub struct VoteGeneratorRequest {
@@ -43,7 +44,7 @@ impl VoteGenerator {
 
     pub(crate) fn new(
         ledger: Arc<Ledger>,
-        wallets: Arc<Wallets>,
+        wallet_reps: Arc<Mutex<WalletRepresentatives>>,
         history: Arc<LocalVoteHistory>,
         is_final: bool,
         stats: Arc<Stats>,
@@ -57,7 +58,7 @@ impl VoteGenerator {
             ledger: Arc::clone(&ledger),
             message_sender: Mutex::new(message_sender),
             history,
-            wallets,
+            wallet_reps,
             condition: Condvar::new(),
             queues: Mutex::new(Queues {
                 requests: Default::default(),
@@ -198,7 +199,7 @@ impl Drop for VoteGenerator {
 
 struct SharedState {
     ledger: Arc<Ledger>,
-    wallets: Arc<Wallets>,
+    wallet_reps: Arc<Mutex<WalletRepresentatives>>,
     history: Arc<LocalVoteHistory>,
     message_sender: Mutex<MessageSender>,
     is_final: bool,
@@ -293,7 +294,12 @@ impl SharedState {
     {
         debug_assert_eq!(hashes.len(), roots.len());
         let mut rep_keys = Vec::new();
-        self.wallets.rep_keys(&mut rep_keys);
+
+        self.wallet_reps
+            .lock()
+            .unwrap()
+            .rep_priv_keys(&mut rep_keys);
+
         let mut votes = Vec::new();
         for rep_key in rep_keys.drain(..) {
             let timestamp = if self.is_final {

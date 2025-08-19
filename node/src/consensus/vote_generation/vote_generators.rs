@@ -18,7 +18,7 @@ use crate::{
     config::{NetworkParams, NodeConfig},
     consensus::{election::VoteType, VoteBroadcaster},
     transport::MessageSender,
-    wallets::{WalletRepresentatives, Wallets},
+    wallets::WalletRepresentatives,
 };
 
 #[derive(Clone)]
@@ -47,7 +47,7 @@ impl VoteGenerators {
 
     pub(crate) fn new(
         ledger: Arc<Ledger>,
-        wallets: Arc<Wallets>,
+        wallet_reps: Arc<Mutex<WalletRepresentatives>>,
         history: Arc<LocalVoteHistory>,
         stats: Arc<Stats>,
         config: &NodeConfig,
@@ -60,7 +60,7 @@ impl VoteGenerators {
 
         let non_final_vote_generator = VoteGenerator::new(
             ledger.clone(),
-            wallets.clone(),
+            wallet_reps.clone(),
             history.clone(),
             false, //none-final
             stats.clone(),
@@ -73,7 +73,7 @@ impl VoteGenerators {
 
         let final_vote_generator = VoteGenerator::new(
             ledger,
-            wallets.clone(),
+            wallet_reps.clone(),
             history,
             true, //final
             stats.clone(),
@@ -89,14 +89,14 @@ impl VoteGenerators {
             final_vote_generator,
             vote_listener: OutputListenerMt::new(),
             voting_delay,
-            wallet_reps: wallets.wallet_reps.clone(),
+            wallet_reps,
             stats,
         }
     }
 
     pub fn new_null() -> Self {
         let ledger = Arc::new(Ledger::new_null());
-        let wallets = Arc::new(Wallets::new_null());
+        let wallet_reps = Arc::new(Mutex::new(WalletRepresentatives::new_null()));
         let history = Arc::new(LocalVoteHistory::new(Networks::NanoLiveNetwork));
         let stats = Arc::new(Stats::default());
         let config = NodeConfig::new_test_instance();
@@ -106,7 +106,7 @@ impl VoteGenerators {
         let clock = Arc::new(SteadyClock::new_null());
         Self::new(
             ledger,
-            wallets,
+            wallet_reps,
             history,
             stats,
             &config,

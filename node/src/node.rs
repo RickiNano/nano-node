@@ -530,7 +530,7 @@ impl Node {
         let wallets_config = WalletsConfig::from(global_config);
 
         let mut wallets = Wallets::new(
-            wallets_config,
+            wallets_config.clone(),
             wallets_env,
             ledger.clone(),
             block_processor_queue.clone(),
@@ -542,7 +542,14 @@ impl Node {
             wallets.initialize().expect("Could not create wallet");
         }
         let wallets = Arc::new(wallets);
-        let wallet_reps = wallets.wallet_reps.clone();
+        let wallet_reps = Arc::new(Mutex::new(WalletRepresentatives::new(
+            wallets_config.voting_enabled,
+            wallets_config.vote_minimum,
+            ledger.rep_weights.clone(),
+            wallets.clone(),
+            online_reps.clone(),
+        )));
+        wallet_reps.lock().unwrap().compute_reps();
 
         let vote_broadcaster = Arc::new(VoteBroadcaster::new(
             vote_processor_queue.clone(),
@@ -552,7 +559,7 @@ impl Node {
 
         let vote_generators = Arc::new(VoteGenerators::new(
             ledger.clone(),
-            wallets.clone(),
+            wallet_reps.clone(),
             vote_history.clone(),
             stats.clone(),
             &config,
@@ -924,7 +931,7 @@ impl Node {
             network.clone(),
             network_filter.clone(),
             block_processor_queue.clone(),
-            wallets.clone(),
+            wallet_reps.clone(),
             request_aggregator.clone(),
             vote_processor_queue.clone(),
             telemetry.clone(),
@@ -1124,7 +1131,7 @@ impl Node {
         let receivable_search =
             ReceivableSearch::new(wallets.clone(), workers.clone(), current_network);
 
-        let local_reps_computation = LocalRepsComputation::new(wallets.clone());
+        let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
 
         let message_flooder = Arc::new(Mutex::new(message_flooder.clone()));
 

@@ -221,7 +221,7 @@ fn vote_generator_multiple_representatives() {
     assert_eq!(node.ledger.weight(&key2.public_key()), amount);
     assert_eq!(node.ledger.weight(&key3.public_key()), amount);
 
-    node.wallets.compute_reps();
+    node.wallet_reps.lock().unwrap().compute_reps();
     assert_eq!(node.wallet_reps.lock().unwrap().voting_reps(), 4);
 
     let hash = node.wallets.send_sync(
