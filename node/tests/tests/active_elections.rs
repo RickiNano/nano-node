@@ -906,8 +906,8 @@ fn confirmation_consistency() {
     for _ in 0..10 {
         let block = node
             .wallets
-            .send_action2(
-                &wallet_id,
+            .send(
+                wallet_id,
                 *DEV_GENESIS_ACCOUNT,
                 Account::from(0),
                 node.config.receive_minimum,
@@ -915,6 +915,7 @@ fn confirmation_consistency() {
                 true,
                 None,
             )
+            .wait()
             .unwrap();
 
         assert_timely2(|| node.block_confirmed(&block.hash()));

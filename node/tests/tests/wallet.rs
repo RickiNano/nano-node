@@ -226,10 +226,10 @@ fn insufficient_spend_one() {
     let key1 = PrivateKey::new();
     node.insert_into_wallet(&DEV_GENESIS_KEY);
     let wallet_id = node.wallets.wallet_ids()[0];
-    let _block = node
-        .wallets
-        .send_action2(
-            &wallet_id,
+
+    node.wallets
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key1.account(),
             Amount::raw(500),
@@ -237,12 +237,13 @@ fn insufficient_spend_one() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     let error = node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key1.account(),
             Amount::MAX,
@@ -250,6 +251,7 @@ fn insufficient_spend_one() {
             true,
             None,
         )
+        .wait()
         .unwrap_err();
     assert_eq!(error, WalletsError::Generic);
 }

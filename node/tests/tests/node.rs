@@ -272,8 +272,8 @@ fn confirm_quorum() {
 
     node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             *DEV_GENESIS_ACCOUNT,
             new_balance,
@@ -281,6 +281,7 @@ fn confirm_quorum() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_timely2(|| node1.is_active_root(&send1.qualified_root()));
@@ -309,23 +310,22 @@ fn send_callback() {
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
         .unwrap();
 
-    let send_result = node.wallets.send_action2(
-        &wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        key2.account(),
-        node.config.receive_minimum,
-        0.into(),
-        true,
-        None,
-    );
+    let send_result = node
+        .wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            key2.account(),
+            node.config.receive_minimum,
+            0.into(),
+            true,
+            None,
+        )
+        .wait();
 
     assert!(send_result.is_ok());
 
-    assert_timely_msg(
-        Duration::from_secs(10),
-        || node.balance(&key2.account()).is_zero(),
-        "balance is not zero",
-    );
+    assert_timely2(|| node.balance(&key2.account()).is_zero());
 
     assert_eq!(
         Amount::MAX - node.config.receive_minimum,
@@ -357,8 +357,8 @@ fn no_voting() {
     // Broadcast a confirm so others should know this is a rep node
     node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key1.account(),
             Amount::nano(1),
@@ -366,6 +366,7 @@ fn no_voting() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_timely_eq2(|| node0.active.read().unwrap().len(), 0);
@@ -734,8 +735,8 @@ fn unlock_search() {
         .unwrap();
 
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node.config.receive_minimum,
@@ -743,13 +744,10 @@ fn unlock_search() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
-    assert_timely_msg(
-        Duration::from_secs(10),
-        || node.balance(&DEV_GENESIS_ACCOUNT) != balance,
-        "balance not updated",
-    );
+    assert_timely2(|| node.balance(&DEV_GENESIS_ACCOUNT) != balance);
 
     assert_timely_eq(
         Duration::from_secs(10),
@@ -785,8 +783,8 @@ fn search_receivable_confirmed() {
 
     let send1 = node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node.config.receive_minimum,
@@ -794,15 +792,14 @@ fn search_receivable_confirmed() {
             true,
             None,
         )
+        .wait()
         .unwrap();
-    assert_timely(Duration::from_secs(5), || {
-        node.block_hashes_confirmed(&[send1.hash()])
-    });
+    assert_timely2(|| node.block_hashes_confirmed(&[send1.hash()]));
 
     let send2 = node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node.config.receive_minimum,
@@ -810,10 +807,9 @@ fn search_receivable_confirmed() {
             true,
             None,
         )
+        .wait()
         .unwrap();
-    assert_timely(Duration::from_secs(5), || {
-        node.block_hashes_confirmed(&[send2.hash()])
-    });
+    assert_timely2(|| node.block_hashes_confirmed(&[send2.hash()]));
 
     node.wallets
         .remove_key(&wallet_id, &*DEV_GENESIS_PUB_KEY)
@@ -856,8 +852,8 @@ fn search_receivable_pruned() {
 
     let send1 = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node2.config.receive_minimum,
@@ -865,12 +861,13 @@ fn search_receivable_pruned() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     let send2 = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node2.config.receive_minimum,
@@ -878,6 +875,7 @@ fn search_receivable_pruned() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     // Confirmation
@@ -921,8 +919,8 @@ fn search_receivable() {
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
         .unwrap();
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node.config.receive_minimum,
@@ -930,6 +928,7 @@ fn search_receivable() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     node.wallets
@@ -954,25 +953,31 @@ fn search_receivable_same() {
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
         .unwrap();
-    let send_result1 = node.wallets.send_action2(
-        &wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        key2.account(),
-        node.config.receive_minimum,
-        0.into(),
-        true,
-        None,
-    );
+    let send_result1 = node
+        .wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            key2.account(),
+            node.config.receive_minimum,
+            0.into(),
+            true,
+            None,
+        )
+        .wait();
     assert!(send_result1.is_ok());
-    let send_result2 = node.wallets.send_action2(
-        &wallet_id,
-        *DEV_GENESIS_ACCOUNT,
-        key2.account(),
-        node.config.receive_minimum,
-        0.into(),
-        true,
-        None,
-    );
+    let send_result2 = node
+        .wallets
+        .send(
+            wallet_id,
+            *DEV_GENESIS_ACCOUNT,
+            key2.account(),
+            node.config.receive_minimum,
+            0.into(),
+            true,
+            None,
+        )
+        .wait();
     assert!(send_result2.is_ok());
     node.wallets
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
@@ -1000,8 +1005,8 @@ fn search_receivable_multiple() {
         .insert_adhoc2(&wallet_id, &key3.raw_key(), true)
         .unwrap();
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key3.account(),
             node.config.receive_minimum,
@@ -1009,6 +1014,7 @@ fn search_receivable_multiple() {
             true,
             None,
         )
+        .wait()
         .unwrap();
     assert_timely_msg(
         Duration::from_secs(10),
@@ -1016,8 +1022,8 @@ fn search_receivable_multiple() {
         "key3 balance is still zero",
     );
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node.config.receive_minimum,
@@ -1025,10 +1031,11 @@ fn search_receivable_multiple() {
             true,
             None,
         )
+        .wait()
         .unwrap();
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             key3.account(),
             key2.account(),
             node.config.receive_minimum,
@@ -1036,6 +1043,7 @@ fn search_receivable_multiple() {
             true,
             None,
         )
+        .wait()
         .unwrap();
     node.wallets
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
@@ -1153,8 +1161,8 @@ fn send_single_observing_peer() {
 
     node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node1.config.receive_minimum,
@@ -1162,6 +1170,7 @@ fn send_single_observing_peer() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_eq!(
@@ -1203,8 +1212,8 @@ fn send_single() {
 
     node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node1.config.receive_minimum,
@@ -1212,6 +1221,7 @@ fn send_single() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_eq!(
@@ -1242,8 +1252,8 @@ fn send_self() {
         .unwrap();
 
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             node.config.receive_minimum,
@@ -1251,6 +1261,7 @@ fn send_self() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_timely_msg(
@@ -1401,8 +1412,8 @@ fn fork_no_vote_quorum() {
 
     node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key4.into(),
             Amount::MAX / 4,
@@ -1410,6 +1421,7 @@ fn fork_no_vote_quorum() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     let key1 = node2
@@ -1424,8 +1436,8 @@ fn fork_no_vote_quorum() {
 
     let block = node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key1.into(),
             node1.config.receive_minimum,
@@ -1433,6 +1445,7 @@ fn fork_no_vote_quorum() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_timely_msg(
@@ -2243,8 +2256,8 @@ fn unconfirmed_send() {
     // (node1 will start an election for it, vote on it and node2 gets synced up)
     let send1 = node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             Amount::nano(2),
@@ -2252,6 +2265,7 @@ fn unconfirmed_send() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     assert_timely2(|| node1.block_confirmed(&send1.hash()));
@@ -2293,8 +2307,8 @@ fn unconfirmed_send() {
 
     let send3 = node2
         .wallets
-        .send_action2(
-            &wallet_id2,
+        .send(
+            wallet_id2,
             key2.account(),
             *DEV_GENESIS_ACCOUNT,
             Amount::nano(1),
@@ -2302,6 +2316,7 @@ fn unconfirmed_send() {
             true,
             None,
         )
+        .wait()
         .unwrap();
     assert_timely2(|| node2.block_confirmed(&send2.hash()));
     assert_timely2(|| node1.block_confirmed(&send2.hash()));
