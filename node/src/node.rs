@@ -534,7 +534,6 @@ impl Node {
             wallets_env,
             ledger.clone(),
             block_processor_queue.clone(),
-            online_reps.clone(),
             network_params.work.clone(),
             work_factory.clone(),
         );

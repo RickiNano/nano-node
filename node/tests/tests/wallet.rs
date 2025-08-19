@@ -1137,14 +1137,7 @@ fn change_seed() {
     let mut system = System::new();
     let node1 = system.make_node();
     let wallet_id = node1.wallets.wallet_ids()[0];
-    let wallet = node1
-        .wallets
-        .mutex
-        .lock()
-        .unwrap()
-        .get(&wallet_id)
-        .unwrap()
-        .clone();
+    let wallet = node1.wallets.get_wallet(&wallet_id).unwrap();
     node1.wallets.enter_initial_password(&wallet);
     let seed1 = RawKey::from(1);
     let index = 4;
