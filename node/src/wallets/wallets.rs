@@ -33,9 +33,8 @@ use crate::{
     work::{WorkFactory, WorkRequest},
 };
 
-#[derive(FromPrimitive, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(FromPrimitive, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum WalletsError {
-    None,
     Generic,
     WalletNotFound,
     WalletLocked,
@@ -47,7 +46,6 @@ pub enum WalletsError {
 impl WalletsError {
     pub fn as_str(&self) -> &'static str {
         match self {
-            WalletsError::None => "No error",
             WalletsError::Generic => "Unknown error",
             WalletsError::WalletNotFound => "Wallet not found",
             WalletsError::WalletLocked => "Wallet is locked",
@@ -1121,6 +1119,17 @@ pub trait WalletsExt {
         generate_work: bool,
     );
 
+    fn receive(
+        &self,
+        wallet_id: WalletId,
+        block: BlockHash,
+        representative: PublicKey,
+        amount: Amount,
+        account: Account,
+        work: WorkNonce,
+        generate_work: bool,
+    ) -> BlockPromise;
+
     fn receive_sync(
         &self,
         wallet_id: WalletId,
@@ -1701,6 +1710,38 @@ impl WalletsExt for Arc<Wallets> {
         );
     }
 
+    fn receive(
+        &self,
+        wallet_id: WalletId,
+        block_hash: BlockHash,
+        representative: PublicKey,
+        amount: Amount,
+        account: Account,
+        work: WorkNonce,
+        generate_work: bool,
+    ) -> BlockPromise {
+        let wallet = {
+            let guard = self.wallets.lock().unwrap();
+            match Wallets::get_wallet_guard(&guard, &wallet_id) {
+                Ok(wallet) => wallet.clone(),
+                Err(e) => return BlockPromise::new_failed(e),
+            }
+        };
+        let block_promise = BlockPromise::new();
+        let promise_clone = block_promise.clone();
+        self.receive_async_wallet(
+            wallet,
+            block_hash,
+            representative,
+            amount,
+            account,
+            Box::new(move |block| promise_clone.set_result(block.ok_or(WalletsError::Generic))),
+            work,
+            generate_work,
+        );
+        block_promise
+    }
+
     fn receive_sync(
         &self,
         wallet_id: WalletId,
@@ -2134,5 +2175,67 @@ impl WalletsExt for Arc<Wallets> {
         txn.commit();
 
         valid
+    }
+}
+
+#[derive(Clone)]
+pub struct BlockPromise {
+    done: Arc<Condvar>,
+    state: Arc<Mutex<BlockPromiseState>>,
+}
+
+impl BlockPromise {
+    pub fn new() -> Self {
+        Self::with_state(BlockPromiseState::new())
+    }
+
+    pub fn new_failed(err: WalletsError) -> Self {
+        Self::with_state(BlockPromiseState::new_failed(err))
+    }
+
+    fn with_state(state: BlockPromiseState) -> Self {
+        Self {
+            done: Arc::new(Condvar::new()),
+            state: Arc::new(Mutex::new(state)),
+        }
+    }
+
+    pub fn set_result(&self, result: Result<SavedBlock, WalletsError>) {
+        {
+            let mut state = self.state.lock().unwrap();
+            state.result = result;
+            state.done = true;
+        }
+        self.done.notify_all();
+    }
+
+    pub fn wait(&self) -> Result<SavedBlock, WalletsError> {
+        let result_guard = self.state.lock().unwrap();
+        self.done
+            .wait_while(result_guard, |i| !i.done)
+            .unwrap()
+            .result
+            .clone()
+    }
+}
+
+struct BlockPromiseState {
+    done: bool,
+    result: Result<SavedBlock, WalletsError>,
+}
+
+impl BlockPromiseState {
+    fn new() -> Self {
+        Self {
+            done: false,
+            result: Err(WalletsError::Generic),
+        }
+    }
+
+    fn new_failed(err: WalletsError) -> Self {
+        Self {
+            done: true,
+            result: Err(err),
+        }
     }
 }
