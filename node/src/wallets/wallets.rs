@@ -1076,25 +1076,6 @@ pub trait WalletsExt {
         generate_work: bool,
     ) -> BlockPromise;
 
-    fn change_action(
-        &self,
-        wallet: &Arc<Wallet>,
-        source: Account,
-        representative: PublicKey,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Option<Block>;
-
-    fn change_async(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        representative: PublicKey,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<(), WalletsError>;
-
     fn receive(
         &self,
         wallet_id: WalletId,
@@ -1158,7 +1139,7 @@ pub trait WalletsExt {
         wallet_id: WalletId,
         rep: PublicKey,
         update_existing_accounts: bool,
-    ) -> Result<(), WalletsError>;
+    ) -> MultiBlockPromise;
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
 }
@@ -1514,68 +1495,6 @@ impl WalletsExt for Arc<Wallets> {
         promise
     }
 
-    fn change_action(
-        &self,
-        wallet: &Arc<Wallet>,
-        source: Account,
-        representative: PublicKey,
-        mut work: WorkNonce,
-        generate_work: bool,
-    ) -> Option<Block> {
-        let mut epoch = Epoch::Epoch0;
-        let mut block = None;
-        {
-            let wallet_tx = self.env.begin_read();
-            let any = self.ledger.any();
-            if !wallet.store.valid_password(&wallet_tx) {
-                warn!(
-                    "Changing representative for account {} failed, wallet locked",
-                    source.encode_account()
-                );
-                return None;
-            }
-
-            let existing = wallet.store.find(&wallet_tx, &source.into());
-            if existing.is_some() && any.account_head(&source).is_some() {
-                info!(
-                    "Changing representative for account {} to {}",
-                    source.encode_account(),
-                    representative.as_account().encode_account()
-                );
-                let info = any.get_account(&source).unwrap();
-                let prv = wallet.store.fetch(&wallet_tx, &source.into()).unwrap();
-                if work.is_zero() {
-                    work = wallet
-                        .store
-                        .work_get(&wallet_tx, &source.into())
-                        .unwrap_or_default();
-                }
-                let priv_key = PrivateKey::from(prv);
-                let state_block: Block = StateBlockArgs {
-                    key: &priv_key,
-                    previous: info.head,
-                    representative,
-                    balance: info.balance,
-                    link: Link::zero(),
-                    work,
-                }
-                .into();
-                block = Some(state_block);
-                epoch = info.epoch;
-            } else {
-                warn!("Changing representative for account {} failed, wallet locked or account not found",
-                    source.encode_account());
-            }
-        }
-
-        let block = block?;
-
-        let details = BlockDetails::new(epoch, false, false, false);
-        self.action_complete(Arc::clone(wallet), block, source, generate_work, &details)
-            .ok()
-            .map(|b| b.into())
-    }
-
     fn receive_action(
         &self,
         wallet: &Arc<Wallet>,
@@ -1924,55 +1843,26 @@ impl WalletsExt for Arc<Wallets> {
         self.enter_initial_password(&wallet);
     }
 
-    fn change_async(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        representative: PublicKey,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<(), WalletsError> {
-        let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?.clone();
-        let txn = self.env.begin_write();
-        if !wallet.store.valid_password(&txn) {
-            return Err(WalletsError::WalletLocked);
-        }
-
-        if wallet.store.find(&txn, &source.into()).is_none() {
-            return Err(WalletsError::AccountNotFound);
-        }
-        txn.commit();
-
-        let self_l = Arc::clone(self);
-        self.wallet_actions.queue_wallet_action(
-            HIGH_PRIORITY,
-            wallet,
-            Box::new(move |wallet| {
-                let block =
-                    self_l.change_action(&wallet, source, representative, work, generate_work);
-                action(block);
-            }),
-        );
-        Ok(())
-    }
-
     fn set_representative(
         &self,
         wallet_id: WalletId,
         rep: PublicKey,
         update_existing_accounts: bool,
-    ) -> Result<(), WalletsError> {
+    ) -> MultiBlockPromise {
         let mut accounts = Vec::new();
         {
             let guard = self.wallets.lock().unwrap();
-            let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
+            let wallet = match Wallets::get_wallet_guard(&guard, &wallet_id) {
+                Ok(w) => w,
+                Err(err) => {
+                    return MultiBlockPromise::new_failed(err);
+                }
+            };
 
             {
                 let mut txn = self.env.begin_write();
                 if update_existing_accounts && !wallet.store.valid_password(&txn) {
-                    return Err(WalletsError::WalletLocked);
+                    return MultiBlockPromise::new_failed(WalletsError::WalletLocked);
                 }
 
                 wallet.store.representative_set(&mut txn, &rep);
@@ -1994,18 +1884,12 @@ impl WalletsExt for Arc<Wallets> {
             }
         }
 
+        let mut block_promises = Vec::new();
         for account in accounts {
-            self.change_async(
-                wallet_id,
-                account.into(),
-                rep,
-                Box::new(|_| {}),
-                0.into(),
-                false,
-            )?;
+            block_promises.push(self.change(&wallet_id, account.into(), rep, 0.into(), false));
         }
 
-        Ok(())
+        MultiBlockPromise::new(block_promises)
     }
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool {
@@ -2096,7 +1980,13 @@ impl MultiBlockPromise {
         Self { children }
     }
 
-    pub fn wait(&self) -> Vec<Result<SavedBlock, WalletsError>> {
+    pub fn new_failed(error: WalletsError) -> Self {
+        Self {
+            children: vec![BlockPromise::new_failed(error)],
+        }
+    }
+
+    pub fn wait(&self) -> Result<Vec<SavedBlock>, WalletsError> {
         self.children.iter().map(|c| c.wait()).collect()
     }
 }

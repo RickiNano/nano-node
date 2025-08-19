@@ -302,6 +302,7 @@ fn receive_weight_change() {
     node2
         .wallets
         .set_representative(node2.wallets.wallet_ids()[0], key2.public_key(), false)
+        .wait()
         .unwrap();
     node1
         .wallets

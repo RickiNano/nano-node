@@ -1432,6 +1432,7 @@ fn fork_no_vote_quorum() {
     node2
         .wallets
         .set_representative(wallet_id2, key1, false)
+        .wait()
         .unwrap();
 
     let block = node1

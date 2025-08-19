@@ -193,14 +193,17 @@ fn weights() {
     node1
         .wallets
         .set_representative(wallet_id1, key1.public_key(), false)
+        .wait()
         .unwrap();
     node2
         .wallets
         .set_representative(wallet_id2, key2.public_key(), false)
+        .wait()
         .unwrap();
     node3
         .wallets
         .set_representative(wallet_id3, key3.public_key(), false)
+        .wait()
         .unwrap();
 
     node0
