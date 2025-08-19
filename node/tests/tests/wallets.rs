@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use rsnano_core::{Amount, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY,
@@ -8,7 +6,7 @@ use rsnano_node::{
     config::{NodeConfig, NodeFlags},
     wallets::WalletsExt,
 };
-use test_helpers::{assert_timely_eq, System};
+use test_helpers::{assert_timely_eq2, System};
 
 #[test]
 fn open_create() {
@@ -111,7 +109,7 @@ fn search_receivable() {
         node.process(send.clone());
 
         if search_all {
-            node.wallets.search_receivable_all();
+            node.wallets.search_receivable_all().wait().unwrap();
         } else {
             node.wallets.search_receivable2(&wallet_id).wait().unwrap();
         }
@@ -131,15 +129,11 @@ fn search_receivable() {
         // Pending search should create the receive block
         assert_eq!(node.ledger.block_count(), 2);
         if search_all {
-            node.wallets.search_receivable_all();
+            node.wallets.search_receivable_all().wait().unwrap();
         } else {
             node.wallets.search_receivable2(&wallet_id).wait().unwrap();
         }
-        assert_timely_eq(
-            Duration::from_secs(3),
-            || node.balance(&DEV_GENESIS_ACCOUNT),
-            Amount::MAX,
-        );
+        assert_timely_eq2(|| node.balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
         let receive_hash = node
             .ledger
             .any()

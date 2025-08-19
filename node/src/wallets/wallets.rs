@@ -1099,7 +1099,7 @@ pub trait WalletsExt {
         wallet_tx: &dyn Transaction,
     ) -> Result<(), ()>;
 
-    fn search_receivable_all(&self);
+    fn search_receivable_all(&self) -> MultiBlockPromise;
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
     fn create(&self, wallet_id: WalletId);
@@ -1710,12 +1710,13 @@ impl WalletsExt for Arc<Wallets> {
         Ok(())
     }
 
-    fn search_receivable_all(&self) {
-        let wallets = self.wallets.lock().unwrap().clone();
-        let wallet_tx = self.env.begin_read();
-        for (_, wallet) in wallets {
-            let _ = self.search_receivable(&wallet, &wallet_tx);
+    fn search_receivable_all(&self) -> MultiBlockPromise {
+        let wallet_ids = self.wallet_ids();
+        let mut result = MultiBlockPromise::empty();
+        for id in wallet_ids {
+            result.append(self.search_receivable2(&id));
         }
+        result
     }
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError> {
@@ -1893,6 +1894,14 @@ impl MultiBlockPromise {
         Self {
             children: vec![BlockPromise::new_failed(error)],
         }
+    }
+
+    pub fn empty() -> Self {
+        Self::new(Vec::new())
+    }
+
+    pub fn append(&mut self, other: MultiBlockPromise) {
+        self.children.extend(other.children)
     }
 
     pub fn wait(&self) -> Result<Vec<SavedBlock>, WalletsError> {
