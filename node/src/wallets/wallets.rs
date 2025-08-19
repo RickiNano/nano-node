@@ -1037,14 +1037,6 @@ pub trait WalletsExt {
         count: u32,
     ) -> Result<(u32, Account), WalletsError>;
 
-    fn change_seed_wallet(
-        &self,
-        wallet: &Arc<Wallet>,
-        tx: &mut WriteTransaction,
-        prv_key: &RawKey,
-        count: u32,
-    ) -> PublicKey;
-
     fn send(
         &self,
         wallet_id: WalletId,
@@ -1099,13 +1091,14 @@ pub trait WalletsExt {
         generate_work: bool,
     );
 
+    fn search_receivable2(&self, wallet_id: &WalletId) -> MultiBlockPromise;
+
     fn search_receivable(
         &self,
         wallet: &Arc<Wallet>,
         wallet_tx: &dyn Transaction,
     ) -> Result<(), ()>;
 
-    fn receive_confirmed(&self, hash: BlockHash, destinaton: Account);
     fn search_receivable_all(&self);
     fn search_receivable_wallet(&self, wallet_id: WalletId) -> Result<(), WalletsError>;
 
@@ -1282,33 +1275,11 @@ impl WalletsExt for Arc<Wallets> {
         Ok(saved_block)
     }
 
-    fn change_seed_wallet(
-        &self,
-        wallet: &Arc<Wallet>,
-        tx: &mut WriteTransaction,
-        prv_key: &RawKey,
-        mut count: u32,
-    ) -> PublicKey {
-        info!("Changing wallet seed");
-        wallet.store.set_seed(tx, prv_key);
-        let mut account = self.deterministic_insert(wallet, tx, true);
-        if count == 0 {
-            count = wallet.deterministic_check(tx, 0, &self.ledger);
-            info!("Auto-detected {} accounts to generate", count);
-        }
-        for _ in 0..count {
-            // Disable work generation to prevent weak CPU nodes stuck
-            account = self.deterministic_insert(wallet, tx, false);
-        }
-        info!("Completed changing wallet seed and generating accounts");
-        account
-    }
-
     fn change_seed(
         &self,
         wallet_id: WalletId,
         prv_key: &RawKey,
-        count: u32,
+        mut count: u32,
     ) -> Result<(u32, Account), WalletsError> {
         let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
@@ -1316,7 +1287,20 @@ impl WalletsExt for Arc<Wallets> {
         if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
         }
-        let first_account = self.change_seed_wallet(wallet, &mut txn, prv_key, count);
+
+        info!("Changing wallet seed");
+        wallet.store.set_seed(&mut txn, prv_key);
+        let mut first_account = self.deterministic_insert(wallet, &mut txn, true);
+        if count == 0 {
+            count = wallet.deterministic_check(&txn, 0, &self.ledger);
+            info!("Auto-detected {} accounts to generate", count);
+        }
+        for _ in 0..count {
+            // Disable work generation to prevent weak CPU nodes stuck
+            first_account = self.deterministic_insert(wallet, &mut txn, false);
+        }
+        info!("Completed changing wallet seed and generating accounts");
+
         let restored_count = wallet.store.deterministic_index_get(&txn);
         txn.commit();
         Ok((restored_count, first_account.into()))
@@ -1612,7 +1596,7 @@ impl WalletsExt for Arc<Wallets> {
                     Ok(PreparedSend::New(block, details)) => self_l
                         .action_complete(wallet, block, source, generate_work, &details)
                         .map_err(|_| WalletsError::Generic),
-                    Err(e) => Err(WalletsError::Generic),
+                    Err(_) => Err(WalletsError::Generic),
                 };
 
                 promise2.set_result(block);
@@ -1620,6 +1604,61 @@ impl WalletsExt for Arc<Wallets> {
         );
 
         promise
+    }
+
+    fn search_receivable2(&self, wallet_id: &WalletId) -> MultiBlockPromise {
+        let wallet = match self.get_wallet(wallet_id) {
+            Some(w) => w,
+            None => return MultiBlockPromise::new_failed(WalletsError::Generic),
+        };
+
+        let txn = self.env.begin_read();
+        if !wallet.store.valid_password(&txn) {
+            info!("Unable to search receivable blocks, wallet is locked. Blocks won't be auto-received until the wallet is unlocked");
+            return MultiBlockPromise::new_failed(WalletsError::WalletLocked);
+        }
+
+        debug!("Beginning receivable block search");
+
+        let mut block_promises = Vec::new();
+        for (account, wallet_value) in wallet.store.iter(&txn) {
+            let any = self.ledger.any();
+            // Don't search pending for watch-only accounts
+            if !wallet_value.key.is_zero() {
+                for (key, info) in
+                    any.account_receivable_upper_bound(account.into(), BlockHash::zero())
+                {
+                    let hash = key.send_block_hash;
+                    let amount = info.amount;
+                    if self.wallets_config.receive_minimum <= amount {
+                        info!(
+                            "Found a receivable block {} for account {}",
+                            hash,
+                            info.source.encode_account()
+                        );
+                        if any.confirmed().block_exists_or_pruned(&hash) {
+                            let representative = wallet.store.representative(&txn);
+                            // Receive confirmed block
+                            let promise = self.receive(
+                                *wallet_id,
+                                hash,
+                                representative,
+                                amount,
+                                account.into(),
+                                0.into(),
+                                true,
+                            );
+                            block_promises.push(promise);
+                        }
+                    }
+                }
+            }
+        }
+
+        txn.commit();
+
+        debug!("Receivable block search phase completed");
+        MultiBlockPromise::new(block_promises)
     }
 
     fn search_receivable(
@@ -1670,44 +1709,6 @@ impl WalletsExt for Arc<Wallets> {
 
         debug!("Receivable block search phase completed");
         Ok(())
-    }
-
-    fn receive_confirmed(&self, hash: BlockHash, destination: Account) {
-        let (wallet_tx, wallets) = {
-            let guard = self.wallets.lock().unwrap();
-            (self.env.begin_read(), guard.clone())
-        };
-
-        for (_id, wallet) in wallets {
-            if wallet.store.exists(&wallet_tx, &destination.into()) {
-                let representative = wallet.store.representative(&wallet_tx);
-                let pending = self
-                    .ledger
-                    .any()
-                    .get_pending(&PendingKey::new(destination, hash));
-
-                if let Some(pending) = pending {
-                    let amount = pending.amount;
-                    self.receive_async_wallet(
-                        wallet,
-                        hash,
-                        representative,
-                        amount,
-                        destination,
-                        Box::new(|_| {}),
-                        0.into(),
-                        true,
-                    );
-                } else {
-                    if !self.ledger.any().block_exists_or_pruned(&hash) {
-                        warn!("Confirmed block is missing:  {}", hash);
-                        debug_assert!(false);
-                    } else {
-                        warn!("Block %1% has already been received: {}", hash);
-                    }
-                }
-            }
-        }
     }
 
     fn search_receivable_all(&self) {
