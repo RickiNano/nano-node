@@ -1,7 +1,6 @@
 use std::{
     collections::HashSet,
     path::PathBuf,
-    sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
 
@@ -21,7 +20,7 @@ use rsnano_node::{
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
-use test_helpers::{assert_always_eq, assert_timely, assert_timely2, assert_timely_eq2, System};
+use test_helpers::{assert_always_eq, assert_timely2, assert_timely_eq2, System};
 
 struct TestFixture {
     test_dir: PathBuf,
@@ -264,8 +263,8 @@ fn spend_all_one() {
     let wallet_id = node.wallets.wallet_ids()[0];
     let key2 = PrivateKey::new();
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             Amount::MAX,
@@ -273,6 +272,7 @@ fn spend_all_one() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     let any = node.ledger.any();
@@ -315,8 +315,8 @@ fn spend() {
     // Accounts need to be opened with an open block, not a send block.
     assert!(node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             Account::zero(),
             key2.account(),
             Amount::zero(),
@@ -324,10 +324,12 @@ fn spend() {
             true,
             None
         )
+        .wait()
         .is_err());
+
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             Amount::MAX,
@@ -335,6 +337,7 @@ fn spend() {
             true,
             None,
         )
+        .wait()
         .unwrap();
     assert_eq!(node.balance(&DEV_GENESIS_ACCOUNT), Amount::zero());
 }
@@ -347,8 +350,8 @@ fn partial_spend() {
     let wallet_id = node.wallets.wallet_ids()[0];
     let key2 = PrivateKey::new();
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             Amount::raw(500),
@@ -356,7 +359,9 @@ fn partial_spend() {
             true,
             None,
         )
+        .wait()
         .unwrap();
+
     assert_eq!(
         node.balance(&DEV_GENESIS_ACCOUNT),
         Amount::MAX - Amount::raw(500)
@@ -379,8 +384,8 @@ fn spend_no_previous() {
     }
     let key2 = PrivateKey::new();
     node.wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             Amount::raw(500),
@@ -388,7 +393,9 @@ fn spend_no_previous() {
             true,
             None,
         )
+        .wait()
         .unwrap();
+
     assert_eq!(
         node.balance(&DEV_GENESIS_ACCOUNT),
         Amount::MAX - Amount::raw(500)
@@ -799,8 +806,8 @@ fn work_generate() {
     let key = PrivateKey::new();
     let _block = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key.account(),
             Amount::raw(100),
@@ -808,10 +815,10 @@ fn work_generate() {
             true,
             None,
         )
+        .wait()
         .unwrap();
-    assert_timely(Duration::from_secs(10), || {
-        node1.ledger.any().account_balance(&DEV_GENESIS_ACCOUNT) != Amount::MAX
-    });
+
+    assert_timely2(|| node1.ledger.any().account_balance(&DEV_GENESIS_ACCOUNT) != Amount::MAX);
 
     let start = Instant::now();
     loop {
@@ -841,8 +848,8 @@ fn work_cache_delayed() {
     let key = PrivateKey::new();
     let _block1 = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key.account(),
             Amount::raw(100),
@@ -850,11 +857,13 @@ fn work_cache_delayed() {
             true,
             None,
         )
+        .wait()
         .unwrap();
+
     let block2 = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key.account(),
             Amount::raw(100),
@@ -862,7 +871,9 @@ fn work_cache_delayed() {
             true,
             None,
         )
+        .wait()
         .unwrap();
+
     assert_eq!(
         node1
             .wallets
@@ -1021,8 +1032,8 @@ fn no_work() {
     let key2 = PrivateKey::new();
     let block = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             key2.account(),
             Amount::MAX,
@@ -1030,7 +1041,9 @@ fn no_work() {
             false,
             None,
         )
+        .wait()
         .unwrap();
+
     assert_ne!(block.work(), 0.into());
     assert!(
         DEV_NETWORK_PARAMS.work.difficulty_block(&block)
@@ -1053,8 +1066,8 @@ fn send_race() {
     for i in 1..60 {
         node1
             .wallets
-            .send_action2(
-                &wallet_id,
+            .send(
+                wallet_id,
                 *DEV_GENESIS_ACCOUNT,
                 key2.account(),
                 Amount::nano(1000),
@@ -1062,6 +1075,7 @@ fn send_race() {
                 true,
                 None,
             )
+            .wait()
             .unwrap();
         assert_eq!(
             node1.balance(&DEV_GENESIS_ACCOUNT),
@@ -1140,10 +1154,11 @@ fn change_seed() {
         .wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)
         .unwrap();
+
     let block = node1
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             pub_key.into(),
             Amount::raw(100),
@@ -1151,8 +1166,10 @@ fn change_seed() {
             true,
             None,
         )
+        .wait()
         .unwrap();
-    assert_timely(Duration::from_secs(5), || node1.block_exists(&block.hash()));
+
+    assert_timely2(|| node1.block_exists(&block.hash()));
     node1.wallets.change_seed(wallet_id, &seed1, 0).unwrap();
     assert_eq!(node1.wallets.get_seed(wallet_id).unwrap(), seed1);
     assert!(node1.wallets.exists(&pub_key));
@@ -1181,8 +1198,8 @@ fn epoch_2_validation() {
         tries += 1;
         let send = node
             .wallets
-            .send_action2(
-                &wallet_id,
+            .send(
+                wallet_id,
                 *DEV_GENESIS_ACCOUNT,
                 *DEV_GENESIS_ACCOUNT,
                 amount,
@@ -1190,7 +1207,9 @@ fn epoch_2_validation() {
                 true,
                 None,
             )
+            .wait()
             .unwrap();
+
         assert_eq!(send.epoch(), Epoch::Epoch2);
         assert_eq!(send.source_epoch(), Epoch::Epoch0); // Not used for send state blocks
 
@@ -1263,8 +1282,8 @@ fn epoch_2_receive_propagation() {
         let amount = node.config.receive_minimum;
         let send1 = node
             .wallets
-            .send_action2(
-                &wallet_id,
+            .send(
+                wallet_id,
                 *DEV_GENESIS_ACCOUNT,
                 key.account(),
                 amount,
@@ -1272,7 +1291,9 @@ fn epoch_2_receive_propagation() {
                 true,
                 None,
             )
+            .wait()
             .unwrap();
+
         node.wallets
             .receive_action2(
                 &wallet_id,
@@ -1291,8 +1312,8 @@ fn epoch_2_receive_propagation() {
         // Send a block
         let send2 = node
             .wallets
-            .send_action2(
-                &wallet_id,
+            .send(
+                wallet_id,
                 *DEV_GENESIS_ACCOUNT,
                 key.account(),
                 amount,
@@ -1300,7 +1321,9 @@ fn epoch_2_receive_propagation() {
                 true,
                 None,
             )
+            .wait()
             .unwrap();
+
         let receive2 = node
             .wallets
             .receive_action2(
@@ -1362,10 +1385,11 @@ fn epoch_2_receive_unopened() {
             .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)
             .unwrap();
         let amount = node.config.receive_minimum;
+
         let send1 = node
             .wallets
-            .send_action2(
-                &wallet_id,
+            .send(
+                wallet_id,
                 *DEV_GENESIS_ACCOUNT,
                 key.account(),
                 amount,
@@ -1373,6 +1397,7 @@ fn epoch_2_receive_unopened() {
                 true,
                 None,
             )
+            .wait()
             .unwrap();
 
         // Upgrade unopened account to epoch_2
@@ -1507,8 +1532,8 @@ fn receive_pruned() {
     let amount = node2.config.receive_minimum;
     let send1 = node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key.account(),
             amount,
@@ -1516,11 +1541,13 @@ fn receive_pruned() {
             true,
             None,
         )
+        .wait()
         .unwrap();
+
     let _send2 = node1
         .wallets
-        .send_action2(
-            &wallet_id1,
+        .send(
+            wallet_id1,
             *DEV_GENESIS_ACCOUNT,
             key.account(),
             Amount::raw(1),
@@ -1528,6 +1555,7 @@ fn receive_pruned() {
             true,
             None,
         )
+        .wait()
         .unwrap();
 
     // Pruning

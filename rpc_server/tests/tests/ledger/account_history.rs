@@ -29,8 +29,8 @@ fn account_history() {
 
     let send = node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             *DEV_GENESIS_ACCOUNT,
             node.config.receive_minimum,
@@ -38,6 +38,7 @@ fn account_history() {
             false,
             None,
         )
+        .wait()
         .unwrap();
 
     let receive = node
@@ -56,8 +57,8 @@ fn account_history() {
 
     let usend = node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             *DEV_GENESIS_ACCOUNT,
             Amount::nano(1_000),
@@ -65,6 +66,7 @@ fn account_history() {
             false,
             None,
         )
+        .wait()
         .unwrap();
 
     let ureceive = node
@@ -165,8 +167,8 @@ fn account_history() {
         .into();
     let send2 = node
         .wallets
-        .send_action2(
-            &wallet_id,
+        .send(
+            wallet_id,
             *DEV_GENESIS_ACCOUNT,
             account2,
             node.config.receive_minimum,
@@ -174,6 +176,7 @@ fn account_history() {
             false,
             None,
         )
+        .wait()
         .unwrap();
 
     node.wallets

@@ -1067,17 +1067,6 @@ pub trait WalletsExt {
         id: Option<String>,
     ) -> anyhow::Result<SavedBlock>;
 
-    fn send_action2(
-        &self,
-        wallet_id: &WalletId,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> Result<SavedBlock, WalletsError>;
-
     fn change_action(
         &self,
         wallet: &Arc<Wallet>,
@@ -1422,22 +1411,6 @@ impl WalletsExt for Arc<Wallets> {
         let restored_count = wallet.store.deterministic_index_get(&txn);
         txn.commit();
         Ok((restored_count, first_account.into()))
-    }
-
-    fn send_action2(
-        &self,
-        wallet_id: &WalletId,
-        source: Account,
-        destination: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> Result<SavedBlock, WalletsError> {
-        let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
-        self.send_action(wallet, source, destination, amount, work, generate_work, id)
-            .map_err(|_| WalletsError::Generic)
     }
 
     fn send_action(
