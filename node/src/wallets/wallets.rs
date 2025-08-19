@@ -163,7 +163,7 @@ pub struct Wallets {
     db: Option<LmdbDatabase>,
     send_action_ids_handle: Option<LmdbDatabase>,
     env: Arc<LmdbEnvironment>,
-    mutex: Mutex<HashMap<WalletId, Arc<Wallet>>>,
+    wallets: Mutex<HashMap<WalletId, Arc<Wallet>>>,
     wallets_config: WalletsConfig,
     ledger: Arc<Ledger>,
     work_factory: Arc<WorkFactory>,
@@ -190,7 +190,7 @@ impl Wallets {
         Self {
             db: None,
             send_action_ids_handle: None,
-            mutex: Mutex::new(HashMap::new()),
+            wallets: Mutex::new(HashMap::new()),
             env,
             wallets_config,
             ledger: Arc::clone(&ledger),
@@ -275,7 +275,7 @@ impl Wallets {
 
     pub fn initialize(&mut self) -> anyhow::Result<()> {
         {
-            let mut guard = self.mutex.lock().unwrap();
+            let mut guard = self.wallets.lock().unwrap();
             self.db = Some(self.env.create_db(None, DatabaseFlags::empty())?);
             self.send_action_ids_handle = Some(
                 self.env
@@ -390,7 +390,7 @@ impl Wallets {
     pub fn get_all_pub_keys(&self) -> Vec<PublicKey> {
         let mut wallet_keys = Vec::new();
         {
-            let wallets_guard = self.mutex.lock().unwrap();
+            let wallets_guard = self.wallets.lock().unwrap();
             let txn = self.env.begin_read();
             for (_, wallet) in wallets_guard.iter() {
                 for (pub_key, _) in wallet.store.iter(&txn) {
@@ -407,7 +407,7 @@ impl Wallets {
         let mut all_priv_keys: Vec<PrivateKey> = Vec::new();
         {
             let txn = self.env.begin_read();
-            let lock = self.mutex.lock().unwrap();
+            let lock = self.wallets.lock().unwrap();
             for (_, wallet) in lock.iter() {
                 if wallet.store.valid_password(&txn) {
                     for (pub_key, _) in wallet.store.iter(&txn) {
@@ -420,18 +420,6 @@ impl Wallets {
             txn.commit();
         }
         all_priv_keys
-    }
-
-    pub fn work_cache_blocking2(
-        &self,
-        wallet_id: &WalletId,
-        pub_key: &PublicKey,
-        root: &Root,
-    ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
-        let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
-        self.work_cache_blocking(wallet, pub_key, root);
-        Ok(())
     }
 
     fn work_cache_blocking(&self, wallet: &Wallet, pub_key: &PublicKey, root: &Root) {
@@ -459,7 +447,7 @@ impl Wallets {
     }
 
     pub fn get_wallet(&self, wallet_id: &WalletId) -> Option<Arc<Wallet>> {
-        self.mutex.lock().unwrap().get(wallet_id).cloned()
+        self.wallets.lock().unwrap().get(wallet_id).cloned()
     }
 
     fn get_wallet_guard<'a>(
@@ -474,7 +462,7 @@ impl Wallets {
         wallet_id: &WalletId,
         accounts: &[Account],
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let mut txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -496,7 +484,7 @@ impl Wallets {
     }
 
     pub fn valid_password(&self, wallet_id: &WalletId) -> Result<bool, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_read();
         let valid = wallet.store.valid_password(&txn);
@@ -509,7 +497,7 @@ impl Wallets {
         wallet_id: &WalletId,
         password: impl AsRef<str>,
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_write();
         if wallet.store.attempt_password(&txn, password.as_ref()) {
@@ -521,7 +509,7 @@ impl Wallets {
     }
 
     pub fn lock(&self, wallet_id: &WalletId) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         wallet.store.lock();
         Ok(())
@@ -532,7 +520,7 @@ impl Wallets {
         wallet_id: &WalletId,
         password: impl AsRef<str>,
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let mut txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -552,7 +540,7 @@ impl Wallets {
     }
 
     pub fn exists(&self, pub_key: &PublicKey) -> bool {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let txn = self.env.begin_read();
         let exists = guard
             .values()
@@ -562,7 +550,7 @@ impl Wallets {
     }
 
     pub fn reload(&self) {
-        let mut guard = self.mutex.lock().unwrap();
+        let mut guard = self.wallets.lock().unwrap();
         let mut stored_items = HashSet::new();
 
         let wallet_ids = {
@@ -603,11 +591,11 @@ impl Wallets {
     }
 
     pub fn wallet_exists(&self, wallet_id: &WalletId) -> bool {
-        self.mutex.lock().unwrap().contains_key(wallet_id)
+        self.wallets.lock().unwrap().contains_key(wallet_id)
     }
 
     pub fn destroy(&self, id: &WalletId) {
-        let mut guard = self.mutex.lock().unwrap();
+        let mut guard = self.wallets.lock().unwrap();
         let mut txn = self.env.begin_write();
         // action_mutex should be locked after transactions to prevent deadlocks in deterministic_insert () & insert_adhoc ()
         let _action_guard = self.wallet_actions.lock_safe();
@@ -621,7 +609,7 @@ impl Wallets {
         wallet_id: &WalletId,
         pub_key: &PublicKey,
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let mut txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -641,7 +629,7 @@ impl Wallets {
         pub_key: &PublicKey,
         work: WorkNonce,
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let mut txn = self.env.begin_write();
         if wallet.store.find(&txn, pub_key).is_none() {
@@ -658,7 +646,7 @@ impl Wallets {
         target_id: &WalletId,
         accounts: &[PublicKey],
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let source = Self::get_wallet_guard(&guard, source_id)?;
         let target = Self::get_wallet_guard(&guard, target_id)?;
         let txn = self.env.begin_read();
@@ -679,7 +667,7 @@ impl Wallets {
     }
 
     pub fn backup(&self, path: &Path) -> anyhow::Result<()> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let txn = self.env.begin_read();
         for (id, wallet) in guard.iter() {
             std::fs::create_dir_all(path)?;
@@ -693,7 +681,7 @@ impl Wallets {
     }
 
     pub fn deterministic_index_get(&self, wallet_id: &WalletId) -> Result<u32, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_read();
         let index = wallet.store.deterministic_index_get(&txn);
@@ -797,7 +785,7 @@ impl Wallets {
     }
 
     pub fn work_get(&self, wallet_id: &WalletId, pub_key: &PublicKey) -> WorkNonce {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let Some(wallet) = guard.get(&wallet_id) else {
             return 1.into();
         };
@@ -812,7 +800,7 @@ impl Wallets {
         wallet_id: &WalletId,
         pub_key: &PublicKey,
     ) -> Result<WorkNonce, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let txn = self.env.begin_read();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         if wallet.store.find(&txn, pub_key).is_none() {
@@ -823,7 +811,7 @@ impl Wallets {
 
     pub fn get_accounts(&self, max_results: usize) -> Vec<Account> {
         let mut accounts = Vec::new();
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let txn = self.env.begin_read();
         for wallet in guard.values() {
             for (pub_key, _) in wallet.store.iter(&txn) {
@@ -842,7 +830,7 @@ impl Wallets {
         &self,
         wallet_id: &WalletId,
     ) -> Result<Vec<Account>, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_read();
         let mut accounts = Vec::new();
@@ -854,7 +842,7 @@ impl Wallets {
     }
 
     pub fn fetch(&self, wallet_id: &WalletId, pub_key: &PublicKey) -> Result<RawKey, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_read();
         if !wallet.store.valid_password(&txn) {
@@ -872,7 +860,7 @@ impl Wallets {
     }
 
     pub fn import(&self, wallet_id: WalletId, json: &str) -> anyhow::Result<()> {
-        let _guard = self.mutex.lock().unwrap();
+        let _guard = self.wallets.lock().unwrap();
         let _wallet = Wallet::new_from_json(
             &self.env,
             self.wallets_config.password_fanout as usize,
@@ -889,7 +877,7 @@ impl Wallets {
         json: &str,
         password: &str,
     ) -> anyhow::Result<()> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let existing = guard
             .get(&wallet_id)
             .ok_or_else(|| anyhow!("wallet not found"))?;
@@ -914,7 +902,7 @@ impl Wallets {
     }
 
     pub fn get_seed(&self, wallet_id: WalletId) -> Result<RawKey, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, &wallet_id)?;
         let txn = self.env.begin_read();
         if !wallet.store.valid_password(&txn) {
@@ -926,7 +914,7 @@ impl Wallets {
     }
 
     pub fn key_type(&self, wallet_id: WalletId, pub_key: &PublicKey) -> KeyType {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         match guard.get(&wallet_id) {
             Some(wallet) => {
                 let txn = self.env.begin_read();
@@ -939,14 +927,14 @@ impl Wallets {
     }
 
     pub fn get_representative(&self, wallet_id: WalletId) -> Result<PublicKey, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, &wallet_id)?;
         let txn = self.env.begin_read();
         Ok(wallet.store.representative(&txn))
     }
 
     pub fn decrypt(&self, wallet_id: WalletId) -> Result<Vec<(PublicKey, RawKey)>, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, &wallet_id)?;
         let txn = self.env.begin_read();
         if !wallet.store.valid_password(&txn) {
@@ -967,7 +955,7 @@ impl Wallets {
     }
 
     pub fn serialize(&self, wallet_id: WalletId) -> Result<String, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Self::get_wallet_guard(&guard, &wallet_id)?;
         let txn = self.env.begin_read();
         let json = wallet.store.serialize_json(&txn);
@@ -976,7 +964,7 @@ impl Wallets {
     }
 
     pub fn wallet_count(&self) -> usize {
-        self.mutex.lock().unwrap().len()
+        self.wallets.lock().unwrap().len()
     }
 }
 
@@ -1133,18 +1121,6 @@ pub trait WalletsExt {
         generate_work: bool,
     );
 
-    fn receive_async(
-        &self,
-        wallet_id: WalletId,
-        hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        action: Box<dyn Fn(Option<SavedBlock>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<(), WalletsError>;
-
     fn receive_sync(
         &self,
         wallet_id: WalletId,
@@ -1252,7 +1228,7 @@ impl WalletsExt for Arc<Wallets> {
         work: WorkNonce,
         generate_work: bool,
     ) -> Result<Option<SavedBlock>, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_read();
         if !wallet.store.valid_password(&txn) {
@@ -1300,7 +1276,7 @@ impl WalletsExt for Arc<Wallets> {
         index: u32,
         generate_work: bool,
     ) -> Result<PublicKey, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
         let mut txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -1322,7 +1298,7 @@ impl WalletsExt for Arc<Wallets> {
         wallet_id: &WalletId,
         generate_work: bool,
     ) -> Result<PublicKey, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
         let mut txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -1357,7 +1333,7 @@ impl WalletsExt for Arc<Wallets> {
         key: &RawKey,
         generate_work: bool,
     ) -> Result<PublicKey, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
         let txn = self.env.begin_read();
         if !wallet.store.valid_password(&txn) {
@@ -1462,7 +1438,7 @@ impl WalletsExt for Arc<Wallets> {
         prv_key: &RawKey,
         count: u32,
     ) -> Result<(u32, Account), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
         let mut txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -1484,7 +1460,7 @@ impl WalletsExt for Arc<Wallets> {
         generate_work: bool,
         id: Option<String>,
     ) -> Result<SavedBlock, WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
         self.send_action(wallet, source, destination, amount, work, generate_work, id)
             .map_err(|_| WalletsError::Generic)
@@ -1599,7 +1575,7 @@ impl WalletsExt for Arc<Wallets> {
         work: WorkNonce,
         generate_work: bool,
     ) -> Option<Block> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, wallet_id).ok()?;
         self.change_action(wallet, source, representative, work, generate_work)
     }
@@ -1725,42 +1701,6 @@ impl WalletsExt for Arc<Wallets> {
         );
     }
 
-    fn receive_async(
-        &self,
-        wallet_id: WalletId,
-        hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        action: Box<dyn Fn(Option<SavedBlock>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
-        let txn = self.env.begin_write();
-        if !wallet.store.valid_password(&txn) {
-            return Err(WalletsError::WalletLocked);
-        }
-
-        if wallet.store.find(&txn, &account.into()).is_none() {
-            return Err(WalletsError::AccountNotFound);
-        }
-        txn.commit();
-
-        self.receive_async_wallet(
-            Arc::clone(wallet),
-            hash,
-            representative,
-            amount,
-            account,
-            action,
-            work,
-            generate_work,
-        );
-        Ok(())
-    }
-
     fn receive_sync(
         &self,
         wallet_id: WalletId,
@@ -1772,7 +1712,7 @@ impl WalletsExt for Arc<Wallets> {
         generate_work: bool,
     ) -> Result<SavedBlock, WalletsError> {
         let wallet = {
-            let guard = self.mutex.lock().unwrap();
+            let guard = self.wallets.lock().unwrap();
             Wallets::get_wallet_guard(&guard, &wallet_id)?.clone()
         };
         let result = Arc::new((Condvar::new(), Mutex::new((false, None)))); // done, result
@@ -1843,7 +1783,7 @@ impl WalletsExt for Arc<Wallets> {
         generate_work: bool,
         id: Option<String>,
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
         let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -1877,7 +1817,7 @@ impl WalletsExt for Arc<Wallets> {
         generate_work: bool,
         id: Option<String>,
     ) -> BlockHash {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let Some(wallet) = guard.get(&wallet_id) else {
             panic!("wallet not found")
         };
@@ -1957,7 +1897,7 @@ impl WalletsExt for Arc<Wallets> {
 
     fn receive_confirmed(&self, hash: BlockHash, destination: Account) {
         let (wallet_tx, wallets) = {
-            let guard = self.mutex.lock().unwrap();
+            let guard = self.wallets.lock().unwrap();
             (self.env.begin_read(), guard.clone())
         };
 
@@ -1993,7 +1933,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn search_receivable_all(&self) {
-        let wallets = self.mutex.lock().unwrap().clone();
+        let wallets = self.wallets.lock().unwrap().clone();
         let wallet_tx = self.env.begin_read();
         for (_, wallet) in wallets {
             let _ = self.search_receivable(&wallet, &wallet_tx);
@@ -2001,7 +1941,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn search_receivable_wallet(&self, wallet_id: WalletId) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         if let Some(wallet) = guard.get(&wallet_id) {
             let txn = self.env.begin_read();
             if wallet.store.valid_password(&txn) {
@@ -2017,7 +1957,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
         let tx = self.env.begin_write();
         let result = self
@@ -2032,7 +1972,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn create(&self, wallet_id: WalletId) {
-        let mut guard = self.mutex.lock().unwrap();
+        let mut guard = self.wallets.lock().unwrap();
         debug_assert!(!guard.contains_key(&wallet_id));
         let wallet = {
             let Ok(wallet) = Wallet::new(
@@ -2108,7 +2048,7 @@ impl WalletsExt for Arc<Wallets> {
         work: WorkNonce,
         generate_work: bool,
     ) -> Result<(), WalletsError> {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
         let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
@@ -2139,7 +2079,7 @@ impl WalletsExt for Arc<Wallets> {
     ) -> Result<(), WalletsError> {
         let mut accounts = Vec::new();
         {
-            let guard = self.mutex.lock().unwrap();
+            let guard = self.wallets.lock().unwrap();
             let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
 
             {
@@ -2182,7 +2122,7 @@ impl WalletsExt for Arc<Wallets> {
     }
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool {
-        let guard = self.mutex.lock().unwrap();
+        let guard = self.wallets.lock().unwrap();
         let Some(existing) = guard.get(&wallet_id) else {
             return false;
         };
