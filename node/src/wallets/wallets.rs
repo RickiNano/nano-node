@@ -1142,17 +1142,16 @@ pub trait WalletsExt {
         id: Option<String>,
     );
 
-    fn send_async(
+    fn send(
         &self,
         wallet_id: WalletId,
         source: Account,
         account: Account,
         amount: Amount,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
         work: WorkNonce,
         generate_work: bool,
         id: Option<String>,
-    ) -> Result<(), WalletsError>;
+    ) -> BlockPromise;
 
     fn send_sync(
         &self,
@@ -1764,39 +1763,53 @@ impl WalletsExt for Arc<Wallets> {
         );
     }
 
-    fn send_async(
+    fn send(
         &self,
         wallet_id: WalletId,
         source: Account,
         account: Account,
         amount: Amount,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
         work: WorkNonce,
         generate_work: bool,
         id: Option<String>,
-    ) -> Result<(), WalletsError> {
+    ) -> BlockPromise {
         let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
+        let wallet = match Wallets::get_wallet_guard(&guard, &wallet_id) {
+            Ok(w) => w,
+            Err(e) => return BlockPromise::new_failed(e),
+        };
         let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
-            return Err(WalletsError::WalletLocked);
+            return BlockPromise::new_failed(WalletsError::WalletLocked);
         }
         if wallet.store.find(&txn, &source.into()).is_none() {
-            return Err(WalletsError::AccountNotFound);
+            return BlockPromise::new_failed(WalletsError::AccountNotFound);
         }
         txn.commit();
-        self.send_async_wallet(
-            Arc::clone(wallet),
-            source,
-            account,
-            amount,
-            action,
-            work,
-            generate_work,
-            id,
+
+        let promise = BlockPromise::new();
+        let promise2 = promise.clone();
+        let self_l = Arc::clone(self);
+        self.wallet_actions.queue_wallet_action(
+            HIGH_PRIORITY,
+            wallet.clone(),
+            Box::new(move |wallet| {
+                let block = self_l
+                    .send_action(
+                        &wallet,
+                        source,
+                        account,
+                        amount,
+                        work,
+                        generate_work,
+                        id.clone(),
+                    )
+                    .map_err(|_| WalletsError::Generic);
+                promise2.set_result(block);
+            }),
         );
 
-        Ok(())
+        promise
     }
 
     fn send_sync(

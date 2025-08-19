@@ -21,7 +21,7 @@ use rsnano_node::{
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
-use test_helpers::{assert_always_eq, assert_timely, assert_timely_eq2, System};
+use test_helpers::{assert_always_eq, assert_timely, assert_timely2, assert_timely_eq2, System};
 
 struct TestFixture {
     test_dir: PathBuf,
@@ -288,27 +288,18 @@ fn send_async() {
     node.insert_into_wallet(&DEV_GENESIS_KEY);
     let wallet_id = node.wallets.wallet_ids()[0];
     let key2 = PrivateKey::new();
-    let block = Arc::new(Mutex::new(None));
-    let block2 = block.clone();
-    node.wallets
-        .send_async(
-            wallet_id,
-            *DEV_GENESIS_ACCOUNT,
-            key2.account(),
-            Amount::MAX,
-            Box::new(move |b| {
-                *block2.lock().unwrap() = Some(b);
-            }),
-            0.into(),
-            true,
-            None,
-        )
-        .unwrap();
+    let block = node.wallets.send(
+        wallet_id,
+        *DEV_GENESIS_ACCOUNT,
+        key2.account(),
+        Amount::MAX,
+        0.into(),
+        true,
+        None,
+    );
 
-    assert_timely(Duration::from_secs(10), || {
-        node.balance(&DEV_GENESIS_ACCOUNT).is_zero()
-    });
-    assert!(block.lock().unwrap().is_some());
+    assert_timely2(|| node.balance(&DEV_GENESIS_ACCOUNT).is_zero());
+    assert!(block.wait().is_ok());
 }
 
 #[test]
