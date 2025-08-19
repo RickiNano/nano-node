@@ -111,7 +111,7 @@ fn search_receivable() {
         if search_all {
             node.wallets.search_receivable_all().wait().unwrap();
         } else {
-            node.wallets.search_receivable2(&wallet_id).wait().unwrap();
+            node.wallets.search_receivable(&wallet_id).wait().unwrap();
         }
         // Erase the key so the confirmation does not trigger an automatic receive
         node.wallets
@@ -131,7 +131,7 @@ fn search_receivable() {
         if search_all {
             node.wallets.search_receivable_all().wait().unwrap();
         } else {
-            node.wallets.search_receivable2(&wallet_id).wait().unwrap();
+            node.wallets.search_receivable(&wallet_id).wait().unwrap();
         }
         assert_timely_eq2(|| node.balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
         let receive_hash = node

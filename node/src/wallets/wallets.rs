@@ -1068,36 +1068,7 @@ pub trait WalletsExt {
         generate_work: bool,
     ) -> BlockPromise;
 
-    fn receive_action(
-        &self,
-        wallet: &Arc<Wallet>,
-        send_hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Option<SavedBlock>;
-
-    fn receive_async_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        action: Box<dyn Fn(Option<SavedBlock>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    );
-
-    fn search_receivable2(&self, wallet_id: &WalletId) -> MultiBlockPromise;
-
-    fn search_receivable(
-        &self,
-        wallet: &Arc<Wallet>,
-        wallet_tx: &dyn Transaction,
-    ) -> Result<(), ()>;
+    fn search_receivable(&self, wallet_id: &WalletId) -> MultiBlockPromise;
 
     fn search_receivable_all(&self) -> MultiBlockPromise;
 
@@ -1384,25 +1355,33 @@ impl WalletsExt for Arc<Wallets> {
         promise
     }
 
-    fn receive_action(
+    fn receive(
         &self,
-        wallet: &Arc<Wallet>,
+        wallet_id: WalletId,
         send_hash: BlockHash,
         representative: PublicKey,
         amount: Amount,
         account: Account,
         mut work: WorkNonce,
         generate_work: bool,
-    ) -> Option<SavedBlock> {
+    ) -> BlockPromise {
+        let wallet = {
+            let guard = self.wallets.lock().unwrap();
+            match Wallets::get_wallet_guard(&guard, &wallet_id) {
+                Ok(wallet) => wallet.clone(),
+                Err(e) => return BlockPromise::new_failed(e),
+            }
+        };
+
         if amount < self.wallets_config.receive_minimum {
             warn!(
                 "Not receiving block {} due to minimum receive threshold",
                 send_hash
             );
-            return None;
+            return BlockPromise::new_failed(WalletsError::Generic);
         }
 
-        let mut block = None;
+        let mut block: Option<Block> = None;
         let mut epoch = Epoch::Epoch0;
         let any = self.ledger.any();
         let wallet_tx = self.env.begin_read();
@@ -1469,70 +1448,23 @@ impl WalletsExt for Arc<Wallets> {
         }
         wallet_tx.commit();
 
-        let block = block?;
+        let Some(block) = block else {
+            return BlockPromise::new_failed(WalletsError::Generic);
+        };
         let details = BlockDetails::new(epoch, false, true, false);
-        self.action_complete(Arc::clone(wallet), block, account, generate_work, &details)
-            .ok()
-    }
 
-    fn receive_async_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        action: Box<dyn Fn(Option<SavedBlock>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) {
+        let block_promise = BlockPromise::new();
+        let block_promise2 = block_promise.clone();
         let self_l = Arc::clone(self);
         self.wallet_actions.queue_wallet_action(
             amount,
             wallet,
             Box::new(move |wallet| {
-                let block = self_l.receive_action(
-                    &wallet,
-                    hash,
-                    representative,
-                    amount,
-                    account,
-                    work,
-                    generate_work,
-                );
-                action(block);
+                let result = self_l
+                    .action_complete(wallet, block.clone(), account, generate_work, &details)
+                    .map_err(|_| WalletsError::Generic);
+                block_promise2.set_result(result);
             }),
-        );
-    }
-
-    fn receive(
-        &self,
-        wallet_id: WalletId,
-        block_hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> BlockPromise {
-        let wallet = {
-            let guard = self.wallets.lock().unwrap();
-            match Wallets::get_wallet_guard(&guard, &wallet_id) {
-                Ok(wallet) => wallet.clone(),
-                Err(e) => return BlockPromise::new_failed(e),
-            }
-        };
-        let block_promise = BlockPromise::new();
-        let promise_clone = block_promise.clone();
-        self.receive_async_wallet(
-            wallet,
-            block_hash,
-            representative,
-            amount,
-            account,
-            Box::new(move |block| promise_clone.set_result(block.ok_or(WalletsError::Generic))),
-            work,
-            generate_work,
         );
         block_promise
     }
@@ -1605,7 +1537,7 @@ impl WalletsExt for Arc<Wallets> {
         promise
     }
 
-    fn search_receivable2(&self, wallet_id: &WalletId) -> MultiBlockPromise {
+    fn search_receivable(&self, wallet_id: &WalletId) -> MultiBlockPromise {
         let wallet = match self.get_wallet(wallet_id) {
             Some(w) => w,
             None => return MultiBlockPromise::new_failed(WalletsError::WalletNotFound),
@@ -1660,61 +1592,11 @@ impl WalletsExt for Arc<Wallets> {
         MultiBlockPromise::new(block_promises)
     }
 
-    fn search_receivable(
-        &self,
-        wallet: &Arc<Wallet>,
-        wallet_tx: &dyn Transaction,
-    ) -> Result<(), ()> {
-        if !wallet.store.valid_password(wallet_tx) {
-            info!("Unable to search receivable blocks, wallet is locked. Blocks won't be auto-received until the wallet is unlocked");
-            return Err(());
-        }
-
-        debug!("Beginning receivable block search");
-
-        for (account, wallet_value) in wallet.store.iter(wallet_tx) {
-            let any = self.ledger.any();
-            // Don't search pending for watch-only accounts
-            if !wallet_value.key.is_zero() {
-                for (key, info) in
-                    any.account_receivable_upper_bound(account.into(), BlockHash::zero())
-                {
-                    let hash = key.send_block_hash;
-                    let amount = info.amount;
-                    if self.wallets_config.receive_minimum <= amount {
-                        info!(
-                            "Found a receivable block {} for account {}",
-                            hash,
-                            info.source.encode_account()
-                        );
-                        if any.confirmed().block_exists_or_pruned(&hash) {
-                            let representative = wallet.store.representative(wallet_tx);
-                            // Receive confirmed block
-                            self.receive_async_wallet(
-                                Arc::clone(wallet),
-                                hash,
-                                representative,
-                                amount,
-                                account.into(),
-                                Box::new(|_| {}),
-                                0.into(),
-                                true,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        debug!("Receivable block search phase completed");
-        Ok(())
-    }
-
     fn search_receivable_all(&self) -> MultiBlockPromise {
         let wallet_ids = self.wallet_ids();
         let mut result = MultiBlockPromise::empty();
         for id in wallet_ids {
-            result.append(self.search_receivable2(&id));
+            result.append(self.search_receivable(&id));
         }
         result
     }

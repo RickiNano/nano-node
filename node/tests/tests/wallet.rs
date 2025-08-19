@@ -1484,11 +1484,11 @@ fn search_receivable() {
         .genesis()
         .send(&*DEV_GENESIS_KEY, node.config.receive_minimum);
     node.process(send.clone());
-    node.wallets.search_receivable2(&wallet_id).wait().unwrap();
+    node.wallets.search_receivable(&wallet_id).wait().unwrap();
     assert_always_eq(Duration::from_millis(300), || node.ledger.block_count(), 2);
 
     node.confirm(send.hash());
-    node.wallets.search_receivable2(&wallet_id).wait().unwrap();
+    node.wallets.search_receivable(&wallet_id).wait().unwrap();
     assert_timely_eq2(|| node.balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
     let receive_hash = node
         .ledger
