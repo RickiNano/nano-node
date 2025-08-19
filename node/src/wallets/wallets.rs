@@ -1067,6 +1067,15 @@ pub trait WalletsExt {
         id: Option<String>,
     ) -> anyhow::Result<SavedBlock>;
 
+    fn change(
+        &self,
+        wallet_id: &WalletId,
+        source: Account,
+        representative: PublicKey,
+        work: WorkNonce,
+        generate_work: bool,
+    ) -> BlockPromise;
+
     fn change_action(
         &self,
         wallet: &Arc<Wallet>,
@@ -1076,14 +1085,15 @@ pub trait WalletsExt {
         generate_work: bool,
     ) -> Option<Block>;
 
-    fn change_action2(
+    fn change_async(
         &self,
-        wallet_id: &WalletId,
+        wallet_id: WalletId,
         source: Account,
         representative: PublicKey,
+        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
         work: WorkNonce,
         generate_work: bool,
-    ) -> Option<Block>;
+    ) -> Result<(), WalletsError>;
 
     fn receive(
         &self,
@@ -1141,34 +1151,7 @@ pub trait WalletsExt {
     fn search_receivable_wallet(&self, wallet_id: WalletId) -> Result<(), WalletsError>;
 
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
-
     fn create(&self, wallet_id: WalletId);
-    fn change_async_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        source: Account,
-        representative: PublicKey,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    );
-
-    fn change_sync_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        source: Account,
-        representative: PublicKey,
-    ) -> Result<(), ()>;
-
-    fn change_async(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        representative: PublicKey,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<(), WalletsError>;
 
     fn set_representative(
         &self,
@@ -1452,6 +1435,85 @@ impl WalletsExt for Arc<Wallets> {
         }
     }
 
+    fn change(
+        &self,
+        wallet_id: &WalletId,
+        source: Account,
+        representative: PublicKey,
+        mut work: WorkNonce,
+        generate_work: bool,
+    ) -> BlockPromise {
+        let guard = self.wallets.lock().unwrap();
+        let wallet = match Wallets::get_wallet_guard(&guard, wallet_id) {
+            Ok(w) => w,
+            Err(e) => {
+                return BlockPromise::new_failed(e);
+            }
+        };
+        let epoch: Epoch;
+        let block: Block;
+        {
+            let wallet_tx = self.env.begin_read();
+            let any = self.ledger.any();
+            if !wallet.store.valid_password(&wallet_tx) {
+                warn!(
+                    "Changing representative for account {} failed, wallet locked",
+                    source.encode_account()
+                );
+                return BlockPromise::new_failed(WalletsError::WalletLocked);
+            }
+
+            let existing = wallet.store.find(&wallet_tx, &source.into());
+            if existing.is_some() && any.account_head(&source).is_some() {
+                info!(
+                    "Changing representative for account {} to {}",
+                    source.encode_account(),
+                    representative.as_account().encode_account()
+                );
+                let info = any.get_account(&source).unwrap();
+                let prv = wallet.store.fetch(&wallet_tx, &source.into()).unwrap();
+                if work.is_zero() {
+                    work = wallet
+                        .store
+                        .work_get(&wallet_tx, &source.into())
+                        .unwrap_or_default();
+                }
+                let priv_key = PrivateKey::from(prv);
+                block = StateBlockArgs {
+                    key: &priv_key,
+                    previous: info.head,
+                    representative,
+                    balance: info.balance,
+                    link: Link::zero(),
+                    work,
+                }
+                .into();
+                epoch = info.epoch;
+            } else {
+                warn!("Changing representative for account {} failed, wallet locked or account not found",
+                    source.encode_account());
+                return BlockPromise::new_failed(WalletsError::AccountNotFound);
+            }
+        }
+
+        let details = BlockDetails::new(epoch, false, false, false);
+        let self_l = Arc::clone(self);
+        let promise = BlockPromise::new();
+        let promise2 = promise.clone();
+        self.wallet_actions.queue_wallet_action(
+            HIGH_PRIORITY,
+            wallet.clone(),
+            Box::new(move |wallet| {
+                let result = self_l
+                    .action_complete(wallet, block.clone(), source, generate_work, &details)
+                    .map_err(|_| WalletsError::Generic);
+                promise2.set_result(result);
+            }),
+        );
+
+        promise
+    }
+
     fn change_action(
         &self,
         wallet: &Arc<Wallet>,
@@ -1512,19 +1574,6 @@ impl WalletsExt for Arc<Wallets> {
         self.action_complete(Arc::clone(wallet), block, source, generate_work, &details)
             .ok()
             .map(|b| b.into())
-    }
-
-    fn change_action2(
-        &self,
-        wallet_id: &WalletId,
-        source: Account,
-        representative: PublicKey,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Option<Block> {
-        let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, wallet_id).ok()?;
-        self.change_action(wallet, source, representative, work, generate_work)
     }
 
     fn receive_action(
@@ -1707,6 +1756,7 @@ impl WalletsExt for Arc<Wallets> {
         let promise = BlockPromise::new();
         let promise2 = promise.clone();
         let self_l = Arc::clone(self);
+
         self.wallet_actions.queue_wallet_action(
             HIGH_PRIORITY,
             wallet.clone(),
@@ -1874,55 +1924,6 @@ impl WalletsExt for Arc<Wallets> {
         self.enter_initial_password(&wallet);
     }
 
-    fn change_async_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        source: Account,
-        representative: PublicKey,
-        action: Box<dyn Fn(Option<Block>) + Send + Sync>,
-        work: WorkNonce,
-        generate_work: bool,
-    ) {
-        let self_l = Arc::clone(self);
-        self.wallet_actions.queue_wallet_action(
-            HIGH_PRIORITY,
-            wallet,
-            Box::new(move |wallet| {
-                let block =
-                    self_l.change_action(&wallet, source, representative, work, generate_work);
-                action(block);
-            }),
-        );
-    }
-
-    fn change_sync_wallet(
-        &self,
-        wallet: Arc<Wallet>,
-        source: Account,
-        representative: PublicKey,
-    ) -> Result<(), ()> {
-        let result = Arc::new((Condvar::new(), Mutex::new((false, false)))); // done, result
-        let result_clone = Arc::clone(&result);
-        self.change_async_wallet(
-            wallet,
-            source,
-            representative,
-            Box::new(move |block| {
-                *result_clone.1.lock().unwrap() = (true, block.is_some());
-                result_clone.0.notify_all();
-            }),
-            0.into(),
-            true,
-        );
-        let mut guard = result.1.lock().unwrap();
-        guard = result.0.wait_while(guard, |i| !i.0).unwrap();
-        if guard.1 {
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
     fn change_async(
         &self,
         wallet_id: WalletId,
@@ -1933,7 +1934,7 @@ impl WalletsExt for Arc<Wallets> {
         generate_work: bool,
     ) -> Result<(), WalletsError> {
         let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
+        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?.clone();
         let txn = self.env.begin_write();
         if !wallet.store.valid_password(&txn) {
             return Err(WalletsError::WalletLocked);
@@ -1944,13 +1945,15 @@ impl WalletsExt for Arc<Wallets> {
         }
         txn.commit();
 
-        self.change_async_wallet(
-            Arc::clone(wallet),
-            source,
-            representative,
-            action,
-            work,
-            generate_work,
+        let self_l = Arc::clone(self);
+        self.wallet_actions.queue_wallet_action(
+            HIGH_PRIORITY,
+            wallet,
+            Box::new(move |wallet| {
+                let block =
+                    self_l.change_action(&wallet, source, representative, work, generate_work);
+                action(block);
+            }),
         );
         Ok(())
     }
@@ -2023,7 +2026,7 @@ impl WalletsExt for Arc<Wallets> {
 
 #[derive(Clone)]
 pub struct BlockPromise {
-    done: Arc<Condvar>,
+    done_notification: Arc<Condvar>,
     state: Arc<Mutex<BlockPromiseState>>,
 }
 
@@ -2038,7 +2041,7 @@ impl BlockPromise {
 
     fn with_state(state: BlockPromiseState) -> Self {
         Self {
-            done: Arc::new(Condvar::new()),
+            done_notification: Arc::new(Condvar::new()),
             state: Arc::new(Mutex::new(state)),
         }
     }
@@ -2049,12 +2052,12 @@ impl BlockPromise {
             state.result = result;
             state.done = true;
         }
-        self.done.notify_all();
+        self.done_notification.notify_all();
     }
 
     pub fn wait(&self) -> Result<SavedBlock, WalletsError> {
         let result_guard = self.state.lock().unwrap();
-        self.done
+        self.done_notification
             .wait_while(result_guard, |i| !i.done)
             .unwrap()
             .result
@@ -2080,5 +2083,20 @@ impl BlockPromiseState {
             done: true,
             result: Err(err),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct MultiBlockPromise {
+    children: Vec<BlockPromise>,
+}
+
+impl MultiBlockPromise {
+    pub fn new(children: Vec<BlockPromise>) -> Self {
+        Self { children }
+    }
+
+    pub fn wait(&self) -> Vec<Result<SavedBlock, WalletsError>> {
+        self.children.iter().map(|c| c.wait()).collect()
     }
 }

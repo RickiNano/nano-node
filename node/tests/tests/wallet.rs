@@ -1240,13 +1240,14 @@ fn epoch_2_validation() {
 
     // Test a change block
     node.wallets
-        .change_action2(
+        .change(
             &wallet_id,
             *DEV_GENESIS_ACCOUNT,
             *DEV_GENESIS_PUB_KEY,
             1.into(),
             true,
         )
+        .wait()
         .unwrap();
 }
 

@@ -18,13 +18,14 @@ fn account_history() {
 
     let change = node
         .wallets
-        .change_action2(
+        .change(
             &wallet_id,
             *DEV_GENESIS_ACCOUNT,
             *DEV_GENESIS_PUB_KEY,
             node.work_generate_dev(*DEV_GENESIS_HASH),
             false,
         )
+        .wait()
         .unwrap();
 
     let send = node
@@ -85,13 +86,14 @@ fn account_history() {
 
     let uchange = node
         .wallets
-        .change_action2(
+        .change(
             &wallet_id,
             *DEV_GENESIS_ACCOUNT,
             PublicKey::zero(),
             node.work_generate_dev(ureceive.hash()),
             false,
         )
+        .wait()
         .unwrap();
 
     // Set up RPC client and server

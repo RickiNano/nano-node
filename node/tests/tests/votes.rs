@@ -207,27 +207,38 @@ fn vote_generator_multiple_representatives() {
     });
 
     // Change representatives
-    node.wallets.change_action2(
-        &wallet_id,
-        key1.account(),
-        key1.public_key(),
-        0.into(),
-        true,
-    );
-    node.wallets.change_action2(
-        &wallet_id,
-        key2.account(),
-        key2.public_key(),
-        0.into(),
-        true,
-    );
-    node.wallets.change_action2(
-        &wallet_id,
-        key3.account(),
-        key3.public_key(),
-        0.into(),
-        true,
-    );
+    node.wallets
+        .change(
+            &wallet_id,
+            key1.account(),
+            key1.public_key(),
+            0.into(),
+            true,
+        )
+        .wait()
+        .unwrap();
+
+    node.wallets
+        .change(
+            &wallet_id,
+            key2.account(),
+            key2.public_key(),
+            0.into(),
+            true,
+        )
+        .wait()
+        .unwrap();
+
+    node.wallets
+        .change(
+            &wallet_id,
+            key3.account(),
+            key3.public_key(),
+            0.into(),
+            true,
+        )
+        .wait()
+        .unwrap();
 
     assert_eq!(node.ledger.weight(&key1.public_key()), amount);
     assert_eq!(node.ledger.weight(&key2.public_key()), amount);
