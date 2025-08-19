@@ -1215,8 +1215,8 @@ fn epoch_2_validation() {
 
         let receive = node
             .wallets
-            .receive_action2(
-                &wallet_id,
+            .receive(
+                wallet_id,
                 send.hash(),
                 *DEV_GENESIS_PUB_KEY,
                 amount,
@@ -1224,8 +1224,9 @@ fn epoch_2_validation() {
                 1.into(),
                 true,
             )
-            .unwrap()
+            .wait()
             .unwrap();
+
         if DEV_NETWORK_PARAMS.work.difficulty_block(&receive) < DEV_NETWORK_PARAMS.work.base {
             assert!(
                 DEV_NETWORK_PARAMS.work.difficulty_block(&receive)
@@ -1296,8 +1297,8 @@ fn epoch_2_receive_propagation() {
             .unwrap();
 
         node.wallets
-            .receive_action2(
-                &wallet_id,
+            .receive(
+                wallet_id,
                 send1.hash(),
                 *DEV_GENESIS_PUB_KEY,
                 amount,
@@ -1305,6 +1306,7 @@ fn epoch_2_receive_propagation() {
                 1.into(),
                 true,
             )
+            .wait()
             .unwrap();
 
         // Upgrade the genesis account to epoch 2
@@ -1327,8 +1329,8 @@ fn epoch_2_receive_propagation() {
 
         let receive2 = node
             .wallets
-            .receive_action2(
-                &wallet_id,
+            .receive(
+                wallet_id,
                 send2.hash(),
                 *DEV_GENESIS_PUB_KEY,
                 amount,
@@ -1336,7 +1338,7 @@ fn epoch_2_receive_propagation() {
                 1.into(),
                 true,
             )
-            .unwrap()
+            .wait()
             .unwrap();
         if DEV_NETWORK_PARAMS.work.difficulty_block(&receive2) < DEV_NETWORK_PARAMS.work.base {
             assert!(
@@ -1425,8 +1427,8 @@ fn epoch_2_receive_unopened() {
 
         let receive1 = node
             .wallets
-            .receive_action2(
-                &wallet_id,
+            .receive(
+                wallet_id,
                 send1.hash(),
                 key.public_key(),
                 amount,
@@ -1434,8 +1436,9 @@ fn epoch_2_receive_unopened() {
                 1.into(),
                 true,
             )
-            .unwrap()
+            .wait()
             .unwrap();
+
         if DEV_NETWORK_PARAMS.work.difficulty_block(&receive1) < DEV_NETWORK_PARAMS.work.base {
             assert!(
                 DEV_NETWORK_PARAMS.work.difficulty_block(&receive1)
@@ -1570,8 +1573,8 @@ fn receive_pruned() {
 
     let open1 = node2
         .wallets
-        .receive_action2(
-            &wallet_id2,
+        .receive(
+            wallet_id2,
             send1.hash(),
             key.public_key(),
             amount,
@@ -1579,7 +1582,7 @@ fn receive_pruned() {
             1.into(),
             true,
         )
-        .unwrap()
+        .wait()
         .unwrap();
 
     assert_eq!(

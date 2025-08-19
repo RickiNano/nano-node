@@ -1056,17 +1056,6 @@ pub trait WalletsExt {
         id: Option<String>,
     ) -> BlockPromise;
 
-    fn send_action(
-        &self,
-        wallet: &Arc<Wallet>,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> anyhow::Result<SavedBlock>;
-
     fn change(
         &self,
         wallet_id: &WalletId,
@@ -1086,17 +1075,6 @@ pub trait WalletsExt {
         work: WorkNonce,
         generate_work: bool,
     ) -> BlockPromise;
-
-    fn receive_action2(
-        &self,
-        wallet_id: &WalletId,
-        send_hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<Option<SavedBlock>, WalletsError>;
 
     fn receive_action(
         &self,
@@ -1145,39 +1123,6 @@ pub trait WalletsExt {
 }
 
 impl WalletsExt for Arc<Wallets> {
-    fn receive_action2(
-        &self,
-        wallet_id: &WalletId,
-        send_hash: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> Result<Option<SavedBlock>, WalletsError> {
-        let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, wallet_id)?;
-        let txn = self.env.begin_read();
-        if !wallet.store.valid_password(&txn) {
-            return Err(WalletsError::WalletLocked);
-        }
-
-        if wallet.store.find(&txn, &account.into()).is_none() {
-            return Err(WalletsError::AccountNotFound);
-        }
-        txn.commit();
-
-        Ok(self.receive_action(
-            wallet,
-            send_hash,
-            representative,
-            amount,
-            account,
-            work,
-            generate_work,
-        ))
-    }
-
     fn deterministic_insert(
         &self,
         wallet: &Arc<Wallet>,
@@ -1375,45 +1320,6 @@ impl WalletsExt for Arc<Wallets> {
         let restored_count = wallet.store.deterministic_index_get(&txn);
         txn.commit();
         Ok((restored_count, first_account.into()))
-    }
-
-    fn send_action(
-        &self,
-        wallet: &Arc<Wallet>,
-        source: Account,
-        destination: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> anyhow::Result<SavedBlock> {
-        let result = match id {
-            Some(id) => {
-                let mut txn = self.env.begin_write();
-                let result = self.prepare_send_with_id(
-                    &mut txn,
-                    &id,
-                    wallet,
-                    source,
-                    destination,
-                    amount,
-                    work,
-                )?;
-                txn.commit();
-                result
-            }
-            None => {
-                let txn = self.env.begin_read();
-                self.prepare_send(&txn, wallet, source, destination, amount, work)?
-            }
-        };
-
-        match result {
-            PreparedSend::Cached(block) => Ok(block),
-            PreparedSend::New(block, details) => {
-                self.action_complete(Arc::clone(wallet), block, source, generate_work, &details)
-            }
-        }
     }
 
     fn change(
@@ -1652,7 +1558,7 @@ impl WalletsExt for Arc<Wallets> {
         &self,
         wallet_id: WalletId,
         source: Account,
-        account: Account,
+        destination: Account,
         amount: Amount,
         work: WorkNonce,
         generate_work: bool,
@@ -1680,17 +1586,35 @@ impl WalletsExt for Arc<Wallets> {
             HIGH_PRIORITY,
             wallet.clone(),
             Box::new(move |wallet| {
-                let block = self_l
-                    .send_action(
-                        &wallet,
-                        source,
-                        account,
-                        amount,
-                        work,
-                        generate_work,
-                        id.clone(),
-                    )
-                    .map_err(|_| WalletsError::Generic);
+                let result = match &id {
+                    Some(id) => {
+                        let mut txn = self_l.env.begin_write();
+                        let result = self_l.prepare_send_with_id(
+                            &mut txn,
+                            &id,
+                            &wallet,
+                            source,
+                            destination,
+                            amount,
+                            work,
+                        );
+                        txn.commit();
+                        result
+                    }
+                    None => {
+                        let txn = self_l.env.begin_read();
+                        self_l.prepare_send(&txn, &wallet, source, destination, amount, work)
+                    }
+                };
+
+                let block = match result {
+                    Ok(PreparedSend::Cached(block)) => Ok(block),
+                    Ok(PreparedSend::New(block, details)) => self_l
+                        .action_complete(wallet, block, source, generate_work, &details)
+                        .map_err(|_| WalletsError::Generic),
+                    Err(e) => Err(WalletsError::Generic),
+                };
+
                 promise2.set_result(block);
             }),
         );
@@ -1761,6 +1685,7 @@ impl WalletsExt for Arc<Wallets> {
                     .ledger
                     .any()
                     .get_pending(&PendingKey::new(destination, hash));
+
                 if let Some(pending) = pending {
                     let amount = pending.amount;
                     self.receive_async_wallet(
