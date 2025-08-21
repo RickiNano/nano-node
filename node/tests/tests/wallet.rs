@@ -874,16 +874,7 @@ fn work_cache_delayed() {
         .wait()
         .unwrap();
 
-    assert_eq!(
-        node1
-            .wallets
-            .delayed_work
-            .lock()
-            .unwrap()
-            .get(&DEV_GENESIS_ACCOUNT)
-            .unwrap(),
-        &block2.hash().into()
-    );
+    assert_eq!(node1.wallets.waiting_for_work(), 1);
     let threshold = node1.network_params.work.threshold_base();
     let start = Instant::now();
     loop {

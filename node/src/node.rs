@@ -961,15 +961,6 @@ impl Node {
             realtime_message_handler.clone(),
         ));
 
-        debug!("Constructing node...");
-
-        let schedulers_weak = Arc::downgrade(&election_schedulers);
-        wallets.set_start_election_callback(Box::new(move |block| {
-            if let Some(schedulers) = schedulers_weak.upgrade() {
-                schedulers.add_manual(block);
-            }
-        }));
-
         let rep_crawler_w = Arc::downgrade(&rep_crawler);
         if !flags.disable_rep_crawler {
             network

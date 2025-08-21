@@ -166,12 +166,11 @@ pub struct Wallets {
     ledger: Arc<Ledger>,
     work_factory: Arc<WorkFactory>,
     work_thresholds: WorkThresholds,
-    pub delayed_work: Mutex<HashMap<Account, Root>>,
+    delayed_work: Mutex<HashMap<Account, Root>>,
     workers: Arc<dyn ThreadPool>,
     wallet_actions: WalletActionThread,
     block_processor_queue: Arc<BlockProcessorQueue>,
     kdf: KeyDerivationFunction,
-    start_election: Mutex<Option<Box<dyn Fn(SavedBlock) + Send + Sync>>>,
 }
 
 impl Wallets {
@@ -199,7 +198,6 @@ impl Wallets {
             wallet_actions: WalletActionThread::new(),
             block_processor_queue,
             kdf: kdf.clone(),
-            start_election: Mutex::new(None),
         }
     }
 
@@ -230,8 +228,8 @@ impl Wallets {
         self.env.sync().expect("sync failed");
     }
 
-    pub fn set_start_election_callback(&self, callback: Box<dyn Fn(SavedBlock) + Send + Sync>) {
-        *self.start_election.lock().unwrap() = Some(callback);
+    pub fn waiting_for_work(&self) -> usize {
+        self.delayed_work.lock().unwrap().len()
     }
 
     fn random_representative(&self) -> PublicKey {
