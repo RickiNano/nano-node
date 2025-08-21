@@ -25,8 +25,8 @@ use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
 
 use super::{
-    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet,
-    WalletActionThread, WalletsConfig, WalletsError,
+    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsConfig,
+    WalletsError,
 };
 use crate::work::WorkRequest;
 
@@ -43,7 +43,6 @@ pub struct Wallets {
     ledger: Arc<Ledger>,
     work_thresholds: WorkThresholds,
     delayed_work: Mutex<DelayedWorkQueue>,
-    wallet_actions: WalletActionThread,
     kdf: KeyDerivationFunction,
     work_queue: Mutex<Option<mpsc::Sender<WorkRequest>>>,
     block_queue: Mutex<Option<mpsc::Sender<Block>>>,
@@ -76,7 +75,6 @@ impl Wallets {
             ledger: Arc::clone(&ledger),
             work_thresholds: work,
             delayed_work: Mutex::new(DelayedWorkQueue::default()),
-            wallet_actions: WalletActionThread::new(),
             kdf: kdf.clone(),
             work_queue: Mutex::new(None),
             block_queue: Mutex::new(None),
@@ -96,14 +94,9 @@ impl Wallets {
         Self::new(wallets_config, env, ledger, work, clock)
     }
 
-    pub fn start(&self) {
-        self.wallet_actions.start();
-    }
-
     pub fn stop(&self) {
         drop(self.work_queue.lock().unwrap().take());
         drop(self.block_queue.lock().unwrap().take());
-        self.wallet_actions.stop();
         self.env.sync().expect("sync failed");
     }
 
@@ -454,8 +447,6 @@ impl Wallets {
     pub fn destroy(&self, id: &WalletId) {
         let mut guard = self.wallets.lock().unwrap();
         let mut txn = self.env.begin_write();
-        // action_mutex should be locked after transactions to prevent deadlocks in deterministic_insert () & insert_adhoc ()
-        let _action_guard = self.wallet_actions.lock_safe();
         let wallet = guard.remove(id).unwrap();
         wallet.store.destroy(&mut txn);
         txn.commit();
@@ -922,19 +913,14 @@ impl Drop for Wallets {
 
 impl ContainerInfoProvider for Wallets {
     fn container_info(&self) -> ContainerInfo {
-        [
-            (
-                "items",
-                self.wallet_count(),
-                size_of::<usize>() * size_of::<WalletId>(),
-            ),
-            ("actions", self.wallet_actions.len(), size_of::<usize>() * 2),
-        ]
+        [(
+            "items",
+            self.wallet_count(),
+            size_of::<usize>() * size_of::<WalletId>(),
+        )]
         .into()
     }
 }
-
-const HIGH_PRIORITY: Amount = Amount::raw(u128::MAX - 1);
 
 pub trait WalletsExt {
     fn deterministic_insert(
@@ -1405,54 +1391,46 @@ impl WalletsExt for Arc<Wallets> {
         txn.commit();
 
         let promise = BlockPromise::new();
-        let promise2 = promise.clone();
-        let self_l = Arc::clone(self);
 
-        self.wallet_actions.queue_wallet_action(
-            HIGH_PRIORITY,
-            wallet.clone(),
-            Box::new(move |wallet| {
-                let result = match &id {
-                    Some(id) => {
-                        let mut txn = self_l.env.begin_write();
-                        let result = self_l.prepare_send_with_id(
-                            &mut txn,
-                            &id,
-                            &wallet,
-                            source,
-                            destination,
-                            amount,
-                            work,
-                        );
-                        txn.commit();
-                        result
-                    }
-                    None => {
-                        let txn = self_l.env.begin_read();
-                        self_l.prepare_send(&txn, &wallet, source, destination, amount, work)
-                    }
-                };
+        let result = match &id {
+            Some(id) => {
+                let mut txn = self.env.begin_write();
+                let result = self.prepare_send_with_id(
+                    &mut txn,
+                    &id,
+                    &wallet,
+                    source,
+                    destination,
+                    amount,
+                    work,
+                );
+                txn.commit();
+                result
+            }
+            None => {
+                let txn = self.env.begin_read();
+                self.prepare_send(&txn, &wallet, source, destination, amount, work)
+            }
+        };
 
-                match result {
-                    Ok(PreparedSend::Cached(block)) => {
-                        promise2.set_result(Ok(block));
-                    }
-                    Ok(PreparedSend::New(block, details)) => {
-                        self_l.action_complete(
-                            wallet,
-                            block,
-                            source,
-                            generate_work,
-                            &details,
-                            promise2.clone(),
-                        );
-                    }
-                    Err(_) => {
-                        promise2.set_result(Err(WalletsError::Generic));
-                    }
-                };
-            }),
-        );
+        match result {
+            Ok(PreparedSend::Cached(block)) => {
+                promise.set_result(Ok(block));
+            }
+            Ok(PreparedSend::New(block, details)) => {
+                self.action_complete(
+                    wallet.clone(),
+                    block,
+                    source,
+                    generate_work,
+                    &details,
+                    promise.clone(),
+                );
+            }
+            Err(_) => {
+                promise.set_result(Err(WalletsError::Generic));
+            }
+        };
 
         promise
     }
@@ -1811,7 +1789,6 @@ mod tests {
             if !args.disable_work_queue {
                 wallets.set_work_queue(tx_work);
             }
-            wallets.start();
 
             Self { wallets, rx_work }
         }

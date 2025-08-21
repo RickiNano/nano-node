@@ -1606,7 +1606,6 @@ impl Node {
         }
 
         self.unchecked_reenqueuer.start(Duration::from_millis(1000));
-        self.wallets.start();
         self.rep_tiers_calculator.start(if is_dev_network {
             Duration::from_millis(500)
         } else {
