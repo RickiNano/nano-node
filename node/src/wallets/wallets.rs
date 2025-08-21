@@ -172,6 +172,7 @@ pub struct Wallets {
     block_processor_queue: Arc<BlockProcessorQueue>,
     kdf: KeyDerivationFunction,
     work_queue: Mutex<Option<mpsc::Sender<DelayedWorkRequest>>>,
+    block_queue: Mutex<Option<mpsc::Sender<Block>>>,
     waiting_for_work: Mutex<HashMap<Root, (Block, BlockPromise, bool, Arc<Wallet>)>>,
 }
 
@@ -201,6 +202,7 @@ impl Wallets {
             block_processor_queue,
             kdf: kdf.clone(),
             work_queue: Mutex::new(None),
+            block_queue: Mutex::new(None),
             waiting_for_work: Mutex::new(HashMap::new()),
         }
     }
@@ -229,12 +231,17 @@ impl Wallets {
 
     pub fn stop(&self) {
         drop(self.work_queue.lock().unwrap().take());
+        drop(self.block_queue.lock().unwrap().take());
         self.wallet_actions.stop();
         self.env.sync().expect("sync failed");
     }
 
     pub fn set_work_queue(&self, tx_work: mpsc::Sender<DelayedWorkRequest>) {
         *self.work_queue.lock().unwrap() = Some(tx_work);
+    }
+
+    pub fn set_block_queue(&self, tx_block: mpsc::Sender<Block>) {
+        *self.block_queue.lock().unwrap() = Some(tx_block);
     }
 
     pub fn waiting_for_work(&self) -> usize {
@@ -1280,10 +1287,10 @@ impl WalletsExt for Arc<Wallets> {
                 wallet,
             );
         } else {
-            let arc_block = Arc::new(block.clone());
+            let block = Arc::new(block.clone());
             let process_result = self
                 .block_processor_queue
-                .push_blocking(arc_block.clone(), BlockSource::Local);
+                .push_blocking(block.clone(), BlockSource::Local);
 
             let block_result = match process_result {
                 Ok(r) => r.map_err(|_| WalletsError::Generic),

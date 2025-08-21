@@ -87,8 +87,8 @@ use crate::{
     },
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
     wallets::{
-        work::WalletWorkProvider, LocalRepsComputation, ReceivableSearch, WalletBackup,
-        WalletRepresentatives, Wallets, WalletsConfig, WalletsExt,
+        block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
+        ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsConfig, WalletsExt,
     },
     work::{WorkFactory, WorkRequest},
     NodeCallbacks, OnlineWeightSampler,
@@ -546,6 +546,9 @@ impl Node {
         let (tx_work, rx_work) = mpsc::channel();
         wallets.set_work_queue(tx_work);
 
+        let (tx_block, rx_block) = mpsc::channel();
+        wallets.set_block_queue(tx_block);
+
         let wallet_work = WalletWorkProvider::new(wallets.clone(), rx_work, work_factory.clone());
 
         std::thread::Builder::new()
@@ -553,6 +556,14 @@ impl Node {
             .spawn(move || {
                 wallet_work.run();
             })
+            .unwrap();
+
+        let wallet_blocks =
+            WalletBlockProcessor::new(rx_block, wallets.clone(), block_processor_queue.clone());
+
+        std::thread::Builder::new()
+            .name("Wallet blocks".to_owned())
+            .spawn(move || wallet_blocks.run())
             .unwrap();
 
         let wallet_reps = Arc::new(Mutex::new(WalletRepresentatives::new(

@@ -27,12 +27,15 @@ impl WalletBlockProcessor {
     pub(crate) fn run(self) {
         while let Ok(block) = self.inbound.recv() {
             let hash = block.hash();
+
+            // TODO use callbacks and make this async!
             let result = self
                 .block_processor
                 .push_blocking(block.into(), BlockSource::Local)
                 .ok()
                 .map(|r| r.ok())
                 .flatten();
+
             self.wallets.block_processed(&hash, result);
         }
     }
