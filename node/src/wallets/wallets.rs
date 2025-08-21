@@ -395,10 +395,6 @@ impl Wallets {
         result
     }
 
-    pub fn set_observer(&self, observer: Box<dyn Fn(bool) + Send>) {
-        self.wallet_actions.set_observer(observer);
-    }
-
     pub fn exists(&self, pub_key: &PublicKey) -> bool {
         let guard = self.wallets.lock().unwrap();
         let txn = self.env.begin_read();
@@ -1259,22 +1255,14 @@ impl WalletsExt for Arc<Wallets> {
         }
 
         let details = BlockDetails::new(epoch, false, false, false);
-        let self_l = Arc::clone(self);
         let promise = BlockPromise::new();
-        let promise2 = promise.clone();
-        self.wallet_actions.queue_wallet_action(
-            HIGH_PRIORITY,
+        self.action_complete(
             wallet.clone(),
-            Box::new(move |wallet| {
-                self_l.action_complete(
-                    wallet,
-                    block.clone(),
-                    source,
-                    generate_work,
-                    &details,
-                    promise2.clone(),
-                )
-            }),
+            block.clone(),
+            source,
+            generate_work,
+            &details,
+            promise.clone(),
         );
 
         promise
@@ -1379,22 +1367,16 @@ impl WalletsExt for Arc<Wallets> {
         let details = BlockDetails::new(epoch, false, true, false);
 
         let block_promise = BlockPromise::new();
-        let block_promise2 = block_promise.clone();
-        let self_l = Arc::clone(self);
-        self.wallet_actions.queue_wallet_action(
-            amount,
+
+        self.action_complete(
             wallet,
-            Box::new(move |wallet| {
-                self_l.action_complete(
-                    wallet,
-                    block.clone(),
-                    account,
-                    generate_work,
-                    &details,
-                    block_promise2.clone(),
-                );
-            }),
+            block.clone(),
+            account,
+            generate_work,
+            &details,
+            block_promise.clone(),
         );
+
         block_promise
     }
 
