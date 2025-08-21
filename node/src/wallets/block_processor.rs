@@ -2,7 +2,7 @@ use std::sync::{mpsc, Arc};
 
 use rsnano_core::Block;
 
-use super::Wallets;
+use super::{Wallets, WalletsExt};
 use crate::block_processing::{BlockProcessorQueue, BlockSource};
 
 pub(crate) struct WalletBlockProcessor {

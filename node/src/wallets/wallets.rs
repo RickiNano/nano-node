@@ -28,7 +28,6 @@ use rsnano_work::WorkThresholds;
 
 use super::{Wallet, WalletActionThread};
 use crate::{
-    block_processing::{BlockProcessorQueue, BlockSource},
     utils::{ThreadPool, ThreadPoolImpl},
     work::{WorkFactory, WorkRequest},
 };
@@ -169,11 +168,11 @@ pub struct Wallets {
     delayed_work: Mutex<HashMap<Account, Root>>,
     workers: Arc<dyn ThreadPool>,
     wallet_actions: WalletActionThread,
-    block_processor_queue: Arc<BlockProcessorQueue>,
     kdf: KeyDerivationFunction,
     work_queue: Mutex<Option<mpsc::Sender<DelayedWorkRequest>>>,
     block_queue: Mutex<Option<mpsc::Sender<Block>>>,
     waiting_for_work: Mutex<HashMap<Root, (Block, BlockPromise, bool, Arc<Wallet>)>>,
+    waiting_for_processor: Mutex<HashMap<BlockHash, (BlockPromise, bool, Arc<Wallet>)>>,
 }
 
 impl Wallets {
@@ -181,7 +180,6 @@ impl Wallets {
         wallets_config: WalletsConfig,
         env: Arc<LmdbEnvironment>,
         ledger: Arc<Ledger>,
-        block_processor_queue: Arc<BlockProcessorQueue>,
         work: WorkThresholds,
         work_factory: Arc<WorkFactory>,
     ) -> Self {
@@ -199,11 +197,11 @@ impl Wallets {
             delayed_work: Mutex::new(HashMap::new()),
             workers: Arc::new(ThreadPoolImpl::create(1, "wallet work")),
             wallet_actions: WalletActionThread::new(),
-            block_processor_queue,
             kdf: kdf.clone(),
             work_queue: Mutex::new(None),
             block_queue: Mutex::new(None),
             waiting_for_work: Mutex::new(HashMap::new()),
+            waiting_for_processor: Mutex::new(HashMap::new()),
         }
     }
 
@@ -212,17 +210,9 @@ impl Wallets {
         let env = Arc::new(LmdbEnvironment::new_null());
         let ledger = Arc::new(Ledger::new_null());
         let wallets_config = WalletsConfig::default();
-        let block_processor_queue = Arc::new(BlockProcessorQueue::default());
         let work = WorkThresholds::default_for(network);
         let work_factory = Arc::new(WorkFactory::disabled());
-        Self::new(
-            wallets_config,
-            env,
-            ledger,
-            block_processor_queue,
-            work,
-            work_factory,
-        )
+        Self::new(wallets_config, env, ledger, work, work_factory)
     }
 
     pub fn start(&self) {
@@ -1009,8 +999,28 @@ impl Wallets {
         }
     }
 
-    pub fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>) {
-        // TODO
+    fn enqueue_block(
+        &self,
+        block: Block,
+        block_promise: BlockPromise,
+        generate_work: bool,
+        wallet: Arc<Wallet>,
+    ) {
+        let hash = block.hash();
+        let queue = self.block_queue.lock().unwrap();
+        if let Some(queue) = queue.as_ref() {
+            self.waiting_for_processor
+                .lock()
+                .unwrap()
+                .insert(hash, (block_promise.clone(), generate_work, wallet));
+
+            if queue.send(block).is_err() {
+                self.waiting_for_processor.lock().unwrap().remove(&hash);
+                block_promise.set_result(Err(WalletsError::Generic));
+            }
+        } else {
+            block_promise.set_result(Err(WalletsError::Generic));
+        }
     }
 }
 
@@ -1133,6 +1143,7 @@ pub trait WalletsExt {
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
     fn provide_work(&self, root: &Root, work: Option<WorkNonce>);
+    fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>);
 }
 
 impl WalletsExt for Arc<Wallets> {
@@ -1265,7 +1276,6 @@ impl WalletsExt for Arc<Wallets> {
     ) {
         // Unschedule any work caching for this account
         self.delayed_work.lock().unwrap().remove(&account);
-        let hash = block.hash();
         let required_difficulty = self.work_thresholds.threshold(details);
         if self.work_thresholds.difficulty_block(&block) < required_difficulty {
             info!(
@@ -1287,21 +1297,7 @@ impl WalletsExt for Arc<Wallets> {
                 wallet,
             );
         } else {
-            let block = Arc::new(block.clone());
-            let process_result = self
-                .block_processor_queue
-                .push_blocking(block.clone(), BlockSource::Local);
-
-            let block_result = match process_result {
-                Ok(r) => r.map_err(|_| WalletsError::Generic),
-                Err(_) => Err(WalletsError::Generic),
-            };
-            block_promise.set_result(block_result);
-
-            if generate_work {
-                // Pregenerate work for next block based on the block just created
-                self.work_ensure(&wallet, account, hash.into());
-            }
+            self.enqueue_block(block, block_promise, generate_work, wallet);
         }
     }
 
@@ -1785,23 +1781,27 @@ impl WalletsExt for Arc<Wallets> {
 
         if let Some(work) = work {
             block.set_work(work);
-            let block = Arc::new(block);
-            let process_result = self
-                .block_processor_queue
-                .push_blocking(block.clone(), BlockSource::Local);
-
-            match process_result {
-                Ok(b) => block_promise.set_result(b.map_err(|_| WalletsError::Generic)),
-                Err(_) => block_promise.set_result(Err(WalletsError::Generic)),
-            }
-
-            if generate_work {
-                // Pregenerate work for next block based on the block just created
-                self.work_ensure(&wallet, block.account_field().unwrap(), block.hash().into());
-            }
+            self.enqueue_block(block, block_promise, generate_work, wallet);
         } else {
             block_promise.set_result(Err(WalletsError::Generic));
         }
+    }
+
+    fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>) {
+        let Some((promise, generate_work, wallet)) =
+            self.waiting_for_processor.lock().unwrap().remove(hash)
+        else {
+            return;
+        };
+
+        if generate_work {
+            if let Some(block) = &result {
+                // Pregenerate work for next block based on the block just created
+                self.work_ensure(&wallet, block.account(), block.hash().into());
+            }
+        }
+
+        promise.set_result(result.ok_or(WalletsError::Generic));
     }
 }
 
@@ -2021,7 +2021,6 @@ mod tests {
             let network = Networks::NanoLiveNetwork;
             let env = Arc::new(LmdbEnvironment::new_null());
             let wallets_config = WalletsConfig::default();
-            let block_processor_queue = Arc::new(BlockProcessorQueue::default());
             let work = WorkThresholds::default_for(network);
             let work_factory = Arc::new(WorkFactory::disabled());
             let ledger = Arc::new(args.ledger.unwrap_or_else(|| Ledger::new_null()));
@@ -2030,7 +2029,6 @@ mod tests {
                 wallets_config,
                 env,
                 ledger,
-                block_processor_queue,
                 work,
                 work_factory,
             ));
