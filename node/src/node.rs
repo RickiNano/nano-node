@@ -536,7 +536,6 @@ impl Node {
             wallets_env,
             ledger.clone(),
             network_params.work.clone(),
-            work_factory.clone(),
             steady_clock.clone(),
         );
         if !is_nulled {

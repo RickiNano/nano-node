@@ -20,6 +20,7 @@ use rsnano_core::{
     WorkNonce,
 };
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet, DEV_GENESIS_PUB_KEY};
+use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
@@ -27,11 +28,7 @@ use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
 
 use super::{delayed_work_queue::DelayedWorkQueue, Wallet, WalletActionThread};
-use crate::{
-    utils::{ThreadPool, ThreadPoolImpl},
-    work::{WorkFactory, WorkRequest},
-};
-use rsnano_nullable_clock::SteadyClock;
+use crate::work::WorkRequest;
 
 #[derive(FromPrimitive, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum WalletsError {
@@ -164,10 +161,8 @@ pub struct Wallets {
     wallets: Mutex<HashMap<WalletId, Arc<Wallet>>>,
     wallets_config: WalletsConfig,
     ledger: Arc<Ledger>,
-    work_factory: Arc<WorkFactory>,
     work_thresholds: WorkThresholds,
     delayed_work: Mutex<DelayedWorkQueue>,
-    workers: Arc<dyn ThreadPool>,
     wallet_actions: WalletActionThread,
     kdf: KeyDerivationFunction,
     work_queue: Mutex<Option<mpsc::Sender<WorkRequest>>>,
@@ -188,7 +183,6 @@ impl Wallets {
         env: Arc<LmdbEnvironment>,
         ledger: Arc<Ledger>,
         work: WorkThresholds,
-        work_factory: Arc<WorkFactory>,
         clock: Arc<SteadyClock>,
     ) -> Self {
         let kdf = KeyDerivationFunction::new(wallets_config.kdf_work);
@@ -200,10 +194,8 @@ impl Wallets {
             env,
             wallets_config,
             ledger: Arc::clone(&ledger),
-            work_factory,
             work_thresholds: work,
             delayed_work: Mutex::new(DelayedWorkQueue::default()),
-            workers: Arc::new(ThreadPoolImpl::create(1, "wallet work")),
             wallet_actions: WalletActionThread::new(),
             kdf: kdf.clone(),
             work_queue: Mutex::new(None),
@@ -220,9 +212,8 @@ impl Wallets {
         let ledger = Arc::new(Ledger::new_null());
         let wallets_config = WalletsConfig::default();
         let work = WorkThresholds::default_for(network);
-        let work_factory = Arc::new(WorkFactory::disabled());
         let clock = Arc::new(SteadyClock::new_null());
-        Self::new(wallets_config, env, ledger, work, work_factory, clock)
+        Self::new(wallets_config, env, ledger, work, clock)
     }
 
     pub fn start(&self) {
@@ -433,30 +424,6 @@ impl Wallets {
             txn.commit();
         }
         all_priv_keys
-    }
-
-    fn work_cache_blocking(&self, wallet: &Wallet, pub_key: &PublicKey, root: &Root) {
-        if self.work_factory.work_generation_enabled() {
-            let work_request = WorkRequest::new(*root, self.work_thresholds.threshold_base());
-
-            if let Some(work) = self.work_factory.generate_work(work_request) {
-                let mut txn = self.env.begin_write();
-                if wallet.live() && wallet.store.exists(&txn, pub_key) {
-                    let latest = self.ledger.any().latest_root(&pub_key.into());
-                    if latest == *root {
-                        wallet.work_put(&mut txn, pub_key, work);
-                    } else {
-                        warn!("Cached work no longer valid, discarding");
-                    }
-                }
-                txn.commit();
-            } else {
-                warn!(
-                    "Could not precache work for root {} due to work generation failure",
-                    root
-                );
-            }
-        }
     }
 
     pub fn get_wallet(&self, wallet_id: &WalletId) -> Option<Arc<Wallet>> {
@@ -1091,7 +1058,6 @@ impl ContainerInfoProvider for Wallets {
     }
 }
 
-const GENERATE_PRIORITY: Amount = Amount::MAX;
 const HIGH_PRIORITY: Amount = Amount::raw(u128::MAX - 1);
 
 pub trait WalletsExt {
@@ -1289,31 +1255,11 @@ impl WalletsExt for Arc<Wallets> {
     fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root) {
         let precache_delay = self.wallets_config.cached_work_generation_delay;
         let now = self.clock.now();
+
         self.delayed_work
             .lock()
             .unwrap()
             .insert(*wallet.id(), account, root, now + precache_delay);
-        let self_clone = Arc::clone(self);
-        let wallet = Arc::clone(wallet);
-        self.workers.post_delayed(
-            precache_delay,
-            Box::new(move || {
-                let mut guard = self_clone.delayed_work.lock().unwrap();
-                if let Some(&existing) = guard.get(&account) {
-                    if existing == root {
-                        guard.remove(&account);
-                        let self_clone_2 = Arc::clone(&self_clone);
-                        self_clone.wallet_actions.queue_wallet_action(
-                            GENERATE_PRIORITY,
-                            wallet,
-                            Box::new(move |w| {
-                                self_clone_2.work_cache_blocking(&w, &account.into(), &root);
-                            }),
-                        );
-                    }
-                }
-            }),
-        );
     }
 
     fn action_complete(
@@ -2092,18 +2038,10 @@ mod tests {
             let env = Arc::new(LmdbEnvironment::new_null());
             let wallets_config = WalletsConfig::default();
             let work = WorkThresholds::default_for(network);
-            let work_factory = Arc::new(WorkFactory::disabled());
             let ledger = Arc::new(args.ledger.unwrap_or_else(|| Ledger::new_null()));
             let clock = Arc::new(SteadyClock::new_null());
 
-            let wallets = Arc::new(Wallets::new(
-                wallets_config,
-                env,
-                ledger,
-                work,
-                work_factory,
-                clock,
-            ));
+            let wallets = Arc::new(Wallets::new(wallets_config, env, ledger, work, clock));
 
             let (tx_work, rx_work) = mpsc::channel();
             if !args.disable_work_queue {
