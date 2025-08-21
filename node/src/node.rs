@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::{Receiver, SyncSender},
+        mpsc::{self, Receiver, SyncSender},
         Arc, Mutex, MutexGuard, RwLock,
     },
     time::Duration,
@@ -87,8 +87,8 @@ use crate::{
     },
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
     wallets::{
-        LocalRepsComputation, ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets,
-        WalletsConfig, WalletsExt,
+        work::WalletWorkProvider, LocalRepsComputation, ReceivableSearch, WalletBackup,
+        WalletRepresentatives, Wallets, WalletsConfig, WalletsExt,
     },
     work::{WorkFactory, WorkRequest},
     NodeCallbacks, OnlineWeightSampler,
@@ -540,7 +540,21 @@ impl Node {
         if !is_nulled {
             wallets.initialize().expect("Could not create wallet");
         }
+
         let wallets = Arc::new(wallets);
+
+        let (tx_work, rx_work) = mpsc::channel();
+        wallets.set_work_queue(tx_work);
+
+        let wallet_work = WalletWorkProvider::new(wallets.clone(), rx_work);
+
+        std::thread::Builder::new()
+            .name("Wallet work".to_owned())
+            .spawn(move || {
+                wallet_work.run();
+            })
+            .unwrap();
+
         let wallet_reps = Arc::new(Mutex::new(WalletRepresentatives::new(
             wallets_config.voting_enabled,
             wallets_config.vote_minimum,

@@ -4,6 +4,7 @@ mod wallet_action_thread;
 mod wallet_backup;
 mod wallet_representatives;
 mod wallets;
+pub(crate) mod work;
 
 pub(crate) use receivable_search::*;
 pub use wallet::*;

@@ -5,7 +5,7 @@ use std::{
     mem::size_of,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
-    sync::{Arc, Condvar, Mutex},
+    sync::{mpsc, Arc, Condvar, Mutex},
     time::Duration,
 };
 
@@ -171,6 +171,7 @@ pub struct Wallets {
     wallet_actions: WalletActionThread,
     block_processor_queue: Arc<BlockProcessorQueue>,
     kdf: KeyDerivationFunction,
+    work_queue: Mutex<Option<mpsc::Sender<DelayedWorkRequest>>>,
 }
 
 impl Wallets {
@@ -198,6 +199,7 @@ impl Wallets {
             wallet_actions: WalletActionThread::new(),
             block_processor_queue,
             kdf: kdf.clone(),
+            work_queue: Mutex::new(None),
         }
     }
 
@@ -224,8 +226,13 @@ impl Wallets {
     }
 
     pub fn stop(&self) {
+        drop(self.work_queue.lock().unwrap().take());
         self.wallet_actions.stop();
         self.env.sync().expect("sync failed");
+    }
+
+    pub fn set_work_queue(&self, tx_work: mpsc::Sender<DelayedWorkRequest>) {
+        *self.work_queue.lock().unwrap() = Some(tx_work);
     }
 
     pub fn waiting_for_work(&self) -> usize {
@@ -1787,4 +1794,9 @@ impl MultiBlockPromise {
     pub fn wait(&self) -> Result<Vec<SavedBlock>, WalletsError> {
         self.children.iter().map(|c| c.wait()).collect()
     }
+}
+
+pub(crate) struct DelayedWorkRequest {
+    pub work: WorkRequest,
+    pub delay: Duration,
 }
