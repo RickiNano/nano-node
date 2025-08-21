@@ -88,7 +88,7 @@ use crate::{
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
-        ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsConfig, WalletsExt,
+        ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsConfig,
         WalletsTicker,
     },
     work::{WorkFactory, WorkRequest},

@@ -17,9 +17,7 @@ use rsnano_network::{Channel, ChannelDirection};
 use rsnano_node::{
     block_processing::BacklogScanConfig,
     config::{NetworkParams, NodeConfig, NodeFlags},
-    unique_path,
-    wallets::WalletsExt,
-    Node, NodeBuilder, NodeEvent,
+    unique_path, Node, NodeBuilder, NodeEvent,
 };
 use rsnano_rpc_client::{NanoRpcClient, Url};
 use rsnano_rpc_server::run_rpc_server;

@@ -15,7 +15,7 @@ use rsnano_ledger::{
 use rsnano_node::{
     config::{NodeConfig, NodeFlags, DEV_NETWORK_PARAMS},
     unique_path,
-    wallets::{WalletsError, WalletsExt},
+    wallets::WalletsError,
     Node,
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};

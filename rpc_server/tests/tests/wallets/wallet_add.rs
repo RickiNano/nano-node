@@ -1,5 +1,4 @@
 use rsnano_core::{PublicKey, RawKey, WalletId};
-use rsnano_node::wallets::WalletsExt;
 use rsnano_rpc_messages::WalletAddArgs;
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 

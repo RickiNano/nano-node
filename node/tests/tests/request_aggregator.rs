@@ -9,7 +9,6 @@ use rsnano_messages::ConfirmAck;
 use rsnano_node::{
     config::NodeFlags,
     consensus::{AggregatorRequest, VoteGenerationEvent},
-    wallets::WalletsExt,
 };
 use rsnano_output_tracker::OutputTrackerMt;
 use rsnano_stats::{DetailType, Direction, StatType};

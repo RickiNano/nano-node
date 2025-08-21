@@ -1,6 +1,6 @@
 use std::sync::{mpsc, Arc};
 
-use super::{Wallets, WalletsExt};
+use super::Wallets;
 use crate::work::{WorkFactory, WorkRequest};
 
 pub(crate) struct WalletWorkProvider {

@@ -1,5 +1,4 @@
 use rsnano_core::{Amount, WalletId, DEV_GENESIS_KEY};
-use rsnano_node::wallets::WalletsExt;
 use test_helpers::{send_block, setup_rpc_client_and_server, System};
 
 #[test]

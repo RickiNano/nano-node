@@ -1,9 +1,11 @@
+use std::{sync::Arc, time::Duration};
+
+use tracing::warn;
+
 use rsnano_core::Networks;
 
-use super::{Wallets, WalletsExt};
+use super::Wallets;
 use crate::utils::ThreadPool;
-use std::{sync::Arc, time::Duration};
-use tracing::warn;
 
 pub(crate) struct ReceivableSearch {
     wallets: Arc<Wallets>,

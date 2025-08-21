@@ -12,7 +12,6 @@ use rsnano_node::{
     bootstrap::BootstrapConfig,
     config::{NodeConfig, NodeFlags},
     consensus::{FilteredVote, ReceivedVote},
-    wallets::WalletsExt,
 };
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_stats::{DetailType, Direction, StatType};

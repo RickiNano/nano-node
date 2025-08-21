@@ -10,7 +10,6 @@ use rsnano_ledger::{
 use rsnano_node::{
     config::NodeFlags,
     consensus::{election::VoteType, ReceivedVote},
-    wallets::WalletsExt,
 };
 use rsnano_stats::{DetailType, Direction, StatType};
 use test_helpers::{

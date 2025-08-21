@@ -15,7 +15,6 @@ use rsnano_node::{
     block_processing::{BacklogScanConfig, BlockContext, BlockSource, BoundedBacklogConfig},
     config::{NodeConfig, NodeFlags},
     consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
-    wallets::WalletsExt,
     work::WorkRequest,
 };
 use rsnano_nullable_tcp::get_available_port;

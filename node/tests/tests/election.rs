@@ -5,7 +5,6 @@ use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::{
     config::NodeConfig,
     consensus::{election::ElectionBehavior, ReceivedVote},
-    wallets::WalletsExt,
 };
 use test_helpers::{assert_timely2, setup_chain, start_election, System};
 

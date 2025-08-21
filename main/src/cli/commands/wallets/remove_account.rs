@@ -2,7 +2,6 @@ use crate::cli::{build_node, GlobalArgs};
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use rsnano_core::{Account, WalletId};
-use rsnano_node::wallets::WalletsExt;
 
 #[derive(Parser, PartialEq, Debug)]
 pub(crate) struct RemoveAccountArgs {

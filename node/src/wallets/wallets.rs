@@ -903,124 +903,8 @@ impl Wallets {
             );
         }
     }
-}
 
-impl Drop for Wallets {
-    fn drop(&mut self) {
-        self.stop();
-    }
-}
-
-impl ContainerInfoProvider for Wallets {
-    fn container_info(&self) -> ContainerInfo {
-        [(
-            "items",
-            self.wallet_count(),
-            size_of::<usize>() * size_of::<WalletId>(),
-        )]
-        .into()
-    }
-}
-
-pub trait WalletsExt {
-    fn deterministic_insert(
-        &self,
-        wallet: &Arc<Wallet>,
-        tx: &mut WriteTransaction,
-        generate_work: bool,
-    ) -> PublicKey;
-
-    fn deterministic_insert_at(
-        &self,
-        wallet_id: &WalletId,
-        index: u32,
-        generate_work: bool,
-    ) -> Result<PublicKey, WalletsError>;
-
-    fn deterministic_insert2(
-        &self,
-        wallet_id: &WalletId,
-        generate_work: bool,
-    ) -> Result<PublicKey, WalletsError>;
-
-    fn insert_adhoc(&self, wallet: &Arc<Wallet>, key: &RawKey, generate_work: bool) -> PublicKey;
-
-    fn insert_adhoc2(
-        &self,
-        wallet_id: &WalletId,
-        key: &RawKey,
-        generate_work: bool,
-    ) -> Result<PublicKey, WalletsError>;
-
-    fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root);
-
-    fn action_complete(
-        &self,
-        wallet: Arc<Wallet>,
-        block: Block,
-        account: Account,
-        generate_work: bool,
-        details: &BlockDetails,
-        block_promise: BlockPromise,
-    );
-
-    fn change_seed(
-        &self,
-        wallet_id: WalletId,
-        prv_key: &RawKey,
-        count: u32,
-    ) -> Result<(u32, Account), WalletsError>;
-
-    fn send(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        account: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> BlockPromise;
-
-    fn change(
-        &self,
-        wallet_id: &WalletId,
-        source: Account,
-        representative: PublicKey,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> BlockPromise;
-
-    fn receive(
-        &self,
-        wallet_id: WalletId,
-        block: BlockHash,
-        representative: PublicKey,
-        amount: Amount,
-        account: Account,
-        work: WorkNonce,
-        generate_work: bool,
-    ) -> BlockPromise;
-
-    fn search_receivable(&self, wallet_id: &WalletId) -> MultiBlockPromise;
-    fn search_receivable_all(&self) -> MultiBlockPromise;
-    fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
-    fn create(&self, wallet_id: WalletId);
-
-    fn set_representative(
-        &self,
-        wallet_id: WalletId,
-        rep: PublicKey,
-        update_existing_accounts: bool,
-    ) -> MultiBlockPromise;
-
-    fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
-    fn provide_work(&self, root: &Root, work: Option<WorkNonce>);
-    fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>);
-}
-
-impl WalletsExt for Arc<Wallets> {
-    fn deterministic_insert(
+    pub fn deterministic_insert(
         &self,
         wallet: &Arc<Wallet>,
         tx: &mut WriteTransaction,
@@ -1039,7 +923,7 @@ impl WalletsExt for Arc<Wallets> {
         key
     }
 
-    fn deterministic_insert_at(
+    pub fn deterministic_insert_at(
         &self,
         wallet_id: &WalletId,
         index: u32,
@@ -1062,7 +946,7 @@ impl WalletsExt for Arc<Wallets> {
         Ok(account)
     }
 
-    fn deterministic_insert2(
+    pub fn deterministic_insert2(
         &self,
         wallet_id: &WalletId,
         generate_work: bool,
@@ -1078,7 +962,12 @@ impl WalletsExt for Arc<Wallets> {
         Ok(key)
     }
 
-    fn insert_adhoc(&self, wallet: &Arc<Wallet>, key: &RawKey, generate_work: bool) -> PublicKey {
+    pub fn insert_adhoc(
+        &self,
+        wallet: &Arc<Wallet>,
+        key: &RawKey,
+        generate_work: bool,
+    ) -> PublicKey {
         let mut tx = self.env.begin_write();
         if !wallet.store.valid_password(&tx) {
             return PublicKey::zero();
@@ -1096,7 +985,7 @@ impl WalletsExt for Arc<Wallets> {
         key
     }
 
-    fn insert_adhoc2(
+    pub fn insert_adhoc2(
         &self,
         wallet_id: &WalletId,
         key: &RawKey,
@@ -1112,43 +1001,7 @@ impl WalletsExt for Arc<Wallets> {
         Ok(self.insert_adhoc(wallet, key, generate_work))
     }
 
-    fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root) {
-        let precache_delay = self.wallets_config.cached_work_generation_delay;
-        let now = self.clock.now();
-
-        self.delayed_work
-            .lock()
-            .unwrap()
-            .insert(*wallet.id(), account, root, now + precache_delay);
-    }
-
-    fn action_complete(
-        &self,
-        wallet: Arc<Wallet>,
-        block: Block,
-        account: Account,
-        generate_work: bool,
-        details: &BlockDetails,
-        block_promise: BlockPromise,
-    ) {
-        // Unschedule any work caching for this account
-        self.delayed_work.lock().unwrap().remove(&account);
-        let required_difficulty = self.work_thresholds.threshold(details);
-        if self.work_thresholds.difficulty_block(&block) < required_difficulty {
-            info!(
-                "Cached or provided work for block {} account {} is invalid, regenerating...",
-                block.hash(),
-                account.encode_account()
-            );
-
-            let work_request = WorkRequest::new(block.root(), required_difficulty);
-            self.enqueue_block_work(work_request, block, block_promise, generate_work, wallet);
-        } else {
-            self.enqueue_block(block, block_promise, generate_work, wallet);
-        }
-    }
-
-    fn change_seed(
+    pub fn change_seed(
         &self,
         wallet_id: WalletId,
         prv_key: &RawKey,
@@ -1179,7 +1032,76 @@ impl WalletsExt for Arc<Wallets> {
         Ok((restored_count, first_account.into()))
     }
 
-    fn change(
+    pub fn send(
+        &self,
+        wallet_id: WalletId,
+        source: Account,
+        destination: Account,
+        amount: Amount,
+        work: WorkNonce,
+        generate_work: bool,
+        id: Option<String>,
+    ) -> BlockPromise {
+        let guard = self.wallets.lock().unwrap();
+        let wallet = match Wallets::get_wallet_guard(&guard, &wallet_id) {
+            Ok(w) => w,
+            Err(e) => return BlockPromise::new_failed(e),
+        };
+        let txn = self.env.begin_write();
+        if !wallet.store.valid_password(&txn) {
+            return BlockPromise::new_failed(WalletsError::WalletLocked);
+        }
+        if wallet.store.find(&txn, &source.into()).is_none() {
+            return BlockPromise::new_failed(WalletsError::AccountNotFound);
+        }
+        txn.commit();
+
+        let promise = BlockPromise::new();
+
+        let result = match &id {
+            Some(id) => {
+                let mut txn = self.env.begin_write();
+                let result = self.prepare_send_with_id(
+                    &mut txn,
+                    &id,
+                    &wallet,
+                    source,
+                    destination,
+                    amount,
+                    work,
+                );
+                txn.commit();
+                result
+            }
+            None => {
+                let txn = self.env.begin_read();
+                self.prepare_send(&txn, &wallet, source, destination, amount, work)
+            }
+        };
+
+        match result {
+            Ok(PreparedSend::Cached(block)) => {
+                promise.set_result(Ok(block));
+            }
+            Ok(PreparedSend::New(block, details)) => {
+                self.action_complete(
+                    wallet.clone(),
+                    block,
+                    source,
+                    generate_work,
+                    &details,
+                    promise.clone(),
+                );
+            }
+            Err(_) => {
+                promise.set_result(Err(WalletsError::Generic));
+            }
+        };
+
+        promise
+    }
+
+    pub fn change(
         &self,
         wallet_id: &WalletId,
         source: Account,
@@ -1254,7 +1176,7 @@ impl WalletsExt for Arc<Wallets> {
         promise
     }
 
-    fn receive(
+    pub fn receive(
         &self,
         wallet_id: WalletId,
         send_hash: BlockHash,
@@ -1366,76 +1288,115 @@ impl WalletsExt for Arc<Wallets> {
         block_promise
     }
 
-    fn send(
-        &self,
-        wallet_id: WalletId,
-        source: Account,
-        destination: Account,
-        amount: Amount,
-        work: WorkNonce,
-        generate_work: bool,
-        id: Option<String>,
-    ) -> BlockPromise {
+    pub fn create(&self, wallet_id: WalletId) {
+        let mut guard = self.wallets.lock().unwrap();
+        debug_assert!(!guard.contains_key(&wallet_id));
+        let wallet = {
+            let Ok(wallet) = Wallet::new(
+                wallet_id,
+                &self.env,
+                self.wallets_config.password_fanout as usize,
+                self.kdf.clone(),
+                self.random_representative(),
+                &PathBuf::from(wallet_id.to_string()),
+            ) else {
+                return;
+            };
+            Arc::new(wallet)
+        };
+        guard.insert(wallet_id, Arc::clone(&wallet));
+        self.enter_initial_password(&wallet);
+    }
+
+    pub fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError> {
         let guard = self.wallets.lock().unwrap();
-        let wallet = match Wallets::get_wallet_guard(&guard, &wallet_id) {
-            Ok(w) => w,
-            Err(e) => return BlockPromise::new_failed(e),
+        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
+        let tx = self.env.begin_write();
+        let result = self
+            .enter_password_wallet(wallet, &tx, password)
+            .map_err(|_| WalletsError::InvalidPassword);
+        if result.is_ok() {
+            info!("Wallet unlocked");
+        } else {
+            warn!("Invalid password, wallet locked");
+        }
+        result
+    }
+
+    pub fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool {
+        let guard = self.wallets.lock().unwrap();
+        let Some(existing) = guard.get(&wallet_id) else {
+            return false;
         };
         let txn = self.env.begin_write();
-        if !wallet.store.valid_password(&txn) {
-            return BlockPromise::new_failed(WalletsError::WalletLocked);
-        }
-        if wallet.store.find(&txn, &source.into()).is_none() {
-            return BlockPromise::new_failed(WalletsError::AccountNotFound);
+        let mut valid = existing.store.valid_password(&txn);
+        if !valid {
+            valid = self.enter_password_wallet(existing, &txn, password).is_ok();
         }
         txn.commit();
 
-        let promise = BlockPromise::new();
-
-        let result = match &id {
-            Some(id) => {
-                let mut txn = self.env.begin_write();
-                let result = self.prepare_send_with_id(
-                    &mut txn,
-                    &id,
-                    &wallet,
-                    source,
-                    destination,
-                    amount,
-                    work,
-                );
-                txn.commit();
-                result
-            }
-            None => {
-                let txn = self.env.begin_read();
-                self.prepare_send(&txn, &wallet, source, destination, amount, work)
-            }
-        };
-
-        match result {
-            Ok(PreparedSend::Cached(block)) => {
-                promise.set_result(Ok(block));
-            }
-            Ok(PreparedSend::New(block, details)) => {
-                self.action_complete(
-                    wallet.clone(),
-                    block,
-                    source,
-                    generate_work,
-                    &details,
-                    promise.clone(),
-                );
-            }
-            Err(_) => {
-                promise.set_result(Err(WalletsError::Generic));
-            }
-        };
-
-        promise
+        valid
     }
 
-    fn search_receivable(&self, wallet_id: &WalletId) -> MultiBlockPromise {
+    pub fn set_representative(
+        &self,
+        wallet_id: WalletId,
+        rep: PublicKey,
+        update_existing_accounts: bool,
+    ) -> MultiBlockPromise {
+        let mut accounts = Vec::new();
+        {
+            let guard = self.wallets.lock().unwrap();
+            let wallet = match Wallets::get_wallet_guard(&guard, &wallet_id) {
+                Ok(w) => w,
+                Err(err) => {
+                    return MultiBlockPromise::new_failed(err);
+                }
+            };
+
+            {
+                let mut txn = self.env.begin_write();
+                if update_existing_accounts && !wallet.store.valid_password(&txn) {
+                    return MultiBlockPromise::new_failed(WalletsError::WalletLocked);
+                }
+
+                wallet.store.representative_set(&mut txn, &rep);
+                txn.commit();
+            }
+
+            // Change representative for all wallet accounts
+            if update_existing_accounts {
+                let txn = self.env.begin_read();
+                let any = self.ledger.any();
+                for (account, _) in wallet.store.iter(&txn) {
+                    if let Some(info) = any.get_account(&account.into()) {
+                        if info.representative != rep {
+                            accounts.push(account);
+                        }
+                    }
+                }
+                txn.commit();
+            }
+        }
+
+        let mut block_promises = Vec::new();
+        for account in accounts {
+            block_promises.push(self.change(&wallet_id, account.into(), rep, 0.into(), false));
+        }
+
+        MultiBlockPromise::new(block_promises)
+    }
+
+    pub fn search_receivable_all(&self) -> MultiBlockPromise {
+        let wallet_ids = self.wallet_ids();
+        let mut result = MultiBlockPromise::empty();
+        for id in wallet_ids {
+            result.append(self.search_receivable(&id));
+        }
+        result
+    }
+
+    pub fn search_receivable(&self, wallet_id: &WalletId) -> MultiBlockPromise {
         let wallet = match self.get_wallet(wallet_id) {
             Some(w) => w,
             None => return MultiBlockPromise::new_failed(WalletsError::WalletNotFound),
@@ -1490,115 +1451,7 @@ impl WalletsExt for Arc<Wallets> {
         MultiBlockPromise::new(block_promises)
     }
 
-    fn search_receivable_all(&self) -> MultiBlockPromise {
-        let wallet_ids = self.wallet_ids();
-        let mut result = MultiBlockPromise::empty();
-        for id in wallet_ids {
-            result.append(self.search_receivable(&id));
-        }
-        result
-    }
-
-    fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError> {
-        let guard = self.wallets.lock().unwrap();
-        let wallet = Wallets::get_wallet_guard(&guard, &wallet_id)?;
-        let tx = self.env.begin_write();
-        let result = self
-            .enter_password_wallet(wallet, &tx, password)
-            .map_err(|_| WalletsError::InvalidPassword);
-        if result.is_ok() {
-            info!("Wallet unlocked");
-        } else {
-            warn!("Invalid password, wallet locked");
-        }
-        result
-    }
-
-    fn create(&self, wallet_id: WalletId) {
-        let mut guard = self.wallets.lock().unwrap();
-        debug_assert!(!guard.contains_key(&wallet_id));
-        let wallet = {
-            let Ok(wallet) = Wallet::new(
-                wallet_id,
-                &self.env,
-                self.wallets_config.password_fanout as usize,
-                self.kdf.clone(),
-                self.random_representative(),
-                &PathBuf::from(wallet_id.to_string()),
-            ) else {
-                return;
-            };
-            Arc::new(wallet)
-        };
-        guard.insert(wallet_id, Arc::clone(&wallet));
-        self.enter_initial_password(&wallet);
-    }
-
-    fn set_representative(
-        &self,
-        wallet_id: WalletId,
-        rep: PublicKey,
-        update_existing_accounts: bool,
-    ) -> MultiBlockPromise {
-        let mut accounts = Vec::new();
-        {
-            let guard = self.wallets.lock().unwrap();
-            let wallet = match Wallets::get_wallet_guard(&guard, &wallet_id) {
-                Ok(w) => w,
-                Err(err) => {
-                    return MultiBlockPromise::new_failed(err);
-                }
-            };
-
-            {
-                let mut txn = self.env.begin_write();
-                if update_existing_accounts && !wallet.store.valid_password(&txn) {
-                    return MultiBlockPromise::new_failed(WalletsError::WalletLocked);
-                }
-
-                wallet.store.representative_set(&mut txn, &rep);
-                txn.commit();
-            }
-
-            // Change representative for all wallet accounts
-            if update_existing_accounts {
-                let txn = self.env.begin_read();
-                let any = self.ledger.any();
-                for (account, _) in wallet.store.iter(&txn) {
-                    if let Some(info) = any.get_account(&account.into()) {
-                        if info.representative != rep {
-                            accounts.push(account);
-                        }
-                    }
-                }
-                txn.commit();
-            }
-        }
-
-        let mut block_promises = Vec::new();
-        for account in accounts {
-            block_promises.push(self.change(&wallet_id, account.into(), rep, 0.into(), false));
-        }
-
-        MultiBlockPromise::new(block_promises)
-    }
-
-    fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool {
-        let guard = self.wallets.lock().unwrap();
-        let Some(existing) = guard.get(&wallet_id) else {
-            return false;
-        };
-        let txn = self.env.begin_write();
-        let mut valid = existing.store.valid_password(&txn);
-        if !valid {
-            valid = self.enter_password_wallet(existing, &txn, password).is_ok();
-        }
-        txn.commit();
-
-        valid
-    }
-
-    fn provide_work(&self, root: &Root, work: Option<WorkNonce>) {
+    pub fn provide_work(&self, root: &Root, work: Option<WorkNonce>) {
         let mut guard = self.waiting_for_work.lock().unwrap();
         let Some(item) = guard.remove(root) else {
             return;
@@ -1636,7 +1489,7 @@ impl WalletsExt for Arc<Wallets> {
         }
     }
 
-    fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>) {
+    pub fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>) {
         let Some((promise, generate_work, wallet)) =
             self.waiting_for_processor.lock().unwrap().remove(hash)
         else {
@@ -1651,6 +1504,59 @@ impl WalletsExt for Arc<Wallets> {
         }
 
         promise.set_result(result.ok_or(WalletsError::Generic));
+    }
+
+    fn action_complete(
+        &self,
+        wallet: Arc<Wallet>,
+        block: Block,
+        account: Account,
+        generate_work: bool,
+        details: &BlockDetails,
+        block_promise: BlockPromise,
+    ) {
+        // Unschedule any work caching for this account
+        self.delayed_work.lock().unwrap().remove(&account);
+        let required_difficulty = self.work_thresholds.threshold(details);
+        if self.work_thresholds.difficulty_block(&block) < required_difficulty {
+            info!(
+                "Cached or provided work for block {} account {} is invalid, regenerating...",
+                block.hash(),
+                account.encode_account()
+            );
+
+            let work_request = WorkRequest::new(block.root(), required_difficulty);
+            self.enqueue_block_work(work_request, block, block_promise, generate_work, wallet);
+        } else {
+            self.enqueue_block(block, block_promise, generate_work, wallet);
+        }
+    }
+
+    fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root) {
+        let precache_delay = self.wallets_config.cached_work_generation_delay;
+        let now = self.clock.now();
+
+        self.delayed_work
+            .lock()
+            .unwrap()
+            .insert(*wallet.id(), account, root, now + precache_delay);
+    }
+}
+
+impl Drop for Wallets {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
+impl ContainerInfoProvider for Wallets {
+    fn container_info(&self) -> ContainerInfo {
+        [(
+            "items",
+            self.wallet_count(),
+            size_of::<usize>() * size_of::<WalletId>(),
+        )]
+        .into()
     }
 }
 

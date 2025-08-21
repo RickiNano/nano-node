@@ -1,5 +1,4 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_node::wallets::WalletsExt;
 use rsnano_rpc_messages::{AccountCreateArgs, AccountResponse};
 
 impl RpcCommandHandler {

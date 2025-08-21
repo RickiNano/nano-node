@@ -1,6 +1,6 @@
 use rsnano_core::{Amount, BlockHash, PrivateKey, WalletId};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
-use rsnano_node::{wallets::WalletsExt, Node};
+use rsnano_node::Node;
 use rsnano_rpc_messages::WalletLedgerArgs;
 use std::sync::Arc;
 use test_helpers::{setup_rpc_client_and_server, System};

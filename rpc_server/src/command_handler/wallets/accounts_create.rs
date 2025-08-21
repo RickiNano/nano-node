@@ -1,6 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
 use rsnano_core::Account;
-use rsnano_node::wallets::WalletsExt;
 use rsnano_rpc_messages::{unwrap_bool_or_false, AccountsCreateArgs, AccountsRpcMessage};
 
 impl RpcCommandHandler {

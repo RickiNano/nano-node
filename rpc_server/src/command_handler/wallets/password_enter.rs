@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_node::wallets::{WalletsError, WalletsExt};
+use rsnano_node::wallets::WalletsError;
 use rsnano_rpc_messages::{ValidResponse, WalletWithPasswordArgs};
 
 impl RpcCommandHandler {

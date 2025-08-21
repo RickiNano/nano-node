@@ -2,7 +2,7 @@ use crate::command_handler::RpcCommandHandler;
 use anyhow::{anyhow, bail};
 use rsnano_core::{Amount, BlockDetails, PendingKey, Root, WorkNonce};
 use rsnano_ledger::{AnySet, LedgerSet};
-use rsnano_node::wallets::{WalletsError, WalletsExt};
+use rsnano_node::wallets::WalletsError;
 use rsnano_rpc_messages::{BlockDto, ReceiveArgs};
 use std::cmp::max;
 

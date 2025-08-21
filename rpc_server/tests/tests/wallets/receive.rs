@@ -1,6 +1,5 @@
 use rsnano_core::{Amount, BlockHash, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{AnySet, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
-use rsnano_node::wallets::WalletsExt;
 use rsnano_rpc_messages::ReceiveArgs;
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 

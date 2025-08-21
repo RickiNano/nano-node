@@ -1,6 +1,5 @@
 use rsnano_core::{Amount, Block, BlockType, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
-use rsnano_node::wallets::WalletsExt;
 use rsnano_rpc_messages::{BlockCreateArgs, BlockTypeDto};
 use test_helpers::{setup_rpc_client_and_server, System};
 

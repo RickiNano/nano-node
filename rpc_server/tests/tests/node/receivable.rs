@@ -4,7 +4,7 @@ use rsnano_core::{
 use rsnano_ledger::{
     AnySet, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
 };
-use rsnano_node::{wallets::WalletsExt, Node};
+use rsnano_node::Node;
 use rsnano_rpc_messages::{ReceivableArgs, ReceivableResponse};
 use std::sync::Arc;
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
