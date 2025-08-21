@@ -2,17 +2,19 @@ use std::{path::Path, sync::Arc};
 
 use anyhow::Context;
 
-use rsnano_core::{KeyDerivationFunction, PrivateKey, PublicKey, WorkNonce};
+use rsnano_core::{KeyDerivationFunction, PrivateKey, PublicKey, WalletId, WorkNonce};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_store_lmdb::LmdbWalletStore;
 
 pub struct Wallet {
+    id: WalletId,
     pub store: Arc<LmdbWalletStore>,
 }
 
 impl Wallet {
     pub fn new(
+        id: WalletId,
         env: &LmdbEnvironment,
         fanout: usize,
         kdf: KeyDerivationFunction,
@@ -23,11 +25,13 @@ impl Wallet {
             .context("could not create wallet store")?;
 
         Ok(Self {
+            id,
             store: Arc::new(store),
         })
     }
 
     pub fn new_from_json(
+        id: WalletId,
         env: &LmdbEnvironment,
         fanout: usize,
         kdf: KeyDerivationFunction,
@@ -38,8 +42,13 @@ impl Wallet {
             .context("could not create wallet store")?;
 
         Ok(Self {
+            id,
             store: Arc::new(store),
         })
+    }
+
+    pub fn id(&self) -> &WalletId {
+        &self.id
     }
 
     pub fn work_put(&self, txn: &mut WriteTransaction, pub_key: &PublicKey, work: WorkNonce) {

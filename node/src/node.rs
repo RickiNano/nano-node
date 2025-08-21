@@ -89,6 +89,7 @@ use crate::{
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
         ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsConfig, WalletsExt,
+        WalletsTicker,
     },
     work::{WorkFactory, WorkRequest},
     NodeCallbacks, OnlineWeightSampler,
@@ -168,6 +169,7 @@ pub struct Node {
     unchecked_reenqueuer: TimerThread<UncheckedBlockReenqueuer>,
     local_reps_computation: TimerThread<LocalRepsComputation>,
     pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
+    wallets_ticker: TimerThread<WalletsTicker>,
 }
 
 pub(crate) struct NodeArgs {
@@ -535,6 +537,7 @@ impl Node {
             ledger.clone(),
             network_params.work.clone(),
             work_factory.clone(),
+            steady_clock.clone(),
         );
         if !is_nulled {
             wallets.initialize().expect("Could not create wallet");
@@ -1126,6 +1129,8 @@ impl Node {
             ),
         );
 
+        let wallets_ticker = WalletsTicker(wallets.clone());
+
         let mut wallet_reps_checker = WalletRepsChecker::new(wallet_reps.clone());
         wallet_reps_checker.add_consumer(vote_rebroadcast_queue.clone());
 
@@ -1359,6 +1364,7 @@ impl Node {
             aec_voter: TimerThread::new("AEC voter", aec_voter),
             local_reps_computation: TimerThread::new("Reps comp", local_reps_computation),
             wallet_reps,
+            wallets_ticker: TimerThread::new("Wallet tick", wallets_ticker),
         }
     }
 
@@ -1572,6 +1578,7 @@ impl Node {
         } else {
             Duration::from_secs(60)
         });
+        self.wallets_ticker.start(Duration::from_millis(500));
 
         self.network_threads.lock().unwrap().start();
         self.message_processor.lock().unwrap().start();

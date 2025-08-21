@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
+    utils::{CancellationToken, ContainerInfo, ContainerInfoProvider, Tickable},
     Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce,
@@ -26,11 +26,12 @@ use rsnano_nullable_lmdb::{
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
 
-use super::{Wallet, WalletActionThread};
+use super::{delayed_work_queue::DelayedWorkQueue, Wallet, WalletActionThread};
 use crate::{
     utils::{ThreadPool, ThreadPoolImpl},
     work::{WorkFactory, WorkRequest},
 };
+use rsnano_nullable_clock::SteadyClock;
 
 #[derive(FromPrimitive, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum WalletsError {
@@ -165,14 +166,20 @@ pub struct Wallets {
     ledger: Arc<Ledger>,
     work_factory: Arc<WorkFactory>,
     work_thresholds: WorkThresholds,
-    delayed_work: Mutex<HashMap<Account, Root>>,
+    delayed_work: Mutex<DelayedWorkQueue>,
     workers: Arc<dyn ThreadPool>,
     wallet_actions: WalletActionThread,
     kdf: KeyDerivationFunction,
-    work_queue: Mutex<Option<mpsc::Sender<DelayedWorkRequest>>>,
+    work_queue: Mutex<Option<mpsc::Sender<WorkRequest>>>,
     block_queue: Mutex<Option<mpsc::Sender<Block>>>,
-    waiting_for_work: Mutex<HashMap<Root, (Block, BlockPromise, bool, Arc<Wallet>)>>,
+    waiting_for_work: Mutex<HashMap<Root, WorkItem>>,
     waiting_for_processor: Mutex<HashMap<BlockHash, (BlockPromise, bool, Arc<Wallet>)>>,
+    clock: Arc<SteadyClock>,
+}
+
+enum WorkItem {
+    BlockWork(Block, BlockPromise, bool, Arc<Wallet>),
+    Cache(WalletId, Account),
 }
 
 impl Wallets {
@@ -182,6 +189,7 @@ impl Wallets {
         ledger: Arc<Ledger>,
         work: WorkThresholds,
         work_factory: Arc<WorkFactory>,
+        clock: Arc<SteadyClock>,
     ) -> Self {
         let kdf = KeyDerivationFunction::new(wallets_config.kdf_work);
 
@@ -194,7 +202,7 @@ impl Wallets {
             ledger: Arc::clone(&ledger),
             work_factory,
             work_thresholds: work,
-            delayed_work: Mutex::new(HashMap::new()),
+            delayed_work: Mutex::new(DelayedWorkQueue::default()),
             workers: Arc::new(ThreadPoolImpl::create(1, "wallet work")),
             wallet_actions: WalletActionThread::new(),
             kdf: kdf.clone(),
@@ -202,6 +210,7 @@ impl Wallets {
             block_queue: Mutex::new(None),
             waiting_for_work: Mutex::new(HashMap::new()),
             waiting_for_processor: Mutex::new(HashMap::new()),
+            clock,
         }
     }
 
@@ -212,7 +221,8 @@ impl Wallets {
         let wallets_config = WalletsConfig::default();
         let work = WorkThresholds::default_for(network);
         let work_factory = Arc::new(WorkFactory::disabled());
-        Self::new(wallets_config, env, ledger, work, work_factory)
+        let clock = Arc::new(SteadyClock::new_null());
+        Self::new(wallets_config, env, ledger, work, work_factory, clock)
     }
 
     pub fn start(&self) {
@@ -226,7 +236,7 @@ impl Wallets {
         self.env.sync().expect("sync failed");
     }
 
-    pub fn set_work_queue(&self, tx_work: mpsc::Sender<DelayedWorkRequest>) {
+    pub fn set_work_queue(&self, tx_work: mpsc::Sender<WorkRequest>) {
         *self.work_queue.lock().unwrap() = Some(tx_work);
     }
 
@@ -234,7 +244,7 @@ impl Wallets {
         *self.block_queue.lock().unwrap() = Some(tx_block);
     }
 
-    pub fn waiting_for_work(&self) -> usize {
+    pub fn delayed_work_count(&self) -> usize {
         self.delayed_work.lock().unwrap().len()
     }
 
@@ -296,6 +306,7 @@ impl Wallets {
                 let representative = self.random_representative();
                 let text = PathBuf::from(id.encode_hex());
                 let wallet = Wallet::new(
+                    id,
                     &self.env,
                     self.wallets_config.password_fanout as usize,
                     self.kdf.clone(),
@@ -568,6 +579,7 @@ impl Wallets {
                 let text = PathBuf::from(id.encode_hex());
                 let representative = self.random_representative();
                 if let Ok(wallet) = Wallet::new(
+                    id,
                     &self.env,
                     self.wallets_config.password_fanout as usize,
                     self.kdf.clone(),
@@ -864,6 +876,7 @@ impl Wallets {
     pub fn import(&self, wallet_id: WalletId, json: &str) -> anyhow::Result<()> {
         let _guard = self.wallets.lock().unwrap();
         let _wallet = Wallet::new_from_json(
+            wallet_id,
             &self.env,
             self.wallets_config.password_fanout as usize,
             self.kdf.clone(),
@@ -969,9 +982,9 @@ impl Wallets {
         self.wallets.lock().unwrap().len()
     }
 
-    fn enqueue_work(
+    fn enqueue_block_work(
         &self,
-        request: DelayedWorkRequest,
+        request: WorkRequest,
         block: Block,
         block_promise: BlockPromise,
         generate_work: bool,
@@ -984,18 +997,37 @@ impl Wallets {
         };
 
         let root = block.root();
-        self.waiting_for_work
-            .lock()
-            .unwrap()
-            .insert(root, (block, block_promise, generate_work, wallet));
+        self.waiting_for_work.lock().unwrap().insert(
+            root,
+            WorkItem::BlockWork(block, block_promise, generate_work, wallet),
+        );
 
         let result = work_queue.send(request);
         if result.is_err() {
-            if let Some((_, block_promise, _, _)) =
+            if let Some(WorkItem::BlockWork(_, block_promise, _, _)) =
                 self.waiting_for_work.lock().unwrap().remove(&root)
             {
                 block_promise.set_result(Err(WalletsError::Generic));
             }
+        }
+    }
+
+    fn enqueue_cache_work(&self, request: WorkRequest, wallet_id: WalletId, account: Account) {
+        let guard = self.work_queue.lock().unwrap();
+        let Some(work_queue) = guard.as_ref() else {
+            return;
+        };
+
+        let root = request.root;
+
+        self.waiting_for_work
+            .lock()
+            .unwrap()
+            .insert(root, WorkItem::Cache(wallet_id, account));
+
+        let result = work_queue.send(request);
+        if result.is_err() {
+            self.waiting_for_work.lock().unwrap().remove(&root);
         }
     }
 
@@ -1020,6 +1052,21 @@ impl Wallets {
             }
         } else {
             block_promise.set_result(Err(WalletsError::Generic));
+        }
+    }
+
+    fn tick(&self) {
+        let now = self.clock.now();
+        let mut delayed = self.delayed_work.lock().unwrap();
+        while let Some((wallet_id, account, root)) = delayed.pop(now) {
+            self.enqueue_cache_work(
+                WorkRequest {
+                    root,
+                    difficulty: self.work_thresholds.threshold_base(),
+                },
+                wallet_id,
+                account,
+            );
         }
     }
 }
@@ -1241,7 +1288,11 @@ impl WalletsExt for Arc<Wallets> {
 
     fn work_ensure(&self, wallet: &Arc<Wallet>, account: Account, root: Root) {
         let precache_delay = self.wallets_config.cached_work_generation_delay;
-        self.delayed_work.lock().unwrap().insert(account, root);
+        let now = self.clock.now();
+        self.delayed_work
+            .lock()
+            .unwrap()
+            .insert(*wallet.id(), account, root, now + precache_delay);
         let self_clone = Arc::clone(self);
         let wallet = Arc::clone(wallet);
         self.workers.post_delayed(
@@ -1285,17 +1336,7 @@ impl WalletsExt for Arc<Wallets> {
             );
 
             let work_request = WorkRequest::new(block.root(), required_difficulty);
-
-            self.enqueue_work(
-                DelayedWorkRequest {
-                    work: work_request.clone(),
-                    delay: Duration::ZERO,
-                },
-                block.clone(),
-                block_promise,
-                generate_work,
-                wallet,
-            );
+            self.enqueue_block_work(work_request, block, block_promise, generate_work, wallet);
         } else {
             self.enqueue_block(block, block_promise, generate_work, wallet);
         }
@@ -1694,6 +1735,7 @@ impl WalletsExt for Arc<Wallets> {
         debug_assert!(!guard.contains_key(&wallet_id));
         let wallet = {
             let Ok(wallet) = Wallet::new(
+                wallet_id,
                 &self.env,
                 self.wallets_config.password_fanout as usize,
                 self.kdf.clone(),
@@ -1774,16 +1816,39 @@ impl WalletsExt for Arc<Wallets> {
 
     fn provide_work(&self, root: &Root, work: Option<WorkNonce>) {
         let mut guard = self.waiting_for_work.lock().unwrap();
-        let Some((mut block, block_promise, generate_work, wallet)) = guard.remove(root) else {
+        let Some(item) = guard.remove(root) else {
             return;
         };
         drop(guard);
 
-        if let Some(work) = work {
-            block.set_work(work);
-            self.enqueue_block(block, block_promise, generate_work, wallet);
-        } else {
-            block_promise.set_result(Err(WalletsError::Generic));
+        match item {
+            WorkItem::BlockWork(mut block, block_promise, generate_work, wallet) => {
+                if let Some(work) = work {
+                    block.set_work(work);
+                    self.enqueue_block(block, block_promise, generate_work, wallet);
+                } else {
+                    block_promise.set_result(Err(WalletsError::Generic));
+                }
+            }
+            WorkItem::Cache(wallet_id, account) => {
+                if let Some(work) = work {
+                    if let Some(wallet) = self.get_wallet(&wallet_id) {
+                        let pub_key = PublicKey::from(account);
+                        let mut txn = self.env.begin_write();
+                        if wallet.live() && wallet.store.exists(&txn, &pub_key) {
+                            let latest = self.ledger.any().latest_root(&account);
+                            if latest == *root {
+                                wallet.work_put(&mut txn, &pub_key, work);
+                            } else {
+                                warn!("Cached work no longer valid, discarding");
+                            }
+                        }
+                        txn.commit();
+                    }
+                } else {
+                    warn!("Cached work generation failed/aborted");
+                }
+            }
         }
     }
 
@@ -1902,6 +1967,14 @@ pub struct DelayedWorkRequest {
     pub delay: Duration,
 }
 
+pub struct WalletsTicker(pub Arc<Wallets>);
+
+impl Tickable for WalletsTicker {
+    fn tick(&mut self, _: &CancellationToken) {
+        self.0.tick();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1938,19 +2011,16 @@ mod tests {
 
         assert_eq!(
             request,
-            DelayedWorkRequest {
-                work: WorkRequest::new(
-                    account_key.account().into(),
-                    wallets.work_thresholds.threshold(&BlockDetails::new(
-                        Epoch::Epoch2,
-                        false,
-                        true,
-                        false
-                    ))
-                ),
-                delay: Duration::ZERO
-            }
-        )
+            WorkRequest::new(
+                account_key.account().into(),
+                wallets.work_thresholds.threshold(&BlockDetails::new(
+                    Epoch::Epoch2,
+                    false,
+                    true,
+                    false
+                ))
+            ),
+        );
     }
 
     #[test]
@@ -2013,7 +2083,7 @@ mod tests {
 
     struct Fixture {
         wallets: Arc<Wallets>,
-        rx_work: mpsc::Receiver<DelayedWorkRequest>,
+        rx_work: mpsc::Receiver<WorkRequest>,
     }
 
     impl Fixture {
@@ -2024,6 +2094,7 @@ mod tests {
             let work = WorkThresholds::default_for(network);
             let work_factory = Arc::new(WorkFactory::disabled());
             let ledger = Arc::new(args.ledger.unwrap_or_else(|| Ledger::new_null()));
+            let clock = Arc::new(SteadyClock::new_null());
 
             let wallets = Arc::new(Wallets::new(
                 wallets_config,
@@ -2031,6 +2102,7 @@ mod tests {
                 ledger,
                 work,
                 work_factory,
+                clock,
             ));
 
             let (tx_work, rx_work) = mpsc::channel();
@@ -2042,7 +2114,7 @@ mod tests {
             Self { wallets, rx_work }
         }
 
-        fn pop_work_request(&self) -> DelayedWorkRequest {
+        fn pop_work_request(&self) -> WorkRequest {
             self.rx_work
                 .recv_timeout(Duration::from_secs(3))
                 .expect("A work request should've been enqueued")

@@ -1,18 +1,18 @@
 use std::sync::{mpsc, Arc};
 
-use super::{DelayedWorkRequest, Wallets, WalletsExt};
-use crate::work::WorkFactory;
+use super::{Wallets, WalletsExt};
+use crate::work::{WorkFactory, WorkRequest};
 
 pub(crate) struct WalletWorkProvider {
     wallets: Arc<Wallets>,
-    queue: mpsc::Receiver<DelayedWorkRequest>,
+    queue: mpsc::Receiver<WorkRequest>,
     work_factory: Arc<WorkFactory>,
 }
 
 impl WalletWorkProvider {
     pub(crate) fn new(
         wallets: Arc<Wallets>,
-        queue: mpsc::Receiver<DelayedWorkRequest>,
+        queue: mpsc::Receiver<WorkRequest>,
         work_factory: Arc<WorkFactory>,
     ) -> Self {
         Self {
@@ -25,8 +25,8 @@ impl WalletWorkProvider {
     pub fn run(self) {
         while let Ok(request) = self.queue.recv() {
             // TODO use callbacks, to make it async
-            let root = request.work.root;
-            let work = self.work_factory.generate_work(request.work);
+            let root = request.root;
+            let work = self.work_factory.generate_work(request);
             self.wallets.provide_work(&root, work);
         }
     }
