@@ -1001,6 +1001,10 @@ impl Wallets {
             }
         }
     }
+
+    pub fn block_processed(&self, hash: &BlockHash, result: Option<SavedBlock>) {
+        // TODO
+    }
 }
 
 impl Drop for Wallets {

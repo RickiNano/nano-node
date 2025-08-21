@@ -1,3 +1,4 @@
+pub(crate) mod block_processor;
 mod receivable_search;
 mod wallet;
 mod wallet_action_thread;
