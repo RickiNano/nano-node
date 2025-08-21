@@ -13,7 +13,7 @@ use std::{
 
 use bounded_vec_deque::BoundedVecDeque;
 use num_format::{Locale, ToFormattedString};
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use rsnano_core::{
     utils::{
@@ -546,7 +546,7 @@ impl Node {
         let (tx_work, rx_work) = mpsc::channel();
         wallets.set_work_queue(tx_work);
 
-        let wallet_work = WalletWorkProvider::new(wallets.clone(), rx_work);
+        let wallet_work = WalletWorkProvider::new(wallets.clone(), rx_work, work_factory.clone());
 
         std::thread::Builder::new()
             .name("Wallet work".to_owned())

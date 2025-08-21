@@ -1016,11 +1016,8 @@ fn search_receivable_multiple() {
         )
         .wait()
         .unwrap();
-    assert_timely_msg(
-        Duration::from_secs(10),
-        || !node.balance(&key3.account()).is_zero(),
-        "key3 balance is still zero",
-    );
+
+    assert_timely2(|| !node.balance(&key3.account()).is_zero());
     node.wallets
         .send(
             wallet_id,

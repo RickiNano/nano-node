@@ -1121,7 +1121,7 @@ pub trait WalletsExt {
     ) -> MultiBlockPromise;
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
-    fn provide_work(&self, root: &Root, work: WorkNonce);
+    fn provide_work(&self, root: &Root, work: Option<WorkNonce>);
 }
 
 impl WalletsExt for Arc<Wallets> {
@@ -1277,13 +1277,15 @@ impl WalletsExt for Arc<Wallets> {
             );
         } else {
             let arc_block = Arc::new(block.clone());
-            let enqueue_result = self
+            let process_result = self
                 .block_processor_queue
                 .push_blocking(arc_block.clone(), BlockSource::Local);
 
-            if enqueue_result.is_err() {
-                block_promise.set_result(Err(WalletsError::Generic));
-            }
+            let block_result = match process_result {
+                Ok(r) => r.map_err(|_| WalletsError::Generic),
+                Err(_) => Err(WalletsError::Generic),
+            };
+            block_promise.set_result(block_result);
 
             if generate_work {
                 // Pregenerate work for next block based on the block just created
@@ -1763,30 +1765,31 @@ impl WalletsExt for Arc<Wallets> {
         valid
     }
 
-    fn provide_work(&self, root: &Root, work: WorkNonce) {
+    fn provide_work(&self, root: &Root, work: Option<WorkNonce>) {
         let mut guard = self.waiting_for_work.lock().unwrap();
         let Some((mut block, block_promise, generate_work, wallet)) = guard.remove(root) else {
             return;
         };
+        drop(guard);
 
-        block.set_work(work);
+        if let Some(work) = work {
+            block.set_work(work);
+            let block = Arc::new(block);
+            let process_result = self
+                .block_processor_queue
+                .push_blocking(block.clone(), BlockSource::Local);
 
-        let arc_block = Arc::new(block);
-        let enqueue_result = self
-            .block_processor_queue
-            .push_blocking(arc_block.clone(), BlockSource::Local);
+            match process_result {
+                Ok(b) => block_promise.set_result(b.map_err(|_| WalletsError::Generic)),
+                Err(_) => block_promise.set_result(Err(WalletsError::Generic)),
+            }
 
-        if enqueue_result.is_err() {
+            if generate_work {
+                // Pregenerate work for next block based on the block just created
+                self.work_ensure(&wallet, block.account_field().unwrap(), block.hash().into());
+            }
+        } else {
             block_promise.set_result(Err(WalletsError::Generic));
-        }
-
-        if generate_work {
-            // Pregenerate work for next block based on the block just created
-            self.work_ensure(
-                &wallet,
-                arc_block.account_field().unwrap(),
-                arc_block.hash().into(),
-            );
         }
     }
 }
