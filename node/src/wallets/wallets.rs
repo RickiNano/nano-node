@@ -1,16 +1,13 @@
 use std::{
     collections::{HashMap, HashSet},
-    fmt,
     fs::Permissions,
     mem::size_of,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
-    sync::{mpsc, Arc, Condvar, Mutex},
-    time::Duration,
+    sync::{mpsc, Arc, Mutex},
 };
 
 use rand::{seq::IndexedRandom, Rng};
-use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
@@ -19,7 +16,7 @@ use rsnano_core::{
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce,
 };
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet, DEV_GENESIS_PUB_KEY};
+use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
@@ -27,133 +24,16 @@ use rsnano_nullable_lmdb::{
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_work::WorkThresholds;
 
-use super::{delayed_work_queue::DelayedWorkQueue, Wallet, WalletActionThread};
+use super::{
+    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet,
+    WalletActionThread, WalletsConfig, WalletsError,
+};
 use crate::work::WorkRequest;
-
-#[derive(FromPrimitive, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-pub enum WalletsError {
-    Generic,
-    WalletNotFound,
-    WalletLocked,
-    AccountNotFound,
-    InvalidPassword,
-    BadPublicKey,
-}
-
-impl WalletsError {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            WalletsError::Generic => "Unknown error",
-            WalletsError::WalletNotFound => "Wallet not found",
-            WalletsError::WalletLocked => "Wallet is locked",
-            WalletsError::AccountNotFound => "Account not found",
-            WalletsError::InvalidPassword => "Invalid password",
-            WalletsError::BadPublicKey => "Bad public key",
-        }
-    }
-}
-
-impl fmt::Display for WalletsError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-impl std::error::Error for WalletsError {}
 
 pub enum PreparedSend {
     Cached(SavedBlock),
     New(Block, BlockDetails),
 }
-
-#[derive(Clone)]
-pub struct WalletsConfig {
-    pub preconfigured_representatives: Vec<PublicKey>,
-    pub password_fanout: usize,
-    pub receive_minimum: Amount,
-    pub vote_minimum: Amount,
-    pub voting_enabled: bool,
-    /// How long to wait until the next cached work is created
-    pub cached_work_generation_delay: Duration,
-    pub kdf_work: u32,
-}
-
-impl WalletsConfig {
-    pub fn default_for(network: Networks) -> Self {
-        match network {
-            Networks::Invalid => unreachable!(),
-            Networks::NanoDevNetwork => Self::defaults_dev(),
-            Networks::NanoBetaNetwork => Self::defaults_beta(),
-            Networks::NanoLiveNetwork => Self::defaults_live(),
-            Networks::NanoTestNetwork => Self::defaults_test(),
-        }
-    }
-
-    pub fn defaults_live() -> Self {
-        Self {
-            preconfigured_representatives: default_preconfigured_representatives_for_live(),
-            password_fanout: 1024,
-            receive_minimum: Amount::micronano(1),
-            vote_minimum: Amount::nano(1000),
-            voting_enabled: false,
-            cached_work_generation_delay: Duration::from_secs(10),
-            kdf_work: 1024 * 64,
-        }
-    }
-
-    pub fn defaults_dev() -> Self {
-        Self {
-            voting_enabled: true,
-            preconfigured_representatives: vec![*DEV_GENESIS_PUB_KEY],
-            cached_work_generation_delay: Duration::from_secs(1),
-            kdf_work: 8,
-            ..Self::defaults_live()
-        }
-    }
-
-    pub fn defaults_beta() -> Self {
-        Self {
-            preconfigured_representatives: vec![Account::decode_account(
-                "nano_1defau1t9off1ine9rep99999999999999999999999999999999wgmuzxxy",
-            )
-            .unwrap()
-            .into()],
-            ..Self::defaults_live()
-        }
-    }
-
-    pub fn defaults_test() -> Self {
-        Self {
-            preconfigured_representatives: Vec::new(),
-            ..Self::defaults_live()
-        }
-    }
-}
-
-impl Default for WalletsConfig {
-    fn default() -> Self {
-        Self::defaults_live()
-    }
-}
-
-pub(crate) fn default_preconfigured_representatives_for_live() -> Vec<PublicKey> {
-    const REP_KEYS: [&'static str; 8] = [
-        "A30E0A32ED41C8607AA9212843392E853FCBCB4E7CB194E35C94F07F91DE59EF",
-        "67556D31DDFC2A440BF6147501449B4CB9572278D034EE686A6BEE29851681DF",
-        "5C2FBB148E006A8E8BA7A75DD86C9FE00C83F5FFDBFD76EAA09531071436B6AF",
-        "AE7AC63990DAAAF2A69BF11C913B928844BF5012355456F2F164166464024B29",
-        "BD6267D6ECD8038327D2BCC0850BDF8F56EC0414912207E81BCF90DFAC8A4AAA",
-        "2399A083C600AA0572F5E36247D978FCFC840405F8D4B6D33161C0066A55F431",
-        "2298FAB7C61058E77EA554CB93EDEEDA0692CBFCC540AB213B2836B29029E23A",
-        "3FE80B4BC842E82C1C18ABFEEC47EA989E63953BC82AC411F304D13833D52A56",
-    ];
-
-    REP_KEYS
-        .iter()
-        .map(|s| PublicKey::decode_hex(s).unwrap())
-        .collect()
-}
-
 pub struct Wallets {
     db: Option<LmdbDatabase>,
     send_action_ids_handle: Option<LmdbDatabase>,
@@ -1141,9 +1021,7 @@ pub trait WalletsExt {
     ) -> BlockPromise;
 
     fn search_receivable(&self, wallet_id: &WalletId) -> MultiBlockPromise;
-
     fn search_receivable_all(&self) -> MultiBlockPromise;
-
     fn enter_password(&self, wallet_id: WalletId, password: &str) -> Result<(), WalletsError>;
     fn create(&self, wallet_id: WalletId);
 
@@ -1816,103 +1694,6 @@ impl WalletsExt for Arc<Wallets> {
     }
 }
 
-#[derive(Clone)]
-pub struct BlockPromise {
-    done_notification: Arc<Condvar>,
-    state: Arc<Mutex<BlockPromiseState>>,
-}
-
-impl BlockPromise {
-    pub fn new() -> Self {
-        Self::with_state(BlockPromiseState::new())
-    }
-
-    pub fn new_failed(err: WalletsError) -> Self {
-        Self::with_state(BlockPromiseState::new_failed(err))
-    }
-
-    fn with_state(state: BlockPromiseState) -> Self {
-        Self {
-            done_notification: Arc::new(Condvar::new()),
-            state: Arc::new(Mutex::new(state)),
-        }
-    }
-
-    pub fn set_result(&self, result: Result<SavedBlock, WalletsError>) {
-        {
-            let mut state = self.state.lock().unwrap();
-            state.result = result;
-            state.done = true;
-        }
-        self.done_notification.notify_all();
-    }
-
-    pub fn wait(&self) -> Result<SavedBlock, WalletsError> {
-        let result_guard = self.state.lock().unwrap();
-        self.done_notification
-            .wait_while(result_guard, |i| !i.done)
-            .unwrap()
-            .result
-            .clone()
-    }
-}
-
-struct BlockPromiseState {
-    done: bool,
-    result: Result<SavedBlock, WalletsError>,
-}
-
-impl BlockPromiseState {
-    fn new() -> Self {
-        Self {
-            done: false,
-            result: Err(WalletsError::Generic),
-        }
-    }
-
-    fn new_failed(err: WalletsError) -> Self {
-        Self {
-            done: true,
-            result: Err(err),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct MultiBlockPromise {
-    children: Vec<BlockPromise>,
-}
-
-impl MultiBlockPromise {
-    pub fn new(children: Vec<BlockPromise>) -> Self {
-        Self { children }
-    }
-
-    pub fn new_failed(error: WalletsError) -> Self {
-        Self {
-            children: vec![BlockPromise::new_failed(error)],
-        }
-    }
-
-    pub fn empty() -> Self {
-        Self::new(Vec::new())
-    }
-
-    pub fn append(&mut self, other: MultiBlockPromise) {
-        self.children.extend(other.children)
-    }
-
-    pub fn wait(&self) -> Result<Vec<SavedBlock>, WalletsError> {
-        self.children.iter().map(|c| c.wait()).collect()
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct DelayedWorkRequest {
-    pub work: WorkRequest,
-    pub delay: Duration,
-}
-
 pub struct WalletsTicker(pub Arc<Wallets>);
 
 impl Tickable for WalletsTicker {
@@ -1925,6 +1706,7 @@ impl Tickable for WalletsTicker {
 mod tests {
     use super::*;
     use rsnano_core::PendingInfo;
+    use std::time::Duration;
 
     #[test]
     fn enqueue_work_request() {
