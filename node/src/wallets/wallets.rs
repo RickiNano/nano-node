@@ -172,6 +172,7 @@ pub struct Wallets {
     block_processor_queue: Arc<BlockProcessorQueue>,
     kdf: KeyDerivationFunction,
     work_queue: Mutex<Option<mpsc::Sender<DelayedWorkRequest>>>,
+    waiting_for_work: Mutex<HashMap<Root, (Block, BlockPromise, bool, Arc<Wallet>)>>,
 }
 
 impl Wallets {
@@ -200,6 +201,7 @@ impl Wallets {
             block_processor_queue,
             kdf: kdf.clone(),
             work_queue: Mutex::new(None),
+            waiting_for_work: Mutex::new(HashMap::new()),
         }
     }
 
@@ -969,6 +971,36 @@ impl Wallets {
     pub fn wallet_count(&self) -> usize {
         self.wallets.lock().unwrap().len()
     }
+
+    fn enqueue_work(
+        &self,
+        request: DelayedWorkRequest,
+        block: Block,
+        block_promise: BlockPromise,
+        generate_work: bool,
+        wallet: Arc<Wallet>,
+    ) {
+        let guard = self.work_queue.lock().unwrap();
+        let Some(work_queue) = guard.as_ref() else {
+            block_promise.set_result(Err(WalletsError::Generic));
+            return;
+        };
+
+        let root = block.root();
+        self.waiting_for_work
+            .lock()
+            .unwrap()
+            .insert(root, (block, block_promise, generate_work, wallet));
+
+        let result = work_queue.send(request);
+        if result.is_err() {
+            if let Some((_, block_promise, _, _)) =
+                self.waiting_for_work.lock().unwrap().remove(&root)
+            {
+                block_promise.set_result(Err(WalletsError::Generic));
+            }
+        }
+    }
 }
 
 impl Drop for Wallets {
@@ -1033,7 +1065,8 @@ pub trait WalletsExt {
         account: Account,
         generate_work: bool,
         details: &BlockDetails,
-    ) -> anyhow::Result<SavedBlock>;
+        block_promise: BlockPromise,
+    );
 
     fn change_seed(
         &self,
@@ -1088,6 +1121,7 @@ pub trait WalletsExt {
     ) -> MultiBlockPromise;
 
     fn ensure_wallet_is_unlocked(&self, wallet_id: WalletId, password: &str) -> bool;
+    fn provide_work(&self, root: &Root, work: WorkNonce);
 }
 
 impl WalletsExt for Arc<Wallets> {
@@ -1212,11 +1246,12 @@ impl WalletsExt for Arc<Wallets> {
     fn action_complete(
         &self,
         wallet: Arc<Wallet>,
-        mut block: Block,
+        block: Block,
         account: Account,
         generate_work: bool,
         details: &BlockDetails,
-    ) -> anyhow::Result<SavedBlock> {
+        block_promise: BlockPromise,
+    ) {
         // Unschedule any work caching for this account
         self.delayed_work.lock().unwrap().remove(&account);
         let hash = block.hash();
@@ -1230,24 +1265,31 @@ impl WalletsExt for Arc<Wallets> {
 
             let work_request = WorkRequest::new(block.root(), required_difficulty);
 
-            let work = self
-                .work_factory
-                .generate_work(work_request)
-                .ok_or_else(|| anyhow!("no work generated"))?;
+            self.enqueue_work(
+                DelayedWorkRequest {
+                    work: work_request.clone(),
+                    delay: Duration::ZERO,
+                },
+                block.clone(),
+                block_promise,
+                generate_work,
+                wallet,
+            );
+        } else {
+            let arc_block = Arc::new(block.clone());
+            let enqueue_result = self
+                .block_processor_queue
+                .push_blocking(arc_block.clone(), BlockSource::Local);
 
-            block.set_work(work);
-        }
-        let arc_block = Arc::new(block.clone());
-        let saved_block = self
-            .block_processor_queue
-            .push_blocking(arc_block.clone(), BlockSource::Local)?
-            .map_err(|s| anyhow!("block processor failed: {:?}", s))?;
+            if enqueue_result.is_err() {
+                block_promise.set_result(Err(WalletsError::Generic));
+            }
 
-        if generate_work {
-            // Pregenerate work for next block based on the block just created
-            self.work_ensure(&wallet, account, hash.into());
+            if generate_work {
+                // Pregenerate work for next block based on the block just created
+                self.work_ensure(&wallet, account, hash.into());
+            }
         }
-        Ok(saved_block)
     }
 
     fn change_seed(
@@ -1350,10 +1392,14 @@ impl WalletsExt for Arc<Wallets> {
             HIGH_PRIORITY,
             wallet.clone(),
             Box::new(move |wallet| {
-                let result = self_l
-                    .action_complete(wallet, block.clone(), source, generate_work, &details)
-                    .map_err(|_| WalletsError::Generic);
-                promise2.set_result(result);
+                self_l.action_complete(
+                    wallet,
+                    block.clone(),
+                    source,
+                    generate_work,
+                    &details,
+                    promise2.clone(),
+                )
             }),
         );
 
@@ -1465,10 +1511,14 @@ impl WalletsExt for Arc<Wallets> {
             amount,
             wallet,
             Box::new(move |wallet| {
-                let result = self_l
-                    .action_complete(wallet, block.clone(), account, generate_work, &details)
-                    .map_err(|_| WalletsError::Generic);
-                block_promise2.set_result(result);
+                self_l.action_complete(
+                    wallet,
+                    block.clone(),
+                    account,
+                    generate_work,
+                    &details,
+                    block_promise2.clone(),
+                );
             }),
         );
         block_promise
@@ -1527,15 +1577,24 @@ impl WalletsExt for Arc<Wallets> {
                     }
                 };
 
-                let block = match result {
-                    Ok(PreparedSend::Cached(block)) => Ok(block),
-                    Ok(PreparedSend::New(block, details)) => self_l
-                        .action_complete(wallet, block, source, generate_work, &details)
-                        .map_err(|_| WalletsError::Generic),
-                    Err(_) => Err(WalletsError::Generic),
+                match result {
+                    Ok(PreparedSend::Cached(block)) => {
+                        promise2.set_result(Ok(block));
+                    }
+                    Ok(PreparedSend::New(block, details)) => {
+                        self_l.action_complete(
+                            wallet,
+                            block,
+                            source,
+                            generate_work,
+                            &details,
+                            promise2.clone(),
+                        );
+                    }
+                    Err(_) => {
+                        promise2.set_result(Err(WalletsError::Generic));
+                    }
                 };
-
-                promise2.set_result(block);
             }),
         );
 
@@ -1703,6 +1762,33 @@ impl WalletsExt for Arc<Wallets> {
 
         valid
     }
+
+    fn provide_work(&self, root: &Root, work: WorkNonce) {
+        let mut guard = self.waiting_for_work.lock().unwrap();
+        let Some((mut block, block_promise, generate_work, wallet)) = guard.remove(root) else {
+            return;
+        };
+
+        block.set_work(work);
+
+        let arc_block = Arc::new(block);
+        let enqueue_result = self
+            .block_processor_queue
+            .push_blocking(arc_block.clone(), BlockSource::Local);
+
+        if enqueue_result.is_err() {
+            block_promise.set_result(Err(WalletsError::Generic));
+        }
+
+        if generate_work {
+            // Pregenerate work for next block based on the block just created
+            self.work_ensure(
+                &wallet,
+                arc_block.account_field().unwrap(),
+                arc_block.hash().into(),
+            );
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -1796,7 +1882,158 @@ impl MultiBlockPromise {
     }
 }
 
-pub(crate) struct DelayedWorkRequest {
+#[derive(Debug, PartialEq, Eq)]
+pub struct DelayedWorkRequest {
     pub work: WorkRequest,
     pub delay: Duration,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rsnano_core::PendingInfo;
+
+    #[test]
+    fn enqueue_work_request() {
+        let account_key = PrivateKey::from_bytes(&[42; 32]);
+        let (ledger, send_hash, amount) = ledger_with_pending_receive(&account_key);
+
+        let fixture = Fixture::new(FixtureArgs {
+            ledger: Some(ledger),
+            ..Default::default()
+        });
+        let wallets = &fixture.wallets;
+
+        let wallet_id = WalletId::from(1);
+        wallets.create(wallet_id);
+        wallets
+            .insert_adhoc2(&wallet_id, &account_key.raw_key(), false)
+            .unwrap();
+
+        wallets.receive(
+            wallet_id,
+            send_hash,
+            PublicKey::from(200),
+            amount,
+            account_key.account(),
+            WorkNonce::new(0),
+            false,
+        );
+
+        let request = fixture.pop_work_request();
+
+        assert_eq!(
+            request,
+            DelayedWorkRequest {
+                work: WorkRequest::new(
+                    account_key.account().into(),
+                    wallets.work_thresholds.threshold(&BlockDetails::new(
+                        Epoch::Epoch2,
+                        false,
+                        true,
+                        false
+                    ))
+                ),
+                delay: Duration::ZERO
+            }
+        )
+    }
+
+    #[test]
+    fn fail_when_no_work_queue_provided() {
+        let account_key = PrivateKey::from_bytes(&[42; 32]);
+        let (ledger, send_hash, amount) = ledger_with_pending_receive(&account_key);
+
+        let fixture = Fixture::new(FixtureArgs {
+            ledger: Some(ledger),
+            disable_work_queue: true,
+        });
+        let wallets = &fixture.wallets;
+
+        let wallet_id = WalletId::from(1);
+        wallets.create(wallet_id);
+        wallets
+            .insert_adhoc2(&wallet_id, &account_key.raw_key(), false)
+            .unwrap();
+
+        let promise = wallets.receive(
+            wallet_id,
+            send_hash,
+            PublicKey::from(200),
+            amount,
+            account_key.account(),
+            WorkNonce::new(0),
+            false,
+        );
+        promise
+            .wait()
+            .expect_err("Should fail, because there is no work queue");
+    }
+
+    fn ledger_with_pending_receive(
+        receiver_account: impl Into<Account>,
+    ) -> (Ledger, BlockHash, Amount) {
+        let send = SavedBlock::new_test_instance();
+        let amount = Amount::nano(1);
+
+        let ledger = Ledger::new_null_builder()
+            .block(&send)
+            .pending(
+                &PendingKey::new(receiver_account.into(), send.hash()),
+                &PendingInfo {
+                    source: send.account(),
+                    amount,
+                    epoch: Epoch::Epoch2,
+                },
+            )
+            .finish();
+
+        (ledger, send.hash(), amount)
+    }
+
+    #[derive(Default)]
+    struct FixtureArgs {
+        ledger: Option<Ledger>,
+        disable_work_queue: bool,
+    }
+
+    struct Fixture {
+        wallets: Arc<Wallets>,
+        rx_work: mpsc::Receiver<DelayedWorkRequest>,
+    }
+
+    impl Fixture {
+        fn new(args: FixtureArgs) -> Self {
+            let network = Networks::NanoLiveNetwork;
+            let env = Arc::new(LmdbEnvironment::new_null());
+            let wallets_config = WalletsConfig::default();
+            let block_processor_queue = Arc::new(BlockProcessorQueue::default());
+            let work = WorkThresholds::default_for(network);
+            let work_factory = Arc::new(WorkFactory::disabled());
+            let ledger = Arc::new(args.ledger.unwrap_or_else(|| Ledger::new_null()));
+
+            let wallets = Arc::new(Wallets::new(
+                wallets_config,
+                env,
+                ledger,
+                block_processor_queue,
+                work,
+                work_factory,
+            ));
+
+            let (tx_work, rx_work) = mpsc::channel();
+            if !args.disable_work_queue {
+                wallets.set_work_queue(tx_work);
+            }
+            wallets.start();
+
+            Self { wallets, rx_work }
+        }
+
+        fn pop_work_request(&self) -> DelayedWorkRequest {
+            self.rx_work
+                .recv_timeout(Duration::from_secs(3))
+                .expect("A work request should've been enqueued")
+        }
+    }
 }
