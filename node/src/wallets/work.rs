@@ -26,10 +26,15 @@ impl WalletWorkProvider {
 
     pub fn run(self) {
         while let Ok(request) = self.queue.recv() {
-            // TODO use callbacks, to make it async
             let root = request.root;
-            let work = self.work_factory.generate_work(request);
-            self.wallets.provide_work(&root, work);
+            let wallets = Arc::downgrade(&self.wallets);
+            let request = request.with_callback(Box::new(move |work| {
+                if let Some(w) = wallets.upgrade() {
+                    w.provide_work(&root, work);
+                }
+            }));
+
+            self.work_factory.generate_work_async(request);
         }
     }
 }

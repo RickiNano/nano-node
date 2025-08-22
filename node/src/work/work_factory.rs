@@ -111,24 +111,28 @@ impl WorkFactory {
     }
 
     pub fn generate_work(&self, request: WorkRequest) -> Option<WorkNonce> {
+        let (req_async, done) = request.into_async();
+        self.generate_work_async(req_async);
+        done.wait()
+    }
+
+    pub fn generate_work_async(&self, request: WorkRequestAsync) {
         if self.stopped.load(Ordering::SeqCst) {
-            return None;
+            request.cancelled();
+            return;
         }
 
         let peers = self.work_peers.lock().unwrap().clone();
-        let (req_async, done) = request.into_async();
 
         if peers.is_empty() {
-            self.factory_impl.generate_local(req_async);
+            self.factory_impl.generate_local(request);
         } else {
             let factory_impl = self.factory_impl.clone();
-            self.runtime.as_ref().unwrap().spawn(async move {
-                factory_impl
-                    .generate_remote_or_local(peers, req_async)
-                    .await
-            });
+            self.runtime
+                .as_ref()
+                .unwrap()
+                .spawn(async move { factory_impl.generate_remote_or_local(peers, request).await });
         }
-        done.wait()
     }
 
     pub fn cancel(&self, root: Root) {
