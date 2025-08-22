@@ -10,13 +10,19 @@
 [daemon]
 [node]
 [main]
+[wallet]
+
+folder "rpc"{
 [rpc_messages]
 [rpc_server]
 [rpc_client]
+}
+
+folder "websocket"{
 [websocket_messages]
 [websocket_server]
 [websocket_client]
-[wallet]
+}
 
 folder "nullables"{
 [fs]
