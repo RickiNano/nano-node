@@ -28,7 +28,7 @@ where
         while !self.work_queue.should_stop() {
             if let Some(current) = queue_lock.first() {
                 let root = current.root;
-                let min_difficulty = current.min_difficulty;
+                let min_difficulty = current.difficulty;
                 let work_ticket = self.work_queue.create_work_ticket();
 
                 // drop work_queue lock, because work generation will take some time

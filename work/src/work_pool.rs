@@ -7,14 +7,12 @@ use std::{
 
 use rsnano_core::{
     utils::{get_cpu_count, ContainerInfo, ContainerInfoProvider},
-    Root, WorkNonce, WorkRequest,
+    Root, WorkNonce, WorkRequest, WorkRequestAsync,
 };
 
 #[cfg(feature = "opencl")]
 use super::gpu_work_generator::GpuWorkGenerator;
-use super::{
-    CpuWorkGenerator, OpenClConfig, WorkItem, WorkQueueCoordinator, WorkThread, WorkTicket,
-};
+use super::{CpuWorkGenerator, OpenClConfig, WorkQueueCoordinator, WorkThread, WorkTicket};
 
 pub struct WorkPoolBuilder {
     cpu_thread_count: Option<usize>,
@@ -201,7 +199,7 @@ impl WorkPool {
     }
 
     pub fn pending_value_size() -> usize {
-        size_of::<WorkItem>()
+        size_of::<WorkRequestAsync>()
     }
 
     pub fn thread_count(&self) -> usize {
@@ -210,16 +208,15 @@ impl WorkPool {
 
     pub fn generate_async(
         &self,
-        root: Root,
-        difficulty: u64,
+        req: WorkRequest,
         done: Option<Box<dyn FnOnce(Option<WorkNonce>) + Send>>,
     ) {
-        debug_assert!(!root.is_zero());
+        debug_assert!(!req.root.is_zero());
         if !self.threads.is_empty() {
-            self.work_queue.enqueue(WorkItem {
-                root,
-                min_difficulty: difficulty,
-                callback: done,
+            self.work_queue.enqueue(WorkRequestAsync {
+                root: req.root,
+                difficulty: req.difficulty,
+                done,
             });
         } else if let Some(callback) = done {
             callback(None);
@@ -235,8 +232,7 @@ impl WorkPool {
         let done_notifier_clone = done_notifier.clone();
 
         self.generate_async(
-            req.root,
-            req.difficulty,
+            req,
             Some(Box::new(move |work| {
                 done_notifier_clone.signal_done(work);
             })),
@@ -380,8 +376,7 @@ mod tests {
         let (tx, rx) = mpsc::channel();
         let key = Root::from(12345);
         WORK_POOL.generate_async(
-            key,
-            WorkThresholds::publish_dev().base,
+            WorkRequest::new(key, WorkThresholds::publish_dev().base),
             Some(Box::new(move |_done| {
                 tx.send(()).unwrap();
             })),

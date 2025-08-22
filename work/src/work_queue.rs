@@ -3,7 +3,7 @@ use std::sync::{
     Condvar, Mutex, MutexGuard,
 };
 
-use rsnano_core::{Root, WorkNonce};
+use rsnano_core::{Root, WorkNonce, WorkRequestAsync};
 
 static NEVER_EXPIRES: AtomicI32 = AtomicI32::new(0);
 
@@ -37,29 +37,14 @@ impl<'a> WorkTicket<'a> {
     }
 }
 
-pub(crate) struct WorkItem {
-    pub root: Root,
-    pub min_difficulty: u64,
-    pub callback: Option<Box<dyn FnOnce(Option<WorkNonce>) + Send>>,
-}
-
-impl WorkItem {
-    pub fn work_found(&mut self, work: WorkNonce) {
-        // we're the ones that found the solution
-        if let Some(callback) = self.callback.take() {
-            (callback)(Some(work));
-        }
-    }
-}
-
-pub(crate) struct WorkQueue(Vec<WorkItem>);
+pub(crate) struct WorkQueue(Vec<WorkRequestAsync>);
 
 impl WorkQueue {
     pub fn new() -> Self {
         WorkQueue(Vec::new())
     }
 
-    pub fn first(&self) -> Option<&WorkItem> {
+    pub fn first(&self) -> Option<&WorkRequestAsync> {
         self.0.first()
     }
 
@@ -76,7 +61,7 @@ impl WorkQueue {
         self.0.retain_mut(|item| {
             let retain = item.root != *root;
             if !retain {
-                if let Some(callback) = item.callback.take() {
+                if let Some(callback) = item.done.take() {
                     cancelled.push(callback);
                 }
             }
@@ -85,11 +70,11 @@ impl WorkQueue {
         cancelled
     }
 
-    pub fn enqueue(&mut self, item: WorkItem) {
-        self.0.push(item);
+    pub fn enqueue(&mut self, req: WorkRequestAsync) {
+        self.0.push(req);
     }
 
-    pub fn dequeue(&mut self) -> WorkItem {
+    pub fn dequeue(&mut self) -> WorkRequestAsync {
         self.0.remove(0)
     }
 
@@ -131,10 +116,10 @@ impl WorkQueueCoordinator {
         self.producer_condition.wait(guard).unwrap()
     }
 
-    pub fn enqueue(&self, work_item: WorkItem) {
+    pub fn enqueue(&self, req: WorkRequestAsync) {
         {
             let mut pending = self.work_queue.lock().unwrap();
-            pending.enqueue(work_item)
+            pending.enqueue(req)
         }
         self.producer_condition.notify_all();
     }

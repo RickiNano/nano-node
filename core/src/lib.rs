@@ -425,6 +425,33 @@ impl WorkRequest {
     }
 }
 
+pub struct WorkRequestAsync {
+    pub root: Root,
+    pub difficulty: u64,
+    pub done: Option<Box<dyn FnOnce(Option<WorkNonce>) + Send>>,
+}
+
+impl WorkRequestAsync {
+    pub fn new(
+        root: Root,
+        difficulty: u64,
+        done: Box<dyn FnOnce(Option<WorkNonce>) + Send>,
+    ) -> Self {
+        Self {
+            root,
+            difficulty,
+            done: Some(done),
+        }
+    }
+
+    pub fn work_found(&mut self, work: WorkNonce) {
+        // we're the ones that found the solution
+        if let Some(callback) = self.done.take() {
+            (callback)(Some(work));
+        }
+    }
+}
+
 impl From<u64> for WorkNonce {
     fn from(value: u64) -> Self {
         Self(value)
