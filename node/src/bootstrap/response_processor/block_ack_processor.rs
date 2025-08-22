@@ -79,7 +79,7 @@ impl BlockAckProcessor {
                         block,
                         BlockSource::Bootstrap,
                         ChannelId::LOOPBACK,
-                        Box::new(move |_| {
+                        Box::new(move |_, _, _| {
                             stats.inc(StatType::Bootstrap, DetailType::TimestampReset);
                             {
                                 let mut guard = state.lock().unwrap();

@@ -3,7 +3,8 @@ use std::sync::{mpsc, Arc};
 use rsnano_core::Block;
 
 use super::Wallets;
-use crate::block_processing::{BlockProcessorQueue, BlockSource};
+use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};
+use rsnano_network::ChannelId;
 
 pub(crate) struct WalletBlockProcessor {
     inbound: mpsc::Receiver<Block>,
@@ -26,17 +27,19 @@ impl WalletBlockProcessor {
 
     pub(crate) fn run(self) {
         while let Ok(block) = self.inbound.recv() {
-            let hash = block.hash();
+            let wallets = self.wallets.clone();
 
-            // TODO use callbacks and make this async!
-            let result = self
-                .block_processor
-                .push_blocking(block.into(), BlockSource::Local)
-                .ok()
-                .map(|r| r.ok())
-                .flatten();
+            let context = BlockContext::new_with_callback(
+                block,
+                BlockSource::Local,
+                ChannelId::LOOPBACK,
+                Box::new(move |hash, _, saved_block| {
+                    wallets.block_processed(hash, saved_block.cloned());
+                }),
+            );
 
-            self.wallets.block_processed(&hash, result);
+            let inserted = self.block_processor.push(context);
+            // TODO stats for drops?
         }
     }
 }

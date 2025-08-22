@@ -157,7 +157,8 @@ impl BlockBatchProcessor {
         // Set results for futures when not holding the lock
         for (res, context) in result.iter_mut() {
             if let Some(cb) = &context.callback {
-                cb(*res);
+                let saved_block = context.saved_block.lock().unwrap().clone();
+                (cb)(&context.block.hash(), *res, saved_block.as_ref());
             }
             context.set_result(*res);
         }

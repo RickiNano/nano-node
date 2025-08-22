@@ -1,12 +1,13 @@
 use std::sync::{Arc, Condvar, Mutex};
 
-use rsnano_core::{Block, SavedBlock};
+use rsnano_core::{Block, BlockHash, SavedBlock};
 use rsnano_ledger::BlockError;
 use rsnano_network::ChannelId;
 
 use super::BlockSource;
 
-pub type BlockProcessorCallback = Box<dyn Fn(Result<(), BlockError>) + Send + Sync>;
+pub type BlockProcessorCallback =
+    Box<dyn Fn(&BlockHash, Result<(), BlockError>, Option<&SavedBlock>) + Send + Sync>;
 
 pub struct BlockContext {
     pub block: Block,
