@@ -1,9 +1,10 @@
+use anyhow::bail;
+
+use rsnano_core::{Block, BlockType, DifficultyV1, WorkRequest};
+use rsnano_rpc_messages::{WorkGenerateArgs, WorkGenerateDto};
+
 use super::difficulty_ledger;
 use crate::command_handler::RpcCommandHandler;
-use anyhow::bail;
-use rsnano_core::{Block, BlockType, DifficultyV1};
-use rsnano_node::work::WorkRequest;
-use rsnano_rpc_messages::{WorkGenerateArgs, WorkGenerateDto};
 
 impl RpcCommandHandler {
     pub(crate) fn work_generate(&self, args: WorkGenerateArgs) -> anyhow::Result<WorkGenerateDto> {

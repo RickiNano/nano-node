@@ -14,7 +14,7 @@ use rsnano_core::{
     utils::{CancellationToken, ContainerInfo, ContainerInfoProvider, Tickable},
     Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
-    WorkNonce,
+    WorkNonce, WorkRequest,
 };
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_nullable_clock::SteadyClock;
@@ -28,7 +28,6 @@ use super::{
     delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsConfig,
     WalletsError,
 };
-use crate::work::WorkRequest;
 
 pub enum PreparedSend {
     Cached(SavedBlock),

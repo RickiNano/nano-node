@@ -3,7 +3,7 @@ use std::{cmp::max, collections::HashMap, sync::Arc, thread::sleep, time::Durati
 use rsnano_core::{
     utils::{backpressure_channel, UnixMillisTimestamp},
     Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey, PublicKey, Root, Signature,
-    StateBlockArgs, Vote, VoteSource, DEV_GENESIS_KEY,
+    StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
 };
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, BlockError, ConfirmedSet, LedgerSet,
@@ -15,7 +15,6 @@ use rsnano_node::{
     block_processing::{BacklogScanConfig, BlockContext, BlockSource, BoundedBacklogConfig},
     config::{NodeConfig, NodeFlags},
     consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
-    work::WorkRequest,
 };
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_stats::{DetailType, Direction, StatType};

@@ -1,14 +1,17 @@
-use crate::command_handler::RpcCommandHandler;
+use std::sync::Arc;
+
 use anyhow::bail;
+
 use rsnano_core::{
     Account, Amount, Block, BlockDetails, BlockHash, ChangeBlockArgs, Epoch, OpenBlockArgs,
     PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root, SavedBlock, SendBlockArgs,
-    StateBlockArgs, WorkNonce,
+    StateBlockArgs, WorkNonce, WorkRequest,
 };
 use rsnano_ledger::{AnySet, LedgerSet};
-use rsnano_node::{work::WorkRequest, Node};
+use rsnano_node::Node;
 use rsnano_rpc_messages::{BlockCreateArgs, BlockCreateResponse, BlockTypeDto};
-use std::sync::Arc;
+
+use crate::command_handler::RpcCommandHandler;
 
 impl RpcCommandHandler {
     pub(crate) fn block_create(

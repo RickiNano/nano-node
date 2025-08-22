@@ -7,7 +7,7 @@ use std::{
 
 use rsnano_core::{
     utils::{get_cpu_count, ContainerInfo, ContainerInfoProvider},
-    Root, WorkNonce,
+    Root, WorkNonce, WorkRequest,
 };
 
 #[cfg(feature = "opencl")]
@@ -224,6 +224,10 @@ impl WorkPool {
         } else if let Some(callback) = done {
             callback(None);
         }
+    }
+
+    pub fn generate2(&self, req: WorkRequest) -> Option<WorkNonce> {
+        self.generate(req.root, req.difficulty)
     }
 
     pub fn generate(&self, root: Root, difficulty: u64) -> Option<WorkNonce> {

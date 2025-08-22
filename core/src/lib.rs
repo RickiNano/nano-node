@@ -401,6 +401,30 @@ impl Debug for WorkNonce {
     }
 }
 
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct WorkRequest {
+    pub root: Root,
+    pub difficulty: u64,
+}
+
+impl WorkRequest {
+    pub fn new(root: Root, difficulty: u64) -> Self {
+        Self { root, difficulty }
+    }
+
+    pub fn new_test_instance() -> Self {
+        Self::new(Root::from(100), 0)
+    }
+
+    pub fn is_valid_work(&self, work: WorkNonce) -> bool {
+        self.difficulty_of(work) >= self.difficulty
+    }
+
+    pub fn difficulty_of(&self, work: WorkNonce) -> u64 {
+        DifficultyV1 {}.get_difficulty(&self.root, work)
+    }
+}
+
 impl From<u64> for WorkNonce {
     fn from(value: u64) -> Self {
         Self(value)

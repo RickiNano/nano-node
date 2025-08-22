@@ -20,7 +20,7 @@ use rsnano_core::{
         backpressure_channel, ContainerInfo, ContainerInfoFactory, ContainerInfoProvider, Peer,
     },
     Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot, Root,
-    SavedBlock, Vote, VoteError, WorkNonce,
+    SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_ledger::{AnySet, BlockError, Ledger, LedgerBuilder, LedgerSet};
 use rsnano_messages::NetworkFilter;
@@ -91,7 +91,7 @@ use crate::{
         ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsConfig,
         WalletsTicker,
     },
-    work::{WorkFactory, WorkRequest},
+    work::WorkFactory,
     NodeCallbacks, OnlineWeightSampler,
 };
 
