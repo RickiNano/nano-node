@@ -29,10 +29,6 @@ impl DelayedWorkQueue {
         self.by_date.insert((not_before, account));
     }
 
-    pub fn get(&self, account: &Account) -> Option<&Root> {
-        self.by_account.get(account).map(|(root, _, _)| root)
-    }
-
     pub fn remove(&mut self, account: &Account) {
         if let Some((_, timestamp, _)) = self.by_account.remove(account) {
             self.by_date.remove(&(timestamp, *account));

@@ -1,7 +1,9 @@
+use std::{path::PathBuf, sync::Arc, time::Duration};
+
+use tracing::error;
+
 use super::Wallets;
 use crate::utils::ThreadPool;
-use std::{path::PathBuf, sync::Arc, time::Duration};
-use tracing::error;
 
 pub(crate) struct WalletBackup {
     pub data_path: PathBuf,

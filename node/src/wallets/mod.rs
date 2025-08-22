@@ -9,12 +9,13 @@ mod wallet_representatives;
 mod wallets;
 pub(crate) mod work;
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 pub use config::{default_preconfigured_representatives_for_live, WalletsConfig};
 pub use promises::{BlockPromise, MultiBlockPromise};
 pub(crate) use receivable_search::*;
-use std::fmt;
 pub use wallet::*;
 pub(crate) use wallet_backup::*;
 pub use wallet_representatives::*;

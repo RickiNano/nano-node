@@ -1,6 +1,8 @@
-use super::WalletsError;
-use rsnano_core::SavedBlock;
 use std::sync::{Arc, Condvar, Mutex};
+
+use rsnano_core::SavedBlock;
+
+use super::WalletsError;
 
 #[derive(Clone)]
 pub struct BlockPromise {
