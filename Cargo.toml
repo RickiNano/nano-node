@@ -23,6 +23,7 @@ members = [
 	"websocket_server",
 	"store_lmdb",
 	"ledger",
+	"wallet", 
 	"node",
 	"main",
 	"daemon", 

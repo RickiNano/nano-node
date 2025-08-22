@@ -15,6 +15,8 @@
 [rpc_client]
 [websocket_messages]
 [websocket_server]
+[websocket_client]
+[wallet]
 
 folder "nullables"{
 [fs]
@@ -23,6 +25,8 @@ folder "nullables"{
 [tcp]
 [lmdb]
 [http_client]
+[console]
+[env]
 [output_tracker]
 }
 
@@ -35,14 +39,14 @@ folder "nullables"{
 [rpc_client] --> [rpc_messages]
 [rpc_messages] --> [core]
 [node] --> [ledger]
-[node] --> [messages]
-[node] --> [network]
 [node] --> [network_protocol]
+[node] --> [wallet]
 [network_protocol] --> messages
 [network_protocol] --> network
 [websocket_server] --> [websocket_messages]
 [websocket_server] --> [node]
 [websocket_messages] --> [core]
+[websocket_client] --> [websocket_messages]
 [messages] --> [work]
 [messages] --> [stats]
 [network] --> [stats]
@@ -52,5 +56,6 @@ folder "nullables"{
 [store_lmdb] --> [core]
 [work] --> [core]
 [stats] --> [core]
+[wallet] --> [ledger]
 [core] --> "nullables"
 @enduml
