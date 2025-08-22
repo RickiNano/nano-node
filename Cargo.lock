@@ -4175,7 +4175,6 @@ version = "2.0.0-dev"
 dependencies = [
  "anyhow",
  "async-trait",
- "backtrace",
  "bitvec",
  "blake2 0.10.6",
  "bounded-vec-deque",
@@ -4223,7 +4222,6 @@ dependencies = [
  "threadpool",
  "timer",
  "tokio",
- "tokio-scoped",
  "tokio-tungstenite",
  "tokio-util",
  "toml 0.9.5",
