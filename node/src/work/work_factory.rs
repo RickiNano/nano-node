@@ -93,7 +93,9 @@ impl WorkFactory {
             warn!("Local work generation is disabled!");
             None
         } else {
-            self.local_work_pool.generate(request)
+            let (req_async, done) = request.into_async();
+            self.local_work_pool.generate_async(req_async);
+            done.wait()
         }
     }
 

@@ -1,13 +1,13 @@
 use std::{
     mem::size_of,
-    sync::{Arc, Condvar, Mutex},
+    sync::Arc,
     thread::{self, JoinHandle},
     time::Duration,
 };
 
 use rsnano_core::{
     utils::{get_cpu_count, ContainerInfo, ContainerInfoProvider},
-    Root, WorkNonce, WorkRequest, WorkRequestAsync,
+    Root, WorkDoneNotifier, WorkNonce, WorkRequest, WorkRequestAsync,
 };
 
 #[cfg(feature = "opencl")]
@@ -206,19 +206,11 @@ impl WorkPool {
         self.threads.len()
     }
 
-    pub fn generate_async(
-        &self,
-        req: WorkRequest,
-        done: Option<Box<dyn FnOnce(Option<WorkNonce>) + Send>>,
-    ) {
+    pub fn generate_async(&self, req: WorkRequestAsync) {
         debug_assert!(!req.root.is_zero());
         if !self.threads.is_empty() {
-            self.work_queue.enqueue(WorkRequestAsync {
-                root: req.root,
-                difficulty: req.difficulty,
-                done,
-            });
-        } else if let Some(callback) = done {
+            self.work_queue.enqueue(req);
+        } else if let Some(callback) = req.done {
             callback(None);
         }
     }
@@ -228,17 +220,9 @@ impl WorkPool {
             return None;
         }
 
-        let done_notifier = WorkDoneNotifier::new();
-        let done_notifier_clone = done_notifier.clone();
-
-        self.generate_async(
-            req,
-            Some(Box::new(move |work| {
-                done_notifier_clone.signal_done(work);
-            })),
-        );
-
-        done_notifier.wait()
+        let (req_async, done) = req.into_async();
+        self.generate_async(req_async);
+        done.wait()
     }
 }
 
@@ -251,44 +235,6 @@ impl ContainerInfoProvider for WorkPool {
 impl Default for WorkPool {
     fn default() -> Self {
         Self::builder().finish()
-    }
-}
-
-#[derive(Default)]
-struct WorkDoneState {
-    work: Option<WorkNonce>,
-    done: bool,
-}
-
-#[derive(Clone)]
-struct WorkDoneNotifier {
-    state: Arc<(Mutex<WorkDoneState>, Condvar)>,
-}
-
-impl WorkDoneNotifier {
-    fn new() -> Self {
-        Self {
-            state: Arc::new((Mutex::new(WorkDoneState::default()), Condvar::new())),
-        }
-    }
-
-    fn signal_done(&self, work: Option<WorkNonce>) {
-        {
-            let mut lock = self.state.0.lock().unwrap();
-            lock.work = work;
-            lock.done = true;
-        }
-        self.state.1.notify_one();
-    }
-
-    fn wait(&self) -> Option<WorkNonce> {
-        let mut lock = self.state.0.lock().unwrap();
-        loop {
-            if lock.done {
-                return lock.work;
-            }
-            lock = self.state.1.wait(lock).unwrap();
-        }
     }
 }
 
@@ -375,12 +321,13 @@ mod tests {
     fn work_cancel() {
         let (tx, rx) = mpsc::channel();
         let key = Root::from(12345);
-        WORK_POOL.generate_async(
-            WorkRequest::new(key, WorkThresholds::publish_dev().base),
-            Some(Box::new(move |_done| {
+        WORK_POOL.generate_async(WorkRequestAsync::new(
+            key,
+            WorkThresholds::publish_dev().base,
+            Box::new(move |_done| {
                 tx.send(()).unwrap();
-            })),
-        );
+            }),
+        ));
         WORK_POOL.cancel(&key);
         assert_eq!(rx.recv_timeout(Duration::from_secs(2)), Ok(()))
     }

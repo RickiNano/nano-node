@@ -77,6 +77,7 @@ pub use kdf::KeyDerivationFunction;
 use std::{
     fmt::{Debug, Display},
     str::FromStr,
+    sync::{Arc, Condvar, Mutex},
 };
 use utils::{BufferWriter, Deserialize, Serialize, Stream};
 
@@ -423,12 +424,64 @@ impl WorkRequest {
     pub fn difficulty_of(&self, work: WorkNonce) -> u64 {
         DifficultyV1 {}.get_difficulty(&self.root, work)
     }
+
+    pub fn with_callback(
+        self,
+        done: Box<dyn FnOnce(Option<WorkNonce>) + Send>,
+    ) -> WorkRequestAsync {
+        WorkRequestAsync::new(self.root, self.difficulty, done)
+    }
+
+    pub fn into_async(self) -> (WorkRequestAsync, WorkDoneNotifier) {
+        let done = WorkDoneNotifier::new();
+        let done2 = done.clone();
+        let req = self.with_callback(Box::new(move |work| done2.signal_done(work)));
+        (req, done)
+    }
 }
 
 pub struct WorkRequestAsync {
     pub root: Root,
     pub difficulty: u64,
     pub done: Option<Box<dyn FnOnce(Option<WorkNonce>) + Send>>,
+}
+
+#[derive(Default)]
+struct WorkDoneState {
+    work: Option<WorkNonce>,
+    done: bool,
+}
+
+#[derive(Clone)]
+pub struct WorkDoneNotifier {
+    state: Arc<(Mutex<WorkDoneState>, Condvar)>,
+}
+
+impl WorkDoneNotifier {
+    pub fn new() -> Self {
+        Self {
+            state: Arc::new((Mutex::new(WorkDoneState::default()), Condvar::new())),
+        }
+    }
+
+    pub fn signal_done(&self, work: Option<WorkNonce>) {
+        {
+            let mut lock = self.state.0.lock().unwrap();
+            lock.work = work;
+            lock.done = true;
+        }
+        self.state.1.notify_one();
+    }
+
+    pub fn wait(&self) -> Option<WorkNonce> {
+        let mut lock = self.state.0.lock().unwrap();
+        loop {
+            if lock.done {
+                return lock.work;
+            }
+            lock = self.state.1.wait(lock).unwrap();
+        }
+    }
 }
 
 impl WorkRequestAsync {
