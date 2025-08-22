@@ -417,10 +417,6 @@ impl WorkRequest {
         Self::new(Root::from(100), 0)
     }
 
-    pub fn is_valid_work(&self, work: WorkNonce) -> bool {
-        self.difficulty_of(work) >= self.difficulty
-    }
-
     pub fn difficulty_of(&self, work: WorkNonce) -> u64 {
         DifficultyV1 {}.get_difficulty(&self.root, work)
     }
@@ -470,6 +466,18 @@ impl WorkRequestAsync {
         if let Some(callback) = self.done.take() {
             (callback)(None);
         }
+    }
+
+    pub fn request(&self) -> WorkRequest {
+        WorkRequest::new(self.root, self.difficulty)
+    }
+
+    pub fn is_valid_work(&self, work: WorkNonce) -> bool {
+        self.difficulty_of(work) >= self.difficulty
+    }
+
+    pub fn difficulty_of(&self, work: WorkNonce) -> u64 {
+        DifficultyV1 {}.get_difficulty(&self.root, work)
     }
 }
 

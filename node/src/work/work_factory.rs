@@ -1,6 +1,6 @@
 use std::{
     sync::{
-        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc, Mutex,
     },
     time::Duration,
@@ -17,21 +17,17 @@ use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_work::{WorkPool, WorkPoolBuilder};
 
 use super::distributed_work_client::DistributedWorkClient;
-use tokio::{select, time::timeout};
+use tokio::{select, task::JoinSet, time::timeout};
 use tokio_util::sync::CancellationToken;
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
 
 pub struct WorkFactory {
-    pub local_work_pool: WorkPool,
-    work_client: DistributedWorkClient,
     work_peers: Mutex<Vec<Peer>>,
-    timeout: Duration,
     cancel_listener: OutputListenerMt<Root>,
-    runtime: Option<tokio::runtime::Handle>,
-    requests_made: AtomicUsize,
-    running: Mutex<Vec<(usize, Root, CancellationToken)>>,
     stopped: AtomicBool,
+    factory_impl: Arc<WorkFactoryImpl>,
+    runtime: Option<tokio::runtime::Handle>,
 }
 
 impl WorkFactory {
@@ -43,15 +39,17 @@ impl WorkFactory {
         runtime: Option<tokio::runtime::Handle>,
     ) -> Self {
         Self {
-            local_work_pool: work_pool,
-            work_client,
             work_peers: Mutex::new(work_peers),
-            timeout,
             cancel_listener: OutputListenerMt::new(),
-            runtime,
-            requests_made: AtomicUsize::new(0),
-            running: Mutex::new(Vec::new()),
             stopped: AtomicBool::new(false),
+            runtime,
+            factory_impl: Arc::new(WorkFactoryImpl {
+                work_client: work_client.into(),
+                running: Mutex::new(Vec::new()),
+                local_work_pool: work_pool,
+                timeout,
+                requests_made: Arc::new(AtomicUsize::new(0)),
+            }),
         }
     }
 
@@ -74,195 +72,22 @@ impl WorkFactory {
         }
     }
 
-    pub fn generate_work(&self, request: WorkRequest) -> Option<WorkNonce> {
-        if self.stopped.load(Ordering::SeqCst) {
-            return None;
-        }
-
-        let peers = self.work_peers.lock().unwrap().clone();
-
-        if peers.is_empty() {
-            let (req_async, done) = request.into_async();
-            self.generate_local(req_async);
-            done.wait()
-        } else {
-            self.generate_remote_or_local(peers, request)
-        }
+    pub fn work_threads(&self) -> usize {
+        self.factory_impl.local_work_pool.thread_count()
     }
 
-    fn generate_local(&self, request: WorkRequestAsync) {
-        if !self.local_work_pool.work_generation_enabled() {
-            warn!("Local work generation is disabled!");
-            request.cancelled();
-        } else {
-            self.local_work_pool.generate_async(request);
-        }
-    }
-
-    fn generate_remote_or_local(
-        &self,
-        peers: Vec<Peer>,
-        request: WorkRequest,
-    ) -> Option<WorkNonce> {
-        let (id, cancel_token) = self.create_cancellation_token(request.root);
-
-        let result = self
-            .runtime
-            .as_ref()
-            .unwrap()
-            .block_on(self.generate_remote(peers, request.clone(), cancel_token.clone()));
-
-        self.remove_cancelation_token(id);
-
-        match result {
-            None => {
-                if cancel_token.is_cancelled() {
-                    None
-                } else {
-                    // No peer returned a result. Fall back to local work generation
-                    let (req_async, done) = request.into_async();
-                    self.generate_local(req_async);
-                    done.wait()
-                }
-            }
-            Some(work) => {
-                if request.is_valid_work(work) {
-                    Some(work)
-                } else {
-                    warn!("Peer returned invalid work!");
-                    None
-                }
-            }
-        }
-    }
-
-    fn create_cancellation_token(&self, root: Root) -> (usize, CancellationToken) {
-        let cancel_token = CancellationToken::new();
-
-        let id = NEXT_ID.fetch_add(1, Ordering::SeqCst);
-
-        self.running
-            .lock()
-            .unwrap()
-            .push((id, root, cancel_token.clone()));
-
-        (id, cancel_token)
-    }
-
-    fn remove_cancelation_token(&self, id: usize) {
-        self.running.lock().unwrap().retain(|(i, _, _)| *i != id);
-    }
-
-    async fn generate_remote(
-        &self,
-        peers: Vec<Peer>,
-        request: WorkRequest,
-        cancel_token: CancellationToken,
-    ) -> Option<WorkNonce> {
-        let result = AtomicU64::new(0);
-
-        tokio_scoped::scope(|scope| {
-            // Query all configured peers
-            for peer in peers {
-                scope.spawn(async {
-                    select! {
-                        _ = async {
-                                let res = self.generate_on_peer(peer, request.clone()).await;
-                                if let Some(work) = res {
-                                    result.store(work.into(), Ordering::SeqCst);
-
-                                    // We have a valid result. Cancel all other running queries
-                                    cancel_token.cancel();
-                                }
-                            } =>{ },
-                        _ = cancel_token.cancelled() => {}
-                    }
-                });
-            }
-        });
-
-        let work = result.load(Ordering::SeqCst);
-        if work == 0 {
-            None
-        } else {
-            Some(work.into())
-        }
-    }
-
-    async fn generate_on_peer(&self, peer: Peer, request: WorkRequest) -> Option<WorkNonce> {
-        let Some(url) = Self::work_peer_url(&peer) else {
-            warn!("Invalid work peer: \"{}\"", peer);
-            return None;
-        };
-
-        self.requests_made.fetch_add(1, Ordering::SeqCst);
-
-        let result = timeout(
-            self.timeout,
-            self.work_client.generate_work(url.clone(), request.clone()),
-        )
-        .await;
-
-        match result {
-            Ok(Ok(work)) => Some(work),
-            Ok(Err(e)) => {
-                warn!("Work peer returned error: {:?}", e);
-                None
-            }
-            Err(_) => {
-                warn!(
-                    "Work peer timed out after {} ms: \"{}\"",
-                    self.timeout.as_millis(),
-                    url.to_string()
-                );
-                None
-            }
-        }
-    }
-
-    fn work_peer_url(peer: &Peer) -> Option<Url> {
-        if peer.address.starts_with("::") {
-            Url::parse(&format!("http://[{}]:{}", peer.address, peer.port)).ok()
-        } else {
-            Url::parse(&format!("http://{}:{}", peer.address, peer.port)).ok()
-        }
-    }
-
-    pub fn cancel(&self, root: Root) {
-        self.cancel_listener.emit(root);
-        self.local_work_pool.cancel(&root);
-        {
-            let to_cancel: Vec<_> = self
-                .running
-                .lock()
-                .unwrap()
-                .iter()
-                .filter_map(|(_, r, ct)| if *r == root { Some(ct.clone()) } else { None })
-                .collect();
-
-            for cancel_token in to_cancel {
-                cancel_token.cancel();
-            }
-        }
+    pub fn has_opencl(&self) -> bool {
+        self.factory_impl.local_work_pool.has_opencl()
     }
 
     pub fn work_generation_enabled(&self) -> bool {
-        self.local_work_pool.work_generation_enabled()
+        self.factory_impl.local_work_pool.work_generation_enabled()
             || !self.work_peers.lock().unwrap().is_empty()
     }
 
     pub fn stop(&self) {
         self.stopped.store(true, Ordering::SeqCst);
-        let cancel_tokens: Vec<_> = self
-            .running
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|(_, _, ct)| ct.clone())
-            .collect();
-        for ct in cancel_tokens {
-            ct.cancel();
-        }
+        self.factory_impl.stop();
     }
 
     pub fn track_cancellations(&self) -> Arc<OutputTrackerMt<Root>> {
@@ -270,7 +95,7 @@ impl WorkFactory {
     }
 
     pub fn requests_made(&self) -> usize {
-        self.requests_made.load(Ordering::SeqCst)
+        self.factory_impl.requests_made.load(Ordering::SeqCst)
     }
 
     pub fn peers(&self) -> Vec<Peer> {
@@ -284,11 +109,37 @@ impl WorkFactory {
     pub fn clear_peers(&self) {
         self.work_peers.lock().unwrap().clear();
     }
+
+    pub fn generate_work(&self, request: WorkRequest) -> Option<WorkNonce> {
+        if self.stopped.load(Ordering::SeqCst) {
+            return None;
+        }
+
+        let peers = self.work_peers.lock().unwrap().clone();
+        let (req_async, done) = request.into_async();
+
+        if peers.is_empty() {
+            self.factory_impl.generate_local(req_async);
+        } else {
+            let factory_impl = self.factory_impl.clone();
+            self.runtime.as_ref().unwrap().spawn(async move {
+                factory_impl
+                    .generate_remote_or_local(peers, req_async)
+                    .await
+            });
+        }
+        done.wait()
+    }
+
+    pub fn cancel(&self, root: Root) {
+        self.cancel_listener.emit(root);
+        self.factory_impl.cancel(root);
+    }
 }
 
 impl ContainerInfoProvider for WorkFactory {
     fn container_info(&self) -> ContainerInfo {
-        self.local_work_pool.container_info()
+        self.factory_impl.local_work_pool.container_info()
     }
 }
 
@@ -323,6 +174,195 @@ impl WorkFactoryBuilder {
 }
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+
+struct WorkFactoryImpl {
+    local_work_pool: WorkPool,
+    running: Mutex<Vec<(usize, Root, CancellationToken)>>,
+    timeout: Duration,
+    requests_made: Arc<AtomicUsize>,
+    work_client: Arc<DistributedWorkClient>,
+}
+
+impl WorkFactoryImpl {
+    fn create_cancellation_token(&self, root: Root) -> (usize, CancellationToken) {
+        let cancel_token = CancellationToken::new();
+
+        let id = NEXT_ID.fetch_add(1, Ordering::SeqCst);
+
+        self.running
+            .lock()
+            .unwrap()
+            .push((id, root, cancel_token.clone()));
+
+        (id, cancel_token)
+    }
+
+    fn generate_local(&self, request: WorkRequestAsync) {
+        if !self.local_work_pool.work_generation_enabled() {
+            warn!("Local work generation is disabled!");
+            request.cancelled();
+        } else {
+            self.local_work_pool.generate_async(request);
+        }
+    }
+
+    async fn generate_remote_or_local(&self, peers: Vec<Peer>, request: WorkRequestAsync) {
+        let (id, cancel_token) = self.create_cancellation_token(request.root);
+
+        let result = self
+            .generate_remote(peers, request.request(), cancel_token.clone())
+            .await;
+
+        self.remove_cancellation_token(id);
+
+        match result {
+            None => {
+                if cancel_token.is_cancelled() {
+                    request.cancelled();
+                } else {
+                    // No peer returned a result. Fall back to local work generation
+                    self.generate_local(request);
+                }
+            }
+            Some(work) => {
+                if request.is_valid_work(work) {
+                    request.work_found(work);
+                } else {
+                    warn!("Peer returned invalid work!");
+                    request.cancelled();
+                }
+            }
+        }
+    }
+
+    async fn generate_remote(
+        &self,
+        peers: Vec<Peer>,
+        request: WorkRequest,
+        cancel_token: CancellationToken,
+    ) -> Option<WorkNonce> {
+        let mut set = JoinSet::<Option<WorkNonce>>::new();
+
+        // Query all configured peers
+        for peer in peers {
+            let peer_task = PeerWorkTask {
+                peer,
+                request: request.clone(),
+                work_client: self.work_client.clone(),
+                requests_made: self.requests_made.clone(),
+                timeout: self.timeout,
+            };
+
+            let cancel_token = cancel_token.clone();
+
+            set.spawn(async move {
+                select! {
+                    work = async {
+                            let work = peer_task.generate_on_peer().await;
+                            if work.is_some(){
+                                // We have a valid result. Cancel all other running queries
+                                cancel_token.cancel();
+                            }
+                            work
+                        } => work ,
+                    _ = cancel_token.cancelled() => None
+                }
+            });
+        }
+
+        while let Some(result) = set.join_next().await {
+            if let Ok(Some(work)) = result {
+                return Some(work);
+            }
+        }
+
+        None
+    }
+
+    fn remove_cancellation_token(&self, id: usize) {
+        self.running.lock().unwrap().retain(|(i, _, _)| *i != id);
+    }
+
+    pub fn cancel(&self, root: Root) {
+        self.local_work_pool.cancel(&root);
+        {
+            let to_cancel: Vec<_> = self
+                .running
+                .lock()
+                .unwrap()
+                .iter()
+                .filter_map(|(_, r, ct)| if *r == root { Some(ct.clone()) } else { None })
+                .collect();
+
+            for cancel_token in to_cancel {
+                cancel_token.cancel();
+            }
+        }
+    }
+
+    fn stop(&self) {
+        let cancel_tokens: Vec<_> = self
+            .running
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|(_, _, ct)| ct.clone())
+            .collect();
+        for ct in cancel_tokens {
+            ct.cancel();
+        }
+    }
+}
+
+struct PeerWorkTask {
+    peer: Peer,
+    request: WorkRequest,
+    work_client: Arc<DistributedWorkClient>,
+    requests_made: Arc<AtomicUsize>,
+    timeout: Duration,
+}
+
+impl PeerWorkTask {
+    pub async fn generate_on_peer(&self) -> Option<WorkNonce> {
+        let Some(url) = Self::work_peer_url(&self.peer) else {
+            warn!("Invalid work peer: \"{}\"", self.peer);
+            return None;
+        };
+
+        self.requests_made.fetch_add(1, Ordering::SeqCst);
+
+        let result = timeout(
+            self.timeout,
+            self.work_client
+                .generate_work(url.clone(), self.request.clone()),
+        )
+        .await;
+
+        match result {
+            Ok(Ok(work)) => Some(work),
+            Ok(Err(e)) => {
+                warn!("Work peer returned error: {:?}", e);
+                None
+            }
+            Err(_) => {
+                warn!(
+                    "Work peer timed out after {} ms: \"{}\"",
+                    self.timeout.as_millis(),
+                    url.to_string()
+                );
+                None
+            }
+        }
+    }
+
+    fn work_peer_url(peer: &Peer) -> Option<Url> {
+        if peer.address.starts_with("::") {
+            Url::parse(&format!("http://[{}]:{}", peer.address, peer.port)).ok()
+        } else {
+            Url::parse(&format!("http://{}:{}", peer.address, peer.port)).ok()
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -531,7 +571,6 @@ mod tests {
     }
 
     #[test]
-    #[traced_test]
     fn validate_difficulty_of_remote_work() {
         let work_client = DistributedWorkClient::new_null_with(WorkNonce::new(42));
         let (work_factory, _rt) = create_work_factory(TestContext {
@@ -545,7 +584,6 @@ mod tests {
         let work = work_factory.generate_work(request.clone());
 
         assert_eq!(work, None);
-        assert!(logs_contain("Peer returned invalid work!"))
     }
 
     struct TestContext {

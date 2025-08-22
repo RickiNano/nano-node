@@ -260,8 +260,8 @@ impl Node {
         );
         info!(
             "Work pool threads: {} ({})",
-            work_factory.local_work_pool.thread_count(),
-            if work_factory.local_work_pool.has_opencl() {
+            work_factory.work_threads(),
+            if work_factory.has_opencl() {
                 "OpenCL"
             } else {
                 "CPU"
