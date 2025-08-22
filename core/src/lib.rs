@@ -446,6 +446,33 @@ pub struct WorkRequestAsync {
     pub done: Option<Box<dyn FnOnce(Option<WorkNonce>) + Send>>,
 }
 
+impl WorkRequestAsync {
+    pub fn new(
+        root: Root,
+        difficulty: u64,
+        done: Box<dyn FnOnce(Option<WorkNonce>) + Send>,
+    ) -> Self {
+        Self {
+            root,
+            difficulty,
+            done: Some(done),
+        }
+    }
+
+    pub fn work_found(mut self, work: WorkNonce) {
+        // we're the ones that found the solution
+        if let Some(callback) = self.done.take() {
+            (callback)(Some(work));
+        }
+    }
+
+    pub fn cancelled(mut self) {
+        if let Some(callback) = self.done.take() {
+            (callback)(None);
+        }
+    }
+}
+
 #[derive(Default)]
 struct WorkDoneState {
     work: Option<WorkNonce>,
@@ -480,27 +507,6 @@ impl WorkDoneNotifier {
                 return lock.work;
             }
             lock = self.state.1.wait(lock).unwrap();
-        }
-    }
-}
-
-impl WorkRequestAsync {
-    pub fn new(
-        root: Root,
-        difficulty: u64,
-        done: Box<dyn FnOnce(Option<WorkNonce>) + Send>,
-    ) -> Self {
-        Self {
-            root,
-            difficulty,
-            done: Some(done),
-        }
-    }
-
-    pub fn work_found(&mut self, work: WorkNonce) {
-        // we're the ones that found the solution
-        if let Some(callback) = self.done.take() {
-            (callback)(Some(work));
         }
     }
 }

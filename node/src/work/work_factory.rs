@@ -10,7 +10,7 @@ use tracing::warn;
 
 use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider, Peer},
-    Root, WorkNonce, WorkRequest,
+    Root, WorkNonce, WorkRequest, WorkRequestAsync,
 };
 use rsnano_nullable_http_client::Url;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -82,20 +82,20 @@ impl WorkFactory {
         let peers = self.work_peers.lock().unwrap().clone();
 
         if peers.is_empty() {
-            self.generate_local(request)
+            let (req_async, done) = request.into_async();
+            self.generate_local(req_async);
+            done.wait()
         } else {
             self.generate_remote_or_local(peers, request)
         }
     }
 
-    fn generate_local(&self, request: WorkRequest) -> Option<WorkNonce> {
+    fn generate_local(&self, request: WorkRequestAsync) {
         if !self.local_work_pool.work_generation_enabled() {
             warn!("Local work generation is disabled!");
-            None
+            request.cancelled();
         } else {
-            let (req_async, done) = request.into_async();
-            self.local_work_pool.generate_async(req_async);
-            done.wait()
+            self.local_work_pool.generate_async(request);
         }
     }
 
@@ -120,7 +120,9 @@ impl WorkFactory {
                     None
                 } else {
                     // No peer returned a result. Fall back to local work generation
-                    self.generate_local(request)
+                    let (req_async, done) = request.into_async();
+                    self.generate_local(req_async);
+                    done.wait()
                 }
             }
             Some(work) => {

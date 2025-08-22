@@ -69,7 +69,7 @@ where
     ) -> MutexGuard<'a, WorkQueue> {
         // Signal other threads to stop their work next time they check their ticket
         work_queue.expire_work_tickets();
-        let mut current = queue_lock.dequeue();
+        let current = queue_lock.dequeue();
 
         // work_found callback can take some time, to let's drop the lock
         drop(queue_lock);

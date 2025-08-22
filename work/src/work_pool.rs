@@ -7,7 +7,7 @@ use std::{
 
 use rsnano_core::{
     utils::{get_cpu_count, ContainerInfo, ContainerInfoProvider},
-    Root, WorkDoneNotifier, WorkNonce, WorkRequest, WorkRequestAsync,
+    Root, WorkNonce, WorkRequest, WorkRequestAsync,
 };
 
 #[cfg(feature = "opencl")]
@@ -208,10 +208,10 @@ impl WorkPool {
 
     pub fn generate_async(&self, req: WorkRequestAsync) {
         debug_assert!(!req.root.is_zero());
-        if !self.threads.is_empty() {
+        if self.threads.is_empty() {
+            req.cancelled();
+        } else {
             self.work_queue.enqueue(req);
-        } else if let Some(callback) = req.done {
-            callback(None);
         }
     }
 
