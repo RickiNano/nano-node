@@ -93,8 +93,7 @@ impl WorkFactory {
             warn!("Local work generation is disabled!");
             None
         } else {
-            self.local_work_pool
-                .generate(request.root, request.difficulty)
+            self.local_work_pool.generate(request)
         }
     }
 

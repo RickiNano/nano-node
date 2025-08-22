@@ -4,7 +4,8 @@ use rsnano_core::{
     dev_epoch1_signer, epoch_v1_link, utils::UnixMillisTimestamp, Account, Amount, Block,
     BlockDetails, BlockHash, BlockSideband, ChangeBlockArgs, Epoch, EpochBlockArgs, Link,
     OpenBlockArgs, PendingInfo, PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root,
-    SavedBlock, SendBlockArgs, StateBlockArgs, WorkNonce, DEV_GENESIS_BLOCK, DEV_GENESIS_KEY,
+    SavedBlock, SendBlockArgs, StateBlockArgs, WorkNonce, WorkRequest, DEV_GENESIS_BLOCK,
+    DEV_GENESIS_KEY,
 };
 use rsnano_work::{dev_difficulty, WorkPool};
 
@@ -68,6 +69,12 @@ impl SavedBlockLatticeBuilder {
         SavedAccountChainBuilder { lattice: self, key }
     }
 
+    fn create_pow(&self, root: impl Into<Root>) -> WorkNonce {
+        self.work_pool
+            .generate(WorkRequest::new(root.into(), dev_difficulty()))
+            .unwrap()
+    }
+
     pub fn epoch_open(&mut self, account: impl Into<Account>) -> SavedBlock {
         let account = account.into();
         assert!(!self.accounts.contains_key(&account));
@@ -83,10 +90,7 @@ impl SavedBlockLatticeBuilder {
             representative: PublicKey::zero(),
             balance: Amount::zero(),
             link: epoch_v1_link(),
-            work: self
-                .work_pool
-                .generate(account.into(), dev_difficulty())
-                .unwrap(),
+            work: self.create_pow(account),
         }
         .into();
 
@@ -151,6 +155,10 @@ pub struct SavedAccountChainBuilder<'a> {
 }
 
 impl<'a> SavedAccountChainBuilder<'a> {
+    fn create_pow(&self, root: impl Into<Root>) -> WorkNonce {
+        self.lattice.create_pow(root)
+    }
+
     pub fn send_max(&mut self, destination: impl Into<Account>) -> SavedBlock {
         self.send_all_except(destination, 0)
     }
@@ -180,11 +188,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
             representative: old_frontier.representative,
             balance: new_balance,
             link: destination.into(),
-            work: self
-                .lattice
-                .work_pool
-                .generate(old_frontier.hash.into(), dev_difficulty())
-                .unwrap(),
+            work: self.create_pow(old_frontier.hash),
         }
         .into();
 
@@ -221,12 +225,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
         let old_frontier = self.get_frontier();
         let amount = amount.into();
         let new_balance = old_frontier.balance - amount;
-
-        let work = self
-            .lattice
-            .work_pool
-            .generate(old_frontier.hash.into(), dev_difficulty())
-            .unwrap();
+        let work = self.create_pow(old_frontier.hash);
 
         let send: Block = SendBlockArgs {
             key: self.key,
@@ -281,11 +280,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
 
         let root: Root = self.key.account().into();
 
-        let work = self
-            .lattice
-            .work_pool
-            .generate(root, dev_difficulty())
-            .unwrap();
+        let work = self.create_pow(root);
         let receive: Block = OpenBlockArgs {
             key: &self.key,
             source: corresponding_send.hash(),
@@ -331,11 +326,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
         let old_frontier = self.get_frontier();
         let root: Root = old_frontier.hash.into();
         let new_balance = old_frontier.balance + amount;
-        let work = self
-            .lattice
-            .work_pool
-            .generate(root, dev_difficulty())
-            .unwrap();
+        let work = self.create_pow(root);
 
         let receive: Block = ReceiveBlockArgs {
             key: self.key,
@@ -393,11 +384,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
             representative: new_representative.into(),
             balance: new_balance,
             link: corresponding_send.hash().into(),
-            work: self
-                .lattice
-                .work_pool
-                .generate(root, dev_difficulty())
-                .unwrap(),
+            work: self.create_pow(root),
         }
         .into();
 
@@ -420,11 +407,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
     pub fn legacy_change(&mut self, new_representative: impl Into<PublicKey>) -> SavedBlock {
         let old_frontier = self.get_frontier();
         let new_representative = new_representative.into();
-        let work = self
-            .lattice
-            .work_pool
-            .generate(old_frontier.hash.into(), dev_difficulty())
-            .unwrap();
+        let work = self.create_pow(old_frontier.hash);
 
         let change: Block = ChangeBlockArgs {
             key: self.key,
@@ -459,11 +442,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
             representative: new_representative,
             balance: old_frontier.balance,
             link: Link::zero(),
-            work: self
-                .lattice
-                .work_pool
-                .generate(old_frontier.hash.into(), dev_difficulty())
-                .unwrap(),
+            work: self.create_pow(old_frontier.hash),
         }
         .into();
 
@@ -490,11 +469,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
             representative: old_frontier.representative,
             balance: old_frontier.balance,
             link: epoch_v1_link(),
-            work: self
-                .lattice
-                .work_pool
-                .generate(old_frontier.hash.into(), dev_difficulty())
-                .unwrap(),
+            work: self.create_pow(old_frontier.hash),
         }
         .into();
 

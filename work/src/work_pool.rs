@@ -226,11 +226,7 @@ impl WorkPool {
         }
     }
 
-    pub fn generate2(&self, req: WorkRequest) -> Option<WorkNonce> {
-        self.generate(req.root, req.difficulty)
-    }
-
-    pub fn generate(&self, root: Root, difficulty: u64) -> Option<WorkNonce> {
+    pub fn generate(&self, req: WorkRequest) -> Option<WorkNonce> {
         if self.threads.is_empty() {
             return None;
         }
@@ -239,8 +235,8 @@ impl WorkPool {
         let done_notifier_clone = done_notifier.clone();
 
         self.generate_async(
-            root,
-            difficulty,
+            req.root,
+            req.difficulty,
             Some(Box::new(move |work| {
                 done_notifier_clone.signal_done(work);
             })),
@@ -350,7 +346,7 @@ mod tests {
     #[test]
     fn work_disabled() {
         let pool = WorkPool::new(0, Duration::ZERO, false, OpenClConfig::default());
-        let result = pool.generate(Root::from(1), dev_difficulty());
+        let result = pool.generate(WorkRequest::new(Root::from(1), dev_difficulty()));
         assert_eq!(result, None);
     }
 
@@ -359,7 +355,10 @@ mod tests {
         let pool = &WORK_POOL;
         let mut block = TestBlockBuilder::state().build();
         let root = block.root();
-        block.set_work(pool.generate(root, dev_difficulty()).unwrap());
+        block.set_work(
+            pool.generate(WorkRequest::new(root, dev_difficulty()))
+                .unwrap(),
+        );
         assert!(WorkThresholds::publish_dev().threshold_base() < difficulty(&block));
     }
 
@@ -369,9 +368,10 @@ mod tests {
         let mut block = TestBlockBuilder::legacy_send().work(6).build();
         assert!(difficulty(&block) < WorkThresholds::publish_dev().threshold_base());
         let root = block.root();
-        block
-            .as_block_mut()
-            .set_work(pool.generate(root, dev_difficulty()).unwrap());
+        block.as_block_mut().set_work(
+            pool.generate(WorkRequest::new(root, dev_difficulty()))
+                .unwrap(),
+        );
         assert!(difficulty(&block) > WorkThresholds::publish_dev().threshold_base());
     }
 
@@ -397,16 +397,18 @@ mod tests {
         let difficulty2 = 0xfff0000000000000;
         let difficulty3 = 0xffff000000000000;
         let mut result_difficulty = u64::MAX;
+        let req_diff1 = WorkRequest::new(root, difficulty1);
+        let req_diff2 = WorkRequest::new(root, difficulty2);
 
         while result_difficulty > difficulty2 {
-            let work = WORK_POOL.generate(root, difficulty1).unwrap();
+            let work = WORK_POOL.generate(req_diff1.clone()).unwrap();
             result_difficulty = WorkThresholds::publish_dev().difficulty(&root, work);
         }
         assert!(result_difficulty > difficulty1);
 
         result_difficulty = u64::MAX;
         while result_difficulty > difficulty3 {
-            let work = WORK_POOL.generate(root, difficulty2).unwrap();
+            let work = WORK_POOL.generate(req_diff2.clone()).unwrap();
             result_difficulty = WorkThresholds::publish_dev().difficulty(&root, work);
         }
         assert!(result_difficulty > difficulty2);
