@@ -4423,6 +4423,7 @@ dependencies = [
  "rsnano_core",
  "rsnano_ledger",
  "rsnano_nullable_clock",
+ "rsnano_nullable_lmdb",
  "rsnano_store_lmdb",
  "serde",
  "serde_derive",

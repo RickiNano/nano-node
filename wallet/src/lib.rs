@@ -1,11 +1,13 @@
 mod config;
 pub mod delayed_work_queue;
 mod promises;
+mod wallet;
 
 use serde::{Deserialize, Serialize};
 
-pub use config::{WalletsConfig, default_preconfigured_representatives_for_live};
+pub use config::{default_preconfigured_representatives_for_live, WalletsConfig};
 pub use promises::*;
+pub use wallet::Wallet;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum WalletsError {
