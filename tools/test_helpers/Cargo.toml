@@ -12,8 +12,8 @@ rsnano_ledger = { path = "../../ledger" }
 rsnano_store_lmdb = { path = "../../store_lmdb" }
 rsnano_network = { path = "../../network" }
 rsnano_node = { path = "../../node", features = ["output_tracking"] }
-rsnano_rpc_client = { path = "../../rpc_client" }
-rsnano_rpc_server = { path = "../../rpc_server" }
+rsnano_rpc_client = { path = "../../rpc/client" }
+rsnano_rpc_server = { path = "../../rpc/server" }
 rsnano_websocket_server = { path = "../../websocket_server" }
 mock_instant = "0"
 axum = "0"

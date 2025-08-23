@@ -14,7 +14,7 @@ rsnano_messages = { path = "../messages" }
 rsnano_store_lmdb = { path = "../store_lmdb" }
 rsnano_node = { path = "../node" }
 rsnano_ledger = { path = "../ledger" }
-rsnano_rpc_server = { path = "../rpc_server" }
+rsnano_rpc_server = { path = "../rpc/server" }
 rsnano_daemon = { path = "../daemon" }
 rsnano_nullable_console = { path = "../nullables/console" }
 rsnano_nullable_tracing_subscriber = { path = "../nullables/tracing_subscriber" }

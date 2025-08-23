@@ -12,7 +12,7 @@ rsnano_core = { path = "../core" }
 rsnano_stats = { path = "../stats" }
 rsnano_ledger = { path = "../ledger" }
 rsnano_node = { path = "../node" }
-rsnano_rpc_server = { path = "../rpc_server" }
+rsnano_rpc_server = { path = "../rpc/server" }
 rsnano_websocket_server = { path = "../websocket_server" }
 anyhow = "1"
 tokio = { version = "1", features = ["signal"] }
