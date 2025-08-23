@@ -30,7 +30,6 @@ members = [
 	"network_protocol", 
 	"tools/record-rep-weights", 
 	"tools/nanospam", 
-	"tools/xtask",
 	"tools/test_helpers", 
 	"tools/signature-checker", 
 	"tools/insight", 

@@ -2,7 +2,7 @@
 extern crate anyhow;
 
 mod config;
-pub mod delayed_work_queue;
+mod delayed_work_queue;
 mod promises;
 mod wallet;
 mod wallets;
