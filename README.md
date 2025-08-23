@@ -8,7 +8,14 @@
 
 ### What is RsNano?
 
-RsNano is a Rust port of the original Nano node.
+RsNano is a full Nano node written in Rust.
+
+### What is Nano?
+
+Nano is a digital payment protocol designed to be accessible and lightweight, 
+with a focus on removing inefficiencies present in other cryptocurrencies. 
+With ultrafast transactions and zero fees on a secure, green and decentralized 
+network, this makes Nano ideal for everyday transactions.
 
 ### Links & Resources
 
@@ -80,6 +87,8 @@ The following diagram shows how the crates are organized. The crates will be spl
 * `daemon`: Starts the node and optionally the RPC server.
 * `node`:The node implementation.
 * `rpc_server`: Implemenation of the RPC server.
+* `websocket_server`: Implemenation of the websocket server.
+* `wallet`: Wallet implementation. It manages multiple wallets which can each have multiple accounts.
 * `ledger`: Ledger implementation. It is responsible for the consinstency of the data stores.
 * `store_lmdb`: LMDB implementation of the data stores.
 * `messages`: Message types that nodes use for communication.
