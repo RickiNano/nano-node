@@ -1,11 +1,11 @@
-mod backperssure_channel;
+mod backpressure_channel;
 mod cancellation_token;
 mod container_info;
 mod fair_queue;
 mod peer;
 mod stream;
 
-pub use backperssure_channel::*;
+pub use backpressure_channel::*;
 pub use cancellation_token::CancellationToken;
 use chrono::{DateTime, TimeZone, Utc};
 pub use container_info::*;

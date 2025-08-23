@@ -1,7 +1,11 @@
-use std::cmp::max;
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvError, SendError, Sender, TryRecvError};
-use std::sync::Arc;
+use std::{
+    cmp::max,
+    sync::{
+        atomic::{AtomicBool, AtomicI32, Ordering},
+        mpsc::{channel, Receiver, RecvError, SendError, Sender, TryRecvError},
+        Arc,
+    },
+};
 
 /// BackpressureChannel is a wrapper around mpsc::channel that tracks the size of the queue
 pub struct BackpressureSender<T> {
