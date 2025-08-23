@@ -1,4 +1,6 @@
 @startuml
+title RsNano Crates Overview
+
 [core]
 [work]
 [stats]
@@ -12,19 +14,19 @@
 [main]
 [wallet]
 
-folder "rpc"{
+node "rpc"{
 [rpc_messages]
 [rpc_server]
 [rpc_client]
 }
 
-folder "websocket"{
+node "websocket"{
 [websocket_messages]
 [websocket_server]
 [websocket_client]
 }
 
-folder "nullables"{
+node "nullables" {
 [fs]
 [clock]
 [random]
@@ -63,5 +65,5 @@ folder "nullables"{
 [work] --> [core]
 [stats] --> [core]
 [wallet] --> [ledger]
-[core] --> "nullables"
+[core] -[hidden]-> "nullables"
 @enduml
