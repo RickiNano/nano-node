@@ -1,9 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
 #[macro_use]
-extern crate num_derive;
-
-#[macro_use]
 extern crate anyhow;
 extern crate core;
 

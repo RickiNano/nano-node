@@ -14,12 +14,11 @@ use rsnano_ledger::{
 };
 use rsnano_node::{
     config::{NodeConfig, NodeFlags, DEV_NETWORK_PARAMS},
-    unique_path,
-    wallets::WalletsError,
-    Node,
+    unique_path, Node,
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
+use rsnano_wallet::WalletsError;
 use test_helpers::{assert_always_eq, assert_timely2, assert_timely_eq2, System};
 
 struct TestFixture {

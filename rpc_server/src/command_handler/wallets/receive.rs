@@ -1,10 +1,13 @@
-use crate::command_handler::RpcCommandHandler;
+use std::cmp::max;
+
 use anyhow::{anyhow, bail};
+
 use rsnano_core::{Amount, BlockDetails, PendingKey, Root, WorkNonce};
 use rsnano_ledger::{AnySet, LedgerSet};
-use rsnano_node::wallets::WalletsError;
 use rsnano_rpc_messages::{BlockDto, ReceiveArgs};
-use std::cmp::max;
+use rsnano_wallet::WalletsError;
+
+use crate::command_handler::RpcCommandHandler;
 
 impl RpcCommandHandler {
     pub fn receive(&self, args: ReceiveArgs) -> anyhow::Result<BlockDto> {

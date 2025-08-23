@@ -22,12 +22,10 @@ use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
-use rsnano_wallet::WalletsConfig;
+use rsnano_wallet::{BlockPromise, MultiBlockPromise, WalletsConfig, WalletsError};
 use rsnano_work::WorkThresholds;
 
-use super::{
-    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsError,
-};
+use super::{delayed_work_queue::DelayedWorkQueue, Wallet};
 
 pub enum PreparedSend {
     Cached(SavedBlock),
