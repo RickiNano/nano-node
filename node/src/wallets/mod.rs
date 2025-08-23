@@ -1,5 +1,4 @@
 pub(crate) mod block_processor;
-pub(crate) mod delayed_work_queue;
 mod receivable_search;
 mod wallet;
 mod wallet_backup;

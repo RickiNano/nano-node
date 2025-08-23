@@ -1,9 +1,10 @@
 mod config;
+pub mod delayed_work_queue;
 mod promises;
 
 use serde::{Deserialize, Serialize};
 
-pub use config::{default_preconfigured_representatives_for_live, WalletsConfig};
+pub use config::{WalletsConfig, default_preconfigured_representatives_for_live};
 pub use promises::*;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

@@ -4,7 +4,7 @@ use rsnano_core::{Account, Root, WalletId};
 use rsnano_nullable_clock::Timestamp;
 
 #[derive(Default)]
-pub(crate) struct DelayedWorkQueue {
+pub struct DelayedWorkQueue {
     by_account: HashMap<Account, (Root, Timestamp, WalletId)>,
     by_date: BTreeSet<(Timestamp, Account)>,
 }
