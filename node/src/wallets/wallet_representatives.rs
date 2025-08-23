@@ -1,11 +1,13 @@
-use super::Wallets;
-use crate::representatives::OnlineReps;
+use std::sync::{Arc, Mutex};
+
 use rsnano_core::{
     utils::{CancellationToken, Tickable},
     Account, Amount, PrivateKey, PublicKey,
 };
 use rsnano_ledger::RepWeightCache;
-use std::sync::{Arc, Mutex};
+use rsnano_wallet::Wallets;
+
+use crate::representatives::OnlineReps;
 
 #[derive(Clone)]
 pub struct WalletRepresentatives {

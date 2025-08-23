@@ -1,10 +1,10 @@
 use std::sync::{mpsc, Arc};
 
 use rsnano_core::Block;
-
-use super::Wallets;
-use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};
 use rsnano_network::ChannelId;
+use rsnano_wallet::Wallets;
+
+use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};
 
 pub(crate) struct WalletBlockProcessor {
     inbound: mpsc::Receiver<Block>,

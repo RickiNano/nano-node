@@ -1,8 +1,8 @@
 use std::sync::{mpsc, Arc};
 
 use rsnano_core::WorkRequest;
+use rsnano_wallet::Wallets;
 
-use super::Wallets;
 use crate::work::WorkFactory;
 
 pub(crate) struct WalletWorkProvider {

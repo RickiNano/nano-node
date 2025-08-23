@@ -16,10 +16,8 @@ use tracing::{info, warn};
 
 use rsnano_core::{Account, Amount, BlockSideband, SavedBlock};
 use rsnano_ledger::Ledger;
-use rsnano_node::{
-    consensus::election::{ConfirmedElection, VoteSummary},
-    wallets::Wallets,
-};
+use rsnano_node::consensus::election::{ConfirmedElection, VoteSummary};
+use rsnano_wallet::Wallets;
 use rsnano_websocket_messages::{
     ConfirmationJsonOptions, ElectionInfo, JsonSideband, JsonVoteSummary, MessageEnvelope, Topic,
 };

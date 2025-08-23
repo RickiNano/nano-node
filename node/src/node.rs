@@ -39,6 +39,7 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_output_tracker::OutputListenerMt;
 use rsnano_stats::{Direction, Stats, StatsCollection, StatsCollector};
+use rsnano_wallet::{Wallets, WalletsTicker};
 
 use crate::{
     aec_event_processor::AecEventProcessor,
@@ -88,7 +89,7 @@ use crate::{
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
-        ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsTicker,
+        ReceivableSearch, WalletBackup, WalletRepresentatives,
     },
     work::WorkFactory,
     NodeCallbacks, OnlineWeightSampler,

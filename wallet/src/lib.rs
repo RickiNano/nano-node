@@ -1,13 +1,18 @@
+#[macro_use]
+extern crate anyhow;
+
 mod config;
 pub mod delayed_work_queue;
 mod promises;
 mod wallet;
+mod wallets;
 
 use serde::{Deserialize, Serialize};
 
 pub use config::{default_preconfigured_representatives_for_live, WalletsConfig};
 pub use promises::*;
 pub use wallet::Wallet;
+pub use wallets::{Wallets, WalletsTicker};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum WalletsError {

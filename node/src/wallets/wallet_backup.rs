@@ -2,7 +2,8 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use tracing::error;
 
-use super::Wallets;
+use rsnano_wallet::Wallets;
+
 use crate::utils::ThreadPool;
 
 pub(crate) struct WalletBackup {

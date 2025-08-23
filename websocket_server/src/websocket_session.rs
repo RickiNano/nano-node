@@ -1,9 +1,3 @@
-use super::{ConfirmationOptions, Options, VoteJsonOptions, VoteOptions};
-use futures_util::{SinkExt, StreamExt};
-use rsnano_node::wallets::Wallets;
-use rsnano_websocket_messages::{
-    to_topic, ConfirmationJsonOptions, MessageEnvelope, Request, Topic,
-};
 use std::{
     collections::HashMap,
     net::SocketAddr,
@@ -12,8 +6,17 @@ use std::{
         Arc, Mutex,
     },
 };
+
+use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{mpsc, oneshot};
 use tracing::{info, trace, warn};
+
+use rsnano_wallet::Wallets;
+use rsnano_websocket_messages::{
+    to_topic, ConfirmationJsonOptions, MessageEnvelope, Request, Topic,
+};
+
+use super::{ConfirmationOptions, Options, VoteJsonOptions, VoteOptions};
 
 pub struct WebsocketSessionEntry {
     /// Map of subscriptions -> options registered by this session.
