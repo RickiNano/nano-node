@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.32.0"
-egui_extras = "0.32.0"
+eframe = "0.32.1"
+egui_extras = "0.32.1"
 rsnano_nullable_clock = { path = "../../nullables/clock" }
 rsnano_nullable_tracing_subscriber = { path = "../../nullables/tracing_subscriber" }
 rsnano_core = { path = "../../core" }

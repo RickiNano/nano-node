@@ -21,10 +21,10 @@ rsnano_nullable_tracing_subscriber = { path = "../nullables/tracing_subscriber" 
 rsnano_nullable_lmdb = { path = "../nullables/lmdb" }
 tracing = "0.1"
 clap = { version = "4", features = ["derive"] }
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 rand = { version = "0.9" }
 tokio = { version = "1", features = ["signal"] }
-toml = "0.9.2"
+toml = "0.9.5"
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
