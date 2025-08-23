@@ -1,5 +1,4 @@
 pub(crate) mod block_processor;
-mod config;
 pub(crate) mod delayed_work_queue;
 mod promises;
 mod receivable_search;
@@ -13,7 +12,6 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-pub use config::{default_preconfigured_representatives_for_live, WalletsConfig};
 pub use promises::{BlockPromise, MultiBlockPromise};
 pub(crate) use receivable_search::*;
 pub use wallet::*;

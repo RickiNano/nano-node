@@ -9,6 +9,7 @@ use rsnano_core::{
 use rsnano_network::NetworkConfig;
 use rsnano_nullable_http_client::Url;
 use rsnano_store_lmdb::LmdbConfig;
+use rsnano_wallet::default_preconfigured_representatives_for_live;
 use rsnano_work::OpenClConfig;
 
 use super::{websocket_config::WebsocketConfig, NetworkParams, Networks, DEV_NETWORK_PARAMS};
@@ -26,7 +27,6 @@ use crate::{
         RequestAggregatorConfig, VoteCacheConfig, VoteProcessorConfig, VoteRebroadcastQueue,
     },
     transport::MessageProcessorConfig,
-    wallets::default_preconfigured_representatives_for_live,
 };
 
 #[derive(Clone, Debug, PartialEq)]

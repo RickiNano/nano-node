@@ -4207,6 +4207,7 @@ dependencies = [
  "rsnano_output_tracker",
  "rsnano_stats",
  "rsnano_store_lmdb",
+ "rsnano_wallet",
  "rsnano_websocket_messages",
  "rsnano_work",
  "rustc-hash 2.1.1",
@@ -4411,6 +4412,16 @@ dependencies = [
  "serde_json",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "rsnano_wallet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rsnano_core",
+ "rsnano_ledger",
+ "rsnano_store_lmdb",
 ]
 
 [[package]]

@@ -88,8 +88,7 @@ use crate::{
     utils::{spawn_backpressure_processor, ThreadPool, ThreadPoolImpl, TimerThread},
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
-        ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsConfig,
-        WalletsTicker,
+        ReceivableSearch, WalletBackup, WalletRepresentatives, Wallets, WalletsTicker,
     },
     work::WorkFactory,
     NodeCallbacks, OnlineWeightSampler,
@@ -529,7 +528,7 @@ impl Node {
             )
         };
 
-        let wallets_config = WalletsConfig::from(global_config);
+        let wallets_config = global_config.wallets_config();
 
         let mut wallets = Wallets::new(
             wallets_config.clone(),

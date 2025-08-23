@@ -38,7 +38,7 @@ impl WalletBlockProcessor {
                 }),
             );
 
-            let inserted = self.block_processor.push(context);
+            let _inserted = self.block_processor.push(context);
             // TODO stats for drops?
         }
     }

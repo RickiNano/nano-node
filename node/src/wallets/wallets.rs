@@ -22,11 +22,11 @@ use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
+use rsnano_wallet::WalletsConfig;
 use rsnano_work::WorkThresholds;
 
 use super::{
-    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsConfig,
-    WalletsError,
+    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsError,
 };
 
 pub enum PreparedSend {

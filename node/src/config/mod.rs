@@ -15,8 +15,12 @@ pub use node_config::*;
 pub use node_flags::*;
 pub use node_rpc_config::*;
 pub use rsnano_core::Networks;
+use rsnano_wallet::WalletsConfig;
 use serde::de::DeserializeOwned;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 pub use toml::DaemonToml;
 pub use websocket_config::WebsocketConfig;
 
@@ -55,4 +59,27 @@ pub struct GlobalConfig {
 pub fn read_toml_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> anyhow::Result<T> {
     let toml_str = std::fs::read_to_string(path)?;
     ::toml::from_str(&toml_str).map_err(|e| e.into())
+}
+
+impl GlobalConfig {
+    pub fn wallets_config(&self) -> WalletsConfig {
+        let node = &self.node_config;
+        WalletsConfig {
+            preconfigured_representatives: node.preconfigured_representatives.clone(),
+            password_fanout: node.password_fanout as usize,
+            receive_minimum: node.receive_minimum,
+            vote_minimum: node.vote_minimum,
+            voting_enabled: node.enable_voting,
+            cached_work_generation_delay: if self.network_params.network.is_dev_network() {
+                Duration::from_secs(1)
+            } else {
+                Duration::from_secs(10)
+            },
+            kdf_work: if self.network_params.network.is_dev_network() {
+                8
+            } else {
+                1024 * 64
+            },
+        }
+    }
 }
