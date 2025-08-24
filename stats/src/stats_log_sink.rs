@@ -1,4 +1,4 @@
-use std::{any::Any, time::SystemTime};
+use std::time::SystemTime;
 
 use anyhow::Result;
 use chrono::{DateTime, Local};
@@ -31,9 +31,6 @@ pub trait StatsLogSink {
         expected_min_max: (i64, i64),
     ) -> Result<()>;
 
-    /// Rotates the log (e.g. empty file). This is a no-op for sinks where rotation is not supported.
-    fn rotate(&mut self) -> Result<()>;
-
     /// Returns a reference to the log entry counter
     fn entries(&self) -> usize;
 
@@ -41,10 +38,6 @@ pub trait StatsLogSink {
 
     /// Returns the string representation of the log. If not supported, an empty string is returned.
     fn to_string(&self) -> String;
-
-    /// Returns the object representation of the log result. The type depends on the sink used.
-    /// returns Object, or nullptr if no object result is available.
-    fn to_object(&self) -> Option<&dyn Any>;
 }
 
 pub struct StatsJsonWriter {
@@ -134,10 +127,6 @@ impl StatsLogSink for StatsJsonWriter {
         Ok(())
     }
 
-    fn rotate(&mut self) -> Result<()> {
-        Ok(())
-    }
-
     fn entries(&self) -> usize {
         self.log_entries
     }
@@ -148,10 +137,6 @@ impl StatsLogSink for StatsJsonWriter {
 
     fn to_string(&self) -> String {
         serde_json::Value::Object(self.tree.clone()).to_string()
-    }
-
-    fn to_object(&self) -> Option<&dyn Any> {
-        None
     }
 
     fn write_sampler_entry(

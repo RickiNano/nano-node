@@ -13,32 +13,31 @@ use tracing::debug;
 
 use rsnano_core::utils::get_env_bool;
 
-use crate::{
-    DetailType, Direction, Sample, StatType, StatsCollection, StatsConfig, StatsLogSink,
-    StatsSource,
-};
+use crate::{DetailType, Direction, Sample, StatType, StatsCollection, StatsLogSink, StatsSource};
 
 pub struct Stats {
-    config: StatsConfig,
+    max_samples: usize,
     mutables: Arc<RwLock<StatMutables>>,
     enable_logging: bool,
 }
 
 impl Default for Stats {
     fn default() -> Self {
-        Self::new(StatsConfig::default())
+        Self::new(Self::DEFAULT_MAX_SAMPLES)
     }
 }
 
 impl Stats {
-    pub fn new(config: StatsConfig) -> Self {
+    const DEFAULT_MAX_SAMPLES: usize = 1024 * 16;
+
+    pub fn new(max_samples: usize) -> Self {
         let mutables = Arc::new(RwLock::new(StatMutables {
             counters: BTreeMap::new(),
             samplers: BTreeMap::new(),
             timestamp: Instant::now(),
         }));
         Self {
-            config: config.clone(),
+            max_samples,
             mutables,
             enable_logging: get_env_bool("NANO_LOG_STATS").unwrap_or(false),
         }
@@ -160,7 +159,7 @@ impl Stats {
             let sampler = lock
                 .samplers
                 .entry(key)
-                .or_insert(SamplerEntry::new(self.config.max_samples, expected_min_max));
+                .or_insert(SamplerEntry::new(self.max_samples, expected_min_max));
             sampler.add(value)
         }
     }
@@ -181,18 +180,11 @@ impl Stats {
         }
     }
 
-    /// Log counters to the given log link
-    pub fn log_counters(&self, sink: &mut dyn StatsLogSink) -> Result<()> {
-        let now = SystemTime::now();
-        let lock = self.mutables.write().unwrap();
-        lock.log_counters_impl(sink, &self.config, now)
-    }
-
     /// Log samples to the given log sink
     pub fn log_samples(&self, sink: &mut dyn StatsLogSink) -> Result<()> {
         let now = SystemTime::now();
         let lock = self.mutables.write().unwrap();
-        lock.log_samples_impl(sink, &self.config, now)
+        lock.log_samples_impl(sink, now)
     }
 
     /// Returns the duration since `clear()` was last called, or node startup if it's never called.
@@ -282,53 +274,15 @@ struct StatMutables {
 
 impl StatMutables {
     /// Unlocked implementation of log_samples() to avoid using recursive locking
-    fn log_samples_impl(
-        &self,
-        sink: &mut dyn StatsLogSink,
-        config: &StatsConfig,
-        time: SystemTime,
-    ) -> Result<()> {
+    fn log_samples_impl(&self, sink: &mut dyn StatsLogSink, time: SystemTime) -> Result<()> {
         sink.begin()?;
-        if sink.entries() >= config.log_rotation_count {
-            sink.rotate()?;
-        }
 
-        if config.log_headers {
-            let walltime = SystemTime::now();
-            sink.write_header("samples", walltime)?;
-        }
+        let walltime = SystemTime::now();
+        sink.write_header("samples", walltime)?;
 
         for (&key, entry) in &self.samplers {
             let sample = key.sample.as_str();
             sink.write_sampler_entry(time, sample, entry.collect(), entry.expected_min_max)?;
-        }
-        sink.inc_entries();
-        sink.finalize();
-        Ok(())
-    }
-
-    /// Unlocked implementation of log_counters() to avoid using recursive locking
-    fn log_counters_impl(
-        &self,
-        sink: &mut dyn StatsLogSink,
-        config: &StatsConfig,
-        time: SystemTime,
-    ) -> Result<()> {
-        sink.begin()?;
-        if sink.entries() >= config.log_rotation_count {
-            sink.rotate()?;
-        }
-
-        if config.log_headers {
-            let walltime = SystemTime::now();
-            sink.write_header("counters", walltime)?;
-        }
-
-        for (&key, entry) in &self.counters {
-            let type_str = key.stat_type.as_str();
-            let detail = key.detail.as_str();
-            let dir = key.dir.as_str();
-            sink.write_counter_entry(time, type_str, detail, dir, entry.into())?;
         }
         sink.inc_entries();
         sink.finalize();
@@ -398,7 +352,7 @@ mod tests {
     /// Test stat counting at both type and detail levels
     #[test]
     fn counters() {
-        let stats = Stats::new(StatsConfig::new());
+        let stats = Stats::default();
         stats.add_dir_aggregate(StatType::Ledger, DetailType::All, Direction::In, 1);
         stats.add_dir_aggregate(StatType::Ledger, DetailType::All, Direction::In, 5);
         stats.inc_dir_aggregate(StatType::Ledger, DetailType::All, Direction::In);
@@ -421,7 +375,7 @@ mod tests {
 
     #[test]
     fn samples() {
-        let stats = Stats::new(StatsConfig::new());
+        let stats = Stats::default();
         stats.sample(Sample::ActiveElectionDuration, 5, (1, 10));
         stats.sample(Sample::ActiveElectionDuration, 5, (1, 10));
         stats.sample(Sample::ActiveElectionDuration, 11, (1, 10));
