@@ -222,31 +222,10 @@ pub enum DetailType {
 
     // vote result
     Vote,
-    Valid,
-    Replay,
-    Indeterminate,
-
-    // vote processor
-    VoteOverflow,
-    VoteIgnored,
 
     // election specific
-    VoteNew,
-    VoteProcessed,
-    VoteCached,
-    ElectionRestart,
-    ElectionNotConfirmed,
-    ElectionHintedOverflow,
-    ElectionHintedConfirmed,
-    ElectionHintedDrop,
-    BroadcastVoteNormal,
-    BroadcastVoteFinal,
-    GenerateVote,
     GenerateVoteNormal,
     GenerateVoteFinal,
-    BroadcastBlockInitial,
-    BroadcastBlockRepeat,
-    ConfirmOnce,
     ConfirmationRequest,
 
     // election types
@@ -275,9 +254,7 @@ pub enum DetailType {
 
     // network
     LoopKeepalive,
-    LoopReachout,
     LoopReachoutCached,
-    MergePeer,
     ReachoutLive,
     ReachoutCached,
 
@@ -294,12 +271,6 @@ pub enum DetailType {
     VoteReply,
     Telemetry,
 
-    // tcp
-    TcpWriteDrop,
-    TcpWriteNoSocketDrop,
-    TcpSilentConnectionDrop,
-    TcpConnectError,
-
     // tcp_channels
     ChannelAccepted,
     Outdated,
@@ -307,9 +278,6 @@ pub enum DetailType {
     // tcp_server
     HandshakeAbort,
     HandshakeError,
-
-    // ipc
-    Invocations,
 
     // confirmation height
     BlocksConfirmed,
@@ -342,10 +310,6 @@ pub enum DetailType {
     InvalidSignature,
     NodeIdMismatch,
     GenesisMismatch,
-    RequestWithinProtectionCacheZone,
-    NoResponseReceived,
-    UnsolicitedTelemetryAck,
-    FailedSendTelemetryReq,
     EmptyPayload,
     CleanupOutdated,
 
@@ -363,11 +327,9 @@ pub enum DetailType {
     AlreadyConfirmed,
     Activate,
     ActivateImmediate,
-    DependentActivated,
 
     // bootstrap server
     Response,
-    WriteError,
     Blocks,
     ChannelFull,
     Frontiers,
@@ -383,49 +345,23 @@ pub enum DetailType {
     // active
     Insert,
     InsertFailed,
-    TransitionPriority,
-    TransitionPriorityFailed,
-    ElectionCleanup,
     ActivateImmediately,
-
-    // active_elections
-    Started,
-    ConfirmDependent,
-
-    // unchecked
-    Put,
-    Satisfied,
-    Trigger,
 
     // election scheduler
     InsertManual,
-    InsertPriority,
-    InsertPrioritySuccess,
     EraseOldest,
-
-    // handshake
-    InvalidNodeId,
-    MissingCookie,
-    InvalidGenesis,
 
     // bootstrap
     MissingTag,
     Reply,
-    Throttled,
-    Track,
     Timeout,
     NothingNew,
     AccountInfoEmpty,
-    LoopDatabase,
     LoopDependencies,
     LoopFrontiers,
-    LoopFrontiersProcessing,
-    DuplicateRequest,
     InvalidResponseType,
     InvalidResponse,
     TimestampReset,
-    ProcessingFrontiers,
-    SyncAccounts,
 
     Prioritize,
     PrioritizeFailed,
@@ -436,60 +372,28 @@ pub enum DetailType {
     DependencyUpdate,
     DependencyUpdateFailed,
 
-    NextByRequests,
-    NextByTimestamp,
-    Advance,
-    AdvanceFailed,
-
     NextNone,
-    NextDatabase,
     NextBlocking,
-    NextDependency,
     NextFrontier,
 
-    BlockingInsert,
-    BlockingOverflow,
     PriorityInsert,
-    PrioritySet,
     PriorityErase,
     PriorityUnblocked,
-    EraseByThreshold,
-    EraseByBlocking,
     PriorityEraseThreshold,
     PriorityEraseBlock,
-    PriorityOverflow,
     Deprioritize,
     DeprioritizeFailed,
     SyncDependencies,
     BlockingDecayed,
     DependencySynced,
 
-    RequestBlocks,
-    RequestAccountInfo,
-
-    Safe,
-    Base,
-
-    // active
-    StartedHinted,
-    StartedOptimistic,
-
     // rep_crawler
-    ChannelDead,
-    QueryChannelBusy,
     QuerySent,
     QueryDuplicate,
-    RepTimeout,
     QueryTimeout,
     QueryCompletion,
     CrawlAggressive,
     CrawlNormal,
-
-    // block broadcaster
-    BroadcastNormal,
-    BroadcastAggressive,
-    EraseOld,
-    EraseConfirmed,
 
     // rep tiers
     Tier1,
@@ -497,8 +401,6 @@ pub enum DetailType {
     Tier3,
 
     // confirming_set
-    NotifyCemented,
-    NotifyAlreadyCemented,
     NotifyIntermediate,
     AlreadyCemented,
     Cementing,
@@ -513,7 +415,6 @@ pub enum DetailType {
     Cancelled,
 
     // election_status_type
-    Ongoing,
     ActiveConfirmedQuorum,
     ActiveConfirmationHeight,
     InactiveConfirmationHeight,
@@ -536,9 +437,6 @@ pub enum DetailType {
     PruningTarget,
     PrunedCount,
     CollectTargets,
-
-    // vote rebroadcaster
-    RebroadcastHashes,
 }
 
 impl DetailType {
