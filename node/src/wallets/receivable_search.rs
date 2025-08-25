@@ -1,64 +1,27 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use tracing::warn;
 
-use rsnano_types::Networks;
+use rsnano_utils::{ticker::Tickable, CancellationToken};
 use rsnano_wallet::Wallets;
-
-use crate::utils::ThreadPool;
 
 pub(crate) struct ReceivableSearch {
     wallets: Arc<Wallets>,
-    workers: Arc<ThreadPool>,
-    interval: Duration,
 }
 
 impl ReceivableSearch {
-    pub(crate) fn new(wallets: Arc<Wallets>, workers: Arc<ThreadPool>, network: Networks) -> Self {
-        Self {
-            wallets,
-            workers,
-            interval: Self::interval_for(network),
-        }
-    }
-
-    fn interval_for(network: Networks) -> Duration {
-        match network {
-            Networks::NanoDevNetwork => Duration::from_secs(1),
-            _ => Duration::from_secs(5),
-        }
-    }
-
-    pub fn start(&self) {
-        search_receivables(
-            self.wallets.clone(),
-            self.workers.clone(),
-            self.interval.clone(),
-        );
+    pub(crate) fn new(wallets: Arc<Wallets>) -> Self {
+        Self { wallets }
     }
 }
 
-fn search_receivables(wallets: Arc<Wallets>, workers: Arc<ThreadPool>, interval: Duration) {
-    // Reload wallets from disk
-    wallets.reload();
-    // Search pending
-    if let Err(e) = wallets.search_receivable_all().wait() {
-        warn!("Failed receivables search: {e:?}");
+impl Tickable for ReceivableSearch {
+    fn tick(&mut self, _cancel_token: &CancellationToken) {
+        // Reload wallets from disk
+        self.wallets.reload();
+        // Search pending
+        if let Err(e) = self.wallets.search_receivable_all().wait() {
+            warn!("Failed receivables search: {e:?}");
+        }
     }
-
-    let wallets_w = Arc::downgrade(&wallets);
-    let workers_w = Arc::downgrade(&workers);
-
-    workers.post_delayed(
-        interval,
-        Box::new(move || {
-            let Some(wallets) = wallets_w.upgrade() else {
-                return;
-            };
-            let Some(workers) = workers_w.upgrade() else {
-                return;
-            };
-            search_receivables(wallets, workers, interval);
-        }),
-    )
 }

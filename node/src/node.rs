@@ -150,7 +150,7 @@ pub struct Node {
     pub keepalive_publisher: Arc<KeepalivePublisher>,
     start_stop_listener: OutputListenerMt<&'static str>,
     wallet_backup: WalletBackup,
-    receivable_search: ReceivableSearch,
+    receivable_search: TimerThread<ReceivableSearch>,
     vote_rebroadcaster: VoteRebroadcaster,
     tokio_runner: TokioRunner,
     pub aec_ticker: TimerThread<AecTicker>,
@@ -1117,11 +1117,8 @@ impl Node {
             wallets: wallets.clone(),
         };
 
-        let receivable_search =
-            ReceivableSearch::new(wallets.clone(), workers.clone(), current_network);
-
+        let receivable_search = ReceivableSearch::new(wallets.clone());
         let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
-
         let message_flooder = Arc::new(Mutex::new(message_flooder.clone()));
 
         let recently_cemented_inserter = RecentlyCementedInserter {
@@ -1313,7 +1310,7 @@ impl Node {
             stopped: AtomicBool::new(false),
             start_stop_listener: OutputListenerMt::new(),
             wallet_backup,
-            receivable_search,
+            receivable_search: TimerThread::new("Recv search", receivable_search),
             vote_rebroadcaster,
             tokio_runner,
             aec_ticker: TimerThread::new("AEC ticker", aec_ticker),
@@ -1550,7 +1547,11 @@ impl Node {
         }
 
         if !self.flags.disable_search_pending {
-            self.receivable_search.start();
+            self.receivable_search.start(if is_dev_network {
+                Duration::from_secs(1)
+            } else {
+                Duration::from_secs(5)
+            });
         }
 
         self.unchecked_reenqueuer.start(Duration::from_millis(1000));
