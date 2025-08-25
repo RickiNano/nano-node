@@ -31,7 +31,7 @@ network, this makes Nano ideal for everyday transactions.
 
 ## Option 2: Build your own docker image
 
-    docker build -f scripts/docker/node/Dockerfile -t rsnano-node https://github.com/simpago/rsnano-node.git#releases/v2
+    docker build -f tools/scripts/docker/node/Dockerfile -t rsnano-node https://github.com/simpago/rsnano-node.git#releases/v2
 
     docker run -p 7075:7075 -v ~/Nano:/root/Nano rsnano-node:latest --network=live node run
 
