@@ -303,10 +303,6 @@ pub fn new_test_timestamp() -> SystemTime {
     UNIX_EPOCH + Duration::from_secs(1_000_000)
 }
 
-pub trait Tickable: Send {
-    fn tick(&mut self, cancel_token: &CancellationToken);
-}
-
 /// Lower timestamps have a higher priority
 #[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct TimePriority(UnixMillisTimestamp);

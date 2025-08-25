@@ -1,11 +1,14 @@
-use crate::utils::RateCalculator;
-use rsnano_core::utils::{CancellationToken, Tickable};
-use rsnano_ledger::Ledger;
-use rsnano_nullable_clock::SteadyClock;
 use std::sync::{
     atomic::{AtomicI64, Ordering},
     Arc,
 };
+
+use rsnano_core::utils::CancellationToken;
+use rsnano_ledger::Ledger;
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::ticker::Tickable;
+
+use crate::utils::RateCalculator;
 
 #[derive(Default)]
 pub struct CurrentBlockRates {

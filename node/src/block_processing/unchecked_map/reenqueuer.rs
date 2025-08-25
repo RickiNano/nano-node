@@ -6,17 +6,17 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{
-    utils::{CancellationToken, Tickable},
-    Block, BlockHash,
-};
+use rsnano_core::{utils::CancellationToken, Block, BlockHash};
 use rsnano_ledger::{Ledger, LedgerSet};
+use rsnano_network::ChannelId;
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::{
+    stats::{StatsCollection, StatsSource},
+    ticker::Tickable,
+};
 
 use super::UncheckedMap;
 use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};
-use rsnano_network::ChannelId;
-use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 /// Re-enqueues an unchecked block when its missing dependency block got inserted into the ledger
 #[derive(Clone)]

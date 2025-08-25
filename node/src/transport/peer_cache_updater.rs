@@ -4,14 +4,17 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::utils::{CancellationToken, Tickable};
 use tracing::debug;
 
+use rsnano_core::utils::CancellationToken;
 use rsnano_ledger::Ledger;
 use rsnano_network::{Channel, Network};
 use rsnano_nullable_clock::SystemTimeFactory;
 use rsnano_nullable_lmdb::WriteTransaction;
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_utils::{
+    stats::{DetailType, StatType, Stats},
+    ticker::Tickable,
+};
 
 /// Writes a snapshot of the current peers to the database,
 /// so that we can reconnect to them when the node is restarted

@@ -1,15 +1,15 @@
-use super::{CpsLimiter, VoteGenerators};
-use crate::consensus::{
-    election::VoteType, election_schedulers::priority::bucket_count, ActiveElectionsContainer,
-};
-use rsnano_core::{
-    utils::{CancellationToken, Tickable},
-    BlockHash, Networks, Root,
-};
-use rsnano_nullable_clock::SteadyClock;
 use std::{
     sync::{Arc, RwLock},
     time::Duration,
+};
+
+use rsnano_core::{utils::CancellationToken, BlockHash, Networks, Root};
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::ticker::Tickable;
+
+use super::{CpsLimiter, VoteGenerators};
+use crate::consensus::{
+    election::VoteType, election_schedulers::priority::bucket_count, ActiveElectionsContainer,
 };
 
 /// Creates votes for blocks within the AEC

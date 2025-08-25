@@ -3,8 +3,9 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use rsnano_core::utils::{CancellationToken, Tickable};
+use rsnano_core::utils::CancellationToken;
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::ticker::Tickable;
 
 use super::ActiveElectionsContainer;
 

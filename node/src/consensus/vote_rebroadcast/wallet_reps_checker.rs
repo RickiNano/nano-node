@@ -1,6 +1,9 @@
-use crate::wallets::WalletRepresentatives;
-use rsnano_core::utils::{CancellationToken, Tickable};
 use std::sync::{Arc, Mutex};
+
+use rsnano_core::utils::CancellationToken;
+use rsnano_utils::ticker::Tickable;
+
+use crate::wallets::WalletRepresentatives;
 
 pub(crate) struct WalletRepsChecker {
     wallet_reps: Arc<Mutex<WalletRepresentatives>>,

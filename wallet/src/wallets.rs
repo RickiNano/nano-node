@@ -11,10 +11,9 @@ use rand::{seq::IndexedRandom, Rng};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
-    utils::{CancellationToken, Tickable},
-    Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
-    PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
-    WorkNonce, WorkRequest,
+    utils::CancellationToken, Account, Amount, Block, BlockDetails, BlockHash, Epoch,
+    KeyDerivationFunction, Link, Networks, PendingKey, PrivateKey, PublicKey, RawKey, Root,
+    SavedBlock, StateBlockArgs, WalletId, WorkNonce, WorkRequest,
 };
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_nullable_clock::SteadyClock;
@@ -22,7 +21,10 @@ use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
-use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    ticker::Tickable,
+};
 use rsnano_work::WorkThresholds;
 
 use super::{

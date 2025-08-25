@@ -3,17 +3,18 @@ use std::{
     time::Instant,
 };
 
+use num_format::{Locale, ToFormattedString};
 use tracing::info;
 
-use rsnano_core::utils::{CancellationToken, Tickable};
+use rsnano_core::utils::CancellationToken;
 use rsnano_ledger::Ledger;
 use rsnano_network::Network;
+use rsnano_utils::ticker::Tickable;
 
 use crate::{
     block_rate_calculator::CurrentBlockRates, consensus::ActiveElectionsContainer,
     representatives::OnlineReps,
 };
-use num_format::{Locale, ToFormattedString};
 
 /// Periodically prints info about BPS, CPS, elections, peers,...
 pub struct NodeMonitor {

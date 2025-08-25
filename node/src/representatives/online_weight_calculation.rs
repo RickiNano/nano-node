@@ -1,11 +1,15 @@
-use super::{OnlineReps, OnlineWeightSampler};
-use rsnano_core::utils::{CancellationToken, Tickable};
-use rsnano_nullable_clock::SteadyClock;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+
 use tracing::info;
+
+use rsnano_core::utils::CancellationToken;
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::ticker::Tickable;
+
+use super::{OnlineReps, OnlineWeightSampler};
 
 pub struct OnlineWeightCalculation {
     sampler: OnlineWeightSampler,
