@@ -1,17 +1,19 @@
-use super::MessageFlooder;
-use crate::utils::ThreadPool;
-use rsnano_messages::{Message, Publish};
-use rsnano_network::TrafficType;
-use rsnano_types::Block;
 use std::{
     collections::VecDeque,
     sync::{Arc, Mutex},
     time::Duration,
 };
 
+use rsnano_messages::{Message, Publish};
+use rsnano_network::TrafficType;
+use rsnano_types::Block;
+
+use super::MessageFlooder;
+use crate::utils::ThreadPoolImpl;
+
 pub(crate) struct BlockFlooder {
     pub message_flooder: Arc<Mutex<MessageFlooder>>,
-    pub workers: Arc<dyn ThreadPool>,
+    pub workers: Arc<ThreadPoolImpl>,
 }
 
 impl BlockFlooder {
@@ -36,7 +38,7 @@ fn flood(
     callback: Box<dyn FnOnce() + Send + Sync>,
     delay: Duration,
     message_flooder: Arc<Mutex<MessageFlooder>>,
-    workers: Arc<dyn ThreadPool>,
+    workers: Arc<ThreadPoolImpl>,
 ) {
     if let Some(block) = blocks.pop_front() {
         let publish = Message::Publish(Publish::new_forward(block));

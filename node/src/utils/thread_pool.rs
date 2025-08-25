@@ -10,13 +10,6 @@ use rsnano_output_tracker::OutputTrackerMt;
 
 use super::{NullTimer, Timer, TimerStrategy, TimerWrapper};
 
-pub trait ThreadPool: Send + Sync {
-    fn execute(&self, callback: Box<dyn FnOnce() + Send>);
-    fn post_delayed(&self, delay: Duration, callback: Box<dyn FnOnce() + Send>);
-    fn join(&self);
-    fn num_queued_tasks(&self) -> usize;
-}
-
 pub struct ThreadPoolImpl<T: TimerStrategy + 'static = TimerWrapper> {
     data: Arc<Mutex<Option<ThreadPoolData<T>>>>,
     stopped: Arc<Mutex<bool>>,
@@ -67,10 +60,8 @@ impl<T: TimerStrategy> ThreadPoolImpl<T> {
     pub fn track(&self) -> Arc<OutputTrackerMt<TimerEvent>> {
         self.data.lock().unwrap().as_ref().unwrap().timer.track()
     }
-}
 
-impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
-    fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
+    pub fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
         let stopped_guard = self.stopped.lock().unwrap();
         if !*stopped_guard {
             let data_guard = self.data.lock().unwrap();
@@ -81,7 +72,7 @@ impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
         }
     }
 
-    fn post_delayed(&self, delay: Duration, callback: Box<dyn FnOnce() + Send>) {
+    pub fn post_delayed(&self, delay: Duration, callback: Box<dyn FnOnce() + Send>) {
         let stopped_guard = self.stopped.lock().unwrap();
         if !*stopped_guard {
             let data_guard = self.data.lock().unwrap();
@@ -109,7 +100,7 @@ impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
         }
     }
 
-    fn join(&self) {
+    pub fn join(&self) {
         let mut stopped_guard = self.stopped.lock().unwrap();
         if !*stopped_guard {
             let mut data_guard = self.data.lock().unwrap();
@@ -122,7 +113,7 @@ impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
         }
     }
 
-    fn num_queued_tasks(&self) -> usize {
+    pub fn num_queued_tasks(&self) -> usize {
         self.data
             .lock()
             .unwrap()

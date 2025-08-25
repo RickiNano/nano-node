@@ -20,7 +20,7 @@ use super::ordered_entries::OrderedEntries;
 use crate::{
     block_processing::{LedgerEvent, ProcessedResult},
     consensus::{election::ConfirmedElection, ConfirmedElectionsCache},
-    utils::{ThreadPool, ThreadPoolImpl},
+    utils::ThreadPoolImpl,
 };
 
 /// A block that is currently cementing
