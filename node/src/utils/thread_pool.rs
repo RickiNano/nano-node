@@ -21,7 +21,7 @@ struct ThreadPoolData<T: TimerStrategy> {
 }
 
 impl<T: TimerStrategy> ThreadPoolData<T> {
-    fn push_task(&self, callback: Box<dyn FnOnce() + Send>) {
+    fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
         self.pool.execute(callback);
     }
 }
@@ -29,10 +29,6 @@ impl<T: TimerStrategy> ThreadPoolData<T> {
 impl ThreadPool<TimerWrapper> {
     pub fn create(num_threads: usize, thread_name: impl Into<String>) -> Self {
         Self::new(num_threads, thread_name.into(), Timer::new())
-    }
-
-    pub fn new_test_instance() -> Self {
-        Self::create(2, "test pool")
     }
 }
 
@@ -67,7 +63,7 @@ impl<T: TimerStrategy> ThreadPool<T> {
             let data_guard = self.data.lock().unwrap();
             drop(stopped_guard);
             if let Some(data) = data_guard.as_ref() {
-                data.push_task(callback);
+                data.execute(callback);
             }
         }
     }
@@ -90,7 +86,7 @@ impl<T: TimerStrategy> ThreadPool<T> {
                                 let data_guard = data_clone.lock().unwrap();
                                 drop(stopped_guard);
                                 if let Some(data) = data_guard.as_ref() {
-                                    data.push_task(cb);
+                                    data.execute(cb);
                                 }
                             }
                         }
