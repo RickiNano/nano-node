@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::warn;
 
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+use rsnano_utils::{CancellationToken, ticker::Tickable};
 use rsnano_wallet::Wallets;
 
 pub(crate) struct ReceivableSearch {

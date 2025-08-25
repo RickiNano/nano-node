@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use tracing::error;
 
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+use rsnano_utils::{CancellationToken, ticker::Tickable};
 use rsnano_wallet::Wallets;
 
 pub(crate) struct WalletBackup {

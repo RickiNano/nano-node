@@ -23,8 +23,8 @@ mod vote_timestamp;
 pub use account::Account;
 pub use amount::*;
 use blake2::{
-    digest::{Update, VariableOutput},
     Blake2bVar,
+    digest::{Update, VariableOutput},
 };
 pub use block_hash::{Blake2HashBuilder, BlockHash};
 pub use node_id::NodeId;

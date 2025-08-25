@@ -1,4 +1,4 @@
-use rsnano_types::{utils::UnixMillisTimestamp, Account, Block, PendingKey, SavedBlock};
+use rsnano_types::{Account, Block, PendingKey, SavedBlock, utils::UnixMillisTimestamp};
 
 use crate::{AnySet, LedgerConstants};
 

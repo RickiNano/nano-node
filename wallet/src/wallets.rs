@@ -4,10 +4,10 @@ use std::{
     mem::size_of,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex, mpsc},
 };
 
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, seq::IndexedRandom};
 use tracing::{debug, info, warn};
 
 use rsnano_ledger::{AnySet, Ledger, LedgerSet};
@@ -22,15 +22,15 @@ use rsnano_types::{
     WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
+    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoProvider},
     ticker::Tickable,
-    CancellationToken,
 };
 use rsnano_work::WorkThresholds;
 
 use super::{
-    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsConfig,
-    WalletsError,
+    BlockPromise, MultiBlockPromise, Wallet, WalletsConfig, WalletsError,
+    delayed_work_queue::DelayedWorkQueue,
 };
 
 enum PreparedSend {

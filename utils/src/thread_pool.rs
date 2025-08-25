@@ -105,8 +105,8 @@ mod tests {
     use ntest::assert_false;
     use std::{
         sync::{
-            atomic::{AtomicBool, Ordering},
             Arc,
+            atomic::{AtomicBool, Ordering},
         },
         time::Duration,
     };

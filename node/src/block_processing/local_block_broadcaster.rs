@@ -11,7 +11,7 @@ use tracing::debug;
 
 use rsnano_ledger::{Ledger, LedgerSet};
 use rsnano_messages::{Message, Publish};
-use rsnano_network::{token_bucket::TokenBucket, TrafficType};
+use rsnano_network::{TrafficType, token_bucket::TokenBucket};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Block, BlockHash, Networks};
 use rsnano_utils::{

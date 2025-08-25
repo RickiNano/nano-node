@@ -1,6 +1,6 @@
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
 use serde::{Deserialize, Serialize};
@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 use rsnano_nullable_lmdb::{LmdbEnvironment, ReadTransaction, WriteTransaction};
 
 use crate::{
-    successor_store::LmdbSuccessorStore, LmdbAccountStore, LmdbBlockStore,
-    LmdbConfirmationHeightStore, LmdbFinalVoteStore, LmdbOnlineWeightStore, LmdbPeerStore,
-    LmdbPendingStore, LmdbRepWeightStore, LmdbVersionStore,
+    LmdbAccountStore, LmdbBlockStore, LmdbConfirmationHeightStore, LmdbFinalVoteStore,
+    LmdbOnlineWeightStore, LmdbPeerStore, LmdbPendingStore, LmdbRepWeightStore, LmdbVersionStore,
+    successor_store::LmdbSuccessorStore,
 };
 
 pub struct LedgerCache {

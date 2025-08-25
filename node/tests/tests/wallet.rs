@@ -5,21 +5,22 @@ use std::{
 };
 
 use rsnano_ledger::{
-    test_helpers::UnsavedBlockLatticeBuilder, AnySet, LedgerSet, DEV_GENESIS_ACCOUNT,
-    DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
+    AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY, LedgerSet,
+    test_helpers::UnsavedBlockLatticeBuilder,
 };
 use rsnano_node::{
-    config::{NodeConfig, NodeFlags, DEV_NETWORK_PARAMS},
-    unique_path, Node,
+    Node,
+    config::{DEV_NETWORK_PARAMS, NodeConfig, NodeFlags},
+    unique_path,
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
 use rsnano_types::{
-    deterministic_key, Account, Amount, Block, BlockHash, Epoch, EpochBlockArgs,
-    KeyDerivationFunction, PrivateKey, PublicKey, RawKey, DEV_GENESIS_KEY,
+    Account, Amount, Block, BlockHash, DEV_GENESIS_KEY, Epoch, EpochBlockArgs,
+    KeyDerivationFunction, PrivateKey, PublicKey, RawKey, deterministic_key,
 };
 use rsnano_wallet::WalletsError;
-use test_helpers::{assert_always_eq, assert_timely2, assert_timely_eq2, System};
+use test_helpers::{System, assert_always_eq, assert_timely_eq2, assert_timely2};
 
 struct TestFixture {
     test_dir: PathBuf,
@@ -312,19 +313,20 @@ fn spend() {
     let key2 = PrivateKey::new();
     // Sending from empty accounts should always be an error.
     // Accounts need to be opened with an open block, not a send block.
-    assert!(node
-        .wallets
-        .send(
-            wallet_id,
-            Account::zero(),
-            key2.account(),
-            Amount::zero(),
-            0.into(),
-            true,
-            None
-        )
-        .wait()
-        .is_err());
+    assert!(
+        node.wallets
+            .send(
+                wallet_id,
+                Account::zero(),
+                key2.account(),
+                Amount::zero(),
+                0.into(),
+                true,
+                None
+            )
+            .wait()
+            .is_err()
+    );
 
     node.wallets
         .send(

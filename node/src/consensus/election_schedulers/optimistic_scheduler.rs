@@ -3,8 +3,8 @@ use std::{
     collections::{HashMap, VecDeque},
     mem::size_of,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex, RwLock,
+        atomic::{AtomicBool, Ordering},
     },
     thread::JoinHandle,
     time::Instant,
@@ -21,7 +21,7 @@ use rsnano_utils::{
 use crate::{
     cementation::ConfirmingSet,
     config::NetworkConstants,
-    consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
+    consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior},
 };
 
 #[derive(Clone, Debug, PartialEq)]

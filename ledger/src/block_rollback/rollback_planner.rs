@@ -1,6 +1,6 @@
 use rsnano_types::{
-    utils::UnixTimestamp, Account, AccountInfo, Amount, BlockHash, BlockSubType, BlockType,
-    ConfirmationHeightInfo, Epoch, Epochs, PendingInfo, PendingKey, PublicKey, SavedBlock,
+    Account, AccountInfo, Amount, BlockHash, BlockSubType, BlockType, ConfirmationHeightInfo,
+    Epoch, Epochs, PendingInfo, PendingKey, PublicKey, SavedBlock, utils::UnixTimestamp,
 };
 
 use super::rollback_performer::RollbackError;

@@ -3,9 +3,8 @@ use std::ops::{RangeBounds, RangeFrom};
 use rsnano_nullable_lmdb::{ReadTransaction, Transaction};
 use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore};
 use rsnano_types::{
-    block_priority, utils::BlockPriority, Account, AccountInfo, Amount, Block, BlockHash,
-    DependentBlocks, DetailedBlock, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root,
-    SavedBlock,
+    Account, AccountInfo, Amount, Block, BlockHash, DependentBlocks, DetailedBlock, PendingInfo,
+    PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, block_priority, utils::BlockPriority,
 };
 
 use super::{BorrowingConfirmedSet, ConfirmedSet, LedgerSet};
