@@ -5,7 +5,7 @@ use std::{
     ops::RangeBounds,
 };
 
-use super::ContainerInfo;
+use rsnano_core::utils::ContainerInfo;
 
 /// Queue items of type T from source S
 pub struct FairQueue<S, T>

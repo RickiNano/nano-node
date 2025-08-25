@@ -1,10 +1,13 @@
-use crate::{channel_stats::ChannelStats, TrafficType};
-use rsnano_core::utils::FairQueue;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
+
 use tokio::sync::Notify;
+
+use rsnano_utils::fair_queue::FairQueue;
+
+use crate::{channel_stats::ChannelStats, TrafficType};
 
 pub struct WriteQueue {
     queue: Mutex<FairQueue<TrafficType, Entry>>,

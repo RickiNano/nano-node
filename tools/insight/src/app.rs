@@ -3,13 +3,14 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{utils::FairQueueInfo, Account, BlockHash};
+use rsnano_core::{Account, BlockHash};
 use rsnano_node::{
     block_processing::BlockSource,
     cementation::ConfirmingSetInfo,
     consensus::{ActiveElectionsInfo, RepTier},
 };
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_utils::fair_queue::FairQueueInfo;
 
 use crate::{
     bootstrap::BootstrapInfo,

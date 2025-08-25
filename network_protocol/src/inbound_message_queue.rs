@@ -6,13 +6,17 @@ use std::{
     },
 };
 
-use rsnano_core::utils::{ContainerInfo, ContainerInfoProvider, FairQueue};
+use strum::IntoEnumIterator;
+
+use rsnano_core::utils::{ContainerInfo, ContainerInfoProvider};
 use rsnano_messages::{Message, MessageType};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep};
-use rsnano_utils::stats::{StatsCollection, StatsSource};
+use rsnano_utils::{
+    fair_queue::FairQueue,
+    stats::{StatsCollection, StatsSource},
+};
 
 use crate::MessageCallback;
-use strum::IntoEnumIterator;
 
 pub struct InboundMessageQueue {
     state: Mutex<State>,

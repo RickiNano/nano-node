@@ -5,13 +5,16 @@ use std::{
 };
 
 use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider, FairQueueInfo},
+    utils::{ContainerInfo, ContainerInfoProvider},
     Block, SavedBlock,
 };
 use rsnano_ledger::BlockError;
 use rsnano_network::{ChannelId, DeadChannelCleanupStep};
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_utils::stats::{StatsCollection, StatsSource};
+use rsnano_utils::{
+    fair_queue::FairQueueInfo,
+    stats::{StatsCollection, StatsSource},
+};
 
 use super::{
     process_queue::{ProcessQueue, ProcessQueueConfig},

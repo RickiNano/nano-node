@@ -12,10 +12,13 @@ use crate::{
     wallets::WalletRepresentatives,
 };
 use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider, FairQueue},
+    utils::{ContainerInfo, ContainerInfoProvider},
     BlockHash, PublicKey, Signature, Vote, VoteError,
 };
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_utils::{
+    fair_queue::FairQueue,
+    stats::{DetailType, StatType, Stats},
+};
 
 pub(crate) struct VoteRebroadcastQueueBuilder {
     stats: Option<Arc<Stats>>,

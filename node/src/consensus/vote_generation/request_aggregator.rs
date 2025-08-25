@@ -5,12 +5,15 @@ use std::{
 };
 
 use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider, FairQueue},
+    utils::{ContainerInfo, ContainerInfoProvider},
     BlockHash, Root,
 };
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, TrafficType};
-use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::{
+    fair_queue::FairQueue,
+    stats::{DetailType, Direction, StatType, Stats},
+};
 
 use super::{
     request_aggregator_impl::{AggregateResult, RequestAggregatorImpl},

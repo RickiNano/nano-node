@@ -1,7 +1,6 @@
 mod backpressure_channel;
 mod cancellation_token;
 mod container_info;
-mod fair_queue;
 mod peer;
 mod stream;
 
@@ -9,7 +8,6 @@ pub use backpressure_channel::*;
 pub use cancellation_token::CancellationToken;
 use chrono::{DateTime, TimeZone, Utc};
 pub use container_info::*;
-pub use fair_queue::*;
 pub use peer::*;
 pub use stream::*;
 
@@ -17,7 +15,6 @@ use crate::Amount;
 use std::{
     net::{Ipv6Addr, SocketAddrV6},
     ops::{Add, Mul},
-    thread::available_parallelism,
     time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH},
 };
 
@@ -73,20 +70,6 @@ impl Deserialize for [u8; 64] {
         stream.read_bytes(&mut buffer, 64)?;
         Ok(buffer)
     }
-}
-
-pub fn get_cpu_count() -> usize {
-    // Try to read overridden value from environment variable
-    let value = std::env::var("NANO_HARDWARE_CONCURRENCY")
-        .unwrap_or_else(|_| "0".into())
-        .parse::<usize>()
-        .unwrap_or_default();
-
-    if value > 0 {
-        return value;
-    }
-
-    available_parallelism().unwrap().get()
 }
 
 pub fn milliseconds_since_epoch() -> u64 {

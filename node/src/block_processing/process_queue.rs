@@ -1,14 +1,14 @@
-use super::{BlockContext, BlockSource};
-use rsnano_core::{
-    utils::{ContainerInfo, FairQueue, FairQueueInfo},
-    Block,
-};
-use rsnano_network::ChannelId;
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
     sync::Arc,
 };
+
+use rsnano_core::{utils::ContainerInfo, Block};
+use rsnano_network::ChannelId;
+use rsnano_utils::fair_queue::{FairQueue, FairQueueInfo};
+
+use super::{BlockContext, BlockSource};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ProcessQueueConfig {

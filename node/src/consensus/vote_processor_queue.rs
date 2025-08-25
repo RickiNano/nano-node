@@ -7,11 +7,14 @@ use std::{
 use strum::IntoEnumIterator;
 
 use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider, FairQueue, FairQueueInfo},
+    utils::{ContainerInfo, ContainerInfoProvider},
     BlockHash, Vote, VoteSource,
 };
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep};
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_utils::{
+    fair_queue::{FairQueue, FairQueueInfo},
+    stats::{DetailType, StatType, Stats},
+};
 
 use super::{RepTier, RepTiers, RepTiersConsumer, VoteProcessorConfig};
 

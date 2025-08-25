@@ -281,14 +281,8 @@ mod tests {
     use rsnano_core::{Block, TestBlockBuilder};
     use std::sync::{mpsc, LazyLock};
 
-    pub static WORK_POOL: LazyLock<WorkPool> = LazyLock::new(|| {
-        WorkPool::new(
-            rsnano_core::utils::get_cpu_count(),
-            Duration::ZERO,
-            false,
-            OpenClConfig::default(),
-        )
-    });
+    pub static WORK_POOL: LazyLock<WorkPool> =
+        LazyLock::new(|| WorkPool::new(4, Duration::ZERO, false, OpenClConfig::default()));
 
     #[test]
     fn work_disabled() {

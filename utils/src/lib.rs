@@ -1,6 +1,7 @@
 use std::thread::available_parallelism;
 
 pub mod env;
+pub mod fair_queue;
 pub mod stats;
 pub mod sync;
 
