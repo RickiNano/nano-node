@@ -1,11 +1,14 @@
 use std::thread::available_parallelism;
 
+mod cancellation_token;
 pub mod container_info;
 pub mod env;
 pub mod fair_queue;
 pub mod stats;
 pub mod sync;
 pub mod ticker;
+
+pub use cancellation_token::CancellationToken;
 
 pub fn get_cpu_count() -> usize {
     // Try to read overridden value from environment variable

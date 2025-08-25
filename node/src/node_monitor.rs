@@ -6,10 +6,9 @@ use std::{
 use num_format::{Locale, ToFormattedString};
 use tracing::info;
 
-use rsnano_core::utils::CancellationToken;
 use rsnano_ledger::Ledger;
 use rsnano_network::Network;
-use rsnano_utils::ticker::Tickable;
+use rsnano_utils::{ticker::Tickable, CancellationToken};
 
 use crate::{
     block_rate_calculator::CurrentBlockRates, consensus::ActiveElectionsContainer,

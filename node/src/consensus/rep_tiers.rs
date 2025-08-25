@@ -9,12 +9,13 @@ use std::{
 use strum_macros::{EnumCount, EnumIter};
 use tracing::debug;
 
-use rsnano_core::{utils::CancellationToken, PublicKey};
+use rsnano_core::PublicKey;
 use rsnano_ledger::RepWeightCache;
-use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{DetailType, Direction, StatType, Stats},
     ticker::Tickable,
+    CancellationToken,
 };
 
 use crate::representatives::OnlineReps;

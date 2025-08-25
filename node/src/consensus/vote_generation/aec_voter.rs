@@ -3,9 +3,9 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{utils::CancellationToken, BlockHash, Networks, Root};
+use rsnano_core::{BlockHash, Networks, Root};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::ticker::Tickable;
+use rsnano_utils::{ticker::Tickable, CancellationToken};
 
 use super::{CpsLimiter, VoteGenerators};
 use crate::consensus::{

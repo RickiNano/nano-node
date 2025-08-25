@@ -1,8 +1,6 @@
-mod cancellation_token;
 mod peer;
 mod stream;
 
-pub use cancellation_token::CancellationToken;
 use chrono::{DateTime, TimeZone, Utc};
 pub use peer::*;
 pub use stream::*;

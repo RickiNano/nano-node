@@ -6,7 +6,6 @@ use std::{
 
 use tracing::debug;
 
-use rsnano_core::utils::CancellationToken;
 use rsnano_ledger::Ledger;
 use rsnano_network::{Channel, Network};
 use rsnano_nullable_clock::SystemTimeFactory;
@@ -14,6 +13,7 @@ use rsnano_nullable_lmdb::WriteTransaction;
 use rsnano_utils::{
     stats::{DetailType, StatType, Stats},
     ticker::Tickable,
+    CancellationToken,
 };
 
 /// Writes a snapshot of the current peers to the database,

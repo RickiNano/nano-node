@@ -1,4 +1,4 @@
-use rsnano_core::utils::CancellationToken;
+use crate::CancellationToken;
 
 pub trait Tickable: Send {
     fn tick(&mut self, cancel_token: &CancellationToken);

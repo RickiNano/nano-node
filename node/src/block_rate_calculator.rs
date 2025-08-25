@@ -3,10 +3,9 @@ use std::sync::{
     Arc,
 };
 
-use rsnano_core::utils::CancellationToken;
 use rsnano_ledger::Ledger;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::ticker::Tickable;
+use rsnano_utils::{ticker::Tickable, CancellationToken};
 
 use crate::utils::RateCalculator;
 
