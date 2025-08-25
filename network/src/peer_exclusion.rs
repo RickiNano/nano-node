@@ -1,11 +1,12 @@
-use rsnano_core::utils::ContainerInfo;
-use rsnano_nullable_clock::Timestamp;
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     mem::size_of,
     net::{Ipv6Addr, SocketAddrV6},
     time::Duration,
 };
+
+use rsnano_nullable_clock::Timestamp;
+use rsnano_utils::container_info::ContainerInfo;
 
 /// Manages excluded peers.
 /// Peers are excluded for a while if they behave badly

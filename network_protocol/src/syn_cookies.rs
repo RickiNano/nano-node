@@ -7,11 +7,10 @@ use std::{
 
 use anyhow::Result;
 use rand::Rng;
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Account, Signature,
-};
+
+use rsnano_core::{Account, Signature};
 use rsnano_messages::Cookie;
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 
 /// Node ID cookies for node ID handshakes
 pub struct SynCookies {

@@ -1,7 +1,9 @@
 use std::{collections::HashMap, mem::size_of};
 
+use rsnano_core::{BlockHash, QualifiedRoot};
+use rsnano_utils::container_info::ContainerInfo;
+
 use crate::consensus::election::Election;
-use rsnano_core::{utils::ContainerInfo, BlockHash, QualifiedRoot};
 
 /// This class routes votes to their associated election
 #[derive(Default)]

@@ -4,13 +4,11 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    BlockHash, Root,
-};
+use rsnano_core::{BlockHash, Root};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, TrafficType};
 use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
     fair_queue::FairQueue,
     stats::{DetailType, Direction, StatType, Stats},
 };

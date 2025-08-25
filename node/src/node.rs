@@ -16,9 +16,7 @@ use num_format::{Locale, ToFormattedString};
 use tracing::{error, info, warn};
 
 use rsnano_core::{
-    utils::{
-        backpressure_channel, ContainerInfo, ContainerInfoFactory, ContainerInfoProvider, Peer,
-    },
+    utils::{backpressure_channel, Peer},
     Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot, Root,
     SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
@@ -38,7 +36,10 @@ use rsnano_nullable_lmdb::{
     EnvironmentFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory,
 };
 use rsnano_output_tracker::OutputListenerMt;
-use rsnano_utils::stats::{Direction, Stats, StatsCollection, StatsCollector};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
+    stats::{Direction, Stats, StatsCollection, StatsCollector},
+};
 use rsnano_wallet::{Wallets, WalletsTicker};
 
 use crate::{

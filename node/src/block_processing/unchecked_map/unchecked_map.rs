@@ -1,11 +1,11 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Block, BlockHash,
-};
+use rsnano_core::{Block, BlockHash};
 use rsnano_nullable_clock::Timestamp;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{StatsCollection, StatsSource},
+};
 
 /// A map of unchecked blocks and the hash of their missing dependency block
 #[derive(Clone)]

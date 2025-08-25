@@ -6,18 +6,17 @@ use std::{
     },
 };
 
+use rsnano_core::{BlockHash, PublicKey, Signature, Vote, VoteError};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    fair_queue::FairQueue,
+    stats::{DetailType, StatType, Stats},
+};
+
 use super::WalletRepsConsumer;
 use crate::{
     consensus::{RepTier, RepTiers, RepTiersConsumer},
     wallets::WalletRepresentatives,
-};
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    BlockHash, PublicKey, Signature, Vote, VoteError,
-};
-use rsnano_utils::{
-    fair_queue::FairQueue,
-    stats::{DetailType, StatType, Stats},
 };
 
 pub(crate) struct VoteRebroadcastQueueBuilder {

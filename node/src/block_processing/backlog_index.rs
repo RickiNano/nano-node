@@ -1,8 +1,7 @@
-use rsnano_core::{
-    utils::{ContainerInfo, TimePriority},
-    Account, BlockHash,
-};
 use std::collections::{BTreeMap, HashMap};
+
+use rsnano_core::{utils::TimePriority, Account, BlockHash};
+use rsnano_utils::container_info::ContainerInfo;
 
 #[derive(Clone)]
 pub(super) struct BacklogEntry {

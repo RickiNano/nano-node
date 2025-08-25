@@ -1,13 +1,16 @@
-use super::running_query::QuerySource;
-use super::{CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer};
-use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig};
-use rsnano_core::Account;
-use rsnano_core::{utils::ContainerInfo, BlockHash};
+use std::{collections::VecDeque, sync::Arc};
+
+use rsnano_core::{Account, BlockHash};
 use rsnano_messages::AscPullReqType;
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
-use std::collections::VecDeque;
-use std::sync::Arc;
+use rsnano_utils::container_info::ContainerInfo;
+
+use super::{
+    running_query::QuerySource, CandidateAccounts, FrontierScan, PeerScoring, PriorityResult,
+    RunningQueryContainer,
+};
+use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig};
 
 pub struct BootstrapState {
     pub candidate_accounts: CandidateAccounts,

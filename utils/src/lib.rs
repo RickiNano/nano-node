@@ -1,5 +1,6 @@
 use std::thread::available_parallelism;
 
+pub mod container_info;
 pub mod env;
 pub mod fair_queue;
 pub mod stats;

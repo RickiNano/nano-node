@@ -11,14 +11,14 @@ pub use optimistic_scheduler::*;
 
 use std::sync::{Arc, Mutex, RwLock};
 
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Account, AccountInfo, BlockHash, ConfirmationHeightInfo, Networks, SavedBlock,
-};
+use rsnano_core::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, Networks, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_utils::stats::{Stats, StatsCollection, StatsSource};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{Stats, StatsCollection, StatsSource},
+};
 
 use super::{ActiveElectionsContainer, VoteCache};
 use crate::{

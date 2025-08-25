@@ -1,5 +1,3 @@
-use rsnano_core::{utils::ContainerInfo, Account, Amount, PublicKey};
-use rsnano_store_lmdb::LedgerCache;
 use std::{
     collections::HashMap,
     mem::size_of,
@@ -9,6 +7,10 @@ use std::{
         Arc, RwLock, RwLockReadGuard,
     },
 };
+
+use rsnano_core::{Account, Amount, PublicKey};
+use rsnano_store_lmdb::LedgerCache;
+use rsnano_utils::container_info::ContainerInfo;
 
 #[derive(Default)]
 pub struct RepWeights(HashMap<PublicKey, Amount>);

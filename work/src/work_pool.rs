@@ -6,10 +6,8 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Root, WorkNonce, WorkRequest, WorkRequestAsync,
-};
+use rsnano_core::{Root, WorkNonce, WorkRequest, WorkRequestAsync};
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 
 #[cfg(feature = "opencl")]
 use super::gpu_work_generator::GpuWorkGenerator;

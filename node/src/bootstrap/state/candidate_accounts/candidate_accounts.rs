@@ -1,11 +1,14 @@
+use std::{cmp::min, time::Duration};
+
+use rsnano_core::{Account, BlockHash};
+use rsnano_nullable_clock::Timestamp;
+use rsnano_utils::container_info::ContainerInfo;
+
 use super::{
     blocking_container::{BlockingContainer, BlockingEntry},
     priority::Priority,
     priority_container::{ChangePriorityResult, PriorityContainer, PriorityEntry},
 };
-use rsnano_core::{utils::ContainerInfo, Account, BlockHash};
-use rsnano_nullable_clock::Timestamp;
-use std::{cmp::min, time::Duration};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CandidateAccountsConfig {

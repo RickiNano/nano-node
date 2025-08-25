@@ -5,12 +5,15 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_core::{utils::ContainerInfo, Amount, Block, BlockHash, SavedBlock};
-use rsnano_utils::stats::{DetailType, StatType, Stats};
-
-use crate::consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest};
+use rsnano_core::{Amount, Block, BlockHash, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::{
+    container_info::ContainerInfo,
+    stats::{DetailType, StatType, Stats},
+};
+
+use crate::consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest};
 
 pub struct ManualScheduler {
     thread: Mutex<Option<JoinHandle<()>>>,

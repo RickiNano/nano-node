@@ -1,11 +1,17 @@
 use std::{collections::HashMap, time::Duration};
 
+use strum::EnumCount;
+
 use rsnano_core::{
-    utils::{BackpressureSender, ContainerInfo, ContainerInfoProvider, TimePriority},
+    utils::{BackpressureSender, TimePriority},
     Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError,
 };
+use rsnano_ledger::RepWeights;
 use rsnano_nullable_clock::Timestamp;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{StatsCollection, StatsSource},
+};
 
 use crate::{
     consensus::{
@@ -26,8 +32,6 @@ use super::{
     ActiveElectionsConfig, ActiveElectionsInfo, AecEvent, AecInsertError, AecInsertRequest, Entry,
     RootContainer,
 };
-use rsnano_ledger::RepWeights;
-use strum::EnumCount;
 
 pub struct ActiveElectionsContainer {
     roots: RootContainer,

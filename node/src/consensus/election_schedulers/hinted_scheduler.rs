@@ -10,9 +10,13 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::{utils::ContainerInfo, Amount, BlockHash};
+use rsnano_core::{Amount, BlockHash};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::{
+    container_info::ContainerInfo,
+    stats::{DetailType, StatType, Stats},
+};
 
 use super::VoteCache;
 use crate::{
@@ -20,7 +24,6 @@ use crate::{
     consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
     representatives::OnlineReps,
 };
-use rsnano_nullable_clock::SteadyClock;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HintedSchedulerConfig {

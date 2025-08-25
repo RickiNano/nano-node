@@ -4,22 +4,24 @@ mod online_container;
 mod peered_container;
 mod peered_rep;
 
+use std::{cmp::max, sync::Arc, time::Duration};
+
+use primitive_types::U256;
+use tracing::debug;
+
+use rsnano_core::{Amount, Networks, PublicKey};
+use rsnano_ledger::RepWeightCache;
+use rsnano_network::{Channel, ChannelId};
+use rsnano_nullable_clock::Timestamp;
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{StatsCollection, StatsSource},
+};
+
 pub use builder::OnlineRepsBuilder;
 pub use cleanup::*;
 pub use peered_container::InsertResult;
 pub use peered_rep::PeeredRep;
-use primitive_types::U256;
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Amount, Networks, PublicKey,
-};
-use rsnano_ledger::RepWeightCache;
-use rsnano_network::{Channel, ChannelId};
-use rsnano_nullable_clock::Timestamp;
-use std::{cmp::max, sync::Arc, time::Duration};
-
-use rsnano_utils::stats::{StatsCollection, StatsSource};
-use tracing::debug;
 use {online_container::OnlineContainer, peered_container::PeeredContainer};
 
 const ONLINE_WEIGHT_QUORUM: u8 = 67;

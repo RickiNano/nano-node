@@ -12,13 +12,13 @@ use std::{
 
 #[cfg(test)]
 use mock_instant::thread_local::Instant;
-
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Amount, BlockHash, DescTallyKey, PublicKey, Vote, VoteError,
-};
-use rsnano_utils::stats::{DetailType, StatType, Stats};
 use rustc_hash::{FxHashMap, FxHashSet};
+
+use rsnano_core::{Amount, BlockHash, DescTallyKey, PublicKey, Vote, VoteError};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{DetailType, StatType, Stats},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VoteCacheConfig {

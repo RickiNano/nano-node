@@ -1,8 +1,9 @@
-use rsnano_core::utils::ContainerInfo;
+use std::sync::Mutex;
+
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::container_info::ContainerInfo;
 
 use crate::{token_bucket::TokenBucket, TrafficType};
-use rsnano_nullable_clock::SteadyClock;
-use std::sync::Mutex;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct BandwidthLimiterConfig {

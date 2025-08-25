@@ -1,8 +1,9 @@
-use serde_json::json;
 use std::{
     ops::Deref,
     sync::{Arc, Mutex, RwLock},
 };
+
+use serde_json::json;
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct ContainerSize {

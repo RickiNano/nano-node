@@ -4,9 +4,12 @@ use std::{
     sync::Arc,
 };
 
-use rsnano_core::{utils::ContainerInfo, Block};
+use rsnano_core::Block;
 use rsnano_network::ChannelId;
-use rsnano_utils::fair_queue::{FairQueue, FairQueueInfo};
+use rsnano_utils::{
+    container_info::ContainerInfo,
+    fair_queue::{FairQueue, FairQueueInfo},
+};
 
 use super::{BlockContext, BlockSource};
 

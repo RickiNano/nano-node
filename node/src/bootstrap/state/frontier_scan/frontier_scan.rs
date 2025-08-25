@@ -1,7 +1,10 @@
-use super::{heads_container::HeadsContainer, FrontierScanConfig};
 use primitive_types::U512;
-use rsnano_core::{utils::ContainerInfo, Account, Frontier};
+
+use rsnano_core::{Account, Frontier};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_utils::container_info::ContainerInfo;
+
+use super::{heads_container::HeadsContainer, FrontierScanConfig};
 
 /// Divides the account space into ranges and scans each range for
 /// outdated frontiers in parallel.

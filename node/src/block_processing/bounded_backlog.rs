@@ -8,12 +8,13 @@ use std::{
 use tracing::warn;
 
 use rsnano_core::{
-    utils::{backpressure_channel, BackpressureSender, ContainerInfo, ContainerInfoProvider},
+    utils::{backpressure_channel, BackpressureSender},
     Account, AccountInfo, BlockHash, ConfirmationHeightInfo, SavedBlock,
 };
 use rsnano_ledger::{AnySet, Ledger, LedgerSet, OwningAnySet};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{

@@ -1,3 +1,20 @@
+use std::{
+    cmp::max,
+    collections::HashMap,
+    error::Error,
+    net::{Ipv6Addr, SocketAddrV6},
+    sync::{atomic::Ordering, Arc},
+    time::Duration,
+};
+
+use rand::seq::SliceRandom;
+use tracing::{debug, warn};
+
+use rsnano_core::{Networks, NodeId, ProtocolInfo};
+use rsnano_nullable_clock::Timestamp;
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
+
 use super::ChannelDirection;
 use crate::{
     attempt_container::AttemptContainer,
@@ -9,22 +26,6 @@ use crate::{
     Channel, ChannelId, ChannelMode, DataReceiver, DataReceiverFactory, NullDataReceiverFactory,
     TrafficType,
 };
-use rand::seq::SliceRandom;
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Networks, NodeId, ProtocolInfo,
-};
-use rsnano_nullable_clock::Timestamp;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
-use std::{
-    cmp::max,
-    collections::HashMap,
-    error::Error,
-    net::{Ipv6Addr, SocketAddrV6},
-    sync::{atomic::Ordering, Arc},
-    time::Duration,
-};
-use tracing::{debug, warn};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct NetworkConfig {

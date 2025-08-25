@@ -1,12 +1,11 @@
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    BlockHash, Networks, Root, Vote,
-};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     mem::size_of,
     sync::{Arc, Mutex},
 };
+
+use rsnano_core::{BlockHash, Networks, Root, Vote};
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 
 pub struct LocalVoteHistory {
     data: Mutex<LocalVoteHistoryData>,

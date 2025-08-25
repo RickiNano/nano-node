@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
-use rsnano_core::{utils::ContainerInfo, BlockHash, QualifiedRoot};
+use rsnano_core::{BlockHash, QualifiedRoot};
+use rsnano_utils::container_info::ContainerInfo;
 
 pub(super) struct RecentlyConfirmedCache {
     by_root: HashMap<QualifiedRoot, BlockHash>,

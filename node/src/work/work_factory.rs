@@ -6,19 +6,17 @@ use std::{
     time::Duration,
 };
 
+use tokio::{select, task::JoinSet, time::timeout};
+use tokio_util::sync::CancellationToken;
 use tracing::warn;
 
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider, Peer},
-    Root, WorkNonce, WorkRequest, WorkRequestAsync,
-};
+use rsnano_core::{utils::Peer, Root, WorkNonce, WorkRequest, WorkRequestAsync};
 use rsnano_nullable_http_client::Url;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_work::{WorkPool, WorkPoolBuilder};
 
 use super::distributed_work_client::DistributedWorkClient;
-use tokio::{select, task::JoinSet, time::timeout};
-use tokio_util::sync::CancellationToken;
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(1);
 

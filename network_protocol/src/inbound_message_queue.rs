@@ -8,10 +8,10 @@ use std::{
 
 use strum::IntoEnumIterator;
 
-use rsnano_core::utils::{ContainerInfo, ContainerInfoProvider};
 use rsnano_messages::{Message, MessageType};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep};
 use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
     fair_queue::FairQueue,
     stats::{StatsCollection, StatsSource},
 };

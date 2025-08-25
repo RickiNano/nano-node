@@ -10,16 +10,19 @@ use std::{
     time::Instant,
 };
 
-use rsnano_core::{utils::ContainerInfo, Account, AccountInfo, ConfirmationHeightInfo};
+use rsnano_core::{Account, AccountInfo, ConfirmationHeightInfo};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::{
+    container_info::ContainerInfo,
+    stats::{DetailType, StatType, Stats},
+};
 
 use crate::{
     cementation::ConfirmingSet,
     config::NetworkConstants,
     consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
 };
-use rsnano_nullable_clock::SteadyClock;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OptimisticSchedulerConfig {

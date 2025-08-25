@@ -10,10 +10,11 @@ use strum_macros::{EnumCount, EnumIter};
 use tracing::debug;
 
 use rsnano_core::{
-    utils::{CancellationToken, ContainerInfo, ContainerInfoProvider, Tickable},
+    utils::{CancellationToken, Tickable},
     PublicKey,
 };
 use rsnano_ledger::RepWeightCache;
+use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use crate::representatives::OnlineReps;

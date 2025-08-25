@@ -1,11 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 
 use bounded_vec_deque::BoundedVecDeque;
-use rsnano_core::{
-    utils::{ContainerInfo, ContainerInfoProvider},
-    Block, BlockHash, QualifiedRoot,
+
+use rsnano_core::{Block, BlockHash, QualifiedRoot};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{StatsCollection, StatsSource},
 };
-use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 pub(crate) struct ForkCache {
     forks: HashMap<QualifiedRoot, Entry>,
