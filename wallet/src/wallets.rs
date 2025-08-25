@@ -4,10 +4,10 @@ use std::{
     mem::size_of,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex, mpsc},
 };
 
-use rand::{seq::IndexedRandom, Rng};
+use rand::{Rng, seq::IndexedRandom};
 use tracing::{debug, info, warn};
 
 use rsnano_core::{
@@ -22,15 +22,15 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_store_lmdb::{KeyType, LmdbIterator, LmdbWalletStore};
 use rsnano_utils::{
+    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoProvider},
     ticker::Tickable,
-    CancellationToken,
 };
 use rsnano_work::WorkThresholds;
 
 use super::{
-    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsConfig,
-    WalletsError,
+    BlockPromise, MultiBlockPromise, Wallet, WalletsConfig, WalletsError,
+    delayed_work_queue::DelayedWorkQueue,
 };
 
 enum PreparedSend {
@@ -1160,8 +1160,10 @@ impl Wallets {
                 .into();
                 epoch = info.epoch;
             } else {
-                warn!("Changing representative for account {} failed, wallet locked or account not found",
-                    source.encode_account());
+                warn!(
+                    "Changing representative for account {} failed, wallet locked or account not found",
+                    source.encode_account()
+                );
                 return BlockPromise::new_failed(WalletsError::AccountNotFound);
             }
         }
@@ -1408,7 +1410,9 @@ impl Wallets {
 
         let txn = self.env.begin_read();
         if !wallet.store.valid_password(&txn) {
-            info!("Unable to search receivable blocks, wallet is locked. Blocks won't be auto-received until the wallet is unlocked");
+            info!(
+                "Unable to search receivable blocks, wallet is locked. Blocks won't be auto-received until the wallet is unlocked"
+            );
             return MultiBlockPromise::new_failed(WalletsError::WalletLocked);
         }
 

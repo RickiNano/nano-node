@@ -5,8 +5,8 @@ use rsnano_core::{
     Account, AccountInfo, Amount, BlockHash, PrivateKey, PublicKey, Root, SavedBlock,
     TestBlockBuilder, DEV_GENESIS_KEY,
 };
-use rsnano_utils::stats::Stats;
 use rsnano_store_lmdb::{LmdbAccountStore, LmdbPrunedStore};
+use rsnano_utils::stats::Stats;
 
 use crate::{
     ledger_constants::{DEV_GENESIS_BLOCK, DEV_GENESIS_PUB_KEY},
