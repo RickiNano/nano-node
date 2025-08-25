@@ -399,15 +399,18 @@ impl LmdbWalletStore {
     pub fn iter<'tx>(
         &self,
         tx: &'tx dyn Transaction,
-    ) -> impl Iterator<Item = (PublicKey, WalletValue)> + 'tx + use<'tx> {
+    ) -> impl Iterator<Item = (PublicKey, WalletValue)> + use<'tx> {
         self.iter_range(tx, Self::special_count()..)
     }
 
-    pub fn iter_range<'txn>(
+    pub fn iter_range<'txn, R>(
         &self,
         tx: &'txn dyn Transaction,
-        range: impl RangeBounds<PublicKey> + 'static,
-    ) -> impl Iterator<Item = (PublicKey, WalletValue)> + 'txn {
+        range: R,
+    ) -> impl Iterator<Item = (PublicKey, WalletValue)> + use<'txn, R>
+    where
+        R: RangeBounds<PublicKey> + 'static,
+    {
         let cursor = tx.open_ro_cursor(self.db_handle()).unwrap();
         LmdbRangeIterator::new(cursor, range)
     }

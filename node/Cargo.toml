@@ -2,7 +2,7 @@
 name = "rsnano_node"
 version = "2.0.0-dev"
 authors = ["Gustav Schauwecker <service@simpago.com>"]
-edition = "2021"
+edition = "2024"
 
 [features]
 output_tracking = []
