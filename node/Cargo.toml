@@ -48,7 +48,6 @@ scoped_threadpool = "0.1.*"
 serde_variant = "0"
 primitive-types = "0"
 threadpool = "1"
-timer = "0"
 tokio = { version = "1", features = [
     "rt",
     "rt-multi-thread",

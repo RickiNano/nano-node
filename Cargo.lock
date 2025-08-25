@@ -4316,7 +4316,6 @@ dependencies = [
  "strum_macros 0.27.2",
  "test_helpers",
  "threadpool",
- "timer",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
@@ -5277,15 +5276,6 @@ dependencies = [
  "flate2",
  "jpeg-decoder",
  "weezl",
-]
-
-[[package]]
-name = "timer"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31d42176308937165701f50638db1c31586f183f1aab416268216577aec7306b"
-dependencies = [
- "chrono",
 ]
 
 [[package]]
