@@ -1,5 +1,4 @@
 use std::{
-    collections::VecDeque,
     fs::Permissions,
     os::unix::fs::PermissionsExt,
     path::PathBuf,
@@ -84,9 +83,8 @@ use crate::{
     tokio_runner::TokioRunner,
     transport::{
         keepalive::{KeepaliveMessageFactory, KeepalivePublisher},
-        run_loopback_channel_adapter, BlockFlooder, MessageFlooder, MessageProcessor,
-        MessageSender, NetworkThreads, PeerCacheConnector, PeerCacheUpdater,
-        RealtimeMessageHandler,
+        run_loopback_channel_adapter, MessageFlooder, MessageProcessor, MessageSender,
+        NetworkThreads, PeerCacheConnector, PeerCacheUpdater, RealtimeMessageHandler,
     },
     utils::{spawn_backpressure_processor, ThreadPool},
     wallets::{
@@ -155,7 +153,6 @@ pub struct Node {
     start_stop_listener: OutputListenerMt<&'static str>,
     wallet_backup: WalletBackup,
     receivable_search: ReceivableSearch,
-    block_flooder: BlockFlooder,
     vote_rebroadcaster: VoteRebroadcaster,
     tokio_runner: TokioRunner,
     pub aec_ticker: TimerThread<AecTicker>,
@@ -1153,11 +1150,6 @@ impl Node {
 
         let message_flooder = Arc::new(Mutex::new(message_flooder.clone()));
 
-        let block_flooder = BlockFlooder {
-            message_flooder: message_flooder.clone(),
-            workers: workers.clone(),
-        };
-
         let recently_cemented_inserter = RecentlyCementedInserter {
             recently_cemented: recently_cemented.clone(),
         };
@@ -1349,7 +1341,6 @@ impl Node {
             start_stop_listener: OutputListenerMt::new(),
             wallet_backup,
             receivable_search,
-            block_flooder,
             vote_rebroadcaster,
             tokio_runner,
             aec_ticker: TimerThread::new("AEC ticker", aec_ticker),
@@ -1508,15 +1499,6 @@ impl Node {
 
     pub fn is_active_hash(&self, hash: &BlockHash) -> bool {
         self.active.read().unwrap().is_active_hash(hash)
-    }
-
-    pub fn flood_block_many(
-        &self,
-        blocks: VecDeque<Block>,
-        callback: Box<dyn FnOnce() + Send + Sync>,
-        delay: Duration,
-    ) {
-        self.block_flooder.flood_block_many(blocks, callback, delay);
     }
 
     pub fn force_confirm(&self, hash: &BlockHash) {

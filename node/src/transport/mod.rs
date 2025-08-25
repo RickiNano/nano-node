@@ -1,5 +1,4 @@
 mod block_deserializer;
-mod block_flooder;
 pub mod keepalive;
 mod loopback_channel_adapter;
 mod message_flooder;
@@ -12,7 +11,6 @@ mod realtime_message_handler;
 mod vec_buffer_reader;
 
 pub use block_deserializer::read_block;
-pub(crate) use block_flooder::BlockFlooder;
 pub(crate) use loopback_channel_adapter::run_loopback_channel_adapter;
 pub use message_flooder::*;
 pub use message_processor::*;

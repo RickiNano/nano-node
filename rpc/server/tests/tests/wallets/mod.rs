@@ -28,7 +28,6 @@ mod wallet_locked;
 mod wallet_receivable;
 mod wallet_representative;
 mod wallet_representative_set;
-mod wallet_republish;
 mod wallet_work_get;
 mod work_get;
 mod work_set;

@@ -165,11 +165,13 @@ impl LedgerPruningExt for Arc<LedgerPruning> {
         let bootstrap_weight_reached =
             self.ledger.block_count() >= self.ledger.bootstrap_weight_max_blocks();
         self.ledger_pruning(2 * 1024, bootstrap_weight_reached);
+
         let ledger_pruning_interval = if bootstrap_weight_reached {
             self.config.max_pruning_age
         } else {
             min(self.config.max_pruning_age, Duration::from_secs(60 * 15))
         };
+
         let node_w = Arc::downgrade(self);
         self.workers.post_delayed(
             ledger_pruning_interval,
