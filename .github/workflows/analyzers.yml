@@ -8,4 +8,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo fmt
-        run: scripts/ci/cargo-fmt-check.sh
+        run: tools/scripts/ci/cargo-fmt-check.sh

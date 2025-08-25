@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare
-        run: scripts/ci/prepare/macos/prepare.sh
+        run: tools/scripts/ci/prepare/macos/prepare.sh
 
       - name: Build Tests
         id: build
@@ -40,7 +40,7 @@ jobs:
           submodules: "recursive"
 
       - name: Prepare
-        run: sudo -E scripts/ci/prepare/linux/prepare.sh
+        run: sudo -E tools/scripts/ci/prepare/linux/prepare.sh
 
       - name: Build Tests
         id: build
