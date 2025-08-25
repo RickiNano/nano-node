@@ -88,7 +88,7 @@ use crate::{
     utils::{spawn_backpressure_processor, ThreadPool},
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
-        ReceivableSearch, WalletBackup, WalletRepresentatives,
+        ReceivableSearch, WalletBackup, WalletRepresentatives, BACKUP_INTERVAL,
     },
     work::WorkFactory,
     NodeCallbacks, OnlineWeightSampler,
@@ -149,7 +149,7 @@ pub struct Node {
     pub message_flooder: Arc<Mutex<MessageFlooder>>, // TODO remove this. It is needed right now
     pub keepalive_publisher: Arc<KeepalivePublisher>,
     start_stop_listener: OutputListenerMt<&'static str>,
-    wallet_backup: WalletBackup,
+    wallet_backup: TimerThread<WalletBackup>,
     receivable_search: TimerThread<ReceivableSearch>,
     vote_rebroadcaster: VoteRebroadcaster,
     tokio_runner: TokioRunner,
@@ -1113,7 +1113,6 @@ impl Node {
 
         let wallet_backup = WalletBackup {
             data_path: application_path.clone(),
-            workers: workers.clone(),
             wallets: wallets.clone(),
         };
 
@@ -1309,7 +1308,7 @@ impl Node {
             keepalive_publisher,
             stopped: AtomicBool::new(false),
             start_stop_listener: OutputListenerMt::new(),
-            wallet_backup,
+            wallet_backup: TimerThread::new("Wallet bak", wallet_backup),
             receivable_search: TimerThread::new("Recv search", receivable_search),
             vote_rebroadcaster,
             tokio_runner,
@@ -1543,7 +1542,7 @@ impl Node {
         }
 
         if !self.flags.disable_backup {
-            self.wallet_backup.start();
+            self.wallet_backup.start(BACKUP_INTERVAL);
         }
 
         if !self.flags.disable_search_pending {
@@ -1616,6 +1615,8 @@ impl Node {
         info!("Node stopping...");
 
         self.tcp_listener.stop();
+        self.wallet_backup.stop();
+        self.receivable_search.stop();
         self.aec_voter.stop();
         self.local_reps_computation.stop();
         self.wallet_reps_checker.stop();
