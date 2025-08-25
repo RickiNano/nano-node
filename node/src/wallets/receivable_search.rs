@@ -5,20 +5,16 @@ use tracing::warn;
 use rsnano_types::Networks;
 use rsnano_wallet::Wallets;
 
-use crate::utils::ThreadPoolImpl;
+use crate::utils::ThreadPool;
 
 pub(crate) struct ReceivableSearch {
     wallets: Arc<Wallets>,
-    workers: Arc<ThreadPoolImpl>,
+    workers: Arc<ThreadPool>,
     interval: Duration,
 }
 
 impl ReceivableSearch {
-    pub(crate) fn new(
-        wallets: Arc<Wallets>,
-        workers: Arc<ThreadPoolImpl>,
-        network: Networks,
-    ) -> Self {
+    pub(crate) fn new(wallets: Arc<Wallets>, workers: Arc<ThreadPool>, network: Networks) -> Self {
         Self {
             wallets,
             workers,
@@ -42,7 +38,7 @@ impl ReceivableSearch {
     }
 }
 
-fn search_receivables(wallets: Arc<Wallets>, workers: Arc<ThreadPoolImpl>, interval: Duration) {
+fn search_receivables(wallets: Arc<Wallets>, workers: Arc<ThreadPool>, interval: Duration) {
     // Reload wallets from disk
     wallets.reload();
     // Search pending

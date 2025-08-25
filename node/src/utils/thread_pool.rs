@@ -10,7 +10,7 @@ use rsnano_output_tracker::OutputTrackerMt;
 
 use super::{NullTimer, Timer, TimerStrategy, TimerWrapper};
 
-pub struct ThreadPoolImpl<T: TimerStrategy + 'static = TimerWrapper> {
+pub struct ThreadPool<T: TimerStrategy + 'static = TimerWrapper> {
     data: Arc<Mutex<Option<ThreadPoolData<T>>>>,
     stopped: Arc<Mutex<bool>>,
 }
@@ -26,7 +26,7 @@ impl<T: TimerStrategy> ThreadPoolData<T> {
     }
 }
 
-impl ThreadPoolImpl<TimerWrapper> {
+impl ThreadPool<TimerWrapper> {
     pub fn create(num_threads: usize, thread_name: impl Into<String>) -> Self {
         Self::new(num_threads, thread_name.into(), Timer::new())
     }
@@ -36,13 +36,13 @@ impl ThreadPoolImpl<TimerWrapper> {
     }
 }
 
-impl ThreadPoolImpl<NullTimer> {
+impl ThreadPool<NullTimer> {
     pub fn new_null() -> Self {
         Self::new(1, "nulled thread pool".to_string(), Timer::new_null())
     }
 }
 
-impl<T: TimerStrategy> ThreadPoolImpl<T> {
+impl<T: TimerStrategy> ThreadPool<T> {
     pub fn new(num_threads: usize, thread_name: String, timer: Timer<T>) -> Self {
         Self {
             stopped: Arc::new(Mutex::new(false)),
@@ -123,7 +123,7 @@ impl<T: TimerStrategy> ThreadPoolImpl<T> {
     }
 }
 
-impl<T: TimerStrategy + 'static> Drop for ThreadPoolImpl<T> {
+impl<T: TimerStrategy + 'static> Drop for ThreadPool<T> {
     fn drop(&mut self) {
         self.join()
     }
@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn push_task() {
         let (tx, rx) = std::sync::mpsc::channel();
-        let pool = ThreadPoolImpl::create(1, "test thread".to_string());
+        let pool = ThreadPool::create(1, "test thread".to_string());
         pool.execute(Box::new(move || {
             tx.send("foo").unwrap();
         }));
@@ -148,7 +148,7 @@ mod tests {
     fn add_delayed_task() {
         let timer = Timer::new_null();
         let timer_tracker = timer.track();
-        let pool = ThreadPoolImpl::new(1, "test pool".to_string(), timer);
+        let pool = ThreadPool::new(1, "test pool".to_string(), timer);
         let (tx, rx) = std::sync::mpsc::channel();
 
         pool.post_delayed(
@@ -171,7 +171,7 @@ mod tests {
     fn add_multiple_delayed_tasks() {
         let timer = Timer::new_null();
         let timer_tracker = timer.track();
-        let pool = ThreadPoolImpl::new(1, "test pool".to_string(), timer);
+        let pool = ThreadPool::new(1, "test pool".to_string(), timer);
         let (tx, rx) = std::sync::mpsc::channel();
         let tx2 = tx.clone();
 
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn can_be_nulled() {
-        let pool = ThreadPoolImpl::new_null();
+        let pool = ThreadPool::new_null();
         let (tx, rx) = std::sync::mpsc::channel();
 
         let tracker = pool.track();

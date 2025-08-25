@@ -88,7 +88,7 @@ use crate::{
         MessageSender, NetworkThreads, PeerCacheConnector, PeerCacheUpdater,
         RealtimeMessageHandler,
     },
-    utils::{spawn_backpressure_processor, ThreadPoolImpl},
+    utils::{spawn_backpressure_processor, ThreadPool},
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
         ReceivableSearch, WalletBackup, WalletRepresentatives,
@@ -107,8 +107,8 @@ pub struct Node {
     pub config: NodeConfig,
     pub network_params: NetworkParams,
     pub stats: Arc<Stats>,
-    pub workers: Arc<ThreadPoolImpl>,
-    wallet_workers: Arc<ThreadPoolImpl>,
+    pub workers: Arc<ThreadPool>,
+    wallet_workers: Arc<ThreadPool>,
     pub flags: NodeFlags,
     pub work_factory: Arc<WorkFactory>,
     pub unchecked: Arc<Mutex<UncheckedMap>>,
@@ -377,11 +377,11 @@ impl Node {
 
         let syn_cookies = Arc::new(SynCookies::new(network_params.network.max_peers_per_ip));
 
-        let workers = Arc::new(ThreadPoolImpl::create(
+        let workers = Arc::new(ThreadPool::create(
             config.background_threads as usize,
             "Worker".to_string(),
         ));
-        let wallet_workers = Arc::new(ThreadPoolImpl::create(1, "Wallet work"));
+        let wallet_workers = Arc::new(ThreadPool::create(1, "Wallet work"));
 
         let mut inbound_message_queue =
             InboundMessageQueue::new(config.message_processor.max_queue);

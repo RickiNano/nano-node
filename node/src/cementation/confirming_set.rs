@@ -20,7 +20,7 @@ use super::ordered_entries::OrderedEntries;
 use crate::{
     block_processing::{LedgerEvent, ProcessedResult},
     consensus::{election::ConfirmedElection, ConfirmedElectionsCache},
-    utils::ThreadPoolImpl,
+    utils::ThreadPool,
 };
 
 /// A block that is currently cementing
@@ -83,7 +83,7 @@ impl ConfirmingSet {
                 ledger,
                 stats,
                 config,
-                workers: ThreadPoolImpl::create(1, "Conf notif"),
+                workers: ThreadPool::create(1, "Conf notif"),
                 event_publisher: Mutex::new(None),
             }),
         }
@@ -211,7 +211,7 @@ struct ConfirmingSetThread {
     ledger: Arc<Ledger>,
     stats: Arc<Stats>,
     config: ConfirmingSetConfig,
-    workers: ThreadPoolImpl,
+    workers: ThreadPool,
     event_publisher: Mutex<Option<Sender<LedgerEvent>>>,
 }
 

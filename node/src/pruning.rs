@@ -14,13 +14,13 @@ use rsnano_ledger::Ledger;
 use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use crate::{config::NodeConfig, utils::ThreadPoolImpl};
+use crate::{config::NodeConfig, utils::ThreadPool};
 
 pub struct LedgerPruning {
     config: NodeConfig,
     ledger: Arc<Ledger>,
     stopped: AtomicBool,
-    workers: Arc<ThreadPoolImpl>,
+    workers: Arc<ThreadPool>,
     stats: Arc<Stats>,
 }
 
@@ -29,7 +29,7 @@ impl LedgerPruning {
         Self {
             config,
             ledger,
-            workers: Arc::new(ThreadPoolImpl::create(1, "Pruning")),
+            workers: Arc::new(ThreadPool::create(1, "Pruning")),
             stats,
             stopped: AtomicBool::new(false),
         }

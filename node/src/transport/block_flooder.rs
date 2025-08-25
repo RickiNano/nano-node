@@ -9,11 +9,11 @@ use rsnano_network::TrafficType;
 use rsnano_types::Block;
 
 use super::MessageFlooder;
-use crate::utils::ThreadPoolImpl;
+use crate::utils::ThreadPool;
 
 pub(crate) struct BlockFlooder {
     pub message_flooder: Arc<Mutex<MessageFlooder>>,
-    pub workers: Arc<ThreadPoolImpl>,
+    pub workers: Arc<ThreadPool>,
 }
 
 impl BlockFlooder {
@@ -38,7 +38,7 @@ fn flood(
     callback: Box<dyn FnOnce() + Send + Sync>,
     delay: Duration,
     message_flooder: Arc<Mutex<MessageFlooder>>,
-    workers: Arc<ThreadPoolImpl>,
+    workers: Arc<ThreadPool>,
 ) {
     if let Some(block) = blocks.pop_front() {
         let publish = Message::Publish(Publish::new_forward(block));

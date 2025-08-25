@@ -7,7 +7,7 @@ use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use super::frontier_worker::FrontierWorker;
 use crate::{
     bootstrap::state::{BootstrapState, RunningQuery, VerifyResult},
-    utils::ThreadPoolImpl,
+    utils::ThreadPool,
 };
 
 /// Processes responses to AscPullReqs by the frontier scan
@@ -15,7 +15,7 @@ pub(crate) struct FrontierAckProcessor {
     stats: Arc<Stats>,
     ledger: Arc<Ledger>,
     state: Arc<Mutex<BootstrapState>>,
-    workers: Arc<ThreadPoolImpl>,
+    workers: Arc<ThreadPool>,
     pub max_pending: usize,
 }
 
@@ -25,7 +25,7 @@ impl FrontierAckProcessor {
         ledger: Arc<Ledger>,
         state: Arc<Mutex<BootstrapState>>,
     ) -> Self {
-        let workers = Arc::new(ThreadPoolImpl::create(1, "Bootstrap work"));
+        let workers = Arc::new(ThreadPool::create(1, "Bootstrap work"));
         Self {
             stats,
             ledger,

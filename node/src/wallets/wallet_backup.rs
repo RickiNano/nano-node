@@ -4,11 +4,11 @@ use tracing::error;
 
 use rsnano_wallet::Wallets;
 
-use crate::utils::ThreadPoolImpl;
+use crate::utils::ThreadPool;
 
 pub(crate) struct WalletBackup {
     pub data_path: PathBuf,
-    pub workers: Arc<ThreadPoolImpl>,
+    pub workers: Arc<ThreadPool>,
     pub wallets: Arc<Wallets>,
 }
 
@@ -20,7 +20,7 @@ impl WalletBackup {
     }
 }
 
-fn ongoing_backup(backup_path: PathBuf, workers: Arc<ThreadPoolImpl>, wallets: Arc<Wallets>) {
+fn ongoing_backup(backup_path: PathBuf, workers: Arc<ThreadPool>, wallets: Arc<Wallets>) {
     if let Err(e) = wallets.backup(&backup_path) {
         error!(error = ?e, "Could not create backup of wallets");
     }
