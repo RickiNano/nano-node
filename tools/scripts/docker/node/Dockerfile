@@ -4,7 +4,7 @@ ARG COMPILER=gcc
 ARG NANO_NETWORK=live
 
 # Install build dependencies
-COPY ./scripts/ci/prepare/linux /tmp/prepare
+COPY ./tools/scripts/ci/prepare/linux /tmp/prepare
 RUN /tmp/prepare/prepare.sh
 
 COPY ./ /tmp/src
@@ -33,7 +33,7 @@ RUN groupadd --gid 1000 nanocurrency && \
 COPY --from=builder /tmp/src/target/release/rsnano_node /usr/bin
 COPY --from=builder /etc/nano-network /etc
 
-COPY scripts/docker/node/config /usr/share/nano/config
+COPY tools/scripts/docker/node/config /usr/share/nano/config
 RUN ldconfig
 
 WORKDIR /root
