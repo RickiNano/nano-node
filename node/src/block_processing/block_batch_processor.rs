@@ -13,7 +13,7 @@ use rsnano_ledger::{BlockError, Ledger};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::{
     stats::{StatsCollection, StatsSource},
-    sync::backpressure_channel::{backpressure_channel, BackpressureSender},
+    sync::backpressure_channel::{channel, Sender},
 };
 
 use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap};
@@ -23,7 +23,7 @@ pub(crate) struct BlockBatchProcessor {
     pub ledger: Arc<Ledger>,
     pub unchecked: Arc<Mutex<UncheckedMap>>,
     pub stats: Arc<BlockBatchProcessorStats>,
-    pub event_publisher: BackpressureSender<LedgerEvent>,
+    pub event_publisher: Sender<LedgerEvent>,
     pub unchecked_reenqueuer: UncheckedBlockReenqueuer,
     pub clock: Arc<SteadyClock>,
 }
@@ -35,7 +35,7 @@ impl BlockBatchProcessor {
             ledger: Arc::new(Ledger::new_null()),
             unchecked: Arc::new(Mutex::new(UncheckedMap::default())),
             stats: Arc::new(BlockBatchProcessorStats::default()),
-            event_publisher: backpressure_channel(0).0,
+            event_publisher: channel(0).0,
             unchecked_reenqueuer: UncheckedBlockReenqueuer::new_null(),
             clock: Arc::new(SteadyClock::new_null()),
         }

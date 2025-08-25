@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Deref};
 
 use rsnano_core::{Amount, BlockHash, VoteError, VoteSource};
-use rsnano_utils::sync::backpressure_channel::BackpressureSender;
+use rsnano_utils::sync::backpressure_channel::Sender;
 
 use super::{
     recently_confirmed_cache::RecentlyConfirmedCache,
@@ -15,7 +15,7 @@ pub(super) struct ApplyVoteHelper<'a> {
     pub args: &'a ApplyVoteArgs<'a>,
     pub recently_confirmed: &'a mut RecentlyConfirmedCache,
     pub vote_counter: &'a mut VoteCounter,
-    pub observer: &'a Option<BackpressureSender<AecEvent>>,
+    pub observer: &'a Option<Sender<AecEvent>>,
     pub roots: &'a mut RootContainer,
 }
 
@@ -73,7 +73,7 @@ struct ApplyVoteToElectionHelper<'a> {
     pub args: &'a ApplyVoteArgs<'a>,
     pub recently_confirmed: &'a mut RecentlyConfirmedCache,
     pub vote_counter: &'a mut VoteCounter,
-    pub observer: &'a Option<BackpressureSender<AecEvent>>,
+    pub observer: &'a Option<Sender<AecEvent>>,
     pub election: &'a mut Election,
     pub block_hash: &'a BlockHash,
 }
@@ -188,7 +188,7 @@ mod tests {
     };
     use rsnano_ledger::RepWeights;
     use rsnano_nullable_clock::Timestamp;
-    use rsnano_utils::sync::backpressure_channel::backpressure_channel;
+    use rsnano_utils::sync::backpressure_channel::channel;
     use std::time::Duration;
 
     #[test]
@@ -466,7 +466,7 @@ mod tests {
             let quorum_specs = QuorumSpecs::new_test_instance();
             let mut recently_confirmed = RecentlyConfirmedCache::default();
             let mut vote_counter = VoteCounter::default();
-            let (tx, rx) = backpressure_channel(1024);
+            let (tx, rx) = channel(1024);
 
             let result = {
                 ApplyVoteToElectionHelper {

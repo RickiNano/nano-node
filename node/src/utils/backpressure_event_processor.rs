@@ -1,4 +1,4 @@
-use rsnano_utils::sync::backpressure_channel::BackpressureReceiver;
+use rsnano_utils::sync::backpressure_channel::Receiver;
 
 pub(crate) trait BackpressureEventProcessor<T> {
     fn cool_down(&mut self);
@@ -8,7 +8,7 @@ pub(crate) trait BackpressureEventProcessor<T> {
 
 pub(crate) fn spawn_backpressure_processor<T, I>(
     thread_name: impl Into<String>,
-    receiver: BackpressureReceiver<I>,
+    receiver: Receiver<I>,
     processor: T,
 ) where
     I: Send + 'static,
@@ -26,7 +26,7 @@ struct BackpressureEventLoop<T, I>
 where
     T: BackpressureEventProcessor<I>,
 {
-    receiver: BackpressureReceiver<I>,
+    receiver: Receiver<I>,
     processor: T,
     previous_cooldown_state: bool,
 }
@@ -35,7 +35,7 @@ impl<T, I> BackpressureEventLoop<T, I>
 where
     T: BackpressureEventProcessor<I>,
 {
-    fn new(receiver: BackpressureReceiver<I>, processor: T) -> Self {
+    fn new(receiver: Receiver<I>, processor: T) -> Self {
         Self {
             receiver,
             processor,
@@ -69,7 +69,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_utils::sync::backpressure_channel::backpressure_channel;
+    use rsnano_utils::sync::backpressure_channel::channel;
     use std::{
         sync::{Arc, Mutex},
         time::{Duration, Instant},
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn process_events() {
-        let (_tx, rx) = backpressure_channel::<&'static str>(2);
+        let (_tx, rx) = channel::<&'static str>(2);
         let mut ev_loop = BackpressureEventLoop::new(rx, StubProcessor::default());
         ev_loop.process_event("test1");
         ev_loop.process_event("test2");
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn cool_down_and_recover() {
-        let (tx, rx) = backpressure_channel::<&'static str>(2);
+        let (tx, rx) = channel::<&'static str>(2);
         let mut ev_loop = BackpressureEventLoop::new(rx, StubProcessor::default());
         ev_loop.process_event("test1");
         ev_loop.process_event("test2");
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn spawn_processor_thread() {
-        let (tx, rx) = backpressure_channel::<&'static str>(2);
+        let (tx, rx) = channel::<&'static str>(2);
         let processor = StubProcessor::default();
         spawn_backpressure_processor("backpres test", rx, processor.clone());
         tx.send("test1").unwrap();

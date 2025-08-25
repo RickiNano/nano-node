@@ -38,7 +38,7 @@ use rsnano_output_tracker::OutputListenerMt;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},
-    sync::backpressure_channel::backpressure_channel,
+    sync::backpressure_channel,
 };
 use rsnano_wallet::{Wallets, WalletsTicker};
 
@@ -344,7 +344,7 @@ impl Node {
         let rep_weights = ledger.rep_weights.clone();
 
         let mut event_queues_info = ContainerInfoFactory::new();
-        let (ledger_tx, ledger_rx) = backpressure_channel(1024);
+        let (ledger_tx, ledger_rx) = backpressure_channel::channel(1024);
         let ledger_tx_clone = ledger_tx.clone();
         event_queues_info.add_leaf("ledger", move || ledger_tx_clone.len());
 
@@ -600,7 +600,7 @@ impl Node {
             _ => Duration::from_millis(1000),
         };
 
-        let (aec_sender, aec_receiver) = backpressure_channel(1024 * 5);
+        let (aec_sender, aec_receiver) = backpressure_channel::channel(1024 * 5);
         let aec_sender_clone = aec_sender.clone();
         event_queues_info.add_leaf("aec", move || aec_sender_clone.len());
 

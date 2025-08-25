@@ -15,7 +15,7 @@ use rsnano_core::{BlockHash, Vote, VoteError, VoteSource};
 use rsnano_network::Channel;
 use rsnano_utils::{
     stats::{DetailType, StatType, Stats},
-    sync::backpressure_channel::BackpressureSender,
+    sync::backpressure_channel::Sender,
 };
 
 use super::{AecEvent, FilteredVote, ReceivedVote, VoteApplier, VoteProcessorQueue};
@@ -71,7 +71,7 @@ impl VoteProcessor {
         }
     }
 
-    pub fn add_observer(&self, sink: BackpressureSender<AecEvent>) {
+    pub fn add_observer(&self, sink: Sender<AecEvent>) {
         self.vote_applier.add_event_sink(sink);
     }
 

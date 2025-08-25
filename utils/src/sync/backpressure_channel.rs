@@ -2,37 +2,35 @@ use std::{
     cmp::max,
     sync::{
         atomic::{AtomicBool, AtomicI32, Ordering},
-        mpsc::{channel, Receiver, RecvError, SendError, Sender, TryRecvError},
+        mpsc::{self, RecvError, SendError, TryRecvError},
         Arc,
     },
 };
 
 /// BackpressureChannel is a wrapper around mpsc::channel that tracks the size of the queue
-pub struct BackpressureSender<T> {
-    sender: Sender<T>,
+pub struct Sender<T> {
+    sender: mpsc::Sender<T>,
     queue_size: Arc<AtomicI32>,
 }
 
 /// BackpressureReceiver is the receiving end of the BackpressureChannel
-pub struct BackpressureReceiver<T> {
-    receiver: Receiver<T>,
+pub struct Receiver<T> {
+    receiver: mpsc::Receiver<T>,
     queue_size: Arc<AtomicI32>,
     soft_limit: usize,
     is_cooling_down: AtomicBool,
 }
 
-pub fn backpressure_channel<T>(
-    soft_limit: usize,
-) -> (BackpressureSender<T>, BackpressureReceiver<T>) {
-    let (sender, receiver) = channel();
+pub fn channel<T>(soft_limit: usize) -> (Sender<T>, Receiver<T>) {
+    let (sender, receiver) = mpsc::channel();
     let queue_size = Arc::new(AtomicI32::new(0));
 
-    let tx = BackpressureSender {
+    let tx = Sender {
         sender,
         queue_size: Arc::clone(&queue_size),
     };
 
-    let rx = BackpressureReceiver {
+    let rx = Receiver {
         receiver,
         queue_size,
         soft_limit,
@@ -42,7 +40,7 @@ pub fn backpressure_channel<T>(
     (tx, rx)
 }
 
-impl<T> BackpressureSender<T> {
+impl<T> Sender<T> {
     /// Send a value to the channel and track the size
     pub fn send(&self, t: T) -> Result<(), SendError<T>> {
         let result = self.sender.send(t);
@@ -64,7 +62,7 @@ impl<T> BackpressureSender<T> {
     }
 }
 
-impl<T> BackpressureReceiver<T> {
+impl<T> Receiver<T> {
     /// Receive a value from the channel and update the size
     pub fn recv(&self) -> Result<T, RecvError> {
         let result = self.receiver.recv();
@@ -113,9 +111,9 @@ impl<T> BackpressureReceiver<T> {
     }
 }
 
-impl<T> Clone for BackpressureSender<T> {
+impl<T> Clone for Sender<T> {
     fn clone(&self) -> Self {
-        BackpressureSender {
+        Sender {
             sender: self.sender.clone(),
             queue_size: Arc::clone(&self.queue_size),
         }
@@ -129,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_basic_functionality() {
-        let (tx, rx) = backpressure_channel(1000);
+        let (tx, rx) = channel(1000);
 
         // Initially empty
         assert_eq!(tx.len(), 0);
@@ -149,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_never_negative() {
-        let (tx, rx) = backpressure_channel(1000);
+        let (tx, rx) = channel(1000);
 
         // Send one item
         tx.send(1).unwrap();
@@ -167,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_channel_cloning() {
-        let (tx1, rx) = backpressure_channel(1000);
+        let (tx1, rx) = channel(1000);
         let tx2 = tx1.clone();
 
         // Send from both senders
@@ -186,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_simple_threading() {
-        let (tx, rx) = backpressure_channel(1000);
+        let (tx, rx) = channel(1000);
 
         // Get a copy of the counter for testing after rx is moved
         let queue_size = Arc::clone(&rx.queue_size);
@@ -215,7 +213,7 @@ mod tests {
 
     #[test]
     fn should_know_when_to_cool_down() {
-        let (tx, rx) = backpressure_channel(4);
+        let (tx, rx) = channel(4);
         tx.send(1).unwrap();
         tx.send(2).unwrap();
         tx.send(3).unwrap();
@@ -226,7 +224,7 @@ mod tests {
 
     #[test]
     fn should_end_cooldown_when_half_of_soft_limit_reached() {
-        let (tx, rx) = backpressure_channel(4);
+        let (tx, rx) = channel(4);
         tx.send(1).unwrap();
         tx.send(2).unwrap();
         tx.send(3).unwrap();

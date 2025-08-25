@@ -7,7 +7,7 @@ use rsnano_ledger::Ledger;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::{
     stats::{StatsCollection, StatsSource},
-    sync::backpressure_channel::BackpressureSender,
+    sync::backpressure_channel::Sender,
 };
 
 use super::{
@@ -23,7 +23,7 @@ pub struct BlockProcessor {
     unchecked: Arc<Mutex<UncheckedMap>>,
     process_stats: Arc<BlockBatchProcessorStats>,
     backlog_waiter: Arc<BacklogWaiter>,
-    event_publisher: Mutex<Option<BackpressureSender<LedgerEvent>>>,
+    event_publisher: Mutex<Option<Sender<LedgerEvent>>>,
     unchecked_reenqueuer: UncheckedBlockReenqueuer,
     clock: Arc<SteadyClock>,
 }
@@ -35,7 +35,7 @@ impl BlockProcessor {
         unchecked: Arc<Mutex<UncheckedMap>>,
         unchecked_reenqueuer: UncheckedBlockReenqueuer,
         backlog_waiter: Arc<BacklogWaiter>,
-        event_publisher: BackpressureSender<LedgerEvent>,
+        event_publisher: Sender<LedgerEvent>,
         clock: Arc<SteadyClock>,
     ) -> Self {
         Self {

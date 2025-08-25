@@ -10,7 +10,7 @@ use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{StatsCollection, StatsSource},
-    sync::backpressure_channel::BackpressureSender,
+    sync::backpressure_channel::Sender,
 };
 
 use crate::{
@@ -35,7 +35,7 @@ use super::{
 
 pub struct ActiveElectionsContainer {
     roots: RootContainer,
-    observer: Option<BackpressureSender<AecEvent>>,
+    observer: Option<Sender<AecEvent>>,
     stopped: bool,
     count_by_behavior: [usize; ElectionBehavior::COUNT],
     base_latency: Duration,
@@ -60,7 +60,7 @@ impl ActiveElectionsContainer {
         }
     }
 
-    pub fn set_observer(&mut self, observer: BackpressureSender<AecEvent>) {
+    pub fn set_observer(&mut self, observer: Sender<AecEvent>) {
         self.observer = Some(observer);
     }
 

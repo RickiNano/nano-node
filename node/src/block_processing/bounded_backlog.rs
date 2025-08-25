@@ -14,7 +14,7 @@ use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, StatType, Stats},
-    sync::backpressure_channel::{backpressure_channel, BackpressureSender},
+    sync::backpressure_channel::{channel, Sender},
 };
 
 use super::{
@@ -53,7 +53,7 @@ impl BoundedBacklog {
         ledger: Arc<Ledger>,
         stats: Arc<Stats>,
         clock: Arc<SteadyClock>,
-        publish_event: BackpressureSender<LedgerEvent>,
+        publish_event: Sender<LedgerEvent>,
     ) -> Self {
         let backlog_impl = Arc::new(BoundedBacklogImpl {
             condition: Condvar::new(),
@@ -86,7 +86,7 @@ impl BoundedBacklog {
         let ledger = Arc::new(Ledger::new_null());
         let stats = Arc::new(Stats::default());
         let clock = Arc::new(SteadyClock::new_null());
-        let (sender, _) = backpressure_channel(0);
+        let (sender, _) = channel(0);
 
         Self::new(config, ledger, stats, clock, sender)
     }
@@ -260,7 +260,7 @@ struct BoundedBacklogImpl {
     ledger: Arc<Ledger>,
     can_roll_back: RwLock<Box<dyn Fn(&BlockHash) -> bool + Send + Sync>>,
     clock: Arc<SteadyClock>,
-    publish_event: Mutex<Option<BackpressureSender<LedgerEvent>>>,
+    publish_event: Mutex<Option<Sender<LedgerEvent>>>,
 }
 
 impl BoundedBacklogImpl {

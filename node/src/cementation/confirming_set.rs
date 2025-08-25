@@ -13,7 +13,7 @@ use rsnano_ledger::{CementingObserver, Ledger};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, StatType, Stats},
-    sync::backpressure_channel::BackpressureSender,
+    sync::backpressure_channel::Sender,
 };
 
 use super::ordered_entries::OrderedEntries;
@@ -97,7 +97,7 @@ impl ConfirmingSet {
         )
     }
 
-    pub fn set_event_publisher(&self, sink: BackpressureSender<LedgerEvent>) {
+    pub fn set_event_publisher(&self, sink: Sender<LedgerEvent>) {
         *self.thread.event_publisher.lock().unwrap() = Some(sink);
     }
 
@@ -212,7 +212,7 @@ struct ConfirmingSetThread {
     stats: Arc<Stats>,
     config: ConfirmingSetConfig,
     workers: ThreadPoolImpl,
-    event_publisher: Mutex<Option<BackpressureSender<LedgerEvent>>>,
+    event_publisher: Mutex<Option<Sender<LedgerEvent>>>,
 }
 
 impl ConfirmingSetThread {

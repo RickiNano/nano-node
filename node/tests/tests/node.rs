@@ -18,7 +18,7 @@ use rsnano_node::{
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_utils::{
     stats::{DetailType, Direction, StatType},
-    sync::backpressure_channel::backpressure_channel,
+    sync::backpressure_channel,
 };
 use test_helpers::{
     activate_hashes, assert_never, assert_timely, assert_timely2, assert_timely_eq,
@@ -228,7 +228,7 @@ fn vote_by_hash_bundle() {
 
     // Set up an observer to track the maximum number of hashes in a vote
 
-    let (tx, rx) = backpressure_channel(128);
+    let (tx, rx) = backpressure_channel::channel(128);
     node.vote_processor.add_observer(tx);
 
     // Enqueue vote requests for all the blocks

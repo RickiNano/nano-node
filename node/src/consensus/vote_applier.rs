@@ -7,7 +7,7 @@ use rsnano_nullable_clock::SteadyClock;
 
 use rsnano_core::{Amount, BlockHash, VoteError};
 use rsnano_ledger::RepWeightCache;
-use rsnano_utils::sync::backpressure_channel::BackpressureSender;
+use rsnano_utils::sync::backpressure_channel::Sender;
 
 use super::{ActiveElectionsContainer, AecEvent, FilteredVote, ReceivedVote};
 use crate::{consensus::ApplyVoteArgs, representatives::OnlineReps};
@@ -15,7 +15,7 @@ use crate::{consensus::ApplyVoteArgs, representatives::OnlineReps};
 /// Applies a vote to an election
 pub(crate) struct VoteApplier {
     active_elections: Arc<RwLock<ActiveElectionsContainer>>,
-    event_senders: RwLock<Vec<BackpressureSender<AecEvent>>>,
+    event_senders: RwLock<Vec<Sender<AecEvent>>>,
     online_reps: Arc<Mutex<OnlineReps>>,
     clock: Arc<SteadyClock>,
     rep_weights: Arc<RepWeightCache>,
@@ -40,7 +40,7 @@ impl VoteApplier {
         }
     }
 
-    pub fn add_event_sink(&self, sink: BackpressureSender<AecEvent>) {
+    pub fn add_event_sink(&self, sink: Sender<AecEvent>) {
         self.event_senders.write().unwrap().push(sink);
     }
 
