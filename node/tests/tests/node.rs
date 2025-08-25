@@ -1,9 +1,8 @@
 use std::{cmp::max, collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
 use rsnano_core::{
-    utils::{backpressure_channel, UnixMillisTimestamp},
-    Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey, PublicKey, Root, Signature,
-    StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
+    utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey,
+    PublicKey, Root, Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
 };
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, BlockError, ConfirmedSet, LedgerSet,
@@ -17,7 +16,10 @@ use rsnano_node::{
     consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
 };
 use rsnano_nullable_tcp::get_available_port;
-use rsnano_utils::stats::{DetailType, Direction, StatType};
+use rsnano_utils::{
+    stats::{DetailType, Direction, StatType},
+    sync::backpressure_channel::backpressure_channel,
+};
 use test_helpers::{
     activate_hashes, assert_never, assert_timely, assert_timely2, assert_timely_eq,
     assert_timely_eq2, assert_timely_msg, establish_tcp, make_fake_channel, setup_chains,

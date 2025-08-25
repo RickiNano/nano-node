@@ -1,4 +1,4 @@
-use rsnano_core::utils::BackpressureReceiver;
+use rsnano_utils::sync::backpressure_channel::BackpressureReceiver;
 
 pub(crate) trait BackpressureEventProcessor<T> {
     fn cool_down(&mut self);
@@ -69,7 +69,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::utils::backpressure_channel;
+    use rsnano_utils::sync::backpressure_channel::backpressure_channel;
     use std::{
         sync::{Arc, Mutex},
         time::{Duration, Instant},

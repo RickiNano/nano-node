@@ -1,3 +1,5 @@
+pub mod backpressure_channel;
+
 use std::sync::{Arc, Condvar, Mutex};
 
 /// contains (done, Option<result>)

@@ -3,16 +3,18 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_core::utils::BackpressureSender;
 use rsnano_ledger::Ledger;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_utils::{
+    stats::{StatsCollection, StatsSource},
+    sync::backpressure_channel::BackpressureSender,
+};
 
 use super::{
     backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,
     BlockProcessorQueue, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap,
 };
 use crate::block_processing::block_batch_processor::BlockBatchProcessor;
-use rsnano_nullable_clock::SteadyClock;
 
 pub struct BlockProcessor {
     threads: Mutex<Vec<JoinHandle<()>>>,

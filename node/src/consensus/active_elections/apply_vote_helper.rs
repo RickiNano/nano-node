@@ -1,3 +1,8 @@
+use std::{collections::HashMap, ops::Deref};
+
+use rsnano_core::{Amount, BlockHash, VoteError, VoteSource};
+use rsnano_utils::sync::backpressure_channel::BackpressureSender;
+
 use super::{
     recently_confirmed_cache::RecentlyConfirmedCache,
     root_container::{Entry, RootContainer},
@@ -5,8 +10,6 @@ use super::{
     AecEvent, ApplyVoteArgs,
 };
 use crate::consensus::election::{ConfirmationType, Election, VoteSummary};
-use rsnano_core::{utils::BackpressureSender, Amount, BlockHash, VoteError, VoteSource};
-use std::{collections::HashMap, ops::Deref};
 
 pub(super) struct ApplyVoteHelper<'a> {
     pub args: &'a ApplyVoteArgs<'a>,
@@ -180,11 +183,12 @@ mod tests {
         representatives::QuorumSpecs,
     };
     use rsnano_core::{
-        utils::{backpressure_channel, BlockPriority, UnixMillisTimestamp},
+        utils::{BlockPriority, UnixMillisTimestamp},
         Block, PrivateKey, QualifiedRoot, SavedBlock, StateBlockArgs, Vote,
     };
     use rsnano_ledger::RepWeights;
     use rsnano_nullable_clock::Timestamp;
+    use rsnano_utils::sync::backpressure_channel::backpressure_channel;
     use std::time::Duration;
 
     #[test]

@@ -16,9 +16,8 @@ use num_format::{Locale, ToFormattedString};
 use tracing::{error, info, warn};
 
 use rsnano_core::{
-    utils::{backpressure_channel, Peer},
-    Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot, Root,
-    SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
+    utils::Peer, Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot,
+    Root, SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_ledger::{AnySet, BlockError, Ledger, LedgerBuilder, LedgerSet};
 use rsnano_messages::NetworkFilter;
@@ -39,6 +38,7 @@ use rsnano_output_tracker::OutputListenerMt;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},
+    sync::backpressure_channel::backpressure_channel,
 };
 use rsnano_wallet::{Wallets, WalletsTicker};
 

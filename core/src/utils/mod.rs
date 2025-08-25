@@ -1,9 +1,7 @@
-mod backpressure_channel;
 mod cancellation_token;
 mod peer;
 mod stream;
 
-pub use backpressure_channel::*;
 pub use cancellation_token::CancellationToken;
 use chrono::{DateTime, TimeZone, Utc};
 pub use peer::*;

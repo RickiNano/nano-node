@@ -7,15 +7,15 @@ use std::{
 
 use tracing::warn;
 
-use rsnano_core::{
-    utils::{backpressure_channel, BackpressureSender},
-    Account, AccountInfo, BlockHash, ConfirmationHeightInfo, SavedBlock,
-};
+use rsnano_core::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger, LedgerSet, OwningAnySet};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_utils::{
+    container_info::{ContainerInfo, ContainerInfoProvider},
+    stats::{DetailType, StatType, Stats},
+    sync::backpressure_channel::{backpressure_channel, BackpressureSender},
+};
 
 use super::{
     backlog_index::{BacklogEntry, BacklogIndex},

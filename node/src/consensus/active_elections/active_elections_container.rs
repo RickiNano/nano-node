@@ -3,14 +3,14 @@ use std::{collections::HashMap, time::Duration};
 use strum::EnumCount;
 
 use rsnano_core::{
-    utils::{BackpressureSender, TimePriority},
-    Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError,
+    utils::TimePriority, Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError,
 };
 use rsnano_ledger::RepWeights;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{StatsCollection, StatsSource},
+    sync::backpressure_channel::BackpressureSender,
 };
 
 use crate::{

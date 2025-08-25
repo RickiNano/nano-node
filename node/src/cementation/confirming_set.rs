@@ -8,11 +8,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::{utils::BackpressureSender, BlockHash, SavedBlock};
+use rsnano_core::{BlockHash, SavedBlock};
 use rsnano_ledger::{CementingObserver, Ledger};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, StatType, Stats},
+    sync::backpressure_channel::BackpressureSender,
 };
 
 use super::ordered_entries::OrderedEntries;

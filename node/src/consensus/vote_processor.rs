@@ -11,9 +11,12 @@ use std::{
 
 use tracing::debug;
 
-use rsnano_core::{utils::BackpressureSender, BlockHash, Vote, VoteError, VoteSource};
+use rsnano_core::{BlockHash, Vote, VoteError, VoteSource};
 use rsnano_network::Channel;
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_utils::{
+    stats::{DetailType, StatType, Stats},
+    sync::backpressure_channel::BackpressureSender,
+};
 
 use super::{AecEvent, FilteredVote, ReceivedVote, VoteApplier, VoteProcessorQueue};
 

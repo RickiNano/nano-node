@@ -5,8 +5,9 @@ use std::{
 
 use rsnano_nullable_clock::SteadyClock;
 
-use rsnano_core::{utils::BackpressureSender, Amount, BlockHash, VoteError};
+use rsnano_core::{Amount, BlockHash, VoteError};
 use rsnano_ledger::RepWeightCache;
+use rsnano_utils::sync::backpressure_channel::BackpressureSender;
 
 use super::{ActiveElectionsContainer, AecEvent, FilteredVote, ReceivedVote};
 use crate::{consensus::ApplyVoteArgs, representatives::OnlineReps};

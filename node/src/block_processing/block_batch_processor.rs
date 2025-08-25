@@ -9,10 +9,12 @@ use std::{
 use strum::{EnumCount, IntoEnumIterator};
 use tracing::{debug, warn};
 
-use rsnano_core::utils::{backpressure_channel, BackpressureSender};
 use rsnano_ledger::{BlockError, Ledger};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
+use rsnano_utils::{
+    stats::{StatsCollection, StatsSource},
+    sync::backpressure_channel::{backpressure_channel, BackpressureSender},
+};
 
 use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap};
 use crate::block_processing::ProcessedResult;
