@@ -1,4 +1,5 @@
 use std::{
+    cmp::min,
     collections::VecDeque,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -51,7 +52,7 @@ impl LedgerPruning {
             u64::MAX
         };
         let cutoff_time: UnixTimestamp = if bootstrap_weight_reached {
-            (SystemTime::now() - Duration::from_secs(self.config.max_pruning_age_s as u64))
+            (SystemTime::now() - self.config.max_pruning_age)
                 .try_into()
                 .unwrap()
         } else {
@@ -168,9 +169,9 @@ impl LedgerPruningExt for Arc<LedgerPruning> {
             self.ledger.block_count() >= self.ledger.bootstrap_weight_max_blocks();
         self.ledger_pruning(2 * 1024, bootstrap_weight_reached);
         let ledger_pruning_interval = if bootstrap_weight_reached {
-            Duration::from_secs(self.config.max_pruning_age_s as u64)
+            self.config.max_pruning_age
         } else {
-            Duration::from_secs(std::cmp::min(self.config.max_pruning_age_s as u64, 15 * 60))
+            min(self.config.max_pruning_age, Duration::from_secs(60 * 15))
         };
         let node_w = Arc::downgrade(self);
         self.workers.post_delayed(

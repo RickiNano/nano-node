@@ -152,7 +152,6 @@ pub struct Node {
     pub message_sender: Arc<Mutex<MessageSender>>, // TODO remove this. It is needed right now
     pub message_flooder: Arc<Mutex<MessageFlooder>>, // TODO remove this. It is needed right now
     pub keepalive_publisher: Arc<KeepalivePublisher>,
-    // to keep the weak pointer alive
     start_stop_listener: OutputListenerMt<&'static str>,
     wallet_backup: WalletBackup,
     receivable_search: ReceivableSearch,

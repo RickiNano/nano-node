@@ -87,7 +87,7 @@ fn pruning_automatic() {
 
     let mut node_config = System::default_config();
     node_config.enable_voting = false; // Pruning and voting are incompatible
-    node_config.max_pruning_age_s = 1;
+    node_config.max_pruning_age = Duration::from_secs(1);
 
     let mut node_flags = NodeFlags::default();
     node_flags.enable_pruning = true;

@@ -80,7 +80,7 @@ pub struct NodeConfig {
     pub secondary_work_peers: Vec<Peer>,
     pub preconfigured_peers: Vec<Peer>,
     pub preconfigured_representatives: Vec<PublicKey>,
-    pub max_pruning_age_s: i64,
+    pub max_pruning_age: Duration,
     pub max_pruning_depth: u64,
     pub callback_address: String,
     pub callback_port: u16,
@@ -234,11 +234,11 @@ impl NodeConfig {
             secondary_work_peers: vec![Peer::new("127.0.0.1", 8076)],
             preconfigured_peers,
             preconfigured_representatives,
-            max_pruning_age_s: if !network_params.network.is_beta_network() {
-                24 * 60 * 60
+            max_pruning_age: if !network_params.network.is_beta_network() {
+                Duration::from_secs(60 * 60 * 24) // 24h
             } else {
-                5 * 60
-            }, // 1 day; 5 minutes for beta network
+                Duration::from_secs(60 * 5) // 5 mins
+            },
             max_pruning_depth: 0,
             callback_address: String::new(),
             callback_port: 0,
