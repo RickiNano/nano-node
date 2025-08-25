@@ -15,7 +15,6 @@ extern crate strum_macros;
 mod account;
 mod amount;
 mod block_hash;
-mod hardened_constants;
 mod node_id;
 mod public_key;
 mod vote;
@@ -24,11 +23,10 @@ mod vote_timestamp;
 pub use account::Account;
 pub use amount::*;
 use blake2::{
-    Blake2bVar,
     digest::{Update, VariableOutput},
+    Blake2bVar,
 };
 pub use block_hash::{Blake2HashBuilder, BlockHash};
-pub use hardened_constants::*;
 pub use node_id::NodeId;
 pub use public_key::PublicKey;
 use serde::de::{Unexpected, Visitor};
