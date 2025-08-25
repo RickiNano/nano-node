@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 use bitvec::prelude::BitArray;
 use rsnano_types::{
-    utils::{BufferReader, BufferWriter, Serialize},
     ProtocolInfo,
+    utils::{BufferReader, BufferWriter, Serialize},
 };
 use rsnano_utils::stats::DetailType;
 

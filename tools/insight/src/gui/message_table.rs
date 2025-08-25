@@ -9,7 +9,7 @@ use rsnano_messages::{Message, MessageType};
 use rsnano_network::ChannelDirection;
 use rsnano_types::{Account, BlockHash};
 
-use super::{badge::Badge, MessageViewModel, PaletteColor};
+use super::{MessageViewModel, PaletteColor, badge::Badge};
 use crate::message_collection::{MessageCollection, RecordedMessage};
 
 pub(crate) struct MessageTableView<'a> {

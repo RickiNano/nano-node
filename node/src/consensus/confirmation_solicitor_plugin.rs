@@ -4,9 +4,9 @@ use std::{
 };
 
 use super::{
+    ActiveElectionsContainer, AecTickerPlugin, ConfirmationSolicitor,
     confirm_req_sender::ConfirmReqSender, election::ElectionState,
-    winner_block_broadcaster::WinnerBlockBroadcaster, ActiveElectionsContainer, AecTickerPlugin,
-    ConfirmationSolicitor,
+    winner_block_broadcaster::WinnerBlockBroadcaster,
 };
 use crate::{representatives::OnlineReps, transport::MessageFlooder};
 

@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use rsnano_messages::{AscPullReqType, FrontiersReqPayload};
-use rsnano_network::{token_bucket::TokenBucket, Channel};
+use rsnano_network::{Channel, token_bucket::TokenBucket};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_types::{Account, BlockHash};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::channel_waiter::ChannelWaiter;
-use crate::bootstrap::{state::BootstrapState, AscPullQuerySpec, BootstrapPromise, PollResult};
+use crate::bootstrap::{AscPullQuerySpec, BootstrapPromise, PollResult, state::BootstrapState};
 
 /// Creates frontier requests as specified by the frontier scanner
 pub(crate) struct FrontierRequester {
@@ -124,9 +124,8 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
 mod tests {
     use super::*;
     use crate::bootstrap::{
-        progress,
+        BootstrapConfig, progress,
         state::{CandidateAccountsConfig, FrontierScan},
-        BootstrapConfig,
     };
     use rsnano_network::Network;
     use std::sync::{Mutex, RwLock};

@@ -1,6 +1,6 @@
 use crate::{
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
     Account, Block, BlockHash,
+    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use primitive_types::U512;
 

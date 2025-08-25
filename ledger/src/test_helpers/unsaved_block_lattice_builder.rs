@@ -1,4 +1,4 @@
-use rsnano_types::{Account, Amount, Block, PrivateKey, PublicKey, DEV_GENESIS_KEY};
+use rsnano_types::{Account, Amount, Block, DEV_GENESIS_KEY, PrivateKey, PublicKey};
 
 use super::{SavedAccountChainBuilder, SavedBlockLatticeBuilder};
 
@@ -116,7 +116,7 @@ impl<'a> UnsavedAccountChainBuilder<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{BlockDetails, BlockHash, Epoch, StateBlockArgs, DEV_GENESIS_BLOCK};
+    use rsnano_types::{BlockDetails, BlockHash, DEV_GENESIS_BLOCK, Epoch, StateBlockArgs};
     use rsnano_work::WorkThresholds;
 
     #[test]
@@ -136,8 +136,10 @@ mod tests {
         }
         .into();
         assert_eq!(send, expected);
-        assert!(WorkThresholds::publish_dev()
-            .is_valid_pow(&send, &BlockDetails::new(Epoch::Epoch2, true, false, false)))
+        assert!(
+            WorkThresholds::publish_dev()
+                .is_valid_pow(&send, &BlockDetails::new(Epoch::Epoch2, true, false, false))
+        )
     }
 
     #[test]
@@ -178,8 +180,10 @@ mod tests {
         }
         .into();
         assert_eq!(open, expected);
-        assert!(WorkThresholds::publish_dev()
-            .is_valid_pow(&send, &BlockDetails::new(Epoch::Epoch2, false, true, false)))
+        assert!(
+            WorkThresholds::publish_dev()
+                .is_valid_pow(&send, &BlockDetails::new(Epoch::Epoch2, false, true, false))
+        )
     }
 
     #[test]

@@ -94,10 +94,12 @@ mod tests {
     #[test]
     fn serialize_accounts_receivable_args_options_some() {
         let args = AccountsReceivableArgs {
-            accounts: vec![Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap()],
+            accounts: vec![
+                Account::decode_account(
+                    "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
+                )
+                .unwrap(),
+            ],
             count: Some(10.into()),
             threshold: Some(Amount::raw(1000)),
             source: Some(true.into()),
@@ -151,10 +153,12 @@ mod tests {
     #[test]
     fn serialize_accounts_receivable_args_options_none() {
         let args = AccountsReceivableArgs {
-            accounts: vec![Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap()],
+            accounts: vec![
+                Account::decode_account(
+                    "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
+                )
+                .unwrap(),
+            ],
             count: Some(10.into()),
             threshold: None,
             source: None,

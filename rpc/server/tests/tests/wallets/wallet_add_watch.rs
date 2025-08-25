@@ -1,6 +1,6 @@
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
 use rsnano_types::{Account, WalletId};
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn wallet_add_watch() {

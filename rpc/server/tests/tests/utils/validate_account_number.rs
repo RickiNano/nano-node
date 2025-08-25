@@ -1,5 +1,5 @@
 use rsnano_types::Account;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn validate_account_number() {

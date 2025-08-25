@@ -1,11 +1,11 @@
 use std::{fs::File, io::Read, path::PathBuf};
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use clap::Parser;
 
 use rsnano_types::WalletId;
 
-use crate::cli::{build_node, GlobalArgs};
+use crate::cli::{GlobalArgs, build_node};
 
 #[derive(Parser, PartialEq, Debug)]
 pub(crate) struct ImportKeysArgs {
@@ -43,7 +43,10 @@ impl ImportKeysArgs {
                 node.wallets
                     .import_replace(wallet_id, &contents, &password)?
             } else {
-                eprintln!("Invalid password for wallet {}. New wallet should have empty (default) password or passwords for new wallet & json file should match", wallet_id);
+                eprintln!(
+                    "Invalid password for wallet {}. New wallet should have empty (default) password or passwords for new wallet & json file should match",
+                    wallet_id
+                );
                 return Err(anyhow!("Invalid arguments"));
             }
         } else if !self.force {

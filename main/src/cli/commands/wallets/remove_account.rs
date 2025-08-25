@@ -1,5 +1,5 @@
-use crate::cli::{build_node, GlobalArgs};
-use anyhow::{anyhow, Result};
+use crate::cli::{GlobalArgs, build_node};
+use anyhow::{Result, anyhow};
 use clap::Parser;
 use rsnano_types::{Account, WalletId};
 

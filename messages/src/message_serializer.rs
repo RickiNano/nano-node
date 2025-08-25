@@ -1,5 +1,5 @@
 use super::{Message, MessageHeader};
-use rsnano_types::{utils::MutStreamAdapter, ProtocolInfo};
+use rsnano_types::{ProtocolInfo, utils::MutStreamAdapter};
 
 #[derive(Clone)]
 pub struct MessageSerializer {

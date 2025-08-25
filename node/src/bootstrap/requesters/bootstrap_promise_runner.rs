@@ -1,4 +1,4 @@
-use crate::bootstrap::{state::BootstrapState, BootstrapPromise, PollResult};
+use crate::bootstrap::{BootstrapPromise, PollResult, state::BootstrapState};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use std::{
     cmp::min,

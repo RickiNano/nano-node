@@ -139,12 +139,14 @@ mod tests {
             1
         );
 
-        assert!(fixture
-            .state
-            .lock()
-            .unwrap()
-            .candidate_accounts
-            .prioritized(&response.account));
+        assert!(
+            fixture
+                .state
+                .lock()
+                .unwrap()
+                .candidate_accounts
+                .prioritized(&response.account)
+        );
 
         assert_eq!(
             fixture.stats.count(

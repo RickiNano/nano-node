@@ -2,7 +2,7 @@ use crate::channels::RepState;
 use eframe::egui::{self, Align, CentralPanel, Label, Layout, Sense, Ui};
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 
-use super::{badge::Badge, ChannelsViewModel, PaletteColor};
+use super::{ChannelsViewModel, PaletteColor, badge::Badge};
 
 pub(crate) fn view_peers(ctx: &egui::Context, model: ChannelsViewModel) {
     CentralPanel::default().show(ctx, |ui| {

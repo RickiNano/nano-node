@@ -1,6 +1,6 @@
 use crate::{
-    utils::{BufferWriter, Serialize, Stream},
     Epoch,
+    utils::{BufferWriter, Serialize, Stream},
 };
 use anyhow::Result;
 use num::FromPrimitive;

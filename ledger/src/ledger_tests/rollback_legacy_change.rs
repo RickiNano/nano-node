@@ -1,6 +1,6 @@
 use rsnano_types::{Account, Amount};
 
-use crate::{ledger_constants::DEV_GENESIS_PUB_KEY, AnySet, Ledger, LedgerInserter};
+use crate::{AnySet, Ledger, LedgerInserter, ledger_constants::DEV_GENESIS_PUB_KEY};
 
 #[test]
 fn rollback_dependent_blocks_too() {

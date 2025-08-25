@@ -5,7 +5,7 @@ use std::{
 
 use rsnano_ledger::Ledger;
 use rsnano_nullable_lmdb::WriteTransaction;
-use rsnano_types::{utils::system_time_as_seconds, Amount, Networks};
+use rsnano_types::{Amount, Networks, utils::system_time_as_seconds};
 
 pub struct TrendResult {
     pub trended: Amount,

@@ -5,12 +5,12 @@ use rsnano_nullable_lmdb::{
     WriteFlags, WriteTransaction,
 };
 use rsnano_types::{
-    utils::{BufferReader, Deserialize},
     Account, ConfirmationHeightInfo,
+    utils::{BufferReader, Deserialize},
 };
 
 use crate::{
-    parallel_traversal, LmdbIterator, LmdbRangeIterator, CONFIRMATION_HEIGHT_TEST_DATABASE,
+    CONFIRMATION_HEIGHT_TEST_DATABASE, LmdbIterator, LmdbRangeIterator, parallel_traversal,
 };
 
 pub struct LmdbConfirmationHeightStore {

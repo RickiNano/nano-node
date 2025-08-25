@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use super::{ConfiguredDatabase, LmdbDatabase, RoCursor};
-use crate::{Transaction, EMPTY_DATABASE};
+use crate::{EMPTY_DATABASE, Transaction};
 
 pub struct ReadTransaction {
     strategy: TxnStrategy,

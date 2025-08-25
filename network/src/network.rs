@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     error::Error,
     net::{Ipv6Addr, SocketAddrV6},
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     time::Duration,
 };
 
@@ -17,14 +17,14 @@ use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::ChannelDirection;
 use crate::{
+    Channel, ChannelId, ChannelMode, DataReceiver, DataReceiverFactory, NullDataReceiverFactory,
+    TrafficType,
     attempt_container::AttemptContainer,
     bandwidth_limiter::{BandwidthLimiter, BandwidthLimiterConfig},
     channel_stats::ChannelStats,
     network_stats::NetworkStats,
     peer_exclusion::PeerExclusion,
     utils::{is_ipv4_mapped, map_address_to_subnetwork, reserved_address},
-    Channel, ChannelId, ChannelMode, DataReceiver, DataReceiverFactory, NullDataReceiverFactory,
-    TrafficType,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -864,9 +864,11 @@ mod tests {
             )
             .unwrap();
 
-        assert!(network
-            .upgrade_to_realtime_connection(channel.channel_id(), NodeId::from(456))
-            .is_some());
+        assert!(
+            network
+                .upgrade_to_realtime_connection(channel.channel_id(), NodeId::from(456))
+                .is_some()
+        );
         assert_eq!(network.channels().count(), 1);
     }
 

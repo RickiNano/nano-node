@@ -69,7 +69,9 @@ impl ConfirmationOptions {
             result.all_local_accounts = true;
             result.has_account_filtering_options = true;
             if !result.include_block {
-                warn!("Websocket: Filtering option \"all_local_accounts\" requires that \"include_block\" is set to true to be effective");
+                warn!(
+                    "Websocket: Filtering option \"all_local_accounts\" requires that \"include_block\" is set to true to be effective"
+                );
             }
         }
         if let Some(accounts) = options.accounts {
@@ -87,13 +89,17 @@ impl ConfirmationOptions {
             }
 
             if !result.include_block {
-                warn!("Filtering option \"accounts\" requires that \"include_block\" is set to true to be effective");
+                warn!(
+                    "Filtering option \"accounts\" requires that \"include_block\" is set to true to be effective"
+                );
             }
         }
         result.check_filter_empty();
 
         if result.include_linked_account && !result.include_block {
-            warn!("The option \"include_linked_account\" requires \"include_block\" to be set to true, as linked accounts are only retrieved when block content is included")
+            warn!(
+                "The option \"include_linked_account\" requires \"include_block\" to be set to true, as linked accounts are only retrieved when block content is included"
+            )
         }
 
         result

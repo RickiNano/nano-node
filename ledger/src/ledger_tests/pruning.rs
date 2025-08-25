@@ -1,9 +1,9 @@
 use rsnano_types::{
-    Amount, Block, Epoch, OpenBlockArgs, PendingKey, PrivateKey, ReceiveBlockArgs, StateBlockArgs,
-    TestBlockBuilder, WorkNonce, DEV_GENESIS_KEY,
+    Amount, Block, DEV_GENESIS_KEY, Epoch, OpenBlockArgs, PendingKey, PrivateKey, ReceiveBlockArgs,
+    StateBlockArgs, TestBlockBuilder, WorkNonce,
 };
 
-use crate::{AnySet, Ledger, LedgerInserter, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
+use crate::{AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, Ledger, LedgerInserter, LedgerSet};
 
 #[test]
 fn pruning_action() {
@@ -23,9 +23,10 @@ fn pruning_action() {
     assert_eq!(ledger.prune_one(&DEV_GENESIS_HASH, 1), 0);
 
     let mut any = ledger.any();
-    assert!(any
-        .get_pending(&PendingKey::new(genesis_account, send1.hash()))
-        .is_some());
+    assert!(
+        any.get_pending(&PendingKey::new(genesis_account, send1.hash()))
+            .is_some()
+    );
 
     assert_eq!(any.block_exists(&send1.hash()), false);
     assert!(any.block_exists_or_pruned(&send1.hash()),);

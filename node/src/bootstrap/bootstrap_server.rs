@@ -2,8 +2,8 @@ use std::{
     cmp::min,
     collections::VecDeque,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex, MutexGuard,
+        atomic::{AtomicBool, Ordering},
     },
     thread::JoinHandle,
     time::Duration,
@@ -15,7 +15,7 @@ use rsnano_messages::{
     AscPullReqType, BlocksAckPayload, BlocksReqPayload, FrontiersReqPayload, HashType, Message,
 };
 use rsnano_network::{
-    token_bucket::TokenBucket, Channel, ChannelId, DeadChannelCleanupStep, TrafficType,
+    Channel, ChannelId, DeadChannelCleanupStep, TrafficType, token_bucket::TokenBucket,
 };
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Block, BlockHash, Frontier};

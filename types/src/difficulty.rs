@@ -1,7 +1,7 @@
 use crate::{Root, WorkNonce};
 use blake2::{
-    digest::{Update, VariableOutput},
     Blake2bVar,
+    digest::{Update, VariableOutput},
 };
 use std::collections::HashMap;
 use std::mem::size_of;
@@ -202,10 +202,10 @@ mod tests {
             std::panic::catch_unwind(|| { DifficultyV1::to_multiplier(difficulty_nil, base) })
                 .is_err()
         );
-        assert!(std::panic::catch_unwind(|| {
-            DifficultyV1::from_multiplier(multiplier_nil, base)
-        })
-        .is_err());
+        assert!(
+            std::panic::catch_unwind(|| { DifficultyV1::from_multiplier(multiplier_nil, base) })
+                .is_err()
+        );
     }
 
     #[test]

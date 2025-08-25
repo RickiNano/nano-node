@@ -20,7 +20,7 @@ pub struct BlockCountResponse {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ledger::BlockCountResponse, RpcCommand};
+    use crate::{RpcCommand, ledger::BlockCountResponse};
     use serde_json::{from_str, to_string_pretty};
 
     #[test]

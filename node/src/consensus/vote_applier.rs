@@ -120,8 +120,8 @@ mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
     use rsnano_types::{
-        utils::{BlockPriority, UnixMillisTimestamp},
         PrivateKey, SavedBlock, Vote, VoteSource,
+        utils::{BlockPriority, UnixMillisTimestamp},
     };
 
     #[test]

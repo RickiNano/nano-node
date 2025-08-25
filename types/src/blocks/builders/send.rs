@@ -1,6 +1,6 @@
 use crate::{
-    blocks::send_block::SendBlockArgs, Account, Amount, Block, BlockDetails, BlockHash,
-    BlockSideband, Epoch, PrivateKey, SavedBlock, WorkNonce,
+    Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, Epoch, PrivateKey, SavedBlock,
+    WorkNonce, blocks::send_block::SendBlockArgs,
 };
 
 pub struct TestLegacySendBlockBuilder {

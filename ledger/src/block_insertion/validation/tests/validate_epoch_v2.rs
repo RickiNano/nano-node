@@ -1,6 +1,6 @@
 use super::BlockValidationTest;
 use crate::BlockError;
-use rsnano_types::{epoch_v2_link, Amount, Epoch, PrivateKey};
+use rsnano_types::{Amount, Epoch, PrivateKey, epoch_v2_link};
 
 #[test]
 fn fails_if_directly_upgrading_from_epoch_0_to_epoch_2() {

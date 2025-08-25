@@ -1,9 +1,10 @@
-use std::sync::{mpsc::SyncSender, Arc, RwLock};
+use std::sync::{Arc, RwLock, mpsc::SyncSender};
 
 use rsnano_types::Networks;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{
+    NodeEvent,
     block_processing::{BlockProcessorQueue, BoundedBacklog, LedgerEvent},
     bootstrap::Bootstrapper,
     cementation::ConfirmingSet,
@@ -12,7 +13,6 @@ use crate::{
         ForkCacheUpdater, LocalVoteHistory,
     },
     utils::BackpressureEventProcessor,
-    NodeEvent,
 };
 
 pub(crate) struct LedgerEventProcessor {

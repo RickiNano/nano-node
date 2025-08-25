@@ -5,7 +5,7 @@ use strum::EnumCount;
 use rsnano_ledger::RepWeights;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{
-    utils::TimePriority, Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError,
+    Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError, utils::TimePriority,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
@@ -25,12 +25,12 @@ use crate::{
 };
 
 use super::{
+    ActiveElectionsConfig, ActiveElectionsInfo, AecEvent, AecInsertError, AecInsertRequest, Entry,
+    RootContainer,
     apply_vote_helper::ApplyVoteHelper,
     cooldown_controller::{AecCooldownReason, CooldownController, CooldownResult},
     recently_confirmed_cache::RecentlyConfirmedCache,
     stats::AecStats,
-    ActiveElectionsConfig, ActiveElectionsInfo, AecEvent, AecInsertError, AecInsertRequest, Entry,
-    RootContainer,
 };
 
 pub struct ActiveElectionsContainer {
@@ -497,8 +497,8 @@ mod tests {
     use super::*;
     use crate::consensus::ReceivedVote;
     use rsnano_types::{
-        utils::{BlockPriority, TimePriority},
         PrivateKey, Vote, VoteSource,
+        utils::{BlockPriority, TimePriority},
     };
     use std::sync::Arc;
 

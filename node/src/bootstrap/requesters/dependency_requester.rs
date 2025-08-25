@@ -4,7 +4,7 @@ use rsnano_network::Channel;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::channel_waiter::ChannelWaiter;
-use crate::bootstrap::{state::BootstrapState, AscPullQuerySpec, BootstrapPromise, PollResult};
+use crate::bootstrap::{AscPullQuerySpec, BootstrapPromise, PollResult, state::BootstrapState};
 use rsnano_nullable_clock::Timestamp;
 
 pub(super) struct DependencyRequester {
@@ -65,7 +65,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
 mod tests {
     use super::*;
     use crate::bootstrap::progress;
-    use rsnano_network::{token_bucket::TokenBucket, Network};
+    use rsnano_network::{Network, token_bucket::TokenBucket};
     use rsnano_nullable_clock::Timestamp;
     use rsnano_types::{Account, BlockHash};
     use std::sync::{Mutex, RwLock};

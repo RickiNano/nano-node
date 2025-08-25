@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use rsnano_rpc_messages::{unwrap_u64_or_max, CountArgs, UncheckedResponse};
+use rsnano_rpc_messages::{CountArgs, UncheckedResponse, unwrap_u64_or_max};
 
 use crate::command_handler::RpcCommandHandler;
 use rsnano_types::{BlockHash, JsonBlock};

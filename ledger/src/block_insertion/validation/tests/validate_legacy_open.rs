@@ -2,7 +2,7 @@ use rsnano_types::{
     AccountInfo, Amount, BlockDetails, BlockSideband, Epoch, PendingKey, PrivateKey,
 };
 
-use crate::{block_insertion::validation::tests::BlockValidationTest, BlockError};
+use crate::{BlockError, block_insertion::validation::tests::BlockValidationTest};
 
 #[test]
 fn valid_legacy_open_block() {

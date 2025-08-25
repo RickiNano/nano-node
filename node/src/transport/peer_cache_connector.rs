@@ -5,9 +5,9 @@ use tracing::info;
 use rsnano_ledger::Ledger;
 use rsnano_network::PeerConnector;
 use rsnano_utils::{
+    CancellationToken,
     stats::{DetailType, StatType, Stats},
     ticker::Tickable,
-    CancellationToken,
 };
 
 // Tries to connect to peers that are stored in the peer cache
@@ -77,7 +77,7 @@ mod tests {
     use tracing_test::traced_test;
 
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_types::utils::{parse_endpoint, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
+    use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3, parse_endpoint};
     use rsnano_utils::stats::Direction;
 
     use super::*;

@@ -1,8 +1,8 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use rsnano_types::{
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
     BlockHash, HashOrAccount,
+    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use serde_derive::Serialize;
 use std::{fmt::Display, mem::size_of};
@@ -111,7 +111,7 @@ impl Display for BulkPull {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn bulk_pull_serialization() {

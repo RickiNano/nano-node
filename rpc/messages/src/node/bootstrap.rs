@@ -43,7 +43,7 @@ impl BootstrapArgsBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::{node::BootstrapArgs, RpcCommand};
+    use crate::{RpcCommand, node::BootstrapArgs};
     use serde_json::{from_str, to_string_pretty};
     use std::{net::Ipv6Addr, str::FromStr};
 

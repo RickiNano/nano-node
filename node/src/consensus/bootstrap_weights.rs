@@ -49,8 +49,12 @@ pub(crate) fn log_bootstrap_weights(weight_cache: &RepWeightCache) {
 
         // Use bootstrap weights if initial bootstrap is not completed
         if weight_cache.use_bootstrap_weights() {
-            info!("Using predefined representative weights, since block count is less than bootstrap threshold");
-            info!("************************************ Bootstrap weights ************************************");
+            info!(
+                "Using predefined representative weights, since block count is less than bootstrap threshold"
+            );
+            info!(
+                "************************************ Bootstrap weights ************************************"
+            );
             // Sort the weights
             let mut sorted_weights = bootstrap_weights.drain().collect::<Vec<_>>();
             sorted_weights.sort_by(|(_, weight_a), (_, weight_b)| weight_b.cmp(weight_a));
@@ -62,7 +66,9 @@ pub(crate) fn log_bootstrap_weights(weight_cache: &RepWeightCache) {
                     weight.format_balance(0)
                 );
             }
-            info!("************************************ ================= ************************************");
+            info!(
+                "************************************ ================= ************************************"
+            );
         }
     }
 }

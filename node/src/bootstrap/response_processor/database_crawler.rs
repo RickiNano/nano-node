@@ -126,7 +126,7 @@ impl<'a> CrawlSource<'a> for PendingCrawlSource<'a> {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_ledger::{Ledger, LedgerSet, DEV_GENESIS_ACCOUNT};
+    use rsnano_ledger::{DEV_GENESIS_ACCOUNT, Ledger, LedgerSet};
 
     use super::*;
 

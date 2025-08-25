@@ -8,19 +8,19 @@ use tracing::warn;
 
 use rsnano_ledger::Ledger;
 use rsnano_messages::{AscPullAck, BlocksAckPayload};
-use rsnano_network::{token_bucket::TokenBucket, ChannelId, DeadChannelCleanupStep, Network};
+use rsnano_network::{ChannelId, DeadChannelCleanupStep, Network, token_bucket::TokenBucket};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::Account;
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{DetailType, Sample, StatType, Stats, StatsCollection, StatsSource};
 
 use super::{
+    FrontierScanConfig,
     block_inspector::BlockInspector,
     cleanup::BootstrapCleanup,
     requesters::Requesters,
     response_processor::{ProcessError, ResponseProcessor},
     state::{BootstrapState, CandidateAccountsConfig},
-    FrontierScanConfig,
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},

@@ -17,8 +17,8 @@ use rsnano_utils::{
 };
 
 use super::{
-    process_queue::{ProcessQueue, ProcessQueueConfig},
     BlockContext, BlockSource,
+    process_queue::{ProcessQueue, ProcessQueueConfig},
 };
 
 pub struct BlockProcessorQueue {

@@ -1,5 +1,5 @@
 use crate::RpcU64;
-use crate::{common::HashRpcMessage, RpcCommand};
+use crate::{RpcCommand, common::HashRpcMessage};
 use rsnano_types::BlockHash;
 use rsnano_types::JsonBlock;
 use serde::{Deserialize, Serialize};

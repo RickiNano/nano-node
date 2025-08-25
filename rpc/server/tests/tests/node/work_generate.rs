@@ -1,5 +1,5 @@
 use rsnano_types::{BlockHash, DifficultyV1, WorkNonce};
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn work_generate() {

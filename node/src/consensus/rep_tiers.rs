@@ -12,10 +12,10 @@ use tracing::debug;
 use rsnano_ledger::RepWeightCache;
 use rsnano_types::PublicKey;
 use rsnano_utils::{
+    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, Direction, StatType, Stats},
     ticker::Tickable,
-    CancellationToken,
 };
 
 use crate::representatives::OnlineReps;

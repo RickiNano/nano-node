@@ -1,8 +1,8 @@
 use rsnano_types::{Account, Amount, PendingKey, PrivateKey, SavedBlock};
 
 use crate::{
+    AnySet, ConfirmedSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, Ledger, LedgerInserter, LedgerSet,
     ledger_constants::{DEV_GENESIS_PUB_KEY, LEDGER_CONSTANTS_STUB},
-    AnySet, ConfirmedSet, Ledger, LedgerInserter, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
 };
 
 #[test]

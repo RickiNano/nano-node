@@ -9,9 +9,9 @@ mod import_keys;
 mod remove_account;
 mod set_wallet_representative;
 
-use crate::cli::{build_node, GlobalArgs};
+use crate::cli::{GlobalArgs, build_node};
 use add_private_key::AddPrivateKeyArgs;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use change_wallet_seed::ChangeWalletSeedArgs;
 use clap::{CommandFactory, Parser, Subcommand};
 use create_account::CreateAccountArgs;

@@ -2,8 +2,8 @@ use std::{
     cmp::min,
     collections::VecDeque,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::{Duration, SystemTime},
 };
@@ -11,7 +11,7 @@ use std::{
 use tracing::info;
 
 use rsnano_ledger::Ledger;
-use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
+use rsnano_types::{Account, BlockHash, utils::UnixTimestamp};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{config::NodeConfig, utils::ThreadPool};

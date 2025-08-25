@@ -1,26 +1,27 @@
 use std::{
     net::{IpAddr, Ipv6Addr, SocketAddr},
-    sync::{mpsc::SyncSender, Arc, OnceLock},
+    sync::{Arc, OnceLock, mpsc::SyncSender},
     thread::sleep,
     time::{Duration, Instant},
 };
 
 use rsnano_ledger::{
-    AnySet, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
+    AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY, LedgerSet,
 };
 use rsnano_network::{Channel, ChannelDirection};
 use rsnano_node::{
+    Node, NodeBuilder, NodeEvent,
     block_processing::BacklogScanConfig,
     config::{NetworkParams, NodeConfig, NodeFlags},
-    unique_path, Node, NodeBuilder, NodeEvent,
+    unique_path,
 };
 use rsnano_rpc_client::{NanoRpcClient, Url};
 use rsnano_rpc_server::run_rpc_server;
 use rsnano_store_lmdb::SyncStrategy;
 use rsnano_types::{
+    Account, Amount, Block, BlockHash, DEV_GENESIS_KEY, Epoch, Networks, PrivateKey, PublicKey,
+    SavedBlock, StateBlockArgs, WalletId,
     utils::{NULL_ENDPOINT, TEST_ENDPOINT_1},
-    Account, Amount, Block, BlockHash, Epoch, Networks, PrivateKey, PublicKey, SavedBlock,
-    StateBlockArgs, WalletId, DEV_GENESIS_KEY,
 };
 
 pub struct System {

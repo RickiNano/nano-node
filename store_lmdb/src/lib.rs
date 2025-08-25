@@ -33,7 +33,7 @@ pub use confirmation_height_store::*;
 pub use fan::Fan;
 pub use final_vote_store::LmdbFinalVoteStore;
 pub use iterator::{LmdbIterator, LmdbRangeIterator};
-pub use lmdb_config::{default_ledger_lmdb_options, get_lmdb_flags, LmdbConfig, SyncStrategy};
+pub use lmdb_config::{LmdbConfig, SyncStrategy, default_ledger_lmdb_options, get_lmdb_flags};
 pub use online_weight_store::LmdbOnlineWeightStore;
 pub use peer_store::*;
 pub use pending_store::{ConfiguredPendingDatabaseBuilder, LmdbPendingStore};

@@ -1,4 +1,4 @@
-use crate::{common::AmountRpcMessage, RpcCommand};
+use crate::{RpcCommand, common::AmountRpcMessage};
 use rsnano_types::Amount;
 
 impl RpcCommand {

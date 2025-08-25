@@ -4,7 +4,7 @@ use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, Frontier};
 use rsnano_utils::container_info::ContainerInfo;
 
-use super::{heads_container::HeadsContainer, FrontierScanConfig};
+use super::{FrontierScanConfig, heads_container::HeadsContainer};
 
 /// Divides the account space into ranges and scans each range for
 /// outdated frontiers in parallel.
@@ -58,9 +58,11 @@ impl FrontierScan {
     }
 
     pub fn process(&mut self, start: Account, response: &[Frontier]) -> bool {
-        debug_assert!(response
-            .iter()
-            .all(|f| f.account.number() >= start.number()));
+        debug_assert!(
+            response
+                .iter()
+                .all(|f| f.account.number() >= start.number())
+        );
 
         // Find the first head with head.start <= start
         let range_start = self.heads.find_first_less_than_or_equal_to(start).unwrap();

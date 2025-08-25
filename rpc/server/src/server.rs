@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::{Context, Result};
-use axum::{extract::State, http::Request, middleware::map_request, routing::post, Json, Router};
+use axum::{Json, Router, extract::State, http::Request, middleware::map_request, routing::post};
 use rsnano_node::Node;
 use rsnano_rpc_messages::RpcCommand;
 use std::{future::Future, sync::Arc};

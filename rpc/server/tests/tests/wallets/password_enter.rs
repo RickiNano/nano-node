@@ -1,5 +1,5 @@
 use rsnano_types::WalletId;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn password_enter() {
@@ -12,10 +12,11 @@ fn password_enter() {
 
     node.wallets.create(wallet_id);
     node.wallets.lock(&wallet_id).unwrap();
-    assert!(node
-        .wallets
-        .deterministic_insert2(&wallet_id, false)
-        .is_err());
+    assert!(
+        node.wallets
+            .deterministic_insert2(&wallet_id, false)
+            .is_err()
+    );
 
     node.runtime.block_on(async {
         server
@@ -25,10 +26,11 @@ fn password_enter() {
             .unwrap()
     });
 
-    assert!(node
-        .wallets
-        .deterministic_insert2(&wallet_id, false)
-        .is_ok());
+    assert!(
+        node.wallets
+            .deterministic_insert2(&wallet_id, false)
+            .is_ok()
+    );
 }
 
 #[test]

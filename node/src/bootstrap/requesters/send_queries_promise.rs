@@ -1,6 +1,6 @@
 use super::query_sender::QuerySender;
-use crate::bootstrap::{state::BootstrapState, BootstrapPromise};
 use crate::bootstrap::{AscPullQuerySpec, PollResult};
+use crate::bootstrap::{BootstrapPromise, state::BootstrapState};
 use rsnano_nullable_clock::Timestamp;
 
 /// Promise for sending AscPullReq queries

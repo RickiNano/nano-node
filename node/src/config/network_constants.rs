@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rsnano_types::{utils::get_env_or_default, Networks, ProtocolInfo};
+use rsnano_types::{Networks, ProtocolInfo, utils::get_env_or_default};
 use rsnano_work::WorkThresholds;
 
 use crate::bootstrap::BootstrapConfig;

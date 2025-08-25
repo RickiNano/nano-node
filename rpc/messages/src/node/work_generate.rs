@@ -1,4 +1,4 @@
-use crate::{common::WorkVersionDto, RpcBool, RpcCommand, RpcF64, RpcU64};
+use crate::{RpcBool, RpcCommand, RpcF64, RpcU64, common::WorkVersionDto};
 use rsnano_types::{Account, BlockHash, JsonBlock, WorkNonce};
 use serde::{Deserialize, Serialize};
 

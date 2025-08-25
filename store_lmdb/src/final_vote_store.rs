@@ -4,8 +4,8 @@ use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_types::{
-    utils::{BufferReader, Deserialize},
     BlockHash, QualifiedRoot,
+    utils::{BufferReader, Deserialize},
 };
 
 use crate::{LmdbIterator, LmdbRangeIterator};

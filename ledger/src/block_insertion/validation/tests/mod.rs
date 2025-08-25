@@ -10,12 +10,12 @@ mod validate_state_receive;
 mod validate_state_send;
 
 use crate::{
+    BlockError,
     block_insertion::BlockInsertInstructions,
     ledger_constants::{IMPOSSIBLE_WORK, LEDGER_CONSTANTS_STUB},
-    BlockError,
 };
 use rsnano_types::{
-    utils::UnixMillisTimestamp, Account, Amount, Block, Epoch, PendingInfo, SavedAccountChain,
+    Account, Amount, Block, Epoch, PendingInfo, SavedAccountChain, utils::UnixMillisTimestamp,
 };
 
 use super::BlockValidator;

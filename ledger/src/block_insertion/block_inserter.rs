@@ -131,7 +131,7 @@ impl<'a> BlockInserter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{utils::UnixTimestamp, BlockHash, Epoch, PublicKey, TestBlockBuilder};
+    use rsnano_types::{BlockHash, Epoch, PublicKey, TestBlockBuilder, utils::UnixTimestamp};
 
     #[test]
     fn insert_open_state_block() {

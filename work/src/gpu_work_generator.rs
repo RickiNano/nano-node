@@ -2,7 +2,7 @@ use tracing::error;
 
 use rsnano_types::{Root, WorkNonce};
 
-use super::{gpu::Gpu, OpenClConfig, WorkGenerator, WorkRng, WorkTicket, XorShift1024Star};
+use super::{OpenClConfig, WorkGenerator, WorkRng, WorkTicket, XorShift1024Star, gpu::Gpu};
 
 /// Generates the proof of work using a GPU with OpenCL
 pub struct GpuWorkGenerator {

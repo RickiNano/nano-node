@@ -1,5 +1,5 @@
 use rsnano_types::WalletId;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn password_change() {
@@ -21,10 +21,11 @@ fn password_change() {
     });
 
     assert!(node.wallets.attempt_password(&wallet_id, "").is_err());
-    assert!(node
-        .wallets
-        .attempt_password(&wallet_id, "password")
-        .is_ok());
+    assert!(
+        node.wallets
+            .attempt_password(&wallet_id, "password")
+            .is_ok()
+    );
 }
 
 #[test]

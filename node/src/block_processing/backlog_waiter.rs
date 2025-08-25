@@ -1,8 +1,8 @@
 use std::{
     cmp::min,
     sync::{
-        atomic::{AtomicUsize, Ordering::Relaxed},
         Arc, Mutex,
+        atomic::{AtomicUsize, Ordering::Relaxed},
     },
     time::Duration,
 };

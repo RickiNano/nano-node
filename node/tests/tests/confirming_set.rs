@@ -1,9 +1,9 @@
 use std::time::Duration;
 
-use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, LedgerSet};
+use rsnano_ledger::{LedgerSet, test_helpers::UnsavedBlockLatticeBuilder};
 use rsnano_types::{Amount, PrivateKey};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
-use test_helpers::{assert_always_eq, assert_timely2, assert_timely_eq2, start_election, System};
+use test_helpers::{System, assert_always_eq, assert_timely_eq2, assert_timely2, start_election};
 
 // The callback and confirmation history should only be updated after confirmation height is set (and not just after voting)
 #[test]

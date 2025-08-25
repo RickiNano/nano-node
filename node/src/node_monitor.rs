@@ -8,7 +8,7 @@ use tracing::info;
 
 use rsnano_ledger::Ledger;
 use rsnano_network::Network;
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+use rsnano_utils::{CancellationToken, ticker::Tickable};
 
 use crate::{
     block_rate_calculator::CurrentBlockRates, consensus::ActiveElectionsContainer,

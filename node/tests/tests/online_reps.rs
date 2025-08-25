@@ -1,6 +1,6 @@
 use rsnano_types::{Amount, DEV_GENESIS_KEY};
 use std::time::Duration;
-use test_helpers::{assert_always_eq, assert_timely_eq2, System};
+use test_helpers::{System, assert_always_eq, assert_timely_eq2};
 
 // Online reps should be able to observe remote representative
 #[test]

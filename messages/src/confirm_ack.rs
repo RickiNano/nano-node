@@ -1,8 +1,8 @@
 use super::{ConfirmReq, MessageVariant};
 use bitvec::prelude::BitArray;
 use rsnano_types::{
-    utils::{BufferWriter, Serialize, Stream},
     Vote,
+    utils::{BufferWriter, Serialize, Stream},
 };
 use std::fmt::{Debug, Display};
 /*
@@ -119,10 +119,10 @@ impl Display for ConfirmAck {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
     use rsnano_types::{
-        utils::{MemoryStream, UnixMillisTimestamp},
         BlockHash, PrivateKey,
+        utils::{MemoryStream, UnixMillisTimestamp},
     };
 
     #[test]

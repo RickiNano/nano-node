@@ -1,7 +1,7 @@
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_rpc_messages::SignArgs;
-use rsnano_types::{Account, Amount, Block, WalletId, DEV_GENESIS_KEY};
-use test_helpers::{setup_rpc_client_and_server, System};
+use rsnano_types::{Account, Amount, Block, DEV_GENESIS_KEY, WalletId};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn sign() {

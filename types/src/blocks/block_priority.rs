@@ -1,4 +1,4 @@
-use crate::{utils::BlockPriority, Amount, SavedBlock};
+use crate::{Amount, SavedBlock, utils::BlockPriority};
 use std::cmp::max;
 
 pub fn block_priority(block: &SavedBlock, previous_block: Option<&SavedBlock>) -> BlockPriority {
@@ -33,7 +33,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::{utils::UnixMillisTimestamp, BlockSideband, StateBlockArgs};
+    use crate::{BlockSideband, StateBlockArgs, utils::UnixMillisTimestamp};
 
     #[test]
     fn open_block() {

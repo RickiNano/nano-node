@@ -5,8 +5,8 @@ use std::{
 };
 
 use rsnano_nullable_lmdb::{
-    sys::{MDB_cursor_op, MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE},
-    Error, Result, RoCursor, EMPTY_DATABASE,
+    EMPTY_DATABASE, Error, Result, RoCursor,
+    sys::{MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE, MDB_cursor_op},
 };
 use rsnano_types::utils::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
 

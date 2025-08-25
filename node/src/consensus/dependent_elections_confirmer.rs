@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use super::{election::ConfirmedElection, ActiveElectionsContainer};
+use super::{ActiveElectionsContainer, election::ConfirmedElection};
 use crate::cementation::ConfirmingSet;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{BlockHash, SavedBlock};

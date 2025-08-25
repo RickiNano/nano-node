@@ -5,7 +5,7 @@ use rsnano_websocket_messages::{
     BlockConfirmed, ElectionInfo, JsonSideband, MessageEnvelope, Topic,
 };
 
-use crate::{into_election_info, into_json_sideband, into_json_vote_summary, ConfirmationOptions};
+use crate::{ConfirmationOptions, into_election_info, into_json_sideband, into_json_vote_summary};
 
 pub(super) struct ConfirmationMessageFactory<'a> {
     pub ledger: &'a Ledger,

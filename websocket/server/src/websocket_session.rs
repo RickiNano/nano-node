@@ -2,8 +2,8 @@ use std::{
     collections::HashMap,
     net::SocketAddr,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 
@@ -13,7 +13,7 @@ use tracing::{info, trace, warn};
 
 use rsnano_wallet::Wallets;
 use rsnano_websocket_messages::{
-    to_topic, ConfirmationJsonOptions, MessageEnvelope, Request, Topic,
+    ConfirmationJsonOptions, MessageEnvelope, Request, Topic, to_topic,
 };
 
 use super::{ConfirmationOptions, Options, VoteJsonOptions, VoteOptions};

@@ -1,4 +1,4 @@
-use test_helpers::{send_block, setup_rpc_client_and_server, System};
+use test_helpers::{System, send_block, setup_rpc_client_and_server};
 
 #[test]
 fn confirmation_active() {

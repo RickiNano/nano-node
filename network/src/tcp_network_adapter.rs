@@ -1,6 +1,6 @@
 use crate::{
-    utils::into_ipv6_socket_address, Channel, ChannelDirection, ChannelId, DeadChannelCleanupStep,
-    Network, NetworkError, ReceiveResult, TcpChannelAdapter,
+    Channel, ChannelDirection, ChannelId, DeadChannelCleanupStep, Network, NetworkError,
+    ReceiveResult, TcpChannelAdapter, utils::into_ipv6_socket_address,
 };
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_tcp::TcpStream;

@@ -2,8 +2,8 @@ use super::Account;
 use crate::serialize_32_byte_string;
 use crate::u256_struct;
 use blake2::{
-    digest::{Update, VariableOutput},
     Blake2bVar,
+    digest::{Update, VariableOutput},
 };
 use rand::Rng;
 

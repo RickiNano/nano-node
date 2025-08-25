@@ -1,12 +1,11 @@
 use std::sync::LazyLock;
 
 use rsnano_types::{
-    epoch_v1_link, epoch_v2_link,
-    utils::{get_env_or_default_string, UnixMillisTimestamp},
-    Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, Epoch, Epochs, Networks,
-    PublicKey, SavedBlock, DEV_GENESIS_KEY,
+    Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, DEV_GENESIS_KEY, Epoch, Epochs,
+    Networks, PublicKey, SavedBlock, epoch_v1_link, epoch_v2_link,
+    utils::{UnixMillisTimestamp, get_env_or_default_string},
 };
-use rsnano_work::{WorkThresholds, WORK_THRESHOLDS_STUB};
+use rsnano_work::{WORK_THRESHOLDS_STUB, WorkThresholds};
 
 static BETA_PUBLIC_KEY_DATA: &str =
     "259A438A8F9F9226130C84D902C237AF3E57C0981C7D709C288046B110D8C8AC";

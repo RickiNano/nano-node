@@ -1,13 +1,13 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rsnano_daemon::DaemonBuilder;
-use rsnano_node::{working_path_for, Node};
+use rsnano_node::{Node, working_path_for};
 use rsnano_types::Networks;
 use std::{
     path::PathBuf,
     sync::{
-        atomic::{AtomicU8, Ordering},
         Arc, Mutex,
+        atomic::{AtomicU8, Ordering},
     },
 };
 use tracing::error;

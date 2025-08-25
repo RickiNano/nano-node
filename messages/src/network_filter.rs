@@ -1,8 +1,8 @@
 use rand::Rng;
 use siphasher::{prelude::*, sip128::SipHasher};
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Mutex, MutexGuard,
+    atomic::{AtomicU64, Ordering},
 };
 
 #[derive(Clone, Default)]

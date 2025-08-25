@@ -1,4 +1,4 @@
-use crate::{RpcU32, RpcU8};
+use crate::{RpcU8, RpcU32};
 use rsnano_types::BlockHash;
 use serde::{Deserialize, Serialize};
 

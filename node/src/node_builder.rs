@@ -1,6 +1,6 @@
 use std::{
     path::PathBuf,
-    sync::{mpsc::SyncSender, Arc},
+    sync::{Arc, mpsc::SyncSender},
 };
 
 use rsnano_messages::Message;
@@ -10,10 +10,11 @@ use rsnano_types::Networks;
 use rsnano_utils::get_cpu_count;
 
 use crate::{
+    Node, NodeArgs, NodeEvent,
     config::{
-        get_node_toml_config_path, DaemonConfig, DaemonToml, NetworkParams, NodeConfig, NodeFlags,
+        DaemonConfig, DaemonToml, NetworkParams, NodeConfig, NodeFlags, get_node_toml_config_path,
     },
-    working_path_for, Node, NodeArgs, NodeEvent,
+    working_path_for,
 };
 
 #[derive(Default)]

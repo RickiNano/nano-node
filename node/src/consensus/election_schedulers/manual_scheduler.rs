@@ -13,7 +13,7 @@ use rsnano_utils::{
     stats::{DetailType, StatType, Stats},
 };
 
-use crate::consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest};
+use crate::consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior};
 
 pub struct ManualScheduler {
     thread: Mutex<Option<JoinHandle<()>>>,

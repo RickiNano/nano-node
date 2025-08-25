@@ -4,7 +4,7 @@ use super::{
 };
 use crate::consensus::{ActiveElectionsContainer, AecInsertError, AecInsertRequest};
 use rsnano_nullable_clock::Timestamp;
-use rsnano_types::{utils::BlockPriority, BlockHash, SavedBlock};
+use rsnano_types::{BlockHash, SavedBlock, utils::BlockPriority};
 use std::sync::atomic::Ordering;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -174,7 +174,7 @@ pub enum BucketInsertError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{utils::TimePriority, Amount};
+    use rsnano_types::{Amount, utils::TimePriority};
 
     #[test]
     fn construction() {

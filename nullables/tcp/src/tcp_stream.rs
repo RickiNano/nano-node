@@ -224,7 +224,7 @@ unsafe fn downcast_stream(stream: Pin<&mut TcpStream>) -> Pin<&mut tokio::net::T
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{get_available_port, TcpStreamFactory};
+    use crate::{TcpStreamFactory, get_available_port};
     use std::{io::ErrorKind, net::SocketAddr};
     use tokio::{io::AsyncReadExt, net::TcpListener, spawn};
 

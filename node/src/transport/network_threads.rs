@@ -9,7 +9,7 @@ use rsnano_network::{DeadChannelCleanup, Network, NetworkConfig, PeerConnector, 
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use super::{keepalive::KeepaliveMessageFactory, MessageFlooder};
+use super::{MessageFlooder, keepalive::KeepaliveMessageFactory};
 use crate::config::{NetworkParams, NodeFlags};
 use rsnano_network_protocol::{LatestKeepalives, SynCookies};
 

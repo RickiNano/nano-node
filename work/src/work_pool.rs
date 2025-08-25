@@ -2,7 +2,7 @@ use std::{
     mem::size_of,
     num::NonZero,
     sync::Arc,
-    thread::{self, available_parallelism, JoinHandle},
+    thread::{self, JoinHandle, available_parallelism},
     time::Duration,
 };
 
@@ -275,9 +275,9 @@ impl WorkGenerator for StubWorkGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{dev_difficulty, WorkThresholds};
+    use crate::{WorkThresholds, dev_difficulty};
     use rsnano_types::{Block, TestBlockBuilder};
-    use std::sync::{mpsc, LazyLock};
+    use std::sync::{LazyLock, mpsc};
 
     pub static WORK_POOL: LazyLock<WorkPool> =
         LazyLock::new(|| WorkPool::new(4, Duration::ZERO, false, OpenClConfig::default()));

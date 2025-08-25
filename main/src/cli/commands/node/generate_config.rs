@@ -39,14 +39,23 @@ impl GenerateConfigArgs {
             (toml::to_string(&rpc_server_toml)?, "rpc")
         };
 
-        println!("# This is an example configuration file for Nano. Visit https://docs.nano.org/running-a-node/configuration/ for more information.");
+        println!(
+            "# This is an example configuration file for Nano. Visit https://docs.nano.org/running-a-node/configuration/ for more information."
+        );
         println!("# Fields may need to be defined in the context of a [category] above them.");
-        println!("# The desired configuration changes should be placed in config-{}.toml in the node data path.", config_type);
+        println!(
+            "# The desired configuration changes should be placed in config-{}.toml in the node data path.",
+            config_type
+        );
         println!(
             "# To change a value from its default, uncomment (erasing #) the corresponding field."
         );
-        println!("# It is not recommended to uncomment every field, as the default value for important fields may change in the future. Only change what you need.");
-        println!("# Additional information for notable configuration options is available in https://docs.nano.org/running-a-node/configuration/#notable-configuration-options\n");
+        println!(
+            "# It is not recommended to uncomment every field, as the default value for important fields may change in the future. Only change what you need."
+        );
+        println!(
+            "# Additional information for notable configuration options is available in https://docs.nano.org/running-a-node/configuration/#notable-configuration-options\n"
+        );
 
         if self.use_defaults {
             println!("{}", with_comments(&toml_str, false));

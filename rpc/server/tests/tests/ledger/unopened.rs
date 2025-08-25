@@ -3,7 +3,7 @@ use rsnano_node::Node;
 use rsnano_rpc_messages::UnopenedArgs;
 use rsnano_types::{Account, Amount};
 use std::sync::Arc;
-use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
+use test_helpers::{System, assert_timely2, setup_rpc_client_and_server};
 
 fn send_block(node: Arc<Node>) {
     let mut lattice = UnsavedBlockLatticeBuilder::new();

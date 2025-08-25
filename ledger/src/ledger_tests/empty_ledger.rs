@@ -1,8 +1,8 @@
 use crate::{
-    ledger_constants::LEDGER_CONSTANTS_STUB, AnySet, ConfirmedSet, Ledger, LedgerSet,
-    DEV_GENESIS_HASH,
+    AnySet, ConfirmedSet, DEV_GENESIS_HASH, Ledger, LedgerSet,
+    ledger_constants::LEDGER_CONSTANTS_STUB,
 };
-use rsnano_types::{utils::UnixTimestamp, Account, Amount, BlockType};
+use rsnano_types::{Account, Amount, BlockType, utils::UnixTimestamp};
 
 #[test]
 fn account_balance_is_none_for_unknown_account() {

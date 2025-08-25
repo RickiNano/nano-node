@@ -1,6 +1,6 @@
 use rsnano_rpc_messages::WalletRepresentativeSetArgs;
 use rsnano_types::{Account, PublicKey, WalletId};
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn wallet_representative_set() {

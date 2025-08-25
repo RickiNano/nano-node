@@ -1,6 +1,6 @@
 use rsnano_network::ChannelMode;
 use std::time::Duration;
-use test_helpers::{assert_never, System};
+use test_helpers::{System, assert_never};
 
 // Test a node cannot connect to its own endpoint.
 #[test]

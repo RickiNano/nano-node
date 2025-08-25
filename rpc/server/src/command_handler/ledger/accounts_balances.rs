@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
 use rsnano_ledger::LedgerSet;
 use rsnano_rpc_messages::{
-    unwrap_bool_or_true, AccountBalanceResponse, AccountsBalancesArgs, AccountsBalancesResponse,
+    AccountBalanceResponse, AccountsBalancesArgs, AccountsBalancesResponse, unwrap_bool_or_true,
 };
 use std::collections::HashMap;
 

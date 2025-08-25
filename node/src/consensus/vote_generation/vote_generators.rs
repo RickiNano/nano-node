@@ -13,10 +13,10 @@ use rsnano_utils::{
     stats::{DetailType, StatType, Stats},
 };
 
-use super::{vote_generator::VoteGenerator, LocalVoteHistory};
+use super::{LocalVoteHistory, vote_generator::VoteGenerator};
 use crate::{
     config::{NetworkParams, NodeConfig},
-    consensus::{election::VoteType, VoteBroadcaster},
+    consensus::{VoteBroadcaster, election::VoteType},
     transport::MessageSender,
     wallets::WalletRepresentatives,
 };

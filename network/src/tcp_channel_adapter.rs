@@ -1,6 +1,6 @@
 use crate::{
-    bandwidth_limiter::BandwidthLimiter, channel_stats::ChannelStats, Channel, ChannelDirection,
-    ChannelId,
+    Channel, ChannelDirection, ChannelId, bandwidth_limiter::BandwidthLimiter,
+    channel_stats::ChannelStats,
 };
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_nullable_tcp::TcpStream;

@@ -4,8 +4,9 @@ use anyhow::Result;
 use bitvec::prelude::BitArray;
 use rand::Rng;
 use rsnano_types::{
+    Account, BlockHash, NodeId, PrivateKey, PublicKey, Signature,
     utils::{BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream},
-    write_hex_bytes, Account, BlockHash, NodeId, PrivateKey, PublicKey, Signature,
+    write_hex_bytes,
 };
 use serde::ser::SerializeStruct;
 use std::fmt::{Display, Write};
@@ -301,7 +302,7 @@ impl Display for NodeIdHandshake {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialize_query() {

@@ -10,7 +10,7 @@ mod tests;
 use super::BlockInsertInstructions;
 use crate::BlockError;
 use rsnano_types::{
-    utils::UnixMillisTimestamp, Account, AccountInfo, Block, Epochs, PendingInfo, SavedBlock,
+    Account, AccountInfo, Block, Epochs, PendingInfo, SavedBlock, utils::UnixMillisTimestamp,
 };
 use rsnano_work::WorkThresholds;
 

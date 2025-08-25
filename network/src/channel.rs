@@ -1,25 +1,25 @@
 use num_traits::FromPrimitive;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{
-    utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2},
     NodeId,
+    utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2},
 };
 use std::{
     net::{Ipv6Addr, SocketAddrV6},
     sync::{
-        atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicU8, Ordering},
         Arc, Mutex,
+        atomic::{AtomicBool, AtomicI64, AtomicU8, AtomicU64, Ordering},
     },
     time::Duration,
 };
 use tokio_util::sync::{CancellationToken, WaitForCancellationFuture};
 
 use crate::{
+    ChannelDirection, ChannelId, ChannelMode, TrafficType,
     bandwidth_limiter::BandwidthLimiter,
     channel_stats::ChannelStats,
     utils::{ipv4_address_or_ipv6_subnet, map_address_to_subnetwork},
     write_queue::{Entry, WriteQueue},
-    ChannelDirection, ChannelId, ChannelMode, TrafficType,
 };
 use tracing::debug;
 

@@ -1,5 +1,5 @@
 use super::HashArgs;
-use crate::cli::{build_node, GlobalArgs};
+use crate::cli::{GlobalArgs, build_node};
 use rsnano_types::BlockHash;
 
 pub(crate) fn roll_back(global_args: GlobalArgs, args: HashArgs) -> anyhow::Result<()> {
@@ -15,11 +15,11 @@ pub(crate) fn roll_back(global_args: GlobalArgs, args: HashArgs) -> anyhow::Resu
 #[cfg(test)]
 mod tests {
     use crate::{
-        cli::{
-            commands::ledger::{HashArgs, LedgerCommand, LedgerSubcommands},
-            Commands,
-        },
         CommandLineArgs,
+        cli::{
+            Commands,
+            commands::ledger::{HashArgs, LedgerCommand, LedgerSubcommands},
+        },
     };
     use clap::Parser;
 

@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc, Mutex,
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::Duration,
 };
@@ -12,7 +12,7 @@ use tracing::warn;
 
 use rsnano_nullable_http_client::Url;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::{utils::Peer, Root, WorkNonce, WorkRequest, WorkRequestAsync};
+use rsnano_types::{Root, WorkNonce, WorkRequest, WorkRequestAsync, utils::Peer};
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_work::{WorkPool, WorkPoolBuilder};
 

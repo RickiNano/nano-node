@@ -1,8 +1,8 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
-    utils::{BufferWriter, FixedSizeSerialize, Serialize, Stream},
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PendingKey,
     PrivateKey, PublicKey, Root, Signature, WorkNonce,
+    utils::{BufferWriter, FixedSizeSerialize, Serialize, Stream},
 };
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
@@ -366,7 +366,7 @@ impl Visitor<'_> for AmountHexVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{utils::MemoryStream, Block, PrivateKey};
+    use crate::{Block, PrivateKey, utils::MemoryStream};
 
     #[test]
     fn create_send_block() {
@@ -388,16 +388,18 @@ mod tests {
         assert_eq!(block.source_field(), None);
 
         let hash = block.hash().to_owned();
-        assert!(key
-            .public_key()
-            .verify(hash.as_bytes(), &block.signature)
-            .is_ok());
+        assert!(
+            key.public_key()
+                .verify(hash.as_bytes(), &block.signature)
+                .is_ok()
+        );
 
         block.set_signature(Signature::from_bytes([1; 64]));
-        assert!(key
-            .public_key()
-            .verify(hash.as_bytes(), &block.signature)
-            .is_err());
+        assert!(
+            key.public_key()
+                .verify(hash.as_bytes(), &block.signature)
+                .is_err()
+        );
     }
 
     // original test: block.send_serialize

@@ -5,8 +5,8 @@ use clap::{ArgGroup, Parser};
 use toml::{from_str, to_string};
 
 use rsnano_node::config::{
-    get_node_toml_config_path, get_rpc_toml_config_path, DaemonConfig, DaemonToml,
-    NetworkConstants, NetworkParams,
+    DaemonConfig, DaemonToml, NetworkConstants, NetworkParams, get_node_toml_config_path,
+    get_rpc_toml_config_path,
 };
 use rsnano_rpc_server::{RpcServerConfig, RpcServerToml};
 use rsnano_types::Networks;

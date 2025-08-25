@@ -1,13 +1,13 @@
 use std::{cmp::Ordering, collections::BTreeSet};
 
-use super::{vote_router::VoteRouter, AecInsertRequest};
+use super::{AecInsertRequest, vote_router::VoteRouter};
 use crate::consensus::{
     election::{Election, ElectionBehavior},
     election_schedulers::priority::{bucket_count, bucket_index},
 };
 use rsnano_types::{
-    utils::{BlockPriority, TimePriority},
     BlockHash, QualifiedRoot,
+    utils::{BlockPriority, TimePriority},
 };
 use rustc_hash::FxHashMap;
 

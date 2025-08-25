@@ -1,8 +1,8 @@
 use std::{
     net::SocketAddr,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc, Condvar, Mutex, Weak,
+        atomic::{AtomicUsize, Ordering},
     },
     time::UNIX_EPOCH,
 };
@@ -11,7 +11,7 @@ use tokio::{
     net::{TcpListener, TcpStream},
     sync::{mpsc, oneshot},
 };
-use tokio_tungstenite::tungstenite::protocol::{frame::coding::CloseCode, CloseFrame};
+use tokio_tungstenite::tungstenite::protocol::{CloseFrame, frame::coding::CloseCode};
 use tracing::{info, warn};
 
 use rsnano_ledger::Ledger;
@@ -23,7 +23,7 @@ use rsnano_websocket_messages::{
 };
 
 use super::{ConfirmationOptions, Options, WebsocketSessionEntry};
-use crate::{confirmation_message_factory::ConfirmationMessageFactory, WebsocketSession};
+use crate::{WebsocketSession, confirmation_message_factory::ConfirmationMessageFactory};
 
 pub struct WebsocketListener {
     endpoint: Mutex<SocketAddr>,

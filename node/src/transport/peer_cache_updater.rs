@@ -11,9 +11,9 @@ use rsnano_network::{Channel, Network};
 use rsnano_nullable_clock::SystemTimeFactory;
 use rsnano_nullable_lmdb::WriteTransaction;
 use rsnano_utils::{
+    CancellationToken,
     stats::{DetailType, StatType, Stats},
     ticker::Tickable,
-    CancellationToken,
 };
 
 /// Writes a snapshot of the current peers to the database,
@@ -112,7 +112,7 @@ mod tests {
     use rsnano_network::{ChannelDirection, ChannelMode};
     use rsnano_nullable_clock::Timestamp;
     use rsnano_types::utils::{
-        new_test_timestamp, NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3,
+        NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3, new_test_timestamp,
     };
     use rsnano_utils::stats::Direction;
 

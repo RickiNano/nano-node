@@ -1,8 +1,8 @@
-use crate::{ledger_constants::LEDGER_CONSTANTS_STUB, AnySet, Ledger, LedgerSet};
+use crate::{AnySet, Ledger, LedgerSet, ledger_constants::LEDGER_CONSTANTS_STUB};
 use rsnano_types::{
-    Account, AccountInfo, Amount, Block, BlockHash, ChangeBlockArgs, Epoch, Link, OpenBlockArgs,
-    PendingInfo, PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, SavedBlock, SendBlockArgs,
-    StateBlockArgs, WorkNonce, DEV_GENESIS_KEY,
+    Account, AccountInfo, Amount, Block, BlockHash, ChangeBlockArgs, DEV_GENESIS_KEY, Epoch, Link,
+    OpenBlockArgs, PendingInfo, PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, SavedBlock,
+    SendBlockArgs, StateBlockArgs, WorkNonce,
 };
 
 /// Provides a simplified interface for inserting blocks into the ledger (for tests)
@@ -240,7 +240,7 @@ impl<'a> LedgerBlockInserter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Ledger, DEV_GENESIS_ACCOUNT};
+    use crate::{DEV_GENESIS_ACCOUNT, Ledger};
     use rsnano_types::BlockType;
 
     #[test]

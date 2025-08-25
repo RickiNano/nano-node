@@ -14,8 +14,8 @@ use rsnano_utils::{
 };
 
 use super::{
-    request_aggregator_impl::{AggregateResult, RequestAggregatorImpl},
     VoteGenerators,
+    request_aggregator_impl::{AggregateResult, RequestAggregatorImpl},
 };
 use crate::consensus::election::VoteType;
 

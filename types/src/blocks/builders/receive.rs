@@ -1,4 +1,4 @@
-use crate::{blocks::receive_block::ReceiveBlockArgs, Block, BlockHash, PrivateKey, WorkNonce};
+use crate::{Block, BlockHash, PrivateKey, WorkNonce, blocks::receive_block::ReceiveBlockArgs};
 
 pub struct TestLegacyReceiveBlockBuilder {
     previous: Option<BlockHash>,

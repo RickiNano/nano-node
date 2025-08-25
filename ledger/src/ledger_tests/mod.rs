@@ -2,17 +2,17 @@ use std::sync::Arc;
 
 use rsnano_store_lmdb::{LmdbAccountStore, LmdbPrunedStore};
 use rsnano_types::{
-    utils::{new_test_timestamp, UnixMillisTimestamp, TEST_ENDPOINT_1},
-    Account, AccountInfo, Amount, BlockHash, PrivateKey, PublicKey, Root, SavedBlock,
-    TestBlockBuilder, DEV_GENESIS_KEY,
+    Account, AccountInfo, Amount, BlockHash, DEV_GENESIS_KEY, PrivateKey, PublicKey, Root,
+    SavedBlock, TestBlockBuilder,
+    utils::{TEST_ENDPOINT_1, UnixMillisTimestamp, new_test_timestamp},
 };
 use rsnano_utils::stats::Stats;
 
 use crate::{
+    AnySet, ConfirmedSet, DEV_GENESIS_HASH, Ledger, LedgerConstants, LedgerInserter,
+    RepWeightCache,
     ledger_constants::{DEV_GENESIS_BLOCK, DEV_GENESIS_PUB_KEY},
     test_helpers::SavedBlockLatticeBuilder,
-    AnySet, ConfirmedSet, Ledger, LedgerConstants, LedgerInserter, RepWeightCache,
-    DEV_GENESIS_HASH,
 };
 use rsnano_nullable_lmdb::LmdbEnvironment;
 

@@ -1,20 +1,20 @@
 use std::{sync::Arc, time::Duration};
 
 use rsnano_ledger::{
-    test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
-    DEV_GENESIS_PUB_KEY,
+    DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
+    test_helpers::UnsavedBlockLatticeBuilder,
 };
 use rsnano_node::{
     config::NodeFlags,
-    consensus::{election::VoteType, ReceivedVote},
+    consensus::{ReceivedVote, election::VoteType},
 };
 use rsnano_types::{
-    Amount, Epoch, PrivateKey, Signature, Vote, VoteError, VoteSource, WalletId, DEV_GENESIS_KEY,
+    Amount, DEV_GENESIS_KEY, Epoch, PrivateKey, Signature, Vote, VoteError, VoteSource, WalletId,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
-    assert_timely, assert_timely2, assert_timely_eq2, make_fake_channel, start_election,
-    upgrade_epoch, System,
+    System, assert_timely, assert_timely_eq2, assert_timely2, make_fake_channel, start_election,
+    upgrade_epoch,
 };
 
 #[test]
@@ -46,10 +46,11 @@ fn check_signature() {
 
     let received_vote2 =
         ReceivedVote::new(Arc::new(vote1), VoteSource::Live, Some(channel.clone()));
-    assert!(node
-        .vote_processor
-        .vote_blocking(&received_vote2.clone().into())
-        .is_ok());
+    assert!(
+        node.vote_processor
+            .vote_blocking(&received_vote2.clone().into())
+            .is_ok()
+    );
     assert_eq!(
         Err(VoteError::Replay),
         node.vote_processor.vote_blocking(&received_vote2.into())

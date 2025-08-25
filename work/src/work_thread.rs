@@ -1,6 +1,6 @@
 use rsnano_types::WorkNonce;
 
-use super::{work_queue::WorkQueue, WorkGenerator, WorkQueueCoordinator, WorkTicket};
+use super::{WorkGenerator, WorkQueueCoordinator, WorkTicket, work_queue::WorkQueue};
 use std::sync::{Arc, MutexGuard};
 
 pub(crate) struct WorkThread<T>

@@ -1,9 +1,9 @@
 use std::{
     cmp::max,
     sync::{
+        Arc,
         atomic::{AtomicBool, AtomicI32, Ordering},
         mpsc::{self, RecvError, SendError, TryRecvError},
-        Arc,
     },
 };
 

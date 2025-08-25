@@ -85,10 +85,12 @@ mod tests {
 
     #[test]
     fn serialize_representatives_online_command_options_some() {
-        let accounts = vec![Account::decode_account(
-            "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j",
-        )
-        .unwrap()];
+        let accounts = vec![
+            Account::decode_account(
+                "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j",
+            )
+            .unwrap(),
+        ];
         let args = RepresentativesOnlineArgs::builder()
             .weight()
             .accounts(accounts.clone())
@@ -115,10 +117,12 @@ mod tests {
             assert_eq!(args.weight, Some(true.into()));
             assert_eq!(
                 args.accounts,
-                Some(vec![Account::decode_account(
-                    "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"
-                )
-                .unwrap()])
+                Some(vec![
+                    Account::decode_account(
+                        "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"
+                    )
+                    .unwrap()
+                ])
             );
         } else {
             panic!("Deserialized to wrong variant");

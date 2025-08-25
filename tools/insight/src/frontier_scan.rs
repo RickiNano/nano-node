@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use rsnano_node::{
-    bootstrap::{state::BootstrapState, BootstrapCounters, FrontierHeadInfo},
+    bootstrap::{BootstrapCounters, FrontierHeadInfo, state::BootstrapState},
     utils::RateCalculator,
 };
 use rsnano_nullable_clock::Timestamp;

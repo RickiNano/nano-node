@@ -1,10 +1,10 @@
 use super::{
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Stream},
     Account, Blake2HashBuilder, BlockHash, PrivateKey, Signature,
+    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Stream},
 };
 use crate::{
-    utils::{Serialize, UnixMillisTimestamp},
     PublicKey, VoteTimestamp,
+    utils::{Serialize, UnixMillisTimestamp},
 };
 use anyhow::Result;
 use std::time::Duration;

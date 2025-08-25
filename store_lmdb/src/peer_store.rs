@@ -13,7 +13,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::utils::{BufferWriter, Serialize};
 
-use crate::{iterator::LmdbIterator, PEERS_TEST_DATABASE};
+use crate::{PEERS_TEST_DATABASE, iterator::LmdbIterator};
 
 pub struct LmdbPeerStore {
     database: LmdbDatabase,

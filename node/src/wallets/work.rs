@@ -1,4 +1,4 @@
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 
 use rsnano_types::WorkRequest;
 use rsnano_wallet::Wallets;

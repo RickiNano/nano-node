@@ -228,10 +228,12 @@ mod tests {
         // Errors
         assert!(U256Test::decode_hex("!").is_err());
         assert!(U256Test::decode_hex("-1").is_err());
-        assert!(U256Test::decode_hex(
-            "affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-        )
-        .is_err());
+        assert!(
+            U256Test::decode_hex(
+                "affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            )
+            .is_err()
+        );
     }
 
     #[test]

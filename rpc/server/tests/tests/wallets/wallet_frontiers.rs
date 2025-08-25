@@ -1,6 +1,6 @@
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
-use rsnano_types::{WalletId, DEV_GENESIS_KEY};
-use test_helpers::{send_block, setup_rpc_client_and_server, System};
+use rsnano_types::{DEV_GENESIS_KEY, WalletId};
+use test_helpers::{System, send_block, setup_rpc_client_and_server};
 
 #[test]
 fn wallet_frontiers() {

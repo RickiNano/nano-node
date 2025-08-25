@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc, Condvar, LazyLock, Mutex, RwLock,
+        atomic::{AtomicU64, Ordering},
     },
     thread::JoinHandle,
 };
@@ -16,12 +16,12 @@ use rsnano_utils::{
 };
 
 use super::{
-    bucket_stats::BucketStats, prio_bucket_count, prio_bucket_index, Bucket, Bucketing,
-    PriorityBucketConfig,
+    Bucket, Bucketing, PriorityBucketConfig, bucket_stats::BucketStats, prio_bucket_count,
+    prio_bucket_index,
 };
 use crate::consensus::{
-    election_schedulers::priority::{BucketInsertError, Eviction},
     ActiveElectionsContainer,
+    election_schedulers::priority::{BucketInsertError, Eviction},
 };
 
 pub struct PriorityScheduler {

@@ -1,8 +1,8 @@
 use crate::{
+    Account, Amount, BlockDetails, BlockType, Epoch,
     utils::{
         BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream, UnixMillisTimestamp,
     },
-    Account, Amount, BlockDetails, BlockType, Epoch,
 };
 use num::FromPrimitive;
 

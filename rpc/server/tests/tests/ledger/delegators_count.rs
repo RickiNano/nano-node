@@ -1,5 +1,5 @@
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn delegators_count_rpc_response() {

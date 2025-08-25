@@ -4,7 +4,7 @@ use bitvec::prelude::BitArray;
 use rsnano_types::utils::{
     BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream, StreamExt,
 };
-use rsnano_types::{to_hex_string, Account, BlockHash, NodeId, PrivateKey, Signature};
+use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
 use serde_derive::Serialize;
 use std::fmt::Display;
 use std::mem::size_of;
@@ -332,7 +332,7 @@ impl Display for TelemetryData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialized_size() {

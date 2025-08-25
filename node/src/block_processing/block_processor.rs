@@ -11,8 +11,8 @@ use rsnano_utils::{
 };
 
 use super::{
-    backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,
     BlockProcessorQueue, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap,
+    backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,
 };
 use crate::block_processing::block_batch_processor::BlockBatchProcessor;
 

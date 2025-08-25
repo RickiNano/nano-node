@@ -7,8 +7,8 @@ use rsnano_types::{Account, BlockHash};
 use rsnano_utils::container_info::ContainerInfo;
 
 use super::{
-    running_query::QuerySource, CandidateAccounts, FrontierScan, PeerScoring, PriorityResult,
-    RunningQueryContainer,
+    CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer,
+    running_query::QuerySource,
 };
 use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig};
 

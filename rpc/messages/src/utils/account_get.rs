@@ -1,4 +1,4 @@
-use crate::{common::KeyArg, RpcCommand};
+use crate::{RpcCommand, common::KeyArg};
 use rsnano_types::PublicKey;
 
 impl RpcCommand {

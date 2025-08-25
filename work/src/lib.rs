@@ -17,7 +17,7 @@ pub use work_pool::{WorkPool, WorkPoolBuilder};
 pub(crate) use work_queue::WorkQueueCoordinator;
 pub use work_queue::WorkTicket;
 pub(crate) use work_thread::WorkThread;
-pub use work_thresholds::{dev_difficulty, WorkThresholds, WORK_THRESHOLDS_STUB};
+pub use work_thresholds::{WORK_THRESHOLDS_STUB, WorkThresholds, dev_difficulty};
 pub(crate) use xorshift::XorShift1024Star;
 
 pub(crate) trait WorkRng {

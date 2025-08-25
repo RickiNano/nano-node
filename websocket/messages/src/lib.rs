@@ -5,7 +5,7 @@ extern crate num_derive;
 extern crate strum_macros;
 
 use rsnano_types::{
-    utils::milliseconds_since_epoch, BlockHash, DifficultyV1, SavedBlock, WorkNonce, WorkVersion,
+    BlockHash, DifficultyV1, SavedBlock, WorkNonce, WorkVersion, utils::milliseconds_since_epoch,
 };
 use rsnano_work::WorkThresholds;
 use serde::{Deserialize, Serialize};

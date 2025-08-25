@@ -14,13 +14,13 @@ use rsnano_types::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, Save
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, StatType, Stats},
-    sync::backpressure_channel::{channel, Sender},
+    sync::backpressure_channel::{Sender, channel},
 };
 
 use super::{
+    LedgerEvent, ProcessedResult,
     backlog_index::{BacklogEntry, BacklogIndex},
     backlog_scan::UnconfirmedInfo,
-    LedgerEvent, ProcessedResult,
 };
 use crate::consensus::election_schedulers::priority::{prio_bucket_count, prio_bucket_index};
 

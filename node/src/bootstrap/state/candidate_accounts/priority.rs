@@ -12,7 +12,7 @@ impl Priority {
     pub const ZERO: Self = Self(OrderedFloat(0.0));
 
     pub fn as_f64(&self) -> f64 {
-        self.0 .0
+        self.0.0
     }
 }
 
@@ -56,13 +56,13 @@ impl From<Priority> for f64 {
 
 impl std::fmt::Debug for Priority {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.0 .0, f)
+        std::fmt::Debug::fmt(&self.0.0, f)
     }
 }
 
 impl std::fmt::Display for Priority {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(&self.0 .0, f)
+        std::fmt::Display::fmt(&self.0.0, f)
     }
 }
 

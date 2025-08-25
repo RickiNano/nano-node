@@ -1,4 +1,4 @@
-use super::{election::Election, ActiveElectionsContainer, AecTickerPlugin};
+use super::{ActiveElectionsContainer, AecTickerPlugin, election::Election};
 use crate::bootstrap::Bootstrapper;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::Account;
@@ -6,8 +6,8 @@ use rsnano_utils::stats::{StatsCollection, StatsSource};
 use std::{
     any::Any,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc, RwLock,
+        atomic::{AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -99,7 +99,7 @@ impl StatsSource for StaleElectionsStats {
 mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
-    use rsnano_types::{utils::BlockPriority, SavedBlock};
+    use rsnano_types::{SavedBlock, utils::BlockPriority};
 
     #[test]
     fn process_empty() {
@@ -131,10 +131,12 @@ mod tests {
         let mut plugin = BootstrapStaleElections::new(bootstrapper.clone(), clock);
         plugin.run(&RwLock::new(aec));
 
-        assert!(bootstrapper
-            .state()
-            .candidate_accounts
-            .prioritized(&account));
+        assert!(
+            bootstrapper
+                .state()
+                .candidate_accounts
+                .prioritized(&account)
+        );
         assert_eq!(plugin.stats.bootstrap_stale.load(Ordering::Relaxed), 1);
     }
 

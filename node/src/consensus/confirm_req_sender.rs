@@ -5,9 +5,9 @@ use rsnano_types::QualifiedRoot;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{
+    ConfirmationSolicitor,
     bounded_hash_map::BoundedHashMap,
     election::{Election, ElectionBehavior},
-    ConfirmationSolicitor,
 };
 
 pub(crate) struct ConfirmReqSender {

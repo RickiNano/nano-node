@@ -194,8 +194,10 @@ mod tests {
     fn json_deserialize_error() {
         let json = "\"invalid\"";
         let error = serde_json::from_str::<NodeId>(&json).unwrap_err();
-        assert!(error
-            .to_string()
-            .contains("a node ID in the form \"node_...\""));
+        assert!(
+            error
+                .to_string()
+                .contains("a node ID in the form \"node_...\"")
+        );
     }
 }

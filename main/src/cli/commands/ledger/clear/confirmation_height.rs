@@ -2,7 +2,7 @@ use clap::{ArgGroup, Parser};
 
 use rsnano_ledger::LedgerConstants;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
-use rsnano_store_lmdb::{default_ledger_lmdb_options, LmdbConfirmationHeightStore};
+use rsnano_store_lmdb::{LmdbConfirmationHeightStore, default_ledger_lmdb_options};
 use rsnano_types::{Account, ConfirmationHeightInfo, Networks};
 
 use crate::cli::GlobalArgs;
@@ -69,7 +69,9 @@ impl ConfirmationHeightArgs {
                 &genesis_account,
                 &ConfirmationHeightInfo::new(1, genesis_hash),
             );
-            println!("Confirmation heights of all accounts (except genesis which is set to 1) are set to 0");
+            println!(
+                "Confirmation heights of all accounts (except genesis which is set to 1) are set to 0"
+            );
         }
         txn.commit();
 

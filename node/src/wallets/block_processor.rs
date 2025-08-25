@@ -1,4 +1,4 @@
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 
 use rsnano_network::ChannelId;
 use rsnano_types::Block;

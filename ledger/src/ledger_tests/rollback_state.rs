@@ -1,6 +1,6 @@
 use crate::{
-    ledger_constants::DEV_GENESIS_PUB_KEY, AnySet, Ledger, LedgerInserter, LedgerSet,
-    DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
+    AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, Ledger, LedgerInserter, LedgerSet,
+    ledger_constants::DEV_GENESIS_PUB_KEY,
 };
 use rsnano_types::{Account, Amount, Epoch, PendingInfo, PendingKey, PrivateKey, PublicKey};
 

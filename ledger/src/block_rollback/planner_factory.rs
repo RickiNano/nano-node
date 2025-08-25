@@ -1,8 +1,8 @@
 use super::{rollback_performer::RollbackError, rollback_planner::RollbackPlanner};
 use crate::{AnySet, ConfirmedSet, Ledger};
 use rsnano_types::{
-    utils::UnixTimestamp, Account, AccountInfo, Block, BlockHash, ConfirmationHeightInfo,
-    PendingInfo, PendingKey, PublicKey, SavedBlock,
+    Account, AccountInfo, Block, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey,
+    PublicKey, SavedBlock, utils::UnixTimestamp,
 };
 
 pub(crate) struct RollbackPlannerFactory<'a> {

@@ -1,9 +1,9 @@
 use std::{sync::Arc, thread::JoinHandle, time::Duration};
 
 use super::{
+    VoteRebroadcastQueue,
     history::RebroadcastHistoryConfig,
     rebroadcast_processor::{RebroadcastProcessor, RebroadcastStats},
-    VoteRebroadcastQueue,
 };
 use crate::transport::MessageFlooder;
 use rsnano_ledger::RepWeightCache;

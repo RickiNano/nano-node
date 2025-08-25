@@ -1,7 +1,7 @@
 use rsnano_ledger::{DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY};
 use rsnano_node::consensus::{FilteredVote, ReceivedVote, RepTier};
 use rsnano_types::{
-    Amount, PrivateKey, Signature, Vote, VoteError, VoteSource, VoteTimestamp, DEV_GENESIS_KEY,
+    Amount, DEV_GENESIS_KEY, PrivateKey, Signature, Vote, VoteError, VoteSource, VoteTimestamp,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use std::{
@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 use test_helpers::{
-    assert_always_eq, assert_timely2, assert_timely_eq2, setup_chain, start_election, System,
+    System, assert_always_eq, assert_timely_eq2, assert_timely2, setup_chain, start_election,
 };
 
 #[test]
@@ -68,11 +68,12 @@ fn codes() {
     );
 
     // Once the election is removed (confirmed / dropped) the vote is again indeterminate
-    assert!(node
-        .active
-        .write()
-        .unwrap()
-        .erase(&blocks[0].qualified_root()));
+    assert!(
+        node.active
+            .write()
+            .unwrap()
+            .erase(&blocks[0].qualified_root())
+    );
 
     assert_eq!(
         Err(VoteError::Indeterminate),

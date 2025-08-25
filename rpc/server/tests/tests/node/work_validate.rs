@@ -1,6 +1,6 @@
 use rsnano_ledger::DEV_GENESIS_HASH;
 use rsnano_rpc_messages::WorkValidateArgs;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn work_validate() {

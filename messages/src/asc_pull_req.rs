@@ -2,8 +2,8 @@ use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use rsnano_types::{
-    utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
     Account, BlockHash, HashOrAccount,
+    utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
 };
 use rsnano_utils::stats::DetailType;
 use serde_derive::Serialize;
@@ -274,7 +274,7 @@ impl From<&AscPullReqType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialize_blocks() {
@@ -325,7 +325,10 @@ mod tests {
             }),
             id: 7,
         });
-        assert_eq!(req.to_string(), "\nacc:0000000000000000000000000000000000000000000000000000000000000001 max block count:2 hash type: 1");
+        assert_eq!(
+            req.to_string(),
+            "\nacc:0000000000000000000000000000000000000000000000000000000000000001 max block count:2 hash type: 1"
+        );
     }
 
     #[test]

@@ -9,11 +9,11 @@ use rsnano_messages::{
     AccountInfoReqPayload, AscPullAck, AscPullAckType, AscPullReq, AscPullReqType,
     BlocksReqPayload, FrontiersReqPayload, HashType, Message,
 };
-use rsnano_node::{bootstrap::BootstrapServer, Node};
-use rsnano_types::{Account, Block, BlockHash, HashOrAccount, SavedBlock, DEV_GENESIS_KEY};
+use rsnano_node::{Node, bootstrap::BootstrapServer};
+use rsnano_types::{Account, Block, BlockHash, DEV_GENESIS_KEY, HashOrAccount, SavedBlock};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
-    assert_always_eq, assert_timely_eq, assert_timely_eq2, make_fake_channel, setup_chains, System,
+    System, assert_always_eq, assert_timely_eq, assert_timely_eq2, make_fake_channel, setup_chains,
 };
 
 #[test]

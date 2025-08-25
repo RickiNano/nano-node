@@ -1,8 +1,7 @@
 use ocl::{
-    self,
+    self, Buffer, Platform, ProQue, Result,
     builders::{DeviceSpecifier, ProgramBuilder},
     flags::MemFlags,
-    Buffer, Platform, ProQue, Result,
 };
 use rsnano_types::Root;
 use tracing::info;

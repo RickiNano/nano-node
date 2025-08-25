@@ -6,13 +6,13 @@ use rsnano_network::NetworkConfig;
 use rsnano_nullable_http_client::Url;
 use rsnano_store_lmdb::LmdbConfig;
 use rsnano_types::{
-    utils::{get_env_or_default_string, Peer},
     Account, Amount, PublicKey,
+    utils::{Peer, get_env_or_default_string},
 };
 use rsnano_wallet::default_preconfigured_representatives_for_live;
 use rsnano_work::OpenClConfig;
 
-use super::{websocket_config::WebsocketConfig, NetworkParams, Networks, DEV_NETWORK_PARAMS};
+use super::{DEV_NETWORK_PARAMS, NetworkParams, Networks, websocket_config::WebsocketConfig};
 use crate::{
     block_processing::{
         BacklogScanConfig, BoundedBacklogConfig, LocalBlockBroadcasterConfig, ProcessQueueConfig,
@@ -20,11 +20,11 @@ use crate::{
     bootstrap::{BootstrapConfig, BootstrapServerConfig},
     cementation::ConfirmingSetConfig,
     consensus::{
-        election_schedulers::{
-            priority::PriorityBucketConfig, HintedSchedulerConfig, OptimisticSchedulerConfig,
-        },
         ActiveElectionsConfig, BootstrapStaleElections, ForkCache, RebroadcastHistoryConfig,
         RequestAggregatorConfig, VoteCacheConfig, VoteProcessorConfig, VoteRebroadcastQueue,
+        election_schedulers::{
+            HintedSchedulerConfig, OptimisticSchedulerConfig, priority::PriorityBucketConfig,
+        },
     },
     transport::MessageProcessorConfig,
 };

@@ -4,7 +4,7 @@ use std::{
 };
 
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+use rsnano_utils::{CancellationToken, ticker::Tickable};
 
 use super::ActiveElectionsContainer;
 
@@ -81,7 +81,7 @@ mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
     use rsnano_nullable_clock::Timestamp;
-    use rsnano_types::{utils::BlockPriority, SavedBlock};
+    use rsnano_types::{SavedBlock, utils::BlockPriority};
     use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]

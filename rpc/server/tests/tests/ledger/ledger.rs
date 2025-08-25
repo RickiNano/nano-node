@@ -1,9 +1,9 @@
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use rsnano_rpc_messages::LedgerArgs;
-use rsnano_types::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, Block, DEV_GENESIS_KEY, PrivateKey, StateBlockArgs};
 use std::sync::Arc;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 fn setup_test_environment(node: Arc<Node>) -> (PrivateKey, Block, Block) {
     let keys = PrivateKey::new();

@@ -3,7 +3,7 @@ use rsnano_node::Node;
 use rsnano_rpc_messages::ReceivableExistsArgs;
 use rsnano_types::{Block, BlockHash, DEV_GENESIS_KEY};
 use std::sync::Arc;
-use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
+use test_helpers::{System, assert_timely2, setup_rpc_client_and_server};
 
 fn send_block(node: Arc<Node>) -> Block {
     let mut lattice = UnsavedBlockLatticeBuilder::new();

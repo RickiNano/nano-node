@@ -1,7 +1,7 @@
 mod generate_config;
 mod run_daemon;
 
-use crate::cli::{build_node, GlobalArgs};
+use crate::cli::{GlobalArgs, build_node};
 use clap::{CommandFactory, Parser, Subcommand};
 use generate_config::GenerateConfigArgs;
 use rsnano_node::telemetry::{rsnano_build_info, rsnano_version_string};

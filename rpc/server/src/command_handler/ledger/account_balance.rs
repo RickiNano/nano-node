@@ -1,8 +1,8 @@
 use crate::command_handler::RpcCommandHandler;
 use rsnano_ledger::LedgerSet;
 use rsnano_rpc_messages::{
-    unwrap_bool_or_true, AccountArg, AccountBalanceArgs, AccountBalanceResponse,
-    AccountBlockCountResponse,
+    AccountArg, AccountBalanceArgs, AccountBalanceResponse, AccountBlockCountResponse,
+    unwrap_bool_or_true,
 };
 
 impl RpcCommandHandler {

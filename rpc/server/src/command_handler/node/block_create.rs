@@ -113,7 +113,9 @@ impl RpcCommandHandler {
                     }
                     block
                 } else {
-                    bail!("Previous, representative, final balance and link (source or destination) are required");
+                    bail!(
+                        "Previous, representative, final balance and link (source or destination) are required"
+                    );
                 }
             }
             BlockTypeDto::Open => {

@@ -56,7 +56,7 @@ impl WalletBalancesArgsBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::{wallets::WalletBalancesArgs, RpcCommand};
+    use crate::{RpcCommand, wallets::WalletBalancesArgs};
     use rsnano_types::{Amount, WalletId};
     use serde_json::to_string_pretty;
 

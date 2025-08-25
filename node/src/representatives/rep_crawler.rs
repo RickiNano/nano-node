@@ -25,8 +25,8 @@ use crate::{
     config::{NetworkParams, NodeConfig},
     consensus::{ActiveElectionsContainer, ReceivedVote},
     transport::{
-        keepalive::{KeepalivePublisher, PreconfiguredPeersKeepalive},
         MessageSender,
+        keepalive::{KeepalivePublisher, PreconfiguredPeersKeepalive},
     },
 };
 

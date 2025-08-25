@@ -1,12 +1,12 @@
 use rsnano_ledger::{
-    test_helpers::UnsavedBlockLatticeBuilder, AnySet, ConfirmedSet, LedgerSet, DEV_GENESIS_ACCOUNT,
-    DEV_GENESIS_PUB_KEY,
+    AnySet, ConfirmedSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY, LedgerSet,
+    test_helpers::UnsavedBlockLatticeBuilder,
 };
 use rsnano_network::ChannelId;
 use rsnano_node::block_processing::{BlockContext, BlockSource};
-use rsnano_types::{Amount, PrivateKey, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, DEV_GENESIS_KEY, PrivateKey};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
-use test_helpers::{assert_timely_eq2, System};
+use test_helpers::{System, assert_timely_eq2};
 
 #[test]
 fn single() {
@@ -100,21 +100,24 @@ fn multiple_accounts() {
             .height,
         1
     );
-    assert!(node
-        .ledger
-        .confirmed()
-        .get_conf_info(&key1.public_key().as_account())
-        .is_none());
-    assert!(node
-        .ledger
-        .confirmed()
-        .get_conf_info(&key2.public_key().as_account())
-        .is_none());
-    assert!(node
-        .ledger
-        .confirmed()
-        .get_conf_info(&key3.public_key().as_account())
-        .is_none());
+    assert!(
+        node.ledger
+            .confirmed()
+            .get_conf_info(&key1.public_key().as_account())
+            .is_none()
+    );
+    assert!(
+        node.ledger
+            .confirmed()
+            .get_conf_info(&key2.public_key().as_account())
+            .is_none()
+    );
+    assert!(
+        node.ledger
+            .confirmed()
+            .get_conf_info(&key3.public_key().as_account())
+            .is_none()
+    );
 
     // The nodes process a live receive which propagates across to all accounts
     let receive3 = lattice.account(&key3).receive(&send6);

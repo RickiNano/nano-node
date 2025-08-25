@@ -2,20 +2,20 @@ use num_traits::FromPrimitive;
 use tracing::{debug, error, info};
 
 use rsnano_nullable_lmdb::{
-    sys::{MDB_FIRST, MDB_NEXT},
     DatabaseFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory, Transaction,
     WriteFlags,
+    sys::{MDB_FIRST, MDB_NEXT},
 };
 use rsnano_types::{
-    utils::{UnixMillisTimestamp, UnixTimestamp},
     BlockType,
+    utils::{UnixMillisTimestamp, UnixTimestamp},
 };
 
 use crate::{
+    FIRST_INCOMPATIBLE_STORE_VERSION, LmdbVersionStore, STORE_VERSION_CURRENT,
+    STORE_VERSION_MINIMUM,
     block_store::{BLOCK_DATA_DB_NAME, BLOCK_INDEX_DB_NAME},
     vacuum::vacuum,
-    LmdbVersionStore, FIRST_INCOMPATIBLE_STORE_VERSION, STORE_VERSION_CURRENT,
-    STORE_VERSION_MINIMUM,
 };
 
 pub fn create_and_update_lmdb_env(
@@ -68,7 +68,9 @@ fn do_upgrades(env: &mut LmdbEnvironment) -> anyhow::Result<bool> {
     }
 
     if version < STORE_VERSION_MINIMUM {
-        error!("The version of the ledger ({version}) is lower than the minimum ({STORE_VERSION_MINIMUM}) which is supported for upgrades. Either upgrade to an older version of RsNano first or delete the ledger.");
+        error!(
+            "The version of the ledger ({version}) is lower than the minimum ({STORE_VERSION_MINIMUM}) which is supported for upgrades. Either upgrade to an older version of RsNano first or delete the ledger."
+        );
         bail!("version too low");
     }
 
@@ -154,7 +156,9 @@ fn create_successor_table(env: &LmdbEnvironment) -> Result<(), anyhow::Error> {
 fn remove_successor_from_sideband_and_upgrade_timestamp_and_split_table(
     env: &LmdbEnvironment,
 ) -> Result<(), anyhow::Error> {
-    info!("Removing successor from sideband and upgrading timestamp to milliseconds and splitting block table...");
+    info!(
+        "Removing successor from sideband and upgrading timestamp to milliseconds and splitting block table..."
+    );
 
     let block_db = env.create_db(Some("blocks"), DatabaseFlags::empty())?;
     let index_db = env.create_db(Some(BLOCK_INDEX_DB_NAME), DatabaseFlags::empty())?;
@@ -283,8 +287,8 @@ fn v24_sideband_len(block_type: BlockType) -> usize {
 mod tests {
     use super::*;
     use rsnano_types::{
-        utils::{MemoryStream, Serialize, Stream, StreamExt},
         Block, BlockHash, BlockSideband,
+        utils::{MemoryStream, Serialize, Stream, StreamExt},
     };
 
     #[test]

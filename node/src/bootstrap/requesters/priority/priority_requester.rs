@@ -1,6 +1,6 @@
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
 use rsnano_ledger::Ledger;
@@ -15,9 +15,9 @@ use super::{
 use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
     bootstrap::{
+        AscPullQuerySpec, BootstrapConfig, BootstrapPromise, PollResult,
         requesters::channel_waiter::{ChannelWaiter, ChannelWaiterStats},
         state::BootstrapState,
-        AscPullQuerySpec, BootstrapConfig, BootstrapPromise, PollResult,
     },
 };
 
@@ -160,7 +160,7 @@ mod tests {
     use std::sync::{Arc, Mutex, RwLock};
 
     use rsnano_ledger::Ledger;
-    use rsnano_network::{token_bucket::TokenBucket, Network};
+    use rsnano_network::{Network, token_bucket::TokenBucket};
     use rsnano_nullable_clock::SteadyClock;
     use rsnano_types::Account;
 
@@ -168,12 +168,11 @@ mod tests {
     use crate::{
         block_processing::BlockProcessorQueue,
         bootstrap::{
-            progress,
+            BootstrapConfig, PollResult, progress,
             requesters::{
                 channel_waiter::ChannelWaiter, priority::priority_requester::PriorityState,
             },
             state::BootstrapState,
-            BootstrapConfig, PollResult,
         },
     };
 

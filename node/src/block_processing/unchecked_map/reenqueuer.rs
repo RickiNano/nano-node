@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
     },
     time::Duration,
 };
@@ -11,9 +11,9 @@ use rsnano_network::ChannelId;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Block, BlockHash};
 use rsnano_utils::{
+    CancellationToken,
     stats::{StatsCollection, StatsSource},
     ticker::Tickable,
-    CancellationToken,
 };
 
 use super::UncheckedMap;

@@ -1,4 +1,4 @@
-use crate::bootstrap::{state::CandidateAccountsConfig, BootstrapConfig};
+use crate::bootstrap::{BootstrapConfig, state::CandidateAccountsConfig};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 

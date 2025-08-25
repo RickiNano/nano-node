@@ -1,8 +1,8 @@
 use std::{
     collections::{HashSet, VecDeque},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex,
+        atomic::{AtomicBool, Ordering},
     },
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -19,7 +19,7 @@ use rsnano_utils::{
 use super::ordered_entries::OrderedEntries;
 use crate::{
     block_processing::{LedgerEvent, ProcessedResult},
-    consensus::{election::ConfirmedElection, ConfirmedElectionsCache},
+    consensus::{ConfirmedElectionsCache, election::ConfirmedElection},
     utils::ThreadPool,
 };
 

@@ -1,26 +1,26 @@
-use std::sync::{mpsc::SyncSender, Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock, mpsc::SyncSender};
 
 use tracing::debug;
 
 use rsnano_messages::NetworkFilter;
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_types::{utils::MemoryStream, Block, VoteError, VoteSource};
+use rsnano_types::{Block, VoteError, VoteSource, utils::MemoryStream};
 use rsnano_utils::stats::{Sample, Stats};
 
 use crate::{
+    NodeEvent,
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     cementation::ConfirmingSet,
     consensus::{
-        aggregate_vote_results, election_schedulers::ElectionSchedulers, ActiveElectionsContainer,
-        AecCooldownReason, AecEvent, BootstrapElectionActivator, ForkProcessor, LocalVotesRemover,
-        ReceivedVote, VoteCache, VoteCacheProcessor, VoteProcessor, VoteRebroadcastQueue,
-        WinnerBlockBroadcaster,
+        ActiveElectionsContainer, AecCooldownReason, AecEvent, BootstrapElectionActivator,
+        ForkProcessor, LocalVotesRemover, ReceivedVote, VoteCache, VoteCacheProcessor,
+        VoteProcessor, VoteRebroadcastQueue, WinnerBlockBroadcaster, aggregate_vote_results,
+        election_schedulers::ElectionSchedulers,
     },
     recently_cemented_inserter::RecentlyCementedInserter,
     representatives::{OnlineReps, RepCrawler},
     utils::BackpressureEventProcessor,
-    NodeEvent,
 };
 
 pub(crate) trait AecEventHandler {

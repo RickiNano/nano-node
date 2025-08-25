@@ -171,7 +171,7 @@ impl RebroadcastError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{utils::UnixMillisTimestamp, Vote};
+    use rsnano_types::{Vote, utils::UnixMillisTimestamp};
     use std::time::Duration;
 
     #[test]

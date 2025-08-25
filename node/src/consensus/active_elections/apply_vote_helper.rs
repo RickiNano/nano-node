@@ -4,10 +4,10 @@ use rsnano_types::{Amount, BlockHash, VoteError, VoteSource};
 use rsnano_utils::sync::backpressure_channel::Sender;
 
 use super::{
+    AecEvent, ApplyVoteArgs,
     recently_confirmed_cache::RecentlyConfirmedCache,
     root_container::{Entry, RootContainer},
     stats::VoteCounter,
-    AecEvent, ApplyVoteArgs,
 };
 use crate::consensus::election::{ConfirmationType, Election, VoteSummary};
 
@@ -177,16 +177,16 @@ mod tests {
     use super::*;
     use crate::{
         consensus::{
-            active_elections::root_container::Entry, election::ElectionBehavior, FilteredVote,
-            ReceivedVote,
+            FilteredVote, ReceivedVote, active_elections::root_container::Entry,
+            election::ElectionBehavior,
         },
         representatives::QuorumSpecs,
     };
     use rsnano_ledger::RepWeights;
     use rsnano_nullable_clock::Timestamp;
     use rsnano_types::{
-        utils::{BlockPriority, UnixMillisTimestamp},
         Block, PrivateKey, QualifiedRoot, SavedBlock, StateBlockArgs, Vote,
+        utils::{BlockPriority, UnixMillisTimestamp},
     };
     use rsnano_utils::sync::backpressure_channel::channel;
     use std::time::Duration;

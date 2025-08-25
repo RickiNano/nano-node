@@ -1,7 +1,7 @@
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
 use rsnano_rpc_messages::AccountsRepresentativesResponse;
 use std::collections::HashMap;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn accounts_representatives() {

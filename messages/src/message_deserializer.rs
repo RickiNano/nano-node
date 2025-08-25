@@ -3,8 +3,8 @@ use std::{collections::VecDeque, io::Read, sync::Arc};
 use rsnano_types::ProtocolInfo;
 
 use crate::{
-    validate_header, DeserializedMessage, Message, MessageHeader, MessageType, NetworkFilter,
-    ParseMessageError,
+    DeserializedMessage, Message, MessageHeader, MessageType, NetworkFilter, ParseMessageError,
+    validate_header,
 };
 
 pub struct MessageDeserializer {

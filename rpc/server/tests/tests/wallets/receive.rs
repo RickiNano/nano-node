@@ -1,7 +1,7 @@
-use rsnano_ledger::{AnySet, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
+use rsnano_ledger::{AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, LedgerSet};
 use rsnano_rpc_messages::ReceiveArgs;
-use rsnano_types::{Amount, BlockHash, WalletId, DEV_GENESIS_KEY};
-use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
+use rsnano_types::{Amount, BlockHash, DEV_GENESIS_KEY, WalletId};
+use test_helpers::{System, assert_timely2, setup_rpc_client_and_server};
 
 #[test]
 fn receive() {

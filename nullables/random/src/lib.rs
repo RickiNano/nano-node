@@ -1,4 +1,4 @@
-use rand::{rng, CryptoRng, RngCore};
+use rand::{CryptoRng, RngCore, rng};
 
 pub struct NullableRng {
     strategy: RngStrategy,

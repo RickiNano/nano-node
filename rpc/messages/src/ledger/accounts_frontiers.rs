@@ -1,4 +1,4 @@
-use crate::{common::AccountsRpcMessage, RpcCommand};
+use crate::{RpcCommand, common::AccountsRpcMessage};
 use rsnano_types::Account;
 
 impl RpcCommand {

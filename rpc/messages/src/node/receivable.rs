@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 use rsnano_types::{Account, Amount, BlockHash};
 use serde::{Deserialize, Serialize};
 
-use crate::{RpcBool, RpcU64, RpcU8};
+use crate::{RpcBool, RpcU8, RpcU64};
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
 pub struct ReceivableArgs {

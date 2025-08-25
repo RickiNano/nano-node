@@ -3,8 +3,8 @@ use super::{
     pull_type_decider::{PullType, PullTypeDecider},
 };
 use crate::bootstrap::{
-    state::{BootstrapState, PriorityResult},
     AscPullQuerySpec,
+    state::{BootstrapState, PriorityResult},
 };
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_messages::{AscPullReqType, BlocksReqPayload, HashType};

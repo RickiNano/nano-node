@@ -3,8 +3,8 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     mem::size_of,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex, RwLock,
+        atomic::{AtomicBool, Ordering},
     },
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -21,7 +21,7 @@ use rsnano_utils::{
 use super::VoteCache;
 use crate::{
     cementation::ConfirmingSet,
-    consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
+    consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior},
     representatives::OnlineReps,
 };
 

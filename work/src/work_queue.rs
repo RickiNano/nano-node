@@ -1,6 +1,6 @@
 use std::sync::{
-    atomic::{AtomicBool, AtomicI32, Ordering},
     Condvar, Mutex, MutexGuard,
+    atomic::{AtomicBool, AtomicI32, Ordering},
 };
 
 use rsnano_types::{Root, WorkNonce, WorkRequestAsync};

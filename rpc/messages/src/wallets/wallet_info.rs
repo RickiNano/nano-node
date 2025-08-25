@@ -1,4 +1,4 @@
-use crate::{common::WalletRpcMessage, RpcCommand};
+use crate::{RpcCommand, common::WalletRpcMessage};
 use crate::{RpcU32, RpcU64};
 use rsnano_types::Amount;
 use rsnano_types::WalletId;

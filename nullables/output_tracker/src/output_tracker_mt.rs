@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc, Condvar, Mutex, Weak,
+        atomic::{AtomicUsize, Ordering},
     },
     time::Duration,
 };

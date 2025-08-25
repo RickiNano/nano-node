@@ -7,7 +7,7 @@ use rsnano_nullable_http_client::{HttpClient, IntoUrl, NulledHttpClientBuilder, 
 use rsnano_output_tracker::OutputListenerMt;
 #[cfg(test)]
 use rsnano_output_tracker::OutputTrackerMt;
-use rsnano_types::{to_hex_string, Root, WorkNonce, WorkRequest};
+use rsnano_types::{Root, WorkNonce, WorkRequest, to_hex_string};
 
 #[derive(serde::Serialize)]
 struct HttpWorkRequest {

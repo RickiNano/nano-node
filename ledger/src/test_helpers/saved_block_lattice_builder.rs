@@ -1,13 +1,13 @@
 use std::{collections::HashMap, time::Duration};
 
 use rsnano_types::{
-    dev_epoch1_signer, epoch_v1_link, utils::UnixMillisTimestamp, Account, Amount, Block,
-    BlockDetails, BlockHash, BlockSideband, ChangeBlockArgs, Epoch, EpochBlockArgs, Link,
-    OpenBlockArgs, PendingInfo, PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root,
-    SavedBlock, SendBlockArgs, StateBlockArgs, WorkNonce, WorkRequest, DEV_GENESIS_BLOCK,
-    DEV_GENESIS_KEY,
+    Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, ChangeBlockArgs,
+    DEV_GENESIS_BLOCK, DEV_GENESIS_KEY, Epoch, EpochBlockArgs, Link, OpenBlockArgs, PendingInfo,
+    PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root, SavedBlock, SendBlockArgs,
+    StateBlockArgs, WorkNonce, WorkRequest, dev_epoch1_signer, epoch_v1_link,
+    utils::UnixMillisTimestamp,
 };
-use rsnano_work::{dev_difficulty, WorkPool};
+use rsnano_work::{WorkPool, dev_difficulty};
 
 pub struct SavedBlockLatticeBuilder {
     accounts: HashMap<Account, Frontier>,
@@ -78,10 +78,11 @@ impl SavedBlockLatticeBuilder {
     pub fn epoch_open(&mut self, account: impl Into<Account>) -> SavedBlock {
         let account = account.into();
         assert!(!self.accounts.contains_key(&account));
-        assert!(self
-            .pending_receives
-            .keys()
-            .any(|k| k.receiving_account == account));
+        assert!(
+            self.pending_receives
+                .keys()
+                .any(|k| k.receiving_account == account)
+        );
 
         let receive: Block = EpochBlockArgs {
             epoch_signer: dev_epoch1_signer(),

@@ -1,6 +1,6 @@
 use crate::{
-    utils::{Deserialize, Stream},
     Account, Amount, Epoch,
+    utils::{Deserialize, Stream},
 };
 use num::FromPrimitive;
 

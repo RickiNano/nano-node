@@ -7,14 +7,14 @@ mod timer;
 use std::net::Ipv6Addr;
 
 use blake2::{
-    digest::{Update, VariableOutput},
     Blake2bVar,
+    digest::{Update, VariableOutput},
 };
 
 use rsnano_types::HardenedConstants;
 
 pub(crate) use backpressure_event_processor::{
-    spawn_backpressure_processor, BackpressureEventProcessor,
+    BackpressureEventProcessor, spawn_backpressure_processor,
 };
 
 pub use crate::utils::timer::Timer;

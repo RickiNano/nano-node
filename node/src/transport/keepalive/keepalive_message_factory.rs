@@ -1,6 +1,6 @@
 use rsnano_messages::{Keepalive, Message};
 use rsnano_network::Network;
-use rsnano_types::utils::{Peer, NULL_ENDPOINT};
+use rsnano_types::utils::{NULL_ENDPOINT, Peer};
 use std::{
     net::{Ipv6Addr, SocketAddrV6},
     sync::{Arc, RwLock},

@@ -2,8 +2,8 @@ use super::PublicKey;
 use crate::u256_struct;
 use anyhow::Result;
 use blake2::{
-    digest::{Update, VariableOutput},
     Blake2bVar,
+    digest::{Update, VariableOutput},
 };
 use primitive_types::U512;
 use serde::de::{Unexpected, Visitor};
@@ -153,11 +153,7 @@ impl<'a> EncodedAccountStr<'a> {
     }
 
     fn prefix_len(&self) -> usize {
-        if self.has_xrb_prefix() {
-            4
-        } else {
-            5
-        }
+        if self.has_xrb_prefix() { 4 } else { 5 }
     }
 
     fn first_digit(&self) -> Option<char> {
@@ -292,14 +288,18 @@ mod tests {
 
     #[test]
     fn decode_fail_too_log() {
-        assert!(Account::decode_account(
-            "nano_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411"
-        )
-        .is_err());
-        assert!(Account::decode_account(
-            "xrb_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411"
-        )
-        .is_err());
+        assert!(
+            Account::decode_account(
+                "nano_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411"
+            )
+            .is_err()
+        );
+        assert!(
+            Account::decode_account(
+                "xrb_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411"
+            )
+            .is_err()
+        );
     }
 
     #[test]

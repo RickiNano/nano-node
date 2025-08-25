@@ -4,7 +4,7 @@ mod final_vote;
 use anyhow::Result;
 use clap::{CommandFactory, Parser, Subcommand};
 
-use rsnano_store_lmdb::{default_ledger_lmdb_options, LmdbOnlineWeightStore, LmdbPeerStore};
+use rsnano_store_lmdb::{LmdbOnlineWeightStore, LmdbPeerStore, default_ledger_lmdb_options};
 
 use crate::cli::GlobalArgs;
 use confirmation_height::ConfirmationHeightArgs;

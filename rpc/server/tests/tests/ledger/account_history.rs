@@ -1,7 +1,7 @@
 use rsnano_ledger::{DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY};
 use rsnano_rpc_messages::{AccountHistoryArgs, BlockTypeDto};
-use rsnano_types::{Account, Amount, PublicKey, WalletId, DEV_GENESIS_KEY};
-use test_helpers::{setup_rpc_client_and_server, System};
+use rsnano_types::{Account, Amount, DEV_GENESIS_KEY, PublicKey, WalletId};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn account_history() {

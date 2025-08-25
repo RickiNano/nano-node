@@ -1,4 +1,4 @@
-use crate::cli::{build_node, GlobalArgs};
+use crate::cli::{GlobalArgs, build_node};
 use clap::Parser;
 use rsnano_types::WalletId;
 

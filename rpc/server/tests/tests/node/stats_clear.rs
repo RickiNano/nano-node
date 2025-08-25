@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use rsnano_utils::stats::{DetailType, Direction, StatType};
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn stats_clear() {

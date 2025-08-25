@@ -111,8 +111,8 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        ledger::{LedgerAccountInfo, LedgerArgs, LedgerResponse},
         RpcCommand,
+        ledger::{LedgerAccountInfo, LedgerArgs, LedgerResponse},
     };
     use rsnano_types::{Account, Amount, BlockHash};
     use serde_json::json;

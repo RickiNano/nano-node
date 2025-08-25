@@ -1,7 +1,7 @@
 use rsnano_ledger::{DEV_GENESIS_ACCOUNT, DEV_GENESIS_BLOCK, DEV_GENESIS_HASH};
 use rsnano_types::{Amount, BlockHash};
 use std::time::{SystemTime, UNIX_EPOCH};
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn block_info() {

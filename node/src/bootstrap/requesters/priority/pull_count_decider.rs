@@ -1,4 +1,4 @@
-use crate::bootstrap::{state::Priority, BootstrapServer};
+use crate::bootstrap::{BootstrapServer, state::Priority};
 use num::clamp;
 use rsnano_messages::BlocksAckPayload;
 use std::cmp::min;
@@ -37,7 +37,7 @@ impl Default for PullCountDecider {
 #[cfg(test)]
 mod tests {
     use super::PullCountDecider;
-    use crate::bootstrap::{state::Priority, BootstrapServer};
+    use crate::bootstrap::{BootstrapServer, state::Priority};
 
     #[test]
     fn min_count() {

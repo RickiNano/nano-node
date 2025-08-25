@@ -2,8 +2,8 @@ use std::{
     io::Write,
     path::PathBuf,
     sync::{
-        mpsc::{self, SyncSender},
         Mutex,
+        mpsc::{self, SyncSender},
     },
     thread::{self, available_parallelism},
 };

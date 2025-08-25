@@ -5,11 +5,11 @@ use std::{
 
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{BlockHash, Networks, Root};
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+use rsnano_utils::{CancellationToken, ticker::Tickable};
 
 use super::{CpsLimiter, VoteGenerators};
 use crate::consensus::{
-    election::VoteType, election_schedulers::priority::bucket_count, ActiveElectionsContainer,
+    ActiveElectionsContainer, election::VoteType, election_schedulers::priority::bucket_count,
 };
 
 /// Creates votes for blocks within the AEC

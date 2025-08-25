@@ -1,7 +1,7 @@
-use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT};
+use rsnano_ledger::{DEV_GENESIS_ACCOUNT, test_helpers::UnsavedBlockLatticeBuilder};
 use rsnano_rpc_messages::{BlockSubTypeDto, ProcessArgs};
 use rsnano_types::DEV_GENESIS_KEY;
-use test_helpers::{setup_rpc_client_and_server, System};
+use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
 fn process() {

@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
 use rsnano_ledger::AnySet;
 use rsnano_rpc_messages::{
-    unwrap_bool_or_false, unwrap_u64_or_zero, BlockHashesResponse, ChainArgs,
+    BlockHashesResponse, ChainArgs, unwrap_bool_or_false, unwrap_u64_or_zero,
 };
 use rsnano_types::BlockHash;
 

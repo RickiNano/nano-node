@@ -2,9 +2,9 @@ use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
 use rsnano_ledger::{AnySet, ConfirmedSet, LedgerSet};
 use rsnano_rpc_messages::{
-    unwrap_bool_or_false, BlockInfoResponse, BlocksInfoArgs, BlocksInfoResponse,
+    BlockInfoResponse, BlocksInfoArgs, BlocksInfoResponse, unwrap_bool_or_false,
 };
-use rsnano_types::{utils::UnixTimestamp, BlockHash, BlockType, PendingKey};
+use rsnano_types::{BlockHash, BlockType, PendingKey, utils::UnixTimestamp};
 use std::collections::HashMap;
 
 impl RpcCommandHandler {

@@ -1,4 +1,4 @@
-use super::{channels::ChannelsView, MainViewModel, MessageTableView, MessageView};
+use super::{MainViewModel, MessageTableView, MessageView, channels::ChannelsView};
 use eframe::egui::{self, CentralPanel, SidePanel};
 
 pub(crate) fn view_message_tab(ctx: &egui::Context, model: &mut MainViewModel) {

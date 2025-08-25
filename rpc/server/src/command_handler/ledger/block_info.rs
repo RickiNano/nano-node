@@ -2,9 +2,9 @@ use crate::command_handler::RpcCommandHandler;
 use anyhow::anyhow;
 use rsnano_ledger::AnySet;
 use rsnano_rpc_messages::{
-    unwrap_bool_or_false, BlockInfoArgs, BlockInfoResponse, BlockSubTypeDto,
+    BlockInfoArgs, BlockInfoResponse, BlockSubTypeDto, unwrap_bool_or_false,
 };
-use rsnano_types::{utils::UnixTimestamp, BlockType, SavedBlock};
+use rsnano_types::{BlockType, SavedBlock, utils::UnixTimestamp};
 
 impl RpcCommandHandler {
     pub(crate) fn block_info(&self, args: BlockInfoArgs) -> anyhow::Result<BlockInfoResponse> {

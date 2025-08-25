@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::{collections::HashMap, sync::Arc};
 
 pub use reqwest::{IntoUrl, Method, StatusCode, Url};
@@ -301,7 +301,12 @@ mod tests {
         match result.error_for_status() {
             Ok(_) => panic!("should return error!"),
             Err(e) => {
-                assert_eq!(e.to_string(), format!("HTTP status client error (404 Not Found) for url (http://127.0.0.1:{port}/not-found)"));
+                assert_eq!(
+                    e.to_string(),
+                    format!(
+                        "HTTP status client error (404 Not Found) for url (http://127.0.0.1:{port}/not-found)"
+                    )
+                );
             }
         }
     }
@@ -372,7 +377,7 @@ mod tests {
     }
 
     mod test_http_server {
-        use axum::{routing::post, Json, Router};
+        use axum::{Json, Router, routing::post};
         use tokio::{
             net::{TcpListener, ToSocketAddrs},
             sync::oneshot,

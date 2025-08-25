@@ -1,22 +1,22 @@
 use std::{
     ops::RangeBounds,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
 };
 
 use rsnano_nullable_lmdb::{
-    sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment,
-    Transaction, WriteFlags, WriteTransaction,
+    ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
+    WriteFlags, WriteTransaction, sys::MDB_LAST,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{
-    utils::{BufferReader, Deserialize},
     BlockHash, SavedBlock,
+    utils::{BufferReader, Deserialize},
 };
 
-use crate::{LmdbIterator, LmdbRangeIterator, BLOCK_DATA_DATABASE, BLOCK_INDEX_DATABASE};
+use crate::{BLOCK_DATA_DATABASE, BLOCK_INDEX_DATABASE, LmdbIterator, LmdbRangeIterator};
 
 pub struct LmdbBlockStore {
     /// block hash => id

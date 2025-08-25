@@ -1,6 +1,6 @@
 use crate::{
-    blocks::open_block::OpenBlockArgs, utils::UnixMillisTimestamp, Block, BlockDetails, BlockHash,
-    BlockSideband, Epoch, PrivateKey, PublicKey, SavedBlock, WorkNonce,
+    Block, BlockDetails, BlockHash, BlockSideband, Epoch, PrivateKey, PublicKey, SavedBlock,
+    WorkNonce, blocks::open_block::OpenBlockArgs, utils::UnixMillisTimestamp,
 };
 
 pub struct TestLegacyOpenBlockBuilder {

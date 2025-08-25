@@ -1,8 +1,8 @@
 use std::{
     cmp::max,
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc, Condvar, Mutex, MutexGuard,
+        atomic::{AtomicU64, Ordering},
     },
     thread::{self, JoinHandle},
     time::Duration,

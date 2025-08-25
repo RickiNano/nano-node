@@ -1,10 +1,10 @@
-use crate::bootstrap::{state::BootstrapState, BootstrapPromise, PollResult};
-use rsnano_network::{token_bucket::TokenBucket, Channel, ChannelId, Network, TrafficType};
+use crate::bootstrap::{BootstrapPromise, PollResult, state::BootstrapState};
+use rsnano_network::{Channel, ChannelId, Network, TrafficType, token_bucket::TokenBucket};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::StatsCollection;
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc, Mutex, RwLock,
+    atomic::{AtomicU64, Ordering},
 };
 
 /// Waits until a channel becomes available

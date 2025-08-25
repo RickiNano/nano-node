@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use rsnano_rpc_messages::{
-    unwrap_u64_or_max, UncheckedKeyDto, UncheckedKeysArgs, UncheckedKeysResponse,
+    UncheckedKeyDto, UncheckedKeysArgs, UncheckedKeysResponse, unwrap_u64_or_max,
 };
 
 impl RpcCommandHandler {

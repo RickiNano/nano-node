@@ -1,8 +1,8 @@
 use std::{
     collections::VecDeque,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc, Condvar, Mutex,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 

@@ -3,8 +3,8 @@ use std::{
     mem::size_of,
     ops::{Deref, DerefMut},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, RwLock, RwLockReadGuard,
+        atomic::{AtomicBool, Ordering},
     },
 };
 

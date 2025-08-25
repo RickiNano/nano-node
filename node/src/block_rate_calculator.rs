@@ -1,11 +1,11 @@
 use std::sync::{
-    atomic::{AtomicI64, Ordering},
     Arc,
+    atomic::{AtomicI64, Ordering},
 };
 
 use rsnano_ledger::Ledger;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+use rsnano_utils::{CancellationToken, ticker::Tickable};
 
 use crate::utils::RateCalculator;
 

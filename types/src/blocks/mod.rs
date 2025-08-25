@@ -9,19 +9,19 @@ pub use block_sideband::BlockSideband;
 
 mod change_block;
 use change_block::JsonChangeBlock;
-pub use change_block::{valid_change_block_predecessor, ChangeBlock, ChangeBlockArgs};
+pub use change_block::{ChangeBlock, ChangeBlockArgs, valid_change_block_predecessor};
 
 mod open_block;
 pub use open_block::{JsonOpenBlock, OpenBlock, OpenBlockArgs};
 
 mod receive_block;
 pub use receive_block::{
-    valid_receive_block_predecessor, JsonReceiveBlock, ReceiveBlock, ReceiveBlockArgs,
+    JsonReceiveBlock, ReceiveBlock, ReceiveBlockArgs, valid_receive_block_predecessor,
 };
 
 mod send_block;
 use send_block::JsonSendBlock;
-pub use send_block::{valid_send_block_predecessor, SendBlock, SendBlockArgs};
+pub use send_block::{SendBlock, SendBlockArgs, valid_send_block_predecessor};
 
 mod state_block;
 pub use state_block::{EpochBlockArgs, JsonStateBlock, StateBlock, StateBlockArgs};
@@ -30,9 +30,9 @@ mod builders;
 pub use builders::*;
 
 use crate::{
-    utils::{BufferWriter, Deserialize, MemoryStream, Stream, UnixMillisTimestamp},
     Account, Amount, BlockHash, Epoch, Epochs, Link, PrivateKey, PublicKey, QualifiedRoot, Root,
     Signature, WorkNonce,
+    utils::{BufferWriter, Deserialize, MemoryStream, Stream, UnixMillisTimestamp},
 };
 use num::FromPrimitive;
 use std::{

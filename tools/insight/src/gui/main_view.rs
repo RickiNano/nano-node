@@ -1,14 +1,14 @@
 use eframe::egui::{
-    self, global_theme_preference_switch, warn_if_debug_build, CentralPanel, TopBottomPanel,
+    self, CentralPanel, TopBottomPanel, global_theme_preference_switch, warn_if_debug_build,
 };
 
 use super::{
-    block_processor::view_block_processor,
-    bootstrap::{view_bootstrap, BlockedViewModel, BootstrapViewModel, PriorityViewModel},
-    formatted_number, view_frontier_scan, view_ledger_stats, view_message_recorder_controls,
-    view_message_tab, view_node_runner, view_peers, view_queue_group, view_search_bar, view_tabs,
     BlockViewModel, ChannelsViewModel, ExplorerView, FrontierScanViewModel, MessageStatsView,
     MessageStatsViewModel, MessageTableViewModel, QueueGroupViewModel, TabViewModel,
+    block_processor::view_block_processor,
+    bootstrap::{BlockedViewModel, BootstrapViewModel, PriorityViewModel, view_bootstrap},
+    formatted_number, view_frontier_scan, view_ledger_stats, view_message_recorder_controls,
+    view_message_tab, view_node_runner, view_peers, view_queue_group, view_search_bar, view_tabs,
 };
 use crate::{app::InsightApp, explorer::ExplorerState, gui::QueueViewModel, navigator::NavItem};
 

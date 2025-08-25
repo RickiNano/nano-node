@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use rsnano_node::consensus::election::ElectionBehavior;
 use rsnano_types::DEV_GENESIS_KEY;
-use test_helpers::{assert_never, assert_timely, assert_timely2, setup_chains, System};
+use test_helpers::{System, assert_never, assert_timely, assert_timely2, setup_chains};
 
 /*
  * Ensure account gets activated for a single unconfirmed account chain

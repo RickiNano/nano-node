@@ -2,8 +2,8 @@ use anyhow::Result;
 use bitvec::prelude::*;
 use num_traits::FromPrimitive;
 use rsnano_types::{
-    utils::{BufferWriter, MemoryStream, Serialize, Stream},
     Networks, ProtocolInfo,
+    utils::{BufferWriter, MemoryStream, Serialize, Stream},
 };
 use rsnano_utils::stats::DetailType;
 use std::{

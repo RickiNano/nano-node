@@ -1,6 +1,6 @@
 use rsnano_rpc_messages::AccountBalanceArgs;
 use rsnano_types::{Amount, DEV_GENESIS_KEY};
-use test_helpers::{send_block, setup_rpc_client_and_server, System};
+use test_helpers::{System, send_block, setup_rpc_client_and_server};
 
 #[test]
 fn account_balance_default_include_only_confirmed_blocks() {

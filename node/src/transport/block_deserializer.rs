@@ -1,6 +1,6 @@
 use num_traits::FromPrimitive;
 use rsnano_network::AsyncBufferReader;
-use rsnano_types::{serialized_block_size, utils::BufferReader, Block, BlockType};
+use rsnano_types::{Block, BlockType, serialized_block_size, utils::BufferReader};
 
 pub async fn read_block(input: &impl AsyncBufferReader) -> anyhow::Result<Option<Block>> {
     let mut buf = [0; 1];

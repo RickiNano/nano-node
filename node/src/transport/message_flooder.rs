@@ -8,7 +8,7 @@ use rsnano_network::{Channel, ChannelDirection, Network, TrafficType};
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_utils::stats::Stats;
 
-use super::{try_send_serialized_message, MessageSender};
+use super::{MessageSender, try_send_serialized_message};
 use crate::representatives::OnlineReps;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};

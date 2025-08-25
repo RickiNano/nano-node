@@ -23,7 +23,7 @@ pub struct AccountMoveArgs {
 mod tests {
     use crate::RpcCommand;
     use rsnano_types::Account;
-    use serde_json::{from_str, to_string_pretty, Value};
+    use serde_json::{Value, from_str, to_string_pretty};
 
     #[test]
     fn serialize_account_move_command() {

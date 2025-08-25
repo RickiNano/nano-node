@@ -1,5 +1,5 @@
-use crate::blocks::state_block::EpochBlockArgs;
 use crate::StateBlock;
+use crate::blocks::state_block::EpochBlockArgs;
 use crate::{
     Account, Amount, Block, BlockBase, BlockDetails, BlockHash, BlockSideband, Epoch, Link,
     PrivateKey, PublicKey, SavedBlock, Signature, StateBlockArgs, WorkNonce,

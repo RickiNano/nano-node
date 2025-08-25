@@ -1,20 +1,20 @@
 use std::{ops::Deref, sync::Arc, thread::sleep, time::Duration};
 
 use rsnano_ledger::{
-    test_helpers::UnsavedBlockLatticeBuilder, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
+    DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, LedgerSet, test_helpers::UnsavedBlockLatticeBuilder,
 };
 use rsnano_messages::{ConfirmAck, Keepalive, Message, MessageHeader, MessageSerializer};
 use rsnano_network::{ChannelMode, TrafficType};
 use rsnano_node::{config::NodeConfig, consensus::VoteProcessorConfig};
 use rsnano_types::{
-    utils::UnixMillisTimestamp, Account, Amount, Block, Networks, PrivateKey, ProtocolInfo, Root,
-    StateBlockArgs, Vote, DEV_GENESIS_KEY,
+    Account, Amount, Block, DEV_GENESIS_KEY, Networks, PrivateKey, ProtocolInfo, Root,
+    StateBlockArgs, Vote, utils::UnixMillisTimestamp,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 
 use test_helpers::{
-    assert_always_eq, assert_timely, assert_timely2, assert_timely_eq, assert_timely_eq2,
-    assert_timely_msg, establish_tcp, make_fake_channel, start_election, System,
+    System, assert_always_eq, assert_timely, assert_timely_eq, assert_timely_eq2,
+    assert_timely_msg, assert_timely2, establish_tcp, make_fake_channel, start_election,
 };
 
 #[test]

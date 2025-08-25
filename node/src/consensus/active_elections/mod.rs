@@ -9,12 +9,12 @@ mod vote_router;
 use std::collections::HashMap;
 
 use rsnano_types::{
-    utils::BlockPriority, Amount, Block, BlockHash, QualifiedRoot, SavedBlock, VoteError,
+    Amount, Block, BlockHash, QualifiedRoot, SavedBlock, VoteError, utils::BlockPriority,
 };
 
 use super::{
-    election::{ConfirmedElection, Election, ElectionBehavior},
     ReceivedVote,
+    election::{ConfirmedElection, Election, ElectionBehavior},
 };
 pub use active_elections_container::*;
 pub use cooldown_controller::AecCooldownReason;

@@ -1,6 +1,6 @@
 use crate::{
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, MutStreamAdapter, Serialize, Stream},
     BlockHash, Root,
+    utils::{BufferWriter, Deserialize, FixedSizeSerialize, MutStreamAdapter, Serialize, Stream},
 };
 use primitive_types::U512;
 use serde::de::Unexpected;
@@ -126,12 +126,15 @@ mod tests {
     fn serialize_json() {
         let root = QualifiedRoot::new(Root::from(0xaabbcc), BlockHash::from(0x112233));
         let json = serde_json::to_string(&root).unwrap();
-        assert_eq!(json, "\"0000000000000000000000000000000000000000000000000000000000AABBCC0000000000000000000000000000000000000000000000000000000000112233\"");
+        assert_eq!(
+            json,
+            "\"0000000000000000000000000000000000000000000000000000000000AABBCC0000000000000000000000000000000000000000000000000000000000112233\""
+        );
     }
 
     #[test]
     fn deserialize_json() {
-        let input =  "\"0000000000000000000000000000000000000000000000000000000000AABBCC0000000000000000000000000000000000000000000000000000000000112233\"";
+        let input = "\"0000000000000000000000000000000000000000000000000000000000AABBCC0000000000000000000000000000000000000000000000000000000000112233\"";
         let expected = QualifiedRoot::new(Root::from(0xaabbcc), BlockHash::from(0x112233));
         let result: QualifiedRoot = serde_json::from_str(input).unwrap();
         assert_eq!(result, expected);

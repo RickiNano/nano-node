@@ -2,8 +2,8 @@ use std::{
     collections::VecDeque,
     mem::size_of,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex, MutexGuard,
+        atomic::{AtomicBool, Ordering},
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -13,7 +13,7 @@ use rsnano_ledger::{AnySet, Ledger};
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::{Channel, ChannelId, TrafficType};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_types::{utils::UnixMillisTimestamp, BlockHash, Root, SavedBlock, Vote};
+use rsnano_types::{BlockHash, Root, SavedBlock, Vote, utils::UnixMillisTimestamp};
 use rsnano_utils::{
     container_info::ContainerInfo,
     stats::{DetailType, Direction, Sample, StatType, Stats},

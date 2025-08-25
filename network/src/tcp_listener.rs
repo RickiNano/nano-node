@@ -4,8 +4,8 @@ use rsnano_nullable_tcp::TcpStream;
 use std::{
     net::{IpAddr, Ipv6Addr, SocketAddr, SocketAddrV6},
     sync::{
-        atomic::{AtomicU16, Ordering},
         Arc, Condvar, Mutex,
+        atomic::{AtomicU16, Ordering},
     },
     time::Duration,
 };

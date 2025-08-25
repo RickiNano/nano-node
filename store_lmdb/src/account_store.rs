@@ -6,13 +6,14 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{
-    utils::{BufferReader, Deserialize},
     Account, AccountInfo,
+    utils::{BufferReader, Deserialize},
 };
 
 use crate::{
+    ACCOUNT_TEST_DATABASE,
     iterator::{LmdbIterator, LmdbRangeIterator},
-    parallel_traversal, ACCOUNT_TEST_DATABASE,
+    parallel_traversal,
 };
 
 pub struct LmdbAccountStore {
