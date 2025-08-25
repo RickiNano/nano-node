@@ -129,7 +129,7 @@ impl ConfirmingSet {
         if let Some(handle) = handle {
             handle.join().unwrap();
         }
-        self.thread.workers.stop();
+        self.thread.workers.join();
     }
 
     /// Added blocks will remain in this set until after ledger has them marked as confirmed.

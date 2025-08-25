@@ -11,9 +11,9 @@ use rsnano_output_tracker::OutputTrackerMt;
 use super::{NullTimer, Timer, TimerStrategy, TimerWrapper};
 
 pub trait ThreadPool: Send + Sync {
-    fn post(&self, callback: Box<dyn FnOnce() + Send>);
+    fn execute(&self, callback: Box<dyn FnOnce() + Send>);
     fn post_delayed(&self, delay: Duration, callback: Box<dyn FnOnce() + Send>);
-    fn stop(&self);
+    fn join(&self);
     fn num_queued_tasks(&self) -> usize;
 }
 
@@ -70,7 +70,7 @@ impl<T: TimerStrategy> ThreadPoolImpl<T> {
 }
 
 impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
-    fn post(&self, callback: Box<dyn FnOnce() + Send>) {
+    fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
         let stopped_guard = self.stopped.lock().unwrap();
         if !*stopped_guard {
             let data_guard = self.data.lock().unwrap();
@@ -109,7 +109,7 @@ impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
         }
     }
 
-    fn stop(&self) {
+    fn join(&self) {
         let mut stopped_guard = self.stopped.lock().unwrap();
         if !*stopped_guard {
             let mut data_guard = self.data.lock().unwrap();
@@ -134,7 +134,7 @@ impl<T: TimerStrategy + 'static> ThreadPool for ThreadPoolImpl<T> {
 
 impl<T: TimerStrategy + 'static> Drop for ThreadPoolImpl<T> {
     fn drop(&mut self) {
-        self.stop()
+        self.join()
     }
 }
 
@@ -146,7 +146,7 @@ mod tests {
     fn push_task() {
         let (tx, rx) = std::sync::mpsc::channel();
         let pool = ThreadPoolImpl::create(1, "test thread".to_string());
-        pool.post(Box::new(move || {
+        pool.execute(Box::new(move || {
             tx.send("foo").unwrap();
         }));
         let result = rx.recv_timeout(Duration::from_millis(300));

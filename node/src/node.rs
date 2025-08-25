@@ -1704,8 +1704,8 @@ impl Node {
         self.vote_rebroadcaster.stop();
         self.block_rate_calculator.stop();
 
-        self.wallet_workers.stop();
-        self.workers.stop();
+        self.wallet_workers.join();
+        self.workers.join();
 
         self.tokio_runner.stop();
         // work pool is not stopped on purpose due to testing setup

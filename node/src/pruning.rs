@@ -40,7 +40,7 @@ impl LedgerPruning {
 
     pub fn stop(&self) {
         self.stopped.store(true, Ordering::SeqCst);
-        self.workers.stop();
+        self.workers.join();
     }
 
     pub fn ledger_pruning(&self, batch_size: u64, bootstrap_weight_reached: bool) {
@@ -157,7 +157,7 @@ pub trait LedgerPruningExt {
 impl LedgerPruningExt for Arc<LedgerPruning> {
     fn start(&self) {
         let self_w = Arc::downgrade(self);
-        self.workers.post(Box::new(move || {
+        self.workers.execute(Box::new(move || {
             if let Some(self_l) = self_w.upgrade() {
                 self_l.ongoing_ledger_pruning();
             }
