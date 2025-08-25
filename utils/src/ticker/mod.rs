@@ -1,3 +1,4 @@
+mod ticker_pool;
 mod timer_thread;
 
 use crate::CancellationToken;

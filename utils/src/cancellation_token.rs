@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        Arc, Condvar, Mutex,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex,
     },
     time::Duration,
 };
@@ -63,6 +63,12 @@ impl CancellationToken {
 
     pub fn track_waits(&self) -> Arc<OutputTrackerMt<Duration>> {
         self.wait_listener.track()
+    }
+}
+
+impl Default for CancellationToken {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
