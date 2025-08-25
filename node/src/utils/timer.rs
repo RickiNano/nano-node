@@ -4,68 +4,23 @@ use std::sync::{Arc, Mutex};
 #[cfg(feature = "output_tracking")]
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
-pub trait TimerStrategy: Send {
-    fn schedule_with_delay<F>(&self, delay: chrono::Duration, cb: F)
-    where
-        F: 'static + FnMut() + Send;
-}
-
-pub struct TimerWrapper(timer::Timer);
-
-impl TimerStrategy for TimerWrapper {
-    fn schedule_with_delay<F>(&self, delay: chrono::Duration, cb: F)
-    where
-        F: 'static + FnMut() + Send,
-    {
-        self.0.schedule_with_delay(delay, cb).ignore();
-    }
-}
-
-pub struct NullTimer;
-impl TimerStrategy for NullTimer {
-    fn schedule_with_delay<F>(&self, _delay: chrono::Duration, _cb: F)
-    where
-        F: 'static + FnMut() + Send,
-    {
-    }
-}
-
-pub struct Timer<T: TimerStrategy = TimerWrapper> {
-    timer: T,
-    #[cfg(feature = "output_tracking")]
+pub struct Timer {
+    strategy: TimerStrategy,
     listener: OutputListenerMt<TimerEvent>,
 }
 
-#[cfg(feature = "output_tracking")]
-#[derive(Clone)]
-pub struct TimerEvent {
-    callback: Arc<dyn Fn() + Send + Sync>,
-    pub delay: chrono::Duration,
-}
-
-#[cfg(feature = "output_tracking")]
-impl TimerEvent {
-    pub fn execute_callback(&self) {
-        (self.callback)()
-    }
-}
-
-impl Timer<NullTimer> {
+impl Timer {
     pub fn new_null() -> Self {
-        Self::new_with(NullTimer {})
+        Self::new_with(TimerStrategy::Nulled)
     }
-}
 
-impl Timer<TimerWrapper> {
     pub fn new() -> Self {
-        Self::new_with(TimerWrapper(timer::Timer::new()))
+        Self::new_with(TimerStrategy::Real(TimerWrapper(timer::Timer::new())))
     }
-}
 
-impl<T: TimerStrategy> Timer<T> {
-    fn new_with(t: T) -> Self {
+    fn new_with(strategy: TimerStrategy) -> Self {
         Self {
-            timer: t,
+            strategy,
             #[cfg(feature = "output_tracking")]
             listener: OutputListenerMt::new(),
         }
@@ -97,7 +52,40 @@ impl<T: TimerStrategy> Timer<T> {
             move || arc_cb()
         };
 
-        self.timer.schedule_with_delay(delay, cb);
+        match &self.strategy {
+            TimerStrategy::Real(wrapper) => wrapper.schedule_with_delay(delay, cb),
+            TimerStrategy::Nulled => {}
+        }
+    }
+}
+
+enum TimerStrategy {
+    Real(TimerWrapper),
+    Nulled,
+}
+
+struct TimerWrapper(timer::Timer);
+
+impl TimerWrapper {
+    fn schedule_with_delay<F>(&self, delay: chrono::Duration, cb: F)
+    where
+        F: 'static + FnMut() + Send,
+    {
+        self.0.schedule_with_delay(delay, cb).ignore();
+    }
+}
+
+#[cfg(feature = "output_tracking")]
+#[derive(Clone)]
+pub struct TimerEvent {
+    callback: Arc<dyn Fn() + Send + Sync>,
+    pub delay: chrono::Duration,
+}
+
+#[cfg(feature = "output_tracking")]
+impl TimerEvent {
+    pub fn execute_callback(&self) {
+        (self.callback)()
     }
 }
 

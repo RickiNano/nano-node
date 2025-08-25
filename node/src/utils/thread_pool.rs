@@ -8,38 +8,23 @@ use super::timer::TimerEvent;
 #[cfg(feature = "output_tracking")]
 use rsnano_output_tracker::OutputTrackerMt;
 
-use super::{NullTimer, Timer, TimerStrategy, TimerWrapper};
+use super::Timer;
 
-pub struct ThreadPool<T: TimerStrategy + 'static = TimerWrapper> {
-    data: Arc<Mutex<Option<ThreadPoolData<T>>>>,
+pub struct ThreadPool {
+    data: Arc<Mutex<Option<ThreadPoolData>>>,
     stopped: Arc<Mutex<bool>>,
 }
 
-struct ThreadPoolData<T: TimerStrategy> {
-    pool: threadpool::ThreadPool,
-    timer: Timer<T>,
-}
-
-impl<T: TimerStrategy> ThreadPoolData<T> {
-    fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
-        self.pool.execute(callback);
-    }
-}
-
-impl ThreadPool<TimerWrapper> {
+impl ThreadPool {
     pub fn create(num_threads: usize, thread_name: impl Into<String>) -> Self {
         Self::new(num_threads, thread_name.into(), Timer::new())
     }
-}
 
-impl ThreadPool<NullTimer> {
     pub fn new_null() -> Self {
         Self::new(1, "nulled thread pool".to_string(), Timer::new_null())
     }
-}
 
-impl<T: TimerStrategy> ThreadPool<T> {
-    pub fn new(num_threads: usize, thread_name: String, timer: Timer<T>) -> Self {
+    fn new(num_threads: usize, thread_name: String, timer: Timer) -> Self {
         Self {
             stopped: Arc::new(Mutex::new(false)),
             data: Arc::new(Mutex::new(Some(ThreadPoolData {
@@ -119,9 +104,20 @@ impl<T: TimerStrategy> ThreadPool<T> {
     }
 }
 
-impl<T: TimerStrategy + 'static> Drop for ThreadPool<T> {
+impl Drop for ThreadPool {
     fn drop(&mut self) {
         self.join()
+    }
+}
+
+struct ThreadPoolData {
+    pool: threadpool::ThreadPool,
+    timer: Timer,
+}
+
+impl ThreadPoolData {
+    fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
+        self.pool.execute(callback);
     }
 }
 

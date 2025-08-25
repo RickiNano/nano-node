@@ -17,7 +17,7 @@ pub(crate) use backpressure_event_processor::{
     spawn_backpressure_processor, BackpressureEventProcessor,
 };
 
-pub use crate::utils::timer::{NullTimer, Timer, TimerStrategy, TimerWrapper};
+pub use crate::utils::timer::Timer;
 pub use processing_queue::*;
 pub use rate_calculator::RateCalculator;
 pub use thread_pool::*;
