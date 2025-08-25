@@ -14,13 +14,13 @@ use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, StatType, Stats},
     sync::backpressure_channel::Sender,
+    thread_pool::ThreadPool,
 };
 
 use super::ordered_entries::OrderedEntries;
 use crate::{
     block_processing::{LedgerEvent, ProcessedResult},
     consensus::{election::ConfirmedElection, ConfirmedElectionsCache},
-    utils::ThreadPool,
 };
 
 /// A block that is currently cementing

@@ -1,7 +1,6 @@
 mod backpressure_event_processor;
 mod processing_queue;
 mod rate_calculator;
-mod thread_pool;
 
 use std::net::Ipv6Addr;
 
@@ -18,7 +17,6 @@ pub(crate) use backpressure_event_processor::{
 
 pub use processing_queue::*;
 pub use rate_calculator::RateCalculator;
-pub use thread_pool::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ErrorCode {

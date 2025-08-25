@@ -6,6 +6,7 @@ pub mod env;
 pub mod fair_queue;
 pub mod stats;
 pub mod sync;
+pub mod thread_pool;
 pub mod ticker;
 
 pub use cancellation_token::CancellationToken;

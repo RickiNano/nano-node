@@ -38,6 +38,7 @@ use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},
     sync::backpressure_channel,
+    thread_pool::ThreadPool,
     ticker::TimerThread,
 };
 use rsnano_wallet::{Wallets, WalletsTicker};
@@ -85,7 +86,7 @@ use crate::{
         run_loopback_channel_adapter, MessageFlooder, MessageProcessor, MessageSender,
         NetworkThreads, PeerCacheConnector, PeerCacheUpdater, RealtimeMessageHandler,
     },
-    utils::{spawn_backpressure_processor, ThreadPool},
+    utils::spawn_backpressure_processor,
     wallets::{
         block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
         ReceivableSearch, WalletBackup, WalletRepresentatives, BACKUP_INTERVAL,

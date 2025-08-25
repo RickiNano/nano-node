@@ -4306,7 +4306,6 @@ dependencies = [
  "rsnano_websocket_messages",
  "rsnano_work",
  "rustc-hash 2.1.1",
- "scoped_threadpool",
  "serde",
  "serde_derive",
  "serde_json",
@@ -4315,7 +4314,6 @@ dependencies = [
  "strum 0.27.2",
  "strum_macros 0.27.2",
  "test_helpers",
- "threadpool",
  "tokio",
  "tokio-tungstenite",
  "tokio-util",
@@ -4526,6 +4524,7 @@ dependencies = [
  "anyhow",
  "bounded-vec-deque",
  "chrono",
+ "ntest",
  "num",
  "num-derive",
  "num-traits 0.2.19",
@@ -4533,6 +4532,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_variant",
+ "threadpool",
  "tracing",
 ]
 
@@ -4718,12 +4718,6 @@ name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
-
-[[package]]
-name = "scoped_threadpool"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d51f5df5af43ab3f1360b429fa5e0152ac5ce8c0bd6485cae490332e96846a8"
 
 [[package]]
 name = "scopeguard"
