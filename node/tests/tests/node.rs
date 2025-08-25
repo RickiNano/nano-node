@@ -1,136 +1,30 @@
 use std::{cmp::max, collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
 use rsnano_ledger::{
-    AnySet, BlockError, ConfirmedSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
-    LedgerSet, test_helpers::UnsavedBlockLatticeBuilder,
+    test_helpers::UnsavedBlockLatticeBuilder, AnySet, BlockError, ConfirmedSet, LedgerSet,
+    DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
 };
 use rsnano_messages::{ConfirmAck, Message, Publish};
 use rsnano_network::{ChannelId, TrafficType};
 use rsnano_node::{
     block_processing::{BacklogScanConfig, BlockContext, BlockSource, BoundedBacklogConfig},
     config::{NodeConfig, NodeFlags},
-    consensus::{AecEvent, FilteredVote, ReceivedVote, election::VoteType},
+    consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
 };
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_types::{
-    Account, Amount, Block, BlockHash, DEV_GENESIS_KEY, DifficultyV1, PrivateKey, PublicKey, Root,
-    Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, utils::UnixMillisTimestamp,
+    utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey,
+    PublicKey, Root, Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
 };
 use rsnano_utils::{
     stats::{DetailType, Direction, StatType},
     sync::backpressure_channel,
 };
 use test_helpers::{
-    System, activate_hashes, assert_never, assert_timely, assert_timely_eq, assert_timely_eq2,
-    assert_timely_msg, assert_timely2, establish_tcp, make_fake_channel, setup_chains,
-    start_election,
+    activate_hashes, assert_never, assert_timely, assert_timely2, assert_timely_eq,
+    assert_timely_eq2, assert_timely_msg, establish_tcp, make_fake_channel, setup_chains,
+    start_election, System,
 };
-
-#[test]
-fn pruning_depth_max_depth() {
-    let mut system = System::new();
-
-    let mut node_config = System::default_config();
-    node_config.enable_voting = false; // Pruning and voting are incompatible in this test
-    node_config.max_pruning_depth = 1; // Pruning with max depth 1
-
-    let mut node_flags = NodeFlags::default();
-    node_flags.enable_pruning = true;
-
-    let node1 = system
-        .build_node()
-        .config(node_config)
-        .flags(node_flags)
-        .finish();
-    let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let key1 = PrivateKey::new();
-
-    // Create the first send block
-    let send1 = lattice.genesis().legacy_send(&key1, Amount::nano(1000));
-
-    // Process the first send block
-    node1.process(send1.clone().into());
-
-    // Create the second send block
-    let send2 = lattice.genesis().send_max(&key1);
-
-    // Process the second send block
-    node1.process(send2.clone().into());
-
-    // Confirm both blocks
-    node1.confirm(send1.hash().clone());
-    assert_timely2(|| node1.block_confirmed(&send1.hash()));
-
-    node1.confirm(send2.hash().clone());
-    assert_timely2(|| node1.block_confirmed(&send2.hash()));
-
-    // Perform pruning
-    node1.ledger_pruning(1, true);
-
-    // Check the pruning result
-    assert_eq!(node1.ledger.pruned_count(), 1);
-    assert_eq!(node1.ledger.block_count(), 3);
-
-    let any = node1.ledger.any();
-
-    // Ensure that the genesis block, send1, and send2 either exist or are pruned
-    assert!(any.block_exists_or_pruned(&*DEV_GENESIS_HASH));
-    assert!(any.block_exists_or_pruned(&send1.hash()));
-    assert!(any.block_exists_or_pruned(&send2.hash()));
-}
-
-// Test that a node configured with `enable_pruning` and `max_pruning_age = 1s` will automatically
-// prune old confirmed blocks without explicitly saying `node.ledger_pruning` in the unit test
-#[test]
-fn pruning_automatic() {
-    let mut system = System::new();
-
-    let mut node_config = System::default_config();
-    node_config.enable_voting = false; // Pruning and voting are incompatible
-    node_config.max_pruning_age = Duration::from_secs(1);
-
-    let mut node_flags = NodeFlags::default();
-    node_flags.enable_pruning = true;
-
-    let node1 = system
-        .build_node()
-        .config(node_config)
-        .flags(node_flags)
-        .finish();
-
-    let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let key1 = PrivateKey::new();
-
-    let send1 = lattice.genesis().send(&key1, Amount::nano(1000));
-
-    node1.process_active(send1.clone().into());
-
-    let send2 = lattice.genesis().send_max(&key1);
-    node1.process_active(send2.clone().into());
-
-    assert_timely(Duration::from_secs(5), || node1.block_exists(&send2.hash()));
-
-    // Force-confirm both blocks
-
-    node1.confirming_set.add_block(send1.hash().clone());
-    assert_timely2(|| node1.block_confirmed(&send1.hash()));
-    node1.confirming_set.add_block(send2.hash().clone());
-    assert_timely2(|| node1.block_confirmed(&send2.hash()));
-
-    // Check pruning result
-
-    assert_eq!(node1.ledger.block_count(), 3);
-
-    assert_timely_eq2(|| node1.ledger.pruned_count(), 1);
-
-    assert_eq!(node1.ledger.pruned_count(), 1);
-    assert_eq!(node1.ledger.block_count(), 3);
-
-    let any = node1.ledger.any();
-    assert!(any.block_exists_or_pruned(&*DEV_GENESIS_HASH));
-    assert!(any.block_exists_or_pruned(&send1.hash()));
-    assert!(any.block_exists_or_pruned(&send2.hash()));
-}
 
 #[test]
 fn rollback_gap_source() {
@@ -624,9 +518,9 @@ fn fork_multi_flip() {
     });
 
     node1.confirm(send1.hash());
-    assert_timely2(|| node2.ledger.any().block_exists_or_pruned(&send1.hash()));
+    assert_timely2(|| node2.ledger.any().block_exists(&send1.hash()));
     assert!(!node2.ledger.any().block_exists(&send2.hash()));
-    assert!(!node2.ledger.any().block_exists_or_pruned(&send3.hash()));
+    assert!(!node2.ledger.any().block_exists(&send3.hash()));
 }
 
 // This test is racy, there is no guarantee that the election won't be confirmed until all forks are fully processed
@@ -827,85 +721,6 @@ fn search_receivable_confirmed() {
     assert_timely_eq2(
         || node.balance(&key2.account()),
         node.config.receive_minimum * 2,
-    );
-}
-
-#[test]
-fn search_receivable_pruned() {
-    let mut system = System::new();
-    let config1 = System::default_config_without_backlog_scan();
-    let node1 = system.build_node().config(config1).finish();
-    let wallet_id = node1.wallets.wallet_ids()[0];
-
-    let mut config2 = System::default_config();
-    config2.enable_voting = false; // Remove after allowing pruned voting
-    let mut flags = NodeFlags::default();
-    flags.enable_pruning = true;
-    let node2 = system.build_node().config(config2).flags(flags).finish();
-    let wallet_id2 = node2.wallets.wallet_ids()[0];
-
-    let key2 = PrivateKey::new();
-    node1
-        .wallets
-        .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
-        .unwrap();
-
-    let send1 = node1
-        .wallets
-        .send(
-            wallet_id,
-            *DEV_GENESIS_ACCOUNT,
-            key2.account(),
-            node2.config.receive_minimum,
-            0.into(),
-            true,
-            None,
-        )
-        .wait()
-        .unwrap();
-
-    let send2 = node1
-        .wallets
-        .send(
-            wallet_id,
-            *DEV_GENESIS_ACCOUNT,
-            key2.account(),
-            node2.config.receive_minimum,
-            0.into(),
-            true,
-            None,
-        )
-        .wait()
-        .unwrap();
-
-    // Confirmation
-    assert_timely2(|| {
-        node1.active.read().unwrap().len() == 0 && node2.active.read().unwrap().len() == 0
-    });
-    assert_timely2(|| node1.ledger.confirmed().block_exists(&send2.hash()));
-    assert_timely_eq2(|| node2.ledger.confirmed_count(), 3);
-
-    node1
-        .wallets
-        .remove_key(&wallet_id, &*DEV_GENESIS_PUB_KEY)
-        .unwrap();
-
-    // Pruning
-    assert_eq!(1, node2.ledger.prune_one(&send1.hash(), 1));
-    assert_eq!(1, node2.ledger.pruned_count());
-    assert!(node2.ledger.any().block_exists_or_pruned(&send1.hash())); // true for pruned
-
-    // Receive pruned block
-    node2
-        .wallets
-        .insert_adhoc2(&wallet_id2, &key2.raw_key(), true)
-        .unwrap();
-
-    node2.wallets.search_receivable(&wallet_id2);
-
-    assert_timely_eq2(
-        || node2.balance(&key2.account()),
-        node2.config.receive_minimum * 2,
     );
 }
 
@@ -1870,7 +1685,7 @@ fn rep_crawler_rep_remove() {
     let searching_node = system.make_node(); // will be used to find principal representatives
     let key_rep1 = PrivateKey::new(); // Principal representative 1
     let key_rep2 = PrivateKey::new(); // Principal representative 2
-    //
+                                      //
     let rep_weight = (Amount::MAX / 1000) * 2;
 
     let mut lattice = UnsavedBlockLatticeBuilder::new();
@@ -2415,12 +2230,11 @@ fn block_confirm() {
     );
 
     assert_timely2(|| {
-        node1.ledger.any().block_exists_or_pruned(&hash1)
-            && node2.ledger.any().block_exists_or_pruned(&hash1)
+        node1.ledger.any().block_exists(&hash1) && node2.ledger.any().block_exists(&hash1)
     });
 
-    assert!(node1.ledger.any().block_exists_or_pruned(&hash1));
-    assert!(node2.ledger.any().block_exists_or_pruned(&hash1));
+    assert!(node1.ledger.any().block_exists(&hash1));
+    assert!(node2.ledger.any().block_exists(&hash1));
 
     // Confirm send1 on node2 so it can vote for send2
     start_election(&node2, &hash1);

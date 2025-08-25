@@ -13,7 +13,7 @@ impl RpcCommandHandler {
     pub fn receive(&self, args: ReceiveArgs) -> anyhow::Result<BlockDto> {
         let any = self.node.ledger.any();
 
-        if !any.block_exists_or_pruned(&args.block) {
+        if !any.block_exists(&args.block) {
             bail!(Self::BLOCK_NOT_FOUND);
         }
 

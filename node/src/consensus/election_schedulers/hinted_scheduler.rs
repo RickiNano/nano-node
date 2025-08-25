@@ -3,14 +3,14 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     mem::size_of,
     sync::{
-        Arc, Condvar, Mutex, RwLock,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex, RwLock,
     },
     thread::JoinHandle,
     time::{Duration, Instant},
 };
 
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
+use rsnano_ledger::{AnySet, Ledger, LedgerSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Amount, BlockHash};
 use rsnano_utils::{
@@ -21,7 +21,7 @@ use rsnano_utils::{
 use super::VoteCache;
 use crate::{
     cementation::ConfirmingSet,
-    consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior},
+    consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
     representatives::OnlineReps,
 };
 
@@ -167,7 +167,7 @@ impl HintedScheduler {
             if let Some(block) = any.get_block(&current_hash) {
                 // Ensure block is not already confirmed
                 if self.confirming_set.contains(&current_hash)
-                    || any.confirmed().block_exists_or_pruned(&current_hash)
+                    || any.confirmed().block_exists(&current_hash)
                 {
                     self.stats
                         .inc(StatType::Hinting, DetailType::AlreadyConfirmed);

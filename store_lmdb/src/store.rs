@@ -1,6 +1,6 @@
 use std::sync::{
-    Arc,
     atomic::{AtomicU64, Ordering},
+    Arc,
 };
 
 use serde::{Deserialize, Serialize};
@@ -8,15 +8,14 @@ use serde::{Deserialize, Serialize};
 use rsnano_nullable_lmdb::{LmdbEnvironment, ReadTransaction, WriteTransaction};
 
 use crate::{
-    LmdbAccountStore, LmdbBlockStore, LmdbConfirmationHeightStore, LmdbFinalVoteStore,
-    LmdbOnlineWeightStore, LmdbPeerStore, LmdbPendingStore, LmdbPrunedStore, LmdbRepWeightStore,
-    LmdbVersionStore, successor_store::LmdbSuccessorStore,
+    successor_store::LmdbSuccessorStore, LmdbAccountStore, LmdbBlockStore,
+    LmdbConfirmationHeightStore, LmdbFinalVoteStore, LmdbOnlineWeightStore, LmdbPeerStore,
+    LmdbPendingStore, LmdbRepWeightStore, LmdbVersionStore,
 };
 
 pub struct LedgerCache {
     pub confirmed_count: AtomicU64,
     pub block_count: AtomicU64,
-    pub pruned_count: AtomicU64,
     pub account_count: AtomicU64,
 }
 
@@ -25,7 +24,6 @@ impl LedgerCache {
         Self {
             confirmed_count: AtomicU64::new(0),
             block_count: AtomicU64::new(0),
-            pruned_count: AtomicU64::new(0),
             account_count: AtomicU64::new(0),
         }
     }
@@ -33,7 +31,6 @@ impl LedgerCache {
     pub fn reset(&self) {
         self.confirmed_count.store(0, Ordering::SeqCst);
         self.block_count.store(0, Ordering::SeqCst);
-        self.pruned_count.store(0, Ordering::SeqCst);
         self.account_count.store(0, Ordering::SeqCst);
     }
 }
@@ -44,7 +41,6 @@ pub struct LmdbStore {
     pub block: LmdbBlockStore,
     pub account: LmdbAccountStore,
     pub pending: LmdbPendingStore,
-    pub pruned: LmdbPrunedStore,
     pub rep_weight: Arc<LmdbRepWeightStore>,
     pub confirmation_height: LmdbConfirmationHeightStore,
     pub successors: LmdbSuccessorStore,
@@ -67,7 +63,6 @@ impl LmdbStore {
             account: LmdbAccountStore::new(&env)?,
             pending: LmdbPendingStore::new(&env)?,
             online_weight: LmdbOnlineWeightStore::new(&env)?,
-            pruned: LmdbPrunedStore::new(&env)?,
             rep_weight: Arc::new(LmdbRepWeightStore::new(&env)?),
             peer: LmdbPeerStore::new(&env)?,
             confirmation_height: LmdbConfirmationHeightStore::new(&env)?,

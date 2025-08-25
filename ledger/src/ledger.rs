@@ -3,8 +3,8 @@ use std::{
     net::SocketAddrV6,
     ops::{Deref, DerefMut},
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
     time::SystemTime,
 };
@@ -15,11 +15,11 @@ use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_store_lmdb::{
     ConfiguredAccountDatabaseBuilder, ConfiguredBlockDatabaseBuilder,
     ConfiguredConfirmationHeightDatabaseBuilder, ConfiguredPeersDatabaseBuilder,
-    ConfiguredPendingDatabaseBuilder, ConfiguredPrunedDatabaseBuilder, LmdbStore, MemoryStats,
+    ConfiguredPendingDatabaseBuilder, LmdbStore, MemoryStats,
 };
 use rsnano_types::{
-    Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo, Epoch, Link,
-    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, utils::UnixTimestamp,
+    utils::UnixTimestamp, Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo,
+    Epoch, Link, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
@@ -28,12 +28,12 @@ use rsnano_utils::{
 use rsnano_work::WorkThresholds;
 
 use crate::{
-    AnySet, BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, ConfirmedSet,
-    GenerateCacheFlags, LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet,
-    OwningUnconfirmedSet, RepWeightCache, RepWeightsUpdater, RollbackError,
     block_cementer::BlockCementer,
     block_insertion::{BlockInserter, BlockValidatorFactory},
     vote_verifier::VoteVerifier,
+    BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, GenerateCacheFlags,
+    LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
+    RepWeightCache, RepWeightsUpdater, RollbackError,
 };
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, EnumCount, EnumIter, IntoStaticStr)]
@@ -116,7 +116,6 @@ pub struct Ledger {
     pub rep_weights_updater: RepWeightsUpdater,
     pub rep_weights: Arc<RepWeightCache>,
     pub constants: LedgerConstants,
-    pruning: AtomicBool,
     pub(crate) stats: Arc<Stats>,
 }
 
@@ -124,7 +123,6 @@ pub struct NullLedgerBuilder {
     blocks: ConfiguredBlockDatabaseBuilder,
     accounts: ConfiguredAccountDatabaseBuilder,
     pending: ConfiguredPendingDatabaseBuilder,
-    pruned: ConfiguredPrunedDatabaseBuilder,
     peers: ConfiguredPeersDatabaseBuilder,
     confirmation_height: ConfiguredConfirmationHeightDatabaseBuilder,
     min_rep_weight: Amount,
@@ -136,7 +134,6 @@ impl NullLedgerBuilder {
             blocks: ConfiguredBlockDatabaseBuilder::new(),
             accounts: ConfiguredAccountDatabaseBuilder::new(),
             pending: ConfiguredPendingDatabaseBuilder::new(),
-            pruned: ConfiguredPrunedDatabaseBuilder::new(),
             peers: ConfiguredPeersDatabaseBuilder::new(),
             confirmation_height: ConfiguredConfirmationHeightDatabaseBuilder::new(),
             min_rep_weight: Amount::zero(),
@@ -177,11 +174,6 @@ impl NullLedgerBuilder {
         self
     }
 
-    pub fn pruned(mut self, hash: &BlockHash) -> Self {
-        self.pruned = self.pruned.pruned(hash);
-        self
-    }
-
     pub fn finish(self) -> Ledger {
         let (block_index, block_data) = self.blocks.build();
         let env = LmdbEnvironment::null_builder()
@@ -189,7 +181,6 @@ impl NullLedgerBuilder {
             .configured_database(block_data)
             .configured_database(self.accounts.build())
             .configured_database(self.pending.build())
-            .configured_database(self.pruned.build())
             .configured_database(self.confirmation_height.build())
             .configured_database(self.peers.build())
             .build();
@@ -242,7 +233,6 @@ impl Ledger {
             rep_weights_updater,
             store,
             constants,
-            pruning: AtomicBool::new(false),
             stats,
         };
 
@@ -313,16 +303,6 @@ impl Ledger {
                 });
         }
 
-        let tx = self.store.begin_read();
-        self.store
-            .cache
-            .pruned_count
-            .fetch_add(self.store.pruned.count(&tx), Ordering::SeqCst);
-
-        if self.store.pruned.count(&tx) > 0 {
-            self.enable_pruning();
-        }
-
         Ok(())
     }
 
@@ -367,14 +347,6 @@ impl Ledger {
     pub fn unconfirmed(&self) -> impl LedgerSet + use<'_> {
         let tx = self.store.begin_read();
         OwningUnconfirmedSet::new(&self.store, tx)
-    }
-
-    pub fn pruning_enabled(&self) -> bool {
-        self.pruning.load(Ordering::SeqCst)
-    }
-
-    pub fn enable_pruning(&self) {
-        self.pruning.store(true, Ordering::SeqCst);
     }
 
     pub fn bootstrap_weight_max_blocks(&self) -> u64 {
@@ -428,76 +400,6 @@ impl Ledger {
                 .account_count
                 .fetch_sub(1, Ordering::SeqCst);
         }
-    }
-
-    pub fn prune_batch(&self, targets: &mut VecDeque<BlockHash>, batch_size: usize) -> usize {
-        let mut transaction_write_count = 0;
-        // TODO break loop if node stopped
-        if !targets.is_empty() {
-            let mut txn = self.store.begin_write();
-            while !targets.is_empty() && transaction_write_count < batch_size {
-                let pruning_hash = targets.front().unwrap();
-                let (t, account_pruned_count) =
-                    self.pruning_action(txn, pruning_hash, batch_size as u64);
-                txn = t;
-                transaction_write_count += account_pruned_count as usize;
-                targets.pop_front();
-            }
-            txn.commit();
-        }
-        transaction_write_count
-    }
-
-    pub fn prune_one(&self, target: &BlockHash, batch_size: usize) -> usize {
-        let txn = self.store.begin_write();
-        let (txn, count) = self.pruning_action(txn, target, batch_size as u64);
-        txn.commit();
-        count as usize
-    }
-
-    fn pruning_action(
-        &self,
-        mut txn: WriteTransaction,
-        hash: &BlockHash,
-        batch_size: u64,
-    ) -> (WriteTransaction, u64) {
-        self.stats.inc(StatType::Pruning, DetailType::PruningTarget);
-        let mut pruned_count = 0;
-        let mut hash = *hash;
-        let genesis_hash = self.constants.genesis_block.hash();
-        let mut any = BorrowingAnySet {
-            constants: &self.constants,
-            store: &self.store,
-            tx: &txn,
-        };
-
-        while !hash.is_zero() && hash != genesis_hash {
-            if let Some(block) = any.get_block(&hash) {
-                assert!(any.confirmed().block_exists_or_pruned(&hash));
-                self.store.block.del(&mut txn, &hash);
-                self.store.pruned.put(&mut txn, &hash);
-                hash = block.previous();
-                pruned_count += 1;
-                self.store.cache.pruned_count.fetch_add(1, Ordering::SeqCst);
-                if pruned_count % batch_size == 0 {
-                    txn = self.store.env.refresh(txn);
-                }
-                any = BorrowingAnySet {
-                    constants: &self.constants,
-                    store: &self.store,
-                    tx: &txn,
-                };
-            } else if self.store.pruned.exists(&txn, &hash) {
-                hash = BlockHash::zero();
-            } else {
-                panic!("Error finding block for pruning");
-            }
-        }
-
-        self.stats
-            .add(StatType::Pruning, DetailType::PrunedCount, pruned_count);
-
-        (txn, pruned_count)
     }
 
     /// Rollback blocks until `block' doesn't exist or it tries to penetrate the confirmation height
@@ -900,10 +802,6 @@ impl Ledger {
 
     pub fn account_count(&self) -> u64 {
         self.store.cache.account_count.load(Ordering::SeqCst)
-    }
-
-    pub fn pruned_count(&self) -> u64 {
-        self.store.cache.pruned_count.load(Ordering::SeqCst)
     }
 
     pub fn backlog_count(&self) -> u64 {

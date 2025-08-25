@@ -1,23 +1,21 @@
 use std::sync::Arc;
 
-use rsnano_store_lmdb::{LmdbAccountStore, LmdbPrunedStore};
+use rsnano_store_lmdb::LmdbAccountStore;
 use rsnano_types::{
-    Account, AccountInfo, Amount, BlockHash, DEV_GENESIS_KEY, PrivateKey, PublicKey, Root,
-    SavedBlock, TestBlockBuilder,
-    utils::{TEST_ENDPOINT_1, UnixMillisTimestamp, new_test_timestamp},
+    utils::{new_test_timestamp, UnixMillisTimestamp, TEST_ENDPOINT_1},
+    Account, AccountInfo, Amount, BlockHash, PrivateKey, PublicKey, Root, SavedBlock,
+    TestBlockBuilder, DEV_GENESIS_KEY,
 };
 use rsnano_utils::stats::Stats;
 
 use crate::{
-    AnySet, ConfirmedSet, DEV_GENESIS_HASH, Ledger, LedgerConstants, LedgerInserter,
-    RepWeightCache,
     ledger_constants::{DEV_GENESIS_BLOCK, DEV_GENESIS_PUB_KEY},
     test_helpers::SavedBlockLatticeBuilder,
+    AnySet, Ledger, LedgerConstants, LedgerInserter, LedgerSet, RepWeightCache, DEV_GENESIS_HASH,
 };
 use rsnano_nullable_lmdb::LmdbEnvironment;
 
 mod empty_ledger;
-mod pruning;
 mod receivable_iteration;
 mod rollback_legacy_change;
 mod rollback_legacy_receive;
@@ -288,38 +286,6 @@ mod dependents_confirmed {
             true
         );
     }
-
-    #[test]
-    fn dependents_confirmed_pruning() {
-        let ledger = Ledger::new_null();
-        let inserter = LedgerInserter::new(&ledger);
-        let destination = PrivateKey::from(1);
-
-        ledger.enable_pruning();
-
-        let send1 = inserter.genesis().send(&destination, 1);
-        ledger.confirm(send1.hash());
-
-        let send2 = inserter.genesis().send(&destination, 1);
-        ledger.confirm(send2.hash());
-
-        assert_eq!(ledger.prune_one(&send2.hash(), 1), 2);
-
-        let receive1 = TestBlockBuilder::state()
-            .account(destination.account())
-            .previous(0)
-            .balance(Amount::raw(1))
-            .link(send1.hash())
-            .key(&destination)
-            .build();
-
-        assert_eq!(
-            ledger
-                .any()
-                .dependents_confirmed_for_unsaved_block(&receive1),
-            true
-        );
-    }
 }
 
 #[test]
@@ -330,36 +296,20 @@ fn block_confirmed() {
     let send = inserter.genesis().send(&destination, 1);
 
     // Must be safe against non-existing blocks
-    assert_eq!(
-        ledger
-            .confirmed()
-            .block_exists_or_pruned(&BlockHash::from(1)),
-        false
-    );
-
-    assert_eq!(
-        ledger.confirmed().block_exists_or_pruned(&send.hash()),
-        false
-    );
+    assert_eq!(ledger.confirmed().block_exists(&BlockHash::from(1)), false);
+    assert_eq!(ledger.confirmed().block_exists(&send.hash()), false);
 
     ledger.confirm(send.hash());
 
-    assert_eq!(
-        ledger.confirmed().block_exists_or_pruned(&send.hash()),
-        true
-    );
+    assert_eq!(ledger.confirmed().block_exists(&send.hash()), true);
 }
 
 #[test]
 fn ledger_cache() {
     let env = LmdbEnvironment::null_builder().build();
     {
-        let pruned = LmdbPrunedStore::new(&env).unwrap();
         let accounts = LmdbAccountStore::new(&env).unwrap();
         let mut txn = env.begin_write();
-
-        pruned.put(&mut txn, &1.into());
-        pruned.put(&mut txn, &2.into());
 
         accounts.put(&mut txn, &1.into(), &AccountInfo::new_test_instance());
         accounts.put(&mut txn, &2.into(), &AccountInfo::new_test_instance());
@@ -377,7 +327,6 @@ fn ledger_cache() {
     )
     .unwrap();
 
-    assert_eq!(ledger.pruned_count(), 2);
     assert_eq!(ledger.account_count(), 3);
 }
 

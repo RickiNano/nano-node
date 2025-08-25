@@ -63,7 +63,6 @@ pub enum StatType {
     LocalBlockBroadcaster,
     RepTiers,
     PeerHistory,
-    Pruning,
 }
 
 impl StatType {
@@ -391,12 +390,6 @@ pub enum DetailType {
     RollbackMissingBlock,
     RollbackSkipped,
     LoopScan,
-
-    // pruning
-    LedgerPruning,
-    PruningTarget,
-    PrunedCount,
-    CollectTargets,
 }
 
 impl DetailType {

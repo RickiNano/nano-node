@@ -1,6 +1,6 @@
 use rsnano_types::{
-    Account, AccountInfo, Amount, BlockHash, BlockSubType, BlockType, ConfirmationHeightInfo,
-    Epoch, Epochs, PendingInfo, PendingKey, PublicKey, SavedBlock, utils::UnixTimestamp,
+    utils::UnixTimestamp, Account, AccountInfo, Amount, BlockHash, BlockSubType, BlockType,
+    ConfirmationHeightInfo, Epoch, Epochs, PendingInfo, PendingKey, PublicKey, SavedBlock,
 };
 
 use super::rollback_performer::RollbackError;
@@ -103,7 +103,6 @@ impl<'a> RollbackPlanner<'a> {
         match self.block_sub_type() {
             BlockSubType::Open | BlockSubType::Receive => {
                 let source_hash = self.head_block.source_or_link();
-                // Pending account entry can be incorrect if source block was pruned. But it's not affecting correct ledger processing
                 Some((
                     PendingKey::new(self.account, source_hash),
                     PendingInfo::new(

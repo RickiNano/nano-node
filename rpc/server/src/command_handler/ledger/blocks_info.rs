@@ -1,10 +1,10 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
-use rsnano_ledger::{AnySet, ConfirmedSet, LedgerSet};
+use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{
-    BlockInfoResponse, BlocksInfoArgs, BlocksInfoResponse, unwrap_bool_or_false,
+    unwrap_bool_or_false, BlockInfoResponse, BlocksInfoArgs, BlocksInfoResponse,
 };
-use rsnano_types::{BlockHash, BlockType, PendingKey, utils::UnixTimestamp};
+use rsnano_types::{utils::UnixTimestamp, BlockHash, BlockType, PendingKey};
 use std::collections::HashMap;
 
 impl RpcCommandHandler {
@@ -27,7 +27,7 @@ impl RpcCommandHandler {
                 let height = block.height();
                 let local_timestamp = block.timestamp();
                 let successor = any.block_successor(&block.hash()).unwrap_or_default();
-                let confirmed = any.confirmed().block_exists_or_pruned(&hash);
+                let confirmed = any.confirmed().block_exists(&hash);
                 let contents = block.json_representation();
 
                 let subtype = if block.block_type() == BlockType::State {

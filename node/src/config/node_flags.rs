@@ -12,7 +12,6 @@ pub struct NodeFlags {
     pub disable_block_processor_republishing: bool,
     pub allow_bootstrap_peers_duplicates: bool,
     pub disable_search_pending: bool, // For testing only
-    pub enable_pruning: bool,
     pub enable_voting: bool,
     pub fast_bootstrap: bool,
     pub read_only: bool,
@@ -35,7 +34,6 @@ impl NodeFlags {
             disable_block_processor_republishing: false,
             allow_bootstrap_peers_duplicates: false,
             disable_search_pending: false,
-            enable_pruning: false,
             enable_voting: false,
             fast_bootstrap: false,
             read_only: false,

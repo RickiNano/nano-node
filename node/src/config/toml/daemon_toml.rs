@@ -200,8 +200,6 @@ mod tests {
 
         [node.experimental]
         secondary_work_peers = ["dev.org:998"]
-        max_pruning_age = 999
-        max_pruning_depth = 999
 
         [node.vote_cache]
         age_cutoff = 999

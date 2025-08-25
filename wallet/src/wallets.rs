@@ -4,13 +4,13 @@ use std::{
     mem::size_of,
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, mpsc},
+    sync::{mpsc, Arc, Mutex},
 };
 
-use rand::{Rng, seq::IndexedRandom};
+use rand::{seq::IndexedRandom, Rng};
 use tracing::{debug, info, warn};
 
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
+use rsnano_ledger::{AnySet, Ledger, LedgerSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
@@ -22,15 +22,15 @@ use rsnano_types::{
     WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
-    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoProvider},
     ticker::Tickable,
+    CancellationToken,
 };
 use rsnano_work::WorkThresholds;
 
 use super::{
-    BlockPromise, MultiBlockPromise, Wallet, WalletsConfig, WalletsError,
-    delayed_work_queue::DelayedWorkQueue,
+    delayed_work_queue::DelayedWorkQueue, BlockPromise, MultiBlockPromise, Wallet, WalletsConfig,
+    WalletsError,
 };
 
 enum PreparedSend {
@@ -1212,7 +1212,7 @@ impl Wallets {
         let mut epoch = Epoch::Epoch0;
         let any = self.ledger.any();
         let wallet_tx = self.env.begin_read();
-        if any.block_exists_or_pruned(&send_hash) {
+        if any.block_exists(&send_hash) {
             if let Some(pending_info) = any.get_pending(&PendingKey::new(account, send_hash)) {
                 if let Ok(prv) = wallet.store.fetch(&wallet_tx, &account.into()) {
                     info!(
@@ -1434,7 +1434,7 @@ impl Wallets {
                             hash,
                             info.source.encode_account()
                         );
-                        if any.confirmed().block_exists_or_pruned(&hash) {
+                        if any.confirmed().block_exists(&hash) {
                             let representative = wallet.store.representative(&txn);
                             // Receive confirmed block
                             let promise = self.receive(

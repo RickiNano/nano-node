@@ -3,9 +3,9 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     sync::{
-        Arc, Mutex, MutexGuard, RwLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, SyncSender},
+        Arc, Mutex, MutexGuard, RwLock,
     },
     time::Duration,
 };
@@ -31,8 +31,8 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_output_tracker::OutputListenerMt;
 use rsnano_types::{
-    Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot, Root,
-    SavedBlock, Vote, VoteError, WorkNonce, WorkRequest, utils::Peer,
+    utils::Peer, Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot,
+    Root, SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
@@ -43,7 +43,6 @@ use rsnano_utils::{
 use rsnano_wallet::{Wallets, WalletsTicker};
 
 use crate::{
-    NodeCallbacks, OnlineWeightSampler,
     aec_event_processor::AecEventProcessor,
     block_processing::{
         BacklogScan, BacklogWaiter, BlockContext, BlockProcessor, BlockProcessorQueue, BlockSource,
@@ -58,43 +57,41 @@ use crate::{
     cementation::{ConfirmingSet, TrackConfirmationTimes},
     config::{GlobalConfig, NetworkParams, NodeConfig, NodeFlags},
     consensus::{
-        ActiveElectionsContainer, AecTicker, AecVoter, BootstrapElectionActivator,
-        BootstrapStaleElections, ConfirmReqSender, ConfirmationSolicitorPlugin, CpsLimiter,
-        CurrentRepTiers, DependentElectionsConfirmer, ForkCache, ForkCacheUpdater, ForkProcessor,
-        ForkProcessorPlugin, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
-        RequestAggregator, RequestAggregatorCleanup, VoteApplier, VoteBroadcaster, VoteCache,
-        VoteCacheProcessor, VoteGenerators, VoteProcessor, VoteProcessorExt, VoteProcessorQueue,
-        VoteProcessorQueueCleanup, VoteRebroadcastQueue, VoteRebroadcaster, WalletRepsChecker,
-        WinnerBlockBroadcaster,
         election::ConfirmedElection,
         election_schedulers::{ElectionSchedulers, ElectionSchedulersPlugin},
-        get_bootstrap_weights, log_bootstrap_weights,
+        get_bootstrap_weights, log_bootstrap_weights, ActiveElectionsContainer, AecTicker,
+        AecVoter, BootstrapElectionActivator, BootstrapStaleElections, ConfirmReqSender,
+        ConfirmationSolicitorPlugin, CpsLimiter, CurrentRepTiers, DependentElectionsConfirmer,
+        ForkCache, ForkCacheUpdater, ForkProcessor, ForkProcessorPlugin, LocalVoteHistory,
+        LocalVotesRemover, RepTiersCalculator, RequestAggregator, RequestAggregatorCleanup,
+        VoteApplier, VoteBroadcaster, VoteCache, VoteCacheProcessor, VoteGenerators, VoteProcessor,
+        VoteProcessorExt, VoteProcessorQueue, VoteProcessorQueueCleanup, VoteRebroadcastQueue,
+        VoteRebroadcaster, WalletRepsChecker, WinnerBlockBroadcaster,
     },
     ledger_event_processor::{LedgerEventProcessor, LedgerEventProcessorPlugin},
     node_id_key_file::NodeIdKeyFile,
     node_monitor::NodeMonitor,
-    pruning::{LedgerPruning, LedgerPruningExt},
     recently_cemented_inserter::RecentlyCementedInserter,
     representatives::{
         OnlineReps, OnlineRepsCleanup, OnlineWeightCalculation, RepCrawler, RepCrawlerExt,
     },
     telemetry::{
-        TelementryConfig, TelementryExt, Telemetry, TelemetryFactory, rsnano_build_info,
-        rsnano_version_string,
+        rsnano_build_info, rsnano_version_string, TelementryConfig, TelementryExt, Telemetry,
+        TelemetryFactory,
     },
     tokio_runner::TokioRunner,
     transport::{
-        MessageFlooder, MessageProcessor, MessageSender, NetworkThreads, PeerCacheConnector,
-        PeerCacheUpdater, RealtimeMessageHandler,
         keepalive::{KeepaliveMessageFactory, KeepalivePublisher},
-        run_loopback_channel_adapter,
+        run_loopback_channel_adapter, MessageFlooder, MessageProcessor, MessageSender,
+        NetworkThreads, PeerCacheConnector, PeerCacheUpdater, RealtimeMessageHandler,
     },
-    utils::{ThreadPool, spawn_backpressure_processor},
+    utils::{spawn_backpressure_processor, ThreadPool},
     wallets::{
-        LocalRepsComputation, ReceivableSearch, WalletBackup, WalletRepresentatives,
-        block_processor::WalletBlockProcessor, work::WalletWorkProvider,
+        block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
+        ReceivableSearch, WalletBackup, WalletRepresentatives,
     },
     work::WorkFactory,
+    NodeCallbacks, OnlineWeightSampler,
 };
 
 #[allow(dead_code)]
@@ -141,7 +138,6 @@ pub struct Node {
     pub local_block_broadcaster: Arc<LocalBlockBroadcaster>,
     message_processor: Mutex<MessageProcessor>,
     network_threads: Arc<Mutex<NetworkThreads>>,
-    ledger_pruning: Arc<LedgerPruning>,
     pub peer_connector: Arc<PeerConnector>,
     peer_cache_updater: TimerThread<PeerCacheUpdater>,
     peer_cache_connector: TimerThread<PeerCacheConnector>,
@@ -359,10 +355,6 @@ impl Node {
         info!(
             "Account count:   {}",
             ledger.account_count().to_formatted_string(&Locale::en)
-        );
-        info!(
-            "Pruned count:    {}",
-            ledger.pruned_count().to_formatted_string(&Locale::en)
         );
         info!(
             "Representative count: {}",
@@ -1074,26 +1066,6 @@ impl Node {
                 );
             }
         }
-        if flags.enable_pruning {
-            ledger.enable_pruning();
-        }
-
-        if ledger.pruning_enabled() {
-            if config.enable_voting && !flags.inactive_node {
-                let msg = "Incompatibility detected between config node.enable_voting and existing pruned blocks";
-                error!(msg);
-                panic!("{}", msg);
-            }
-            if !flags.enable_pruning && !flags.inactive_node {
-                let msg =
-                    "To start node with existing pruned blocks use launch flag --enable_pruning";
-                error!(msg);
-                panic!("{}", msg);
-            }
-            warn!(
-                "Ledger pruning is enabled. This feature is experimental and may result in node instability! Please see release notes for more information."
-            );
-        }
 
         let time_factory = SystemTimeFactory::default();
 
@@ -1115,12 +1087,6 @@ impl Node {
             stats.clone(),
             config.network.cached_peer_reachout,
         );
-
-        let ledger_pruning = Arc::new(LedgerPruning::new(
-            config.clone(),
-            ledger.clone(),
-            stats.clone(),
-        ));
 
         let monitor = TimerThread::new(
             "Monitor",
@@ -1336,7 +1302,6 @@ impl Node {
             bounded_backlog,
             bootstrapper,
             local_block_broadcaster,
-            ledger_pruning,
             network_threads,
             message_processor,
             inbound_message_queue,
@@ -1372,11 +1337,6 @@ impl Node {
 
     pub fn is_stopped(&self) -> bool {
         self.stopped.load(Ordering::SeqCst)
-    }
-
-    pub fn ledger_pruning(&self, batch_size: u64, bootstrap_weight_reached: bool) {
-        self.ledger_pruning
-            .ledger_pruning(batch_size, bootstrap_weight_reached)
     }
 
     pub fn process_local(&self, block: Block) -> Result<(), BlockError> {
@@ -1540,7 +1500,7 @@ impl Node {
         if !self
             .ledger
             .any()
-            .block_exists_or_pruned(&self.network_params.ledger.genesis_block.hash())
+            .block_exists(&self.network_params.ledger.genesis_block.hash())
         {
             error!(
                 "Genesis block not found. This commonly indicates a configuration issue, check that the --network or --data_path command line arguments are correct, and also the ledger backend node config option. If using a read-only CLI command a ledger must already exist, start the node with --daemon first."
@@ -1574,10 +1534,6 @@ impl Node {
         self.network_threads.lock().unwrap().start();
         self.message_processor.lock().unwrap().start();
         self.aec_voter.start(Duration::from_millis(20));
-
-        if self.flags.enable_pruning {
-            self.ledger_pruning.start();
-        }
 
         if !self.flags.disable_rep_crawler {
             self.rep_crawler.start();
@@ -1664,7 +1620,6 @@ impl Node {
         self.wallet_reps_checker.stop();
         self.online_weight_calculation.stop();
         self.peer_connector.stop();
-        self.ledger_pruning.stop();
         self.peer_cache_connector.stop();
         self.peer_cache_updater.stop();
         // Cancels ongoing work generation tasks, which may be blocking other threads
@@ -1744,8 +1699,8 @@ impl CompositeNodeEventHandler {
 mod tests {
     use super::*;
     use crate::{
-        NodeBuilder,
         consensus::{AecEvent, AecTickerPlugin, BootstrapStaleElections, StaleElectionsStats},
+        NodeBuilder,
     };
     use rsnano_types::Networks;
     use rsnano_utils::{

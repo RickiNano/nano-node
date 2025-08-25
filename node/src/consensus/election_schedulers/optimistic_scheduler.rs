@@ -3,14 +3,14 @@ use std::{
     collections::{HashMap, VecDeque},
     mem::size_of,
     sync::{
-        Arc, Condvar, Mutex, RwLock,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex, RwLock,
     },
     thread::JoinHandle,
     time::Instant,
 };
 
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
+use rsnano_ledger::{AnySet, Ledger, LedgerSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Account, AccountInfo, ConfirmationHeightInfo};
 use rsnano_utils::{
@@ -21,7 +21,7 @@ use rsnano_utils::{
 use crate::{
     cementation::ConfirmingSet,
     config::NetworkConstants,
-    consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior},
+    consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -218,7 +218,7 @@ impl OptimisticScheduler {
         if let Some(block) = any.get_block(&head) {
             // Ensure block is not already confirmed
             if !self.confirming_set.contains(&block.hash())
-                || any.confirmed().block_exists_or_pruned(&block.hash())
+                || any.confirmed().block_exists(&block.hash())
             {
                 // Try to insert it into AEC
                 // We check for AEC vacancy inside our predicate

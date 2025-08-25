@@ -9,7 +9,6 @@ use super::{AnyReceivableIterator, LedgerSet};
 
 pub trait ConfirmedSet: LedgerSet {
     fn get_block(&self, hash: &BlockHash) -> Option<SavedBlock>;
-    fn block_exists_or_pruned(&self, hash: &BlockHash) -> bool;
     fn get_conf_info(&self, account: &Account) -> Option<ConfirmationHeightInfo>;
 }
 
@@ -91,10 +90,6 @@ impl<'a> ConfirmedSet for OwningConfirmedSet<'a> {
         self.borrowing_set().get_block(hash)
     }
 
-    fn block_exists_or_pruned(&self, hash: &BlockHash) -> bool {
-        self.borrowing_set().block_exists_or_pruned(hash)
-    }
-
     fn get_conf_info(&self, account: &Account) -> Option<ConfirmationHeightInfo> {
         self.borrowing_set().get_conf_info(account)
     }
@@ -145,7 +140,7 @@ impl<'a> LedgerSet for BorrowingConfirmedSet<'a> {
         let mut result = Amount::zero();
 
         for (key, info) in self.account_receivable_upper_bound(*account, BlockHash::zero()) {
-            if self.block_exists_or_pruned(&key.send_block_hash) {
+            if self.block_exists(&key.send_block_hash) {
                 result += info.amount;
             }
         }
@@ -184,17 +179,6 @@ impl<'a> ConfirmedSet for BorrowingConfirmedSet<'a> {
             Some(block)
         } else {
             None
-        }
-    }
-
-    fn block_exists_or_pruned(&self, hash: &BlockHash) -> bool {
-        if hash.is_zero() {
-            return false;
-        }
-        if self.store.pruned.exists(self.tx, hash) {
-            true
-        } else {
-            self.block_exists(hash)
         }
     }
 

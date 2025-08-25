@@ -1,4 +1,4 @@
-use rsnano_types::{Account, Block, PendingKey, SavedBlock, utils::UnixMillisTimestamp};
+use rsnano_types::{utils::UnixMillisTimestamp, Account, Block, PendingKey, SavedBlock};
 
 use crate::{AnySet, LedgerConstants};
 
@@ -28,8 +28,7 @@ impl<'a> BlockValidatorFactory<'a> {
         let account = self.get_account(&previous_block);
         let account = account.unwrap_or_default();
         let source_block = self.block.source_or_link();
-        let source_block_exists =
-            !source_block.is_zero() && self.any.block_exists_or_pruned(&source_block);
+        let source_block_exists = !source_block.is_zero() && self.any.block_exists(&source_block);
 
         let pending_receive_info = if source_block.is_zero() {
             None
@@ -43,7 +42,7 @@ impl<'a> BlockValidatorFactory<'a> {
             epochs: &self.constants.epochs,
             work: &self.constants.work,
             account,
-            block_exists: self.any.block_exists_or_pruned(&self.block.hash()),
+            block_exists: self.any.block_exists(&self.block.hash()),
             old_account_info: self.any.get_account(&account),
             pending_receive_info,
             any_pending_exists: self.any.receivable_exists(account),
@@ -124,16 +123,6 @@ mod tests {
     }
 
     #[test]
-    fn pruned_block_exists() {
-        let block = TestBlockBuilder::state().build();
-        let ledger = Ledger::new_null_builder().pruned(&block.hash()).finish();
-        let any = ledger.any();
-        let validator =
-            BlockValidatorFactory::new(&any, &ledger.constants, &block).create_validator();
-        assert_eq!(validator.block_exists, true);
-    }
-
-    #[test]
     fn account_info() {
         let block = TestBlockBuilder::state().build();
         let account_info = AccountInfo::new_test_instance();
@@ -205,18 +194,6 @@ mod tests {
         let source = TestBlockBuilder::state().build_saved();
         let block = TestBlockBuilder::state().link(source.hash()).build();
         let ledger = Ledger::new_null_builder().block(&source).finish();
-        let any = ledger.any();
-        let validator =
-            BlockValidatorFactory::new(&any, &ledger.constants, &block).create_validator();
-        assert_eq!(validator.source_block_exists, true);
-    }
-
-    #[test]
-    fn pruned_source_block_exists() {
-        let block = TestBlockBuilder::state().link(BlockHash::from(42)).build();
-        let ledger = Ledger::new_null_builder()
-            .pruned(&BlockHash::from(42))
-            .finish();
         let any = ledger.any();
         let validator =
             BlockValidatorFactory::new(&any, &ledger.constants, &block).create_validator();

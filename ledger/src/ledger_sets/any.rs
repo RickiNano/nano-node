@@ -3,8 +3,9 @@ use std::ops::{RangeBounds, RangeFrom};
 use rsnano_nullable_lmdb::{ReadTransaction, Transaction};
 use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore};
 use rsnano_types::{
-    Account, AccountInfo, Amount, Block, BlockHash, DependentBlocks, DetailedBlock, PendingInfo,
-    PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, block_priority, utils::BlockPriority,
+    block_priority, utils::BlockPriority, Account, AccountInfo, Amount, Block, BlockHash,
+    DependentBlocks, DetailedBlock, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root,
+    SavedBlock,
 };
 
 use super::{BorrowingConfirmedSet, ConfirmedSet, LedgerSet};
@@ -12,7 +13,6 @@ use crate::{DependentBlocksFinder, LedgerConstants, RepresentativeBlockFinder};
 
 pub trait AnySet: LedgerSet {
     fn should_refresh(&self) -> bool;
-    fn block_exists_or_pruned(&self, hash: &BlockHash) -> bool;
     fn get_block(&self, hash: &BlockHash) -> Option<SavedBlock>;
     fn receivable_exists(&self, account: Account) -> bool;
     fn confirmed(&self) -> BorrowingConfirmedSet;
@@ -196,9 +196,6 @@ impl<'a> LedgerSet for OwningAnySet<'a> {
 impl<'a> AnySet for OwningAnySet<'a> {
     fn should_refresh(&self) -> bool {
         self.borrowing_set().should_refresh()
-    }
-    fn block_exists_or_pruned(&self, hash: &BlockHash) -> bool {
-        self.borrowing_set().block_exists_or_pruned(hash)
     }
 
     fn get_block(&self, hash: &BlockHash) -> Option<SavedBlock> {
@@ -385,17 +382,6 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
         self.store.block.get(self.tx, hash)
     }
 
-    fn block_exists_or_pruned(&self, hash: &BlockHash) -> bool {
-        if hash.is_zero() {
-            return false;
-        }
-        if self.store.pruned.exists(self.tx, hash) {
-            true
-        } else {
-            self.block_exists(hash)
-        }
-    }
-
     fn receivable_exists(&self, account: Account) -> bool {
         self.account_receivable_upper_bound(account, BlockHash::zero())
             .next()
@@ -409,13 +395,13 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
     fn dependents_confirmed_for_unsaved_block(&self, block: &Block) -> bool {
         self.dependent_blocks_for_unsaved_block(block)
             .iter()
-            .all(|hash| self.confirmed().block_exists_or_pruned(hash))
+            .all(|hash| self.confirmed().block_exists(hash))
     }
 
     fn dependents_confirmed(&self, block: &SavedBlock) -> bool {
         self.dependent_blocks(block)
             .iter()
-            .all(|hash| self.confirmed().block_exists_or_pruned(hash))
+            .all(|hash| self.confirmed().block_exists(hash))
     }
 
     fn dependent_blocks(&self, block: &SavedBlock) -> DependentBlocks {
@@ -524,7 +510,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
     fn detailed_block(&self, hash: &BlockHash) -> Option<DetailedBlock> {
         let block = self.get_block(hash)?;
         let amount = self.block_amount_for(&block);
-        let confirmed = self.confirmed().block_exists_or_pruned(hash);
+        let confirmed = self.confirmed().block_exists(hash);
         Some(DetailedBlock {
             block,
             amount,

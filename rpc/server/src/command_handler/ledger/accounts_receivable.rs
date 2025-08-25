@@ -1,10 +1,10 @@
 use crate::command_handler::RpcCommandHandler;
 use indexmap::IndexMap;
-use rsnano_ledger::{AnySet, ConfirmedSet};
+use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{
-    AccountsReceivableArgs, AccountsReceivableResponse, AccountsReceivableSimple,
-    AccountsReceivableSource, AccountsReceivableThreshold, SourceInfo, unwrap_bool_or_false,
-    unwrap_bool_or_true, unwrap_u64_or_max,
+    unwrap_bool_or_false, unwrap_bool_or_true, unwrap_u64_or_max, AccountsReceivableArgs,
+    AccountsReceivableResponse, AccountsReceivableSimple, AccountsReceivableSource,
+    AccountsReceivableThreshold, SourceInfo,
 };
 use rsnano_types::{Account, Amount, BlockHash, PendingInfo, PendingKey};
 use std::ops::{Deref, DerefMut};
@@ -36,9 +36,7 @@ impl RpcCommandHandler {
                     break;
                 }
 
-                if include_only_confirmed
-                    && !any.confirmed().block_exists_or_pruned(&key.send_block_hash)
-                {
+                if include_only_confirmed && !any.confirmed().block_exists(&key.send_block_hash) {
                     continue;
                 }
 

@@ -107,9 +107,6 @@ impl<'a> BlockCementer<'a> {
     }
 
     fn is_confirmed(&self, tx: &WriteTransaction, hash: &BlockHash) -> bool {
-        if self.store.pruned.exists(tx, hash) {
-            return true;
-        }
         let Some(block) = self.store.block.get(tx, hash) else {
             return false;
         };

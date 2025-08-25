@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use indexmap::IndexMap;
-use rsnano_ledger::{AnySet, ConfirmedSet};
+use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{
     AccountsReceivableResponse, AccountsReceivableSimple, AccountsReceivableSource,
     AccountsReceivableThreshold, SourceInfo, WalletReceivableArgs,
@@ -34,9 +34,7 @@ impl RpcCommandHandler {
                 .account_receivable_upper_bound(account, BlockHash::zero())
                 .take(count as usize)
             {
-                if include_only_confirmed
-                    && !any.confirmed().block_exists_or_pruned(&key.send_block_hash)
-                {
+                if include_only_confirmed && !any.confirmed().block_exists(&key.send_block_hash) {
                     continue;
                 }
 

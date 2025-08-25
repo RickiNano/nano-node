@@ -6,13 +6,13 @@ use rsnano_network::NetworkConfig;
 use rsnano_nullable_http_client::Url;
 use rsnano_store_lmdb::LmdbConfig;
 use rsnano_types::{
+    utils::{get_env_or_default_string, Peer},
     Account, Amount, PublicKey,
-    utils::{Peer, get_env_or_default_string},
 };
 use rsnano_wallet::default_preconfigured_representatives_for_live;
 use rsnano_work::OpenClConfig;
 
-use super::{DEV_NETWORK_PARAMS, NetworkParams, Networks, websocket_config::WebsocketConfig};
+use super::{websocket_config::WebsocketConfig, NetworkParams, Networks, DEV_NETWORK_PARAMS};
 use crate::{
     block_processing::{
         BacklogScanConfig, BoundedBacklogConfig, LocalBlockBroadcasterConfig, ProcessQueueConfig,
@@ -20,11 +20,11 @@ use crate::{
     bootstrap::{BootstrapConfig, BootstrapServerConfig},
     cementation::ConfirmingSetConfig,
     consensus::{
+        election_schedulers::{
+            priority::PriorityBucketConfig, HintedSchedulerConfig, OptimisticSchedulerConfig,
+        },
         ActiveElectionsConfig, BootstrapStaleElections, ForkCache, RebroadcastHistoryConfig,
         RequestAggregatorConfig, VoteCacheConfig, VoteProcessorConfig, VoteRebroadcastQueue,
-        election_schedulers::{
-            HintedSchedulerConfig, OptimisticSchedulerConfig, priority::PriorityBucketConfig,
-        },
     },
     transport::MessageProcessorConfig,
 };
@@ -80,8 +80,6 @@ pub struct NodeConfig {
     pub secondary_work_peers: Vec<Peer>,
     pub preconfigured_peers: Vec<Peer>,
     pub preconfigured_representatives: Vec<PublicKey>,
-    pub max_pruning_age: Duration,
-    pub max_pruning_depth: u64,
     pub callback_address: String,
     pub callback_port: u16,
     pub callback_target: String,
@@ -234,12 +232,6 @@ impl NodeConfig {
             secondary_work_peers: vec![Peer::new("127.0.0.1", 8076)],
             preconfigured_peers,
             preconfigured_representatives,
-            max_pruning_age: if !network_params.network.is_beta_network() {
-                Duration::from_secs(60 * 60 * 24) // 24h
-            } else {
-                Duration::from_secs(60 * 5) // 5 mins
-            },
-            max_pruning_depth: 0,
             callback_address: String::new(),
             callback_port: 0,
             callback_target: String::new(),

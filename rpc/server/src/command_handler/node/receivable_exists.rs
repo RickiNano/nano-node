@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
-use rsnano_ledger::{AnySet, ConfirmedSet};
+use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_node::Node;
 use rsnano_rpc_messages::{ExistsResponse, ReceivableExistsArgs};
 use rsnano_types::{BlockHash, PendingKey};
@@ -52,7 +52,7 @@ fn block_confirmed(
     }
 
     // Check whether the confirmation height is set
-    if any.confirmed().block_exists_or_pruned(hash) {
+    if any.confirmed().block_exists(hash) {
         return true;
     }
 

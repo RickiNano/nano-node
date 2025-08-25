@@ -1,7 +1,8 @@
+use rsnano_ledger::{LedgerSet, OwningAnySet};
+use rsnano_types::{Account, Frontier};
+
 use super::database_crawler::{AccountCrawlSource, DatabaseCrawler, PendingCrawlSource};
 use crate::bootstrap::state::OutdatedAccounts;
-use rsnano_ledger::{AnySet, OwningAnySet};
-use rsnano_types::{Account, Frontier};
 
 pub(crate) enum FrontierCheckResult {
     /// Account doesn't exist in the ledger and has no pending blocks, can't be prioritized right now
@@ -70,8 +71,7 @@ impl<'a> FrontierChecker<'a> {
             if *account == frontier.account {
                 // Check for frontier mismatch
                 if info.head != frontier.hash {
-                    // Check if frontier block exists in our ledger
-                    if !self.any.block_exists_or_pruned(&frontier.hash) {
+                    if !self.any.block_exists(&frontier.hash) {
                         return FrontierCheckResult::Outdated; // Frontier is outdated
                     }
                 }
@@ -104,7 +104,7 @@ impl<'a> FrontierChecker<'a> {
 mod tests {
     use super::*;
     use rsnano_ledger::Ledger;
-    use rsnano_types::{AccountInfo, BlockHash, PendingInfo, PendingKey};
+    use rsnano_types::{AccountInfo, BlockHash, PendingInfo, PendingKey, SavedBlock};
 
     #[test]
     fn no_frontiers_and_empty_ledger() {
@@ -179,11 +179,12 @@ mod tests {
     #[test]
     fn frontier_is_obsolete() {
         let account = Account::from(1);
-        let frontier = BlockHash::from(3);
+        let frontier_block = SavedBlock::new_test_instance();
+        let frontier = frontier_block.hash();
 
         let ledger = LedgerSpec {
             frontiers: vec![Frontier::new(account, BlockHash::from(2))],
-            pruned: vec![frontier],
+            blocks: vec![frontier_block],
             ..Default::default()
         };
         let frontiers = [Frontier::new(account, frontier)];
@@ -264,8 +265,8 @@ mod tests {
             )
         }
 
-        for hash in spec.pruned {
-            ledger_builder = ledger_builder.pruned(&hash)
+        for block in spec.blocks {
+            ledger_builder = ledger_builder.block(&block)
         }
 
         ledger_builder.finish()
@@ -275,6 +276,6 @@ mod tests {
     struct LedgerSpec {
         frontiers: Vec<Frontier>,
         pending: Vec<Account>,
-        pruned: Vec<BlockHash>,
+        blocks: Vec<SavedBlock>,
     }
 }

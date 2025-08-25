@@ -16,7 +16,6 @@ mod node;
 mod node_builder;
 mod node_id_key_file;
 mod node_monitor;
-pub mod pruning;
 mod recently_cemented_inserter;
 pub mod representatives;
 pub mod telemetry;

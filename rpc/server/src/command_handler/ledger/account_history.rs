@@ -1,11 +1,11 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::anyhow;
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
+use rsnano_ledger::{AnySet, Ledger, LedgerSet};
 use rsnano_rpc_messages::{
-    AccountHistoryArgs, AccountHistoryResponse, BlockSubTypeDto, BlockTypeDto, HistoryEntry,
-    unwrap_bool_or_false, unwrap_u64_or_zero,
+    unwrap_bool_or_false, unwrap_u64_or_zero, AccountHistoryArgs, AccountHistoryResponse,
+    BlockSubTypeDto, BlockTypeDto, HistoryEntry,
 };
-use rsnano_types::{Account, Block, BlockBase, BlockHash, SavedBlock, utils::UnixTimestamp};
+use rsnano_types::{utils::UnixTimestamp, Account, Block, BlockBase, BlockHash, SavedBlock};
 
 impl RpcCommandHandler {
     pub(crate) fn account_history(
@@ -262,7 +262,7 @@ impl<'a> AccountHistoryHelper<'a> {
         entry.local_timestamp = UnixTimestamp::from(block.timestamp()).as_u64().into();
         entry.height = block.height().into();
         entry.hash = block.hash();
-        entry.confirmed = any.confirmed().block_exists_or_pruned(&block.hash()).into();
+        entry.confirmed = any.confirmed().block_exists(&block.hash()).into();
         if self.output_raw {
             entry.work = Some(block.work());
             entry.signature = Some(block.signature().clone());

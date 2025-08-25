@@ -5,22 +5,21 @@ use std::{
 };
 
 use rsnano_ledger::{
-    AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY, LedgerSet,
-    test_helpers::UnsavedBlockLatticeBuilder,
+    test_helpers::UnsavedBlockLatticeBuilder, AnySet, LedgerSet, DEV_GENESIS_ACCOUNT,
+    DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
 };
 use rsnano_node::{
-    Node,
-    config::{DEV_NETWORK_PARAMS, NodeConfig, NodeFlags},
-    unique_path,
+    config::{NodeConfig, NodeFlags, DEV_NETWORK_PARAMS},
+    unique_path, Node,
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbWalletStore};
 use rsnano_types::{
-    Account, Amount, Block, BlockHash, DEV_GENESIS_KEY, Epoch, EpochBlockArgs,
-    KeyDerivationFunction, PrivateKey, PublicKey, RawKey, deterministic_key,
+    deterministic_key, Account, Amount, Block, BlockHash, Epoch, EpochBlockArgs,
+    KeyDerivationFunction, PrivateKey, PublicKey, RawKey, DEV_GENESIS_KEY,
 };
 use rsnano_wallet::WalletsError;
-use test_helpers::{System, assert_always_eq, assert_timely_eq2, assert_timely2};
+use test_helpers::{assert_always_eq, assert_timely2, assert_timely_eq2, System};
 
 struct TestFixture {
     test_dir: PathBuf,
@@ -313,20 +312,19 @@ fn spend() {
     let key2 = PrivateKey::new();
     // Sending from empty accounts should always be an error.
     // Accounts need to be opened with an open block, not a send block.
-    assert!(
-        node.wallets
-            .send(
-                wallet_id,
-                Account::zero(),
-                key2.account(),
-                Amount::zero(),
-                0.into(),
-                true,
-                None
-            )
-            .wait()
-            .is_err()
-    );
+    assert!(node
+        .wallets
+        .send(
+            wallet_id,
+            Account::zero(),
+            key2.account(),
+            Amount::zero(),
+            0.into(),
+            true,
+            None
+        )
+        .wait()
+        .is_err());
 
     node.wallets
         .send(
@@ -1490,98 +1488,6 @@ fn search_receivable() {
     let receive = node.block(&receive_hash).unwrap();
     assert_eq!(receive.height(), 3);
     assert_eq!(receive.source().unwrap(), send.hash());
-}
-
-#[test]
-fn receive_pruned() {
-    let mut system = System::new();
-    let node1 = system
-        .build_node()
-        .flags(NodeFlags {
-            disable_request_loop: true,
-            ..Default::default()
-        })
-        .finish();
-    let node2 = system
-        .build_node()
-        .config(NodeConfig {
-            enable_voting: false,
-            ..System::default_config()
-        })
-        .flags(NodeFlags {
-            disable_request_loop: true,
-            enable_pruning: true,
-            ..Default::default()
-        })
-        .finish();
-
-    let wallet_id1 = node1.wallets.wallet_ids()[0];
-    let wallet_id2 = node2.wallets.wallet_ids()[0];
-
-    let key = PrivateKey::new();
-
-    // Send
-    node1
-        .wallets
-        .insert_adhoc2(&wallet_id1, &DEV_GENESIS_KEY.raw_key(), false)
-        .unwrap();
-    let amount = node2.config.receive_minimum;
-    let send1 = node1
-        .wallets
-        .send(
-            wallet_id1,
-            *DEV_GENESIS_ACCOUNT,
-            key.account(),
-            amount,
-            1.into(),
-            true,
-            None,
-        )
-        .wait()
-        .unwrap();
-
-    let _send2 = node1
-        .wallets
-        .send(
-            wallet_id1,
-            *DEV_GENESIS_ACCOUNT,
-            key.account(),
-            Amount::raw(1),
-            1.into(),
-            true,
-            None,
-        )
-        .wait()
-        .unwrap();
-
-    // Pruning
-    assert_timely_eq2(|| node2.ledger.confirmed_count(), 3);
-    assert_eq!(node2.ledger.prune_one(&send1.hash(), 2), 1);
-
-    node2
-        .wallets
-        .insert_adhoc2(&wallet_id2, &key.raw_key(), false)
-        .unwrap();
-
-    let open1 = node2
-        .wallets
-        .receive(
-            wallet_id2,
-            send1.hash(),
-            key.public_key(),
-            amount,
-            key.account(),
-            1.into(),
-            true,
-        )
-        .wait()
-        .unwrap();
-
-    assert_eq!(
-        node2.ledger.any().block_balance(&open1.hash()),
-        Some(amount)
-    );
-    assert_timely_eq2(|| node2.ledger.confirmed_count(), 4);
 }
 
 fn upgrade_genesis_epoch(node: &Node, epoch: Epoch) {
