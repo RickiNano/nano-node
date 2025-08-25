@@ -11,7 +11,7 @@ rsnano_store_lmdb = { path = "../store_lmdb", features=["output_tracking"]}
 [dependencies]
 rsnano_core = { path = "../core" }
 rsnano_work = { path = "../work" }
-rsnano_stats = { path = "../stats" }
+rsnano_utils = { path = "../utils" }
 rsnano_store_lmdb = { path = "../store_lmdb" }
 rsnano_nullable_lmdb = { path = "../nullables/lmdb" }
 anyhow = "1"

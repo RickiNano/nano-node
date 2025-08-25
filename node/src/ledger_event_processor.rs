@@ -1,7 +1,7 @@
 use std::sync::{mpsc::SyncSender, Arc, RwLock};
 
 use rsnano_core::Networks;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{
     block_processing::{BlockProcessorQueue, BoundedBacklog, LedgerEvent},

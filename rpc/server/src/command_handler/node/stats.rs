@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use crate::command_handler::RpcCommandHandler;
 use rsnano_core::utils::ContainerInfo;
 use rsnano_rpc_messages::{StatsArgs, StatsType, SuccessResponse};
-use rsnano_stats::{StatsJsonWriter, StatsLogSink};
+use rsnano_utils::stats::{StatsJsonWriter, StatsLogSink};
 
 impl RpcCommandHandler {
     pub(crate) fn stats(&self, args: StatsArgs) -> anyhow::Result<serde_json::Value> {

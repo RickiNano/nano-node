@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, RwLock, Weak};
 use rsnano_core::{BlockHash, PrivateKey, ProtocolInfo};
 use rsnano_messages::*;
 use rsnano_network::{Channel, DataReceiver, DataReceiverFactory, Network};
-use rsnano_stats::Stats;
+use rsnano_utils::stats::Stats;
 
 use crate::{HandshakeProcess, HandshakeStats, LatestKeepalives, NanoDataReceiver, SynCookies};
 

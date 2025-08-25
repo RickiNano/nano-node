@@ -4,7 +4,7 @@ use std::{
 };
 
 use rsnano_core::{Amount, MaybeSavedBlock, PublicKey, SavedBlock};
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 
 use super::VoteSummary;
 use strum_macros::{EnumCount, EnumIter};

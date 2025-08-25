@@ -17,7 +17,7 @@ use rsnano_ledger::{ConfirmedSet, Ledger};
 use rsnano_messages::{Message, Publish};
 use rsnano_network::{token_bucket::TokenBucket, TrafficType};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use super::{BlockSource, LedgerEvent, ProcessedResult};
 use crate::{

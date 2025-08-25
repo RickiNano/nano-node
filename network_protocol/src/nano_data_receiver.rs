@@ -7,7 +7,7 @@ use rsnano_messages::*;
 use rsnano_network::{
     Channel, ChannelDirection, ChannelMode, DataReceiver, Network, ReceiveResult, TrafficType,
 };
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use crate::{HandshakeProcess, HandshakeStats, HandshakeStatus, LatestKeepalives};
 

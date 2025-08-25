@@ -1,4 +1,4 @@
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 use strum::{EnumCount, IntoEnumIterator};
 
 use rsnano_core::VoteSource;

@@ -3,7 +3,7 @@ use rsnano_core::{
 };
 use rsnano_ledger::{DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY};
 use rsnano_node::consensus::{FilteredVote, ReceivedVote, RepTier};
-use rsnano_stats::{DetailType, Direction, StatType};
+use rsnano_utils::stats::{DetailType, Direction, StatType};
 use std::{
     sync::Arc,
     time::{Duration, Instant},

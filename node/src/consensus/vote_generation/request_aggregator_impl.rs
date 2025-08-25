@@ -1,6 +1,6 @@
 use rsnano_core::{Account, Block, BlockHash, Root, SavedBlock};
 use rsnano_ledger::{AnySet, LedgerSet};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 pub(super) struct RequestAggregatorImpl<'a> {
     stats: &'a Stats,

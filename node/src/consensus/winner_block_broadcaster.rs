@@ -4,7 +4,7 @@ use rsnano_core::{Block, BlockHash, Networks, PublicKey};
 use rsnano_messages::{Message, Publish};
 use rsnano_network::{token_bucket::TokenBucket, TrafficType};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::{bounded_hash_map::BoundedHashMap, election::VoteSummary};
 use crate::transport::MessageFlooder;

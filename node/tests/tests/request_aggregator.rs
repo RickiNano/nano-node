@@ -11,7 +11,7 @@ use rsnano_node::{
     consensus::{AggregatorRequest, VoteGenerationEvent},
 };
 use rsnano_output_tracker::OutputTrackerMt;
-use rsnano_stats::{DetailType, Direction, StatType};
+use rsnano_utils::stats::{DetailType, Direction, StatType};
 
 use test_helpers::{
     assert_timely2, assert_timely_eq, assert_timely_eq2, assert_timely_msg, make_fake_channel,

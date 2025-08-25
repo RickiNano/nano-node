@@ -19,7 +19,7 @@ use rsnano_core::{
 use rsnano_messages::{Message, TelemetryAck, TelemetryData};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, Network, TrafficType};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{config::NetworkParams, transport::MessageSender};
 

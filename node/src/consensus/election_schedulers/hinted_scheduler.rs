@@ -12,7 +12,7 @@ use std::{
 
 use rsnano_core::{utils::ContainerInfo, Amount, BlockHash};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::VoteCache;
 use crate::{

@@ -7,7 +7,7 @@ use rsnano_messages::{Message, MessageSerializer};
 use rsnano_network::{Channel, ChannelId, TrafficType};
 use rsnano_network_protocol::MessageCallback;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_stats::{Direction, StatType, Stats};
+use rsnano_utils::stats::{Direction, StatType, Stats};
 
 /// Sends messages via a given channel to a peered node
 #[derive(Clone)]

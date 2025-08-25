@@ -5,7 +5,7 @@ use rsnano_ledger::{
 };
 use rsnano_network::ChannelId;
 use rsnano_node::block_processing::{BlockContext, BlockSource};
-use rsnano_stats::{DetailType, Direction, StatType};
+use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{assert_timely_eq2, System};
 
 #[test]

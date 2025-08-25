@@ -12,7 +12,7 @@ output_tracking = []
 [dependencies]
 rsnano_core = { path = "../core" }
 rsnano_work = { path = "../work" }
-rsnano_stats = { path = "../stats" }
+rsnano_utils = { path = "../utils" }
 rsnano_messages = { path = "../messages" }
 rsnano_network = { path = "../network" }
 rsnano_network_protocol = { path = "../network_protocol" }

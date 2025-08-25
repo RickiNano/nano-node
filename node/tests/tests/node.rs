@@ -17,7 +17,7 @@ use rsnano_node::{
     consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
 };
 use rsnano_nullable_tcp::get_available_port;
-use rsnano_stats::{DetailType, Direction, StatType};
+use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
     activate_hashes, assert_never, assert_timely, assert_timely2, assert_timely_eq,
     assert_timely_eq2, assert_timely_msg, establish_tcp, make_fake_channel, setup_chains,

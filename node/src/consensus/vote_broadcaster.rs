@@ -6,7 +6,7 @@ use std::{
 use rsnano_core::{Vote, VoteSource};
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::TrafficType;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{VoteProcessorConfig, VoteProcessorQueue};
 use crate::transport::MessageFlooder;

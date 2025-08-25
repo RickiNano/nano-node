@@ -11,7 +11,7 @@ use tracing::info;
 
 use rsnano_core::{utils::UnixTimestamp, Account, BlockHash};
 use rsnano_ledger::Ledger;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{
     config::NodeConfig,

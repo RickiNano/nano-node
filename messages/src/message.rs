@@ -5,7 +5,7 @@ use rsnano_core::{
     utils::{BufferReader, BufferWriter, Serialize},
     ProtocolInfo,
 };
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 
 use super::*;
 

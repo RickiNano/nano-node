@@ -15,7 +15,7 @@ use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider, FairQueue},
     BlockHash, PublicKey, Signature, Vote, VoteError,
 };
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 pub(crate) struct VoteRebroadcastQueueBuilder {
     stats: Option<Arc<Stats>>,

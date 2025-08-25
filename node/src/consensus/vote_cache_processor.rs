@@ -8,7 +8,7 @@ use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
     BlockHash, VoteSource,
 };
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{VoteCache, VoteProcessorConfig, VoteProcessorQueue};
 

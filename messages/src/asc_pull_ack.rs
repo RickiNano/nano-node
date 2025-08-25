@@ -4,7 +4,7 @@ use rsnano_core::{
     utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
     Account, Block, BlockHash, BlockType, Frontier,
 };
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 use std::{collections::VecDeque, fmt::Display, mem::size_of};

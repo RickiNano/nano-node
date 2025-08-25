@@ -13,7 +13,7 @@ use rsnano_ledger::Ledger;
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 
 use super::BlockProcessorQueue;
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 /// Waits for the backlog to fall below the backlog limit
 pub(crate) struct BacklogWaiter {

@@ -5,7 +5,7 @@ use rsnano_core::{
     utils::{BufferWriter, MemoryStream, Serialize, Stream},
     Networks, ProtocolInfo,
 };
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 use std::{
     fmt::{Debug, Display},
     mem::size_of,

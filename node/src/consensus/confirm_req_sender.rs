@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use rsnano_core::QualifiedRoot;
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{
     bounded_hash_map::BoundedHashMap,

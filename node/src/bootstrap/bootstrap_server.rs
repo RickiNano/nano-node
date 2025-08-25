@@ -18,7 +18,7 @@ use rsnano_messages::{
 use rsnano_network::{
     token_bucket::TokenBucket, Channel, ChannelId, DeadChannelCleanupStep, TrafficType,
 };
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use crate::transport::MessageSender;
 use rsnano_nullable_clock::SteadyClock;

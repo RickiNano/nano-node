@@ -14,7 +14,7 @@ use rsnano_core::{
 use rsnano_ledger::{AnySet, Ledger, LedgerSet, OwningAnySet};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{
     backlog_index::{BacklogEntry, BacklogIndex},

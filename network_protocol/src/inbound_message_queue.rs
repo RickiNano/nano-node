@@ -9,7 +9,7 @@ use std::{
 use rsnano_core::utils::{ContainerInfo, ContainerInfoProvider, FairQueue};
 use rsnano_messages::{Message, MessageType};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep};
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use crate::MessageCallback;
 use strum::IntoEnumIterator;

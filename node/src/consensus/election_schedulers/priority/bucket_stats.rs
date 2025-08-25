@@ -1,4 +1,4 @@
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
 
 #[derive(Default)]

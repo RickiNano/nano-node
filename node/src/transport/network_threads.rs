@@ -7,7 +7,7 @@ use std::{
 use rsnano_messages::{Keepalive, Message, NetworkFilter};
 use rsnano_network::{DeadChannelCleanup, Network, NetworkConfig, PeerConnector, TrafficType};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{keepalive::KeepaliveMessageFactory, MessageFlooder};
 use crate::config::{NetworkParams, NodeFlags};

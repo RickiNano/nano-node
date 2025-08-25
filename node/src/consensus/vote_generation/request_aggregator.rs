@@ -10,7 +10,7 @@ use rsnano_core::{
 };
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, TrafficType};
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use super::{
     request_aggregator_impl::{AggregateResult, RequestAggregatorImpl},

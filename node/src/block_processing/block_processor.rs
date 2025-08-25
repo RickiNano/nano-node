@@ -5,7 +5,7 @@ use std::{
 
 use rsnano_core::utils::BackpressureSender;
 use rsnano_ledger::Ledger;
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::{
     backlog_waiter::BacklogWaiter, block_batch_processor::BlockBatchProcessorStats,

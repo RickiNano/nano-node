@@ -1,6 +1,6 @@
 use strum::{EnumCount, IntoEnumIterator};
 
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use crate::consensus::election::{Election, ElectionBehavior, ElectionState};
 

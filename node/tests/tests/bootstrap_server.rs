@@ -11,7 +11,7 @@ use rsnano_messages::{
     BlocksReqPayload, FrontiersReqPayload, HashType, Message,
 };
 use rsnano_node::{bootstrap::BootstrapServer, Node};
-use rsnano_stats::{DetailType, Direction, StatType};
+use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
     assert_always_eq, assert_timely_eq, assert_timely_eq2, make_fake_channel, setup_chains, System,
 };

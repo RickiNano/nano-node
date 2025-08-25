@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, RwLock};
 
 use rsnano_core::BlockHash;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{ActiveElectionsContainer, VoteCache};
 

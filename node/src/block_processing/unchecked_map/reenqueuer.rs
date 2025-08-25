@@ -16,7 +16,7 @@ use super::UncheckedMap;
 use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 /// Re-enqueues an unchecked block when its missing dependency block got inserted into the ledger
 #[derive(Clone)]

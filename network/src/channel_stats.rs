@@ -1,5 +1,5 @@
 use crate::TrafficType;
-use rsnano_stats::{Direction, StatsCollection, StatsSource};
+use rsnano_utils::stats::{Direction, StatsCollection, StatsSource};
 use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 use strum::{EnumCount, IntoEnumIterator};
 

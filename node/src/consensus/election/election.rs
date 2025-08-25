@@ -10,7 +10,7 @@ use rsnano_core::{
     QualifiedRoot, SavedBlock, Vote, VoteError,
 };
 use rsnano_nullable_clock::Timestamp;
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 use strum_macros::{EnumCount, EnumIter};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]

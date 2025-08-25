@@ -5,7 +5,7 @@ use tracing::info;
 use rsnano_core::utils::{CancellationToken, Tickable};
 use rsnano_ledger::Ledger;
 use rsnano_network::PeerConnector;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 // Tries to connect to peers that are stored in the peer cache
 pub struct PeerCacheConnector {
@@ -75,7 +75,7 @@ mod tests {
 
     use rsnano_core::utils::{parse_endpoint, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_stats::Direction;
+    use rsnano_utils::stats::Direction;
 
     use super::*;
 

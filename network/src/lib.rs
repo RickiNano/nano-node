@@ -33,7 +33,7 @@ use std::{
 use async_trait::async_trait;
 use num_derive::FromPrimitive;
 
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 
 #[macro_use]
 extern crate anyhow;
@@ -168,11 +168,11 @@ impl DataReceiver for NullDataReceiver {
     }
 }
 
-impl From<ChannelDirection> for rsnano_stats::Direction {
+impl From<ChannelDirection> for rsnano_utils::stats::Direction {
     fn from(value: ChannelDirection) -> Self {
         match value {
-            ChannelDirection::Inbound => rsnano_stats::Direction::In,
-            ChannelDirection::Outbound => rsnano_stats::Direction::Out,
+            ChannelDirection::Inbound => rsnano_utils::stats::Direction::In,
+            ChannelDirection::Outbound => rsnano_utils::stats::Direction::Out,
         }
     }
 }

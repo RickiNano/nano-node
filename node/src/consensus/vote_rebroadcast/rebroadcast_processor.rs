@@ -9,7 +9,7 @@ use std::{
 use rsnano_core::Vote;
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::TrafficType;
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::history::{RebroadcastError, RebroadcastHistory, RebroadcastHistoryConfig};
 use crate::{consensus::RepTier, transport::MessageFlooder};

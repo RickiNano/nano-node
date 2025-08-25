@@ -13,7 +13,7 @@ use rsnano_core::{
     BlockHash, SavedBlock,
 };
 use rsnano_ledger::{CementingObserver, Ledger};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::ordered_entries::OrderedEntries;
 use crate::{

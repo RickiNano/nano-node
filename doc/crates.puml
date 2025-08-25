@@ -3,7 +3,7 @@ title RsNano Crates Overview
 
 [core]
 [work]
-[stats]
+[utils]
 [ledger]
 [store_lmdb]
 [messages]
@@ -56,14 +56,14 @@ node "nullables" {
 [websocket_messages] --> [core]
 [websocket_client] --> [websocket_messages]
 [messages] --> [work]
-[messages] --> [stats]
-[network] --> [stats]
+[messages] --> [utils]
+[network] --> [utils]
 [ledger] --> [store_lmdb]
 [ledger] --> [work]
-[ledger] --> [stats]
+[ledger] --> [utils]
 [store_lmdb] --> [core]
 [work] --> [core]
-[stats] --> [core]
+[utils] --> [core]
 [wallet] --> [ledger]
 [core] -[hidden]-> "nullables"
 @enduml

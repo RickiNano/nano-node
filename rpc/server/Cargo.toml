@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 rsnano_core = { path = "../../core" }
-rsnano_stats = { path = "../../stats" }
+rsnano_utils = { path = "../../utils" }
 rsnano_messages = { path = "../../messages" }
 rsnano_network = { path = "../../network" }
 rsnano_node = { path = "../../node" }
@@ -27,4 +27,4 @@ indexmap = "2"
 
 [dev-dependencies]
 test_helpers = { path = "../../tools/test_helpers" }
-rsnano_stats = { path = "../../stats" }
+rsnano_utils = { path = "../../utils" }

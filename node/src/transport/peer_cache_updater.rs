@@ -11,7 +11,7 @@ use rsnano_ledger::Ledger;
 use rsnano_network::{Channel, Network};
 use rsnano_nullable_clock::SystemTimeFactory;
 use rsnano_nullable_lmdb::WriteTransaction;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 /// Writes a snapshot of the current peers to the database,
 /// so that we can reconnect to them when the node is restarted
@@ -111,7 +111,7 @@ mod tests {
     };
     use rsnano_network::{ChannelDirection, ChannelMode};
     use rsnano_nullable_clock::Timestamp;
-    use rsnano_stats::Direction;
+    use rsnano_utils::stats::Direction;
 
     use super::*;
 

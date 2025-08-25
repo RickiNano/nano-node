@@ -15,7 +15,7 @@ use rsnano_core::{
     Networks, NodeId, ProtocolInfo,
 };
 use rsnano_nullable_clock::Timestamp;
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 use std::{
     cmp::max,
     collections::HashMap,

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use rsnano_network::Channel;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::channel_waiter::ChannelWaiter;
 use crate::bootstrap::{state::BootstrapState, AscPullQuerySpec, BootstrapPromise, PollResult};

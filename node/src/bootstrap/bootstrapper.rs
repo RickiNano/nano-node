@@ -14,7 +14,7 @@ use rsnano_ledger::Ledger;
 use rsnano_messages::{AscPullAck, BlocksAckPayload};
 use rsnano_network::{token_bucket::TokenBucket, ChannelId, DeadChannelCleanupStep, Network};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{DetailType, Sample, StatType, Stats, StatsCollection, StatsSource};
+use rsnano_utils::stats::{DetailType, Sample, StatType, Stats, StatsCollection, StatsSource};
 
 use super::{
     block_inspector::BlockInspector,

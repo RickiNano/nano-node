@@ -6,7 +6,7 @@ use rsnano_messages::{AscPullReq, Message};
 use rsnano_network::TrafficType;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{
     bootstrap::{

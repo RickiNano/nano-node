@@ -1,5 +1,5 @@
 use crate::{ChannelDirection, NetworkError};
-use rsnano_stats::{Direction, StatsCollection, StatsSource};
+use rsnano_utils::stats::{Direction, StatsCollection, StatsSource};
 use std::{
     net::SocketAddrV6,
     sync::atomic::{AtomicUsize, Ordering::Relaxed},

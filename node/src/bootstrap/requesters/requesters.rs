@@ -7,7 +7,7 @@ use rsnano_ledger::Ledger;
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_network::Network;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{Stats, StatsCollection, StatsSource};
+use rsnano_utils::stats::{Stats, StatsCollection, StatsSource};
 
 use super::{
     bootstrap_promise_runner::BootstrapPromiseRunner, channel_waiter::ChannelWaiter,

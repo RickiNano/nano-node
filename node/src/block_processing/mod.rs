@@ -23,7 +23,7 @@ pub use bounded_backlog::*;
 pub(crate) use bounded_backlog_plugin::*;
 pub(crate) use local_block_broadcaster::*;
 pub use process_queue::ProcessQueueConfig;
-use rsnano_stats::DetailType;
+use rsnano_utils::stats::DetailType;
 use strum_macros::{EnumCount, EnumIter, IntoStaticStr};
 pub use unchecked_map::*;
 

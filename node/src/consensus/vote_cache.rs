@@ -17,7 +17,7 @@ use rsnano_core::{
     utils::{ContainerInfo, ContainerInfoProvider},
     Amount, BlockHash, DescTallyKey, PublicKey, Vote, VoteError,
 };
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -536,7 +536,7 @@ mod tests {
     use super::*;
     use mock_instant::thread_local::MockClock;
     use rsnano_core::{utils::UnixMillisTimestamp, PrivateKey};
-    use rsnano_stats::Direction;
+    use rsnano_utils::stats::Direction;
 
     fn create_vote(rep: &PrivateKey, hash: &BlockHash, timestamp_offset: u64) -> Arc<Vote> {
         let timestamp = UnixMillisTimestamp::new(timestamp_offset * 1024 * 1024);

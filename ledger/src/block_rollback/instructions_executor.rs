@@ -2,7 +2,7 @@ use std::sync::atomic::Ordering;
 
 use rsnano_core::{Amount, PublicKey};
 use rsnano_nullable_lmdb::WriteTransaction;
-use rsnano_stats::StatType;
+use rsnano_utils::stats::StatType;
 
 use super::rollback_planner::RollbackInstructions;
 use crate::Ledger;

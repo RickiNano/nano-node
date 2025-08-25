@@ -18,7 +18,7 @@ use rsnano_core::{
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_stats::{Stats, StatsCollection, StatsSource};
+use rsnano_utils::stats::{Stats, StatsCollection, StatsSource};
 
 use super::{ActiveElectionsContainer, VoteCache};
 use crate::{

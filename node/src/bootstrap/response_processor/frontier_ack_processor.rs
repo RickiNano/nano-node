@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use rsnano_core::Frontier;
 use rsnano_ledger::Ledger;
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use super::frontier_worker::FrontierWorker;
 use crate::{

@@ -6,7 +6,7 @@ use std::{
 };
 
 use rsnano_core::{utils::ContainerInfo, Amount, Block, BlockHash, SavedBlock};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest};
 use rsnano_ledger::{AnySet, Ledger};

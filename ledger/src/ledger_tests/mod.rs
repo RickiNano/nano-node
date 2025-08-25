@@ -5,7 +5,7 @@ use rsnano_core::{
     Account, AccountInfo, Amount, BlockHash, PrivateKey, PublicKey, Root, SavedBlock,
     TestBlockBuilder, DEV_GENESIS_KEY,
 };
-use rsnano_stats::Stats;
+use rsnano_utils::stats::Stats;
 use rsnano_store_lmdb::{LmdbAccountStore, LmdbPrunedStore};
 
 use crate::{

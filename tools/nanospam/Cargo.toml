@@ -9,7 +9,7 @@ rsnano_nullable_tcp = { path = "../../nullables/tcp" }
 rsnano_nullable_tracing_subscriber = { path = "../../nullables/tracing_subscriber" }
 rsnano_nullable_env = { path = "../../nullables/env" }
 rsnano_core = { path = "../../core" }
-rsnano_stats = { path = "../../stats" }
+rsnano_utils = { path = "../../utils" }
 rsnano_messages = { path = "../../messages" }
 rsnano_network = { path = "../../network" }
 rsnano_network_protocol = { path = "../../network_protocol" }

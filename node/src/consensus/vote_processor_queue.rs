@@ -11,7 +11,7 @@ use rsnano_core::{
     BlockHash, Vote, VoteSource,
 };
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::{RepTier, RepTiers, RepTiersConsumer, VoteProcessorConfig};
 

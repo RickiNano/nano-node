@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use rsnano_core::{Account, Block, BlockType, SavedBlock};
 use rsnano_ledger::{AnySet, BlockError, Ledger};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::state::{BootstrapState, PriorityUpResult};
 use crate::block_processing::{BlockSource, ProcessedResult};

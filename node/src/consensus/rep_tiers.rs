@@ -14,7 +14,7 @@ use rsnano_core::{
     PublicKey,
 };
 use rsnano_ledger::RepWeightCache;
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use crate::representatives::OnlineReps;
 

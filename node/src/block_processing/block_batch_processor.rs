@@ -12,7 +12,7 @@ use tracing::{debug, warn};
 use rsnano_core::utils::{backpressure_channel, BackpressureSender};
 use rsnano_ledger::{BlockError, Ledger};
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::{BlockContext, BlockSource, LedgerEvent, UncheckedBlockReenqueuer, UncheckedMap};
 use crate::block_processing::ProcessedResult;

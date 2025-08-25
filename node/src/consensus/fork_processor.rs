@@ -4,7 +4,7 @@ use tracing::debug;
 
 use rsnano_core::{Amount, Block, BlockHash, QualifiedRoot};
 use rsnano_ledger::{BlockError, RepWeightCache};
-use rsnano_stats::Stats;
+use rsnano_utils::stats::Stats;
 
 use super::{ActiveElectionsContainer, ForkCache, VoteCache};
 use crate::{

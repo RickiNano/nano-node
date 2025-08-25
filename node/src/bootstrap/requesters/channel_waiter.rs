@@ -1,7 +1,7 @@
 use crate::bootstrap::{state::BootstrapState, BootstrapPromise, PollResult};
 use rsnano_network::{token_bucket::TokenBucket, Channel, ChannelId, Network, TrafficType};
 use rsnano_nullable_clock::Timestamp;
-use rsnano_stats::StatsCollection;
+use rsnano_utils::stats::StatsCollection;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc, Mutex, RwLock,

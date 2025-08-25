@@ -4,7 +4,7 @@ use std::{
     u64,
 };
 
-use crate::Direction;
+use super::Direction;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct StatsKey {

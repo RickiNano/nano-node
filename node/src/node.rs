@@ -38,7 +38,7 @@ use rsnano_nullable_lmdb::{
     EnvironmentFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory,
 };
 use rsnano_output_tracker::OutputListenerMt;
-use rsnano_stats::{Direction, Stats, StatsCollection, StatsCollector};
+use rsnano_utils::stats::{Direction, Stats, StatsCollection, StatsCollector};
 use rsnano_wallet::{Wallets, WalletsTicker};
 
 use crate::{
@@ -1757,7 +1757,7 @@ mod tests {
         NodeBuilder,
     };
     use rsnano_core::Networks;
-    use rsnano_stats::StatsSource;
+    use rsnano_utils::stats::StatsSource;
     use std::{
         any::type_name,
         ops::{Deref, DerefMut},

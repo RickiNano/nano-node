@@ -12,7 +12,7 @@ use rsnano_core::{
     PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };
 use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 use rsnano_store_lmdb::{
     ConfiguredAccountDatabaseBuilder, ConfiguredBlockDatabaseBuilder,
     ConfiguredConfirmationHeightDatabaseBuilder, ConfiguredPeersDatabaseBuilder,

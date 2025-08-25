@@ -7,7 +7,7 @@ use rsnano_ledger::Ledger;
 use rsnano_messages::{AscPullAck, AscPullAckType};
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::Timestamp;
-use rsnano_stats::Stats;
+use rsnano_utils::stats::Stats;
 
 use super::{
     super::state::{BootstrapState, QueryType, RunningQuery},

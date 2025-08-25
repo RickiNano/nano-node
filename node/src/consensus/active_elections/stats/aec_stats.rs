@@ -3,7 +3,7 @@ use crate::consensus::{
     active_elections::AEC_STAT_KEY,
     election::{ConfirmationType, Election, ElectionBehavior},
 };
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 use strum::{EnumCount, IntoEnumIterator};
 
 #[derive(Default)]

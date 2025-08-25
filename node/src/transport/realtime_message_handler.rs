@@ -8,7 +8,7 @@ use tracing::trace;
 use rsnano_core::VoteSource;
 use rsnano_messages::{Message, NetworkFilter};
 use rsnano_network::{Channel, Network};
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use rsnano_work::WorkThresholds;
 
 use crate::{

@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use rsnano_core::Frontier;
 use rsnano_ledger::OwningAnySet;
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::frontier_checker::FrontierChecker;
 use crate::bootstrap::state::{BootstrapState, OutdatedAccounts};

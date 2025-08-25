@@ -18,7 +18,7 @@ use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use std::{cmp::max, sync::Arc, time::Duration};
 
-use rsnano_stats::{StatsCollection, StatsSource};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 use tracing::debug;
 use {online_container::OnlineContainer, peered_container::PeeredContainer};
 

@@ -13,7 +13,7 @@ use tracing::debug;
 
 use rsnano_core::utils::get_env_bool;
 
-use crate::{DetailType, Direction, Sample, StatType, StatsCollection, StatsLogSink, StatsSource};
+use super::{DetailType, Direction, Sample, StatType, StatsCollection, StatsLogSink, StatsSource};
 
 pub struct Stats {
     max_samples: usize,

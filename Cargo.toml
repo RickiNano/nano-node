@@ -11,7 +11,7 @@ members = [
 	"nullables/tracing_subscriber",
 	"nullables/env", 
 	"core",
-	"stats",
+	"utils",
 	"work",
 	"messages",
 	"network",

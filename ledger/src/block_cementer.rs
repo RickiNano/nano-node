@@ -2,7 +2,7 @@ use std::{collections::VecDeque, sync::atomic::Ordering};
 
 use rsnano_core::{BlockHash, ConfirmationHeightInfo, SavedBlock};
 use rsnano_nullable_lmdb::{Transaction, WriteTransaction};
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use rsnano_store_lmdb::LmdbStore;
 
 use crate::LedgerConstants;

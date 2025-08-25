@@ -12,7 +12,7 @@ use rsnano_node::{
     },
     representatives::PeeredRepInfo,
 };
-use rsnano_stats::{DetailType, Direction, StatType};
+use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::System;
 
 #[test]

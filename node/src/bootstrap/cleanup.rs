@@ -4,7 +4,7 @@ use std::{
 };
 
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
-use rsnano_stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::state::{BootstrapState, RunningQuery};
 

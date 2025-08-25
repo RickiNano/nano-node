@@ -13,7 +13,7 @@ use rsnano_core::{
 use rsnano_ledger::{AnySet, ConfirmedSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_stats::{DetailType, StatType, Stats, StatsCollection, StatsSource};
+use rsnano_utils::stats::{DetailType, StatType, Stats, StatsCollection, StatsSource};
 
 use super::{
     bucket_stats::BucketStats, prio_bucket_count, prio_bucket_index, Bucket, Bucketing,

@@ -10,7 +10,7 @@ use rsnano_node::{
     NodeEvent, NodeEventHandler,
 };
 use rsnano_nullable_http_client::{HttpClient, Url};
-use rsnano_stats::{DetailType, Direction, StatType, Stats};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 /// Performs an HTTP callback to a configured endpoint
 /// if a block is confirmed

@@ -6,7 +6,7 @@ use std::{
 use rsnano_messages::{Message, MessageSerializer};
 use rsnano_network::{Channel, ChannelDirection, Network, TrafficType};
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_stats::Stats;
+use rsnano_utils::stats::Stats;
 
 use super::{try_send_serialized_message, MessageSender};
 use crate::representatives::OnlineReps;
