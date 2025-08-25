@@ -2,7 +2,7 @@ use crate::{
     utils::into_ipv6_socket_address, Channel, ChannelDirection, ChannelId, DeadChannelCleanupStep,
     Network, NetworkError, ReceiveResult, TcpChannelAdapter,
 };
-use rsnano_core::utils::NULL_ENDPOINT;
+use rsnano_types::utils::NULL_ENDPOINT;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_tcp::TcpStream;
 use std::{

@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{BlockHash, Networks, Root, SavedBlock};
+use rsnano_types::{BlockHash, Networks, Root, SavedBlock};
 use rsnano_ledger::Ledger;
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::SteadyClock;

@@ -1,6 +1,6 @@
 use clap::{ArgGroup, Parser};
 
-use rsnano_core::QualifiedRoot;
+use rsnano_types::QualifiedRoot;
 use rsnano_store_lmdb::{default_ledger_lmdb_options, LmdbFinalVoteStore};
 
 use crate::cli::GlobalArgs;

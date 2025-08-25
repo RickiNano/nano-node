@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, WalletId, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT};
 use test_helpers::{assert_timely_eq2, setup_rpc_client_and_server, System};
 

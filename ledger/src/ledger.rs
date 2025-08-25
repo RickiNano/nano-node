@@ -11,7 +11,7 @@ use std::{
 
 use tracing::debug;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixTimestamp, Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo,
     Epoch, Link, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };

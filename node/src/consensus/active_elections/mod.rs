@@ -8,7 +8,7 @@ mod vote_router;
 
 use std::collections::HashMap;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::BlockPriority, Amount, Block, BlockHash, QualifiedRoot, SavedBlock, VoteError,
 };
 

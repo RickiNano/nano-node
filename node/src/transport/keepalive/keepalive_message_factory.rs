@@ -1,4 +1,4 @@
-use rsnano_core::utils::{Peer, NULL_ENDPOINT};
+use rsnano_types::utils::{Peer, NULL_ENDPOINT};
 use rsnano_messages::{Keepalive, Message};
 use rsnano_network::Network;
 use std::{

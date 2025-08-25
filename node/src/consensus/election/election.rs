@@ -5,7 +5,7 @@ use std::{
 };
 
 use super::{block_tallies::BlockTallies, ConfirmationType, ConfirmedElection, ElectionState};
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, MaybeSavedBlock, PublicKey,
     QualifiedRoot, SavedBlock, Vote, VoteError,
 };

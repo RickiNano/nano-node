@@ -12,7 +12,7 @@ use blake2::{
     Blake2bVar,
 };
 
-use rsnano_core::HardenedConstants;
+use rsnano_types::HardenedConstants;
 
 pub(crate) use backpressure_event_processor::{
     spawn_backpressure_processor, BackpressureEventProcessor,

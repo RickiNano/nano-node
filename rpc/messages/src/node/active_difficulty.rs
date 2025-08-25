@@ -1,4 +1,4 @@
-use rsnano_core::WorkNonce;
+use rsnano_types::WorkNonce;
 use serde::{Deserialize, Serialize};
 
 use crate::RpcF64;

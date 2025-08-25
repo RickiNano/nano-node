@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail};
 
-use rsnano_core::{Block, BlockBase, BlockType};
+use rsnano_types::{Block, BlockBase, BlockType};
 use rsnano_ledger::{BlockError, LedgerSet};
 use rsnano_network::ChannelId;
 use rsnano_node::block_processing::{BlockContext, BlockSource};

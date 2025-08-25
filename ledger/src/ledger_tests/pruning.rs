@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     Amount, Block, Epoch, OpenBlockArgs, PendingKey, PrivateKey, ReceiveBlockArgs, StateBlockArgs,
     TestBlockBuilder, WorkNonce, DEV_GENESIS_KEY,
 };

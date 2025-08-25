@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use rsnano_core::{Account, Block, BlockType, SavedBlock};
+use rsnano_types::{Account, Block, BlockType, SavedBlock};
 use rsnano_ledger::{AnySet, BlockError, Ledger};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::stats::{DetailType, StatType, Stats};

@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{Block, BlockHash};
+use rsnano_types::{Block, BlockHash};
 use rsnano_ledger::{Ledger, LedgerSet};
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::SteadyClock;
@@ -164,7 +164,7 @@ impl StatsSource for UncheckedBlockReenqueuerStats {
 mod tests {
     use super::*;
     use crate::block_processing::BlockSource;
-    use rsnano_core::{Block, BlockHash, SavedBlock};
+    use rsnano_types::{Block, BlockHash, SavedBlock};
     use rsnano_nullable_clock::Timestamp;
     use std::time::Duration;
 

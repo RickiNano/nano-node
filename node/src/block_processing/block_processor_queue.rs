@@ -6,7 +6,7 @@ use std::{
 
 use strum::{EnumCount, IntoEnumIterator};
 
-use rsnano_core::{Block, SavedBlock};
+use rsnano_types::{Block, SavedBlock};
 use rsnano_ledger::BlockError;
 use rsnano_network::{ChannelId, DeadChannelCleanupStep};
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};

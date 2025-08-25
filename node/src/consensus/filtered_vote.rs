@@ -1,4 +1,4 @@
-use rsnano_core::{BlockHash, Vote, VoteSource};
+use rsnano_types::{BlockHash, Vote, VoteSource};
 use rsnano_network::Channel;
 use std::{ops::Deref, sync::Arc};
 

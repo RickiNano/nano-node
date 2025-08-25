@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc, thread::sleep, time::Duration};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixMillisTimestamp, Account, Amount, Block, Networks, PrivateKey, ProtocolInfo, Root,
     StateBlockArgs, Vote, DEV_GENESIS_KEY,
 };

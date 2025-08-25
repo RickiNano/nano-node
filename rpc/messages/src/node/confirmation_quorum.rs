@@ -1,5 +1,5 @@
 use crate::{RpcBool, RpcCommand, RpcU8};
-use rsnano_core::{Account, Amount};
+use rsnano_types::{Account, Amount};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddrV6;
 

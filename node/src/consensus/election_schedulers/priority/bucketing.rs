@@ -1,5 +1,5 @@
 use crate::consensus::election::ElectionBehavior;
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use std::sync::LazyLock;
 
 static BUCKETING: LazyLock<Bucketing> = LazyLock::new(|| Bucketing::default());

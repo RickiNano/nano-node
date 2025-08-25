@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::anyhow;
-use rsnano_core::{BlockHash, JsonBlock};
+use rsnano_types::{BlockHash, JsonBlock};
 use rsnano_ledger::AnySet;
 use rsnano_rpc_messages::{BlocksResponse, HashesArgs};
 use std::collections::HashMap;

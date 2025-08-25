@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::{utils::UnixMillisTimestamp, BlockHash, Root, SavedBlock, Vote};
+use rsnano_types::{utils::UnixMillisTimestamp, BlockHash, Root, SavedBlock, Vote};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::{Channel, ChannelId, TrafficType};

@@ -1,6 +1,6 @@
 use std::{ops::RangeBounds, sync::Arc};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, Deserialize},
     Account, BlockHash, PendingInfo, PendingKey,
 };

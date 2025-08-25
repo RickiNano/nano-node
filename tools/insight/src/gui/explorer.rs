@@ -1,5 +1,5 @@
 use eframe::egui::{self, CentralPanel, Grid, TextEdit};
-use rsnano_core::DetailedBlock;
+use rsnano_types::DetailedBlock;
 
 use crate::app::InsightApp;
 

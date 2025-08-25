@@ -1,5 +1,5 @@
 use crate::{RpcBool, RpcCommand, RpcU64};
-use rsnano_core::{Account, Amount, BlockHash};
+use rsnano_types::{Account, Amount, BlockHash};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -114,7 +114,7 @@ mod tests {
         ledger::{LedgerAccountInfo, LedgerArgs, LedgerResponse},
         RpcCommand,
     };
-    use rsnano_core::{Account, Amount, BlockHash};
+    use rsnano_types::{Account, Amount, BlockHash};
     use serde_json::json;
 
     #[test]

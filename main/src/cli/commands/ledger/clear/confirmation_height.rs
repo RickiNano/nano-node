@@ -1,6 +1,6 @@
 use clap::{ArgGroup, Parser};
 
-use rsnano_core::{Account, ConfirmationHeightInfo, Networks};
+use rsnano_types::{Account, ConfirmationHeightInfo, Networks};
 use rsnano_ledger::LedgerConstants;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 use rsnano_store_lmdb::{default_ledger_lmdb_options, LmdbConfirmationHeightStore};

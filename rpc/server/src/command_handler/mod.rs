@@ -4,7 +4,7 @@ mod utils;
 mod wallets;
 
 use anyhow::anyhow;
-use rsnano_core::{Account, AccountInfo, BlockHash, SavedBlock};
+use rsnano_types::{Account, AccountInfo, BlockHash, SavedBlock};
 use rsnano_ledger::AnySet;
 use rsnano_node::Node;
 use rsnano_rpc_messages::{RpcCommand, RpcError, StatsType};

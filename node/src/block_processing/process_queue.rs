@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use rsnano_core::Block;
+use rsnano_types::Block;
 use rsnano_network::ChannelId;
 use rsnano_utils::{
     container_info::ContainerInfo,

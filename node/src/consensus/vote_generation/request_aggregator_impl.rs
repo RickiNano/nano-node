@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Block, BlockHash, Root, SavedBlock};
+use rsnano_types::{Account, Block, BlockHash, Root, SavedBlock};
 use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 

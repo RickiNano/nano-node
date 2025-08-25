@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::Vote;
+use rsnano_types::Vote;
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::TrafficType;
 use rsnano_utils::stats::{StatsCollection, StatsSource};
@@ -156,7 +156,7 @@ impl StatsSource for RebroadcastStats {
 mod tests {
     use super::*;
     use crate::transport::FloodEvent;
-    use rsnano_core::Vote;
+    use rsnano_types::Vote;
 
     #[test]
     fn rebroadcast_vote() {

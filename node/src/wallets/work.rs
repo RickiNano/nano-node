@@ -1,6 +1,6 @@
 use std::sync::{mpsc, Arc};
 
-use rsnano_core::WorkRequest;
+use rsnano_types::WorkRequest;
 use rsnano_wallet::Wallets;
 
 use crate::work::WorkFactory;

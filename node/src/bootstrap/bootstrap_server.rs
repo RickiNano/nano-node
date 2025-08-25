@@ -9,7 +9,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{Block, BlockHash, Frontier};
+use rsnano_types::{Block, BlockHash, Frontier};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, OwningAnySet};
 use rsnano_messages::{
     AccountInfoAckPayload, AccountInfoReqPayload, AscPullAck, AscPullAckType, AscPullReq,

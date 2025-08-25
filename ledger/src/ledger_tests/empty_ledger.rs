@@ -2,7 +2,7 @@ use crate::{
     ledger_constants::LEDGER_CONSTANTS_STUB, AnySet, ConfirmedSet, Ledger, LedgerSet,
     DEV_GENESIS_HASH,
 };
-use rsnano_core::{utils::UnixTimestamp, Account, Amount, BlockType};
+use rsnano_types::{utils::UnixTimestamp, Account, Amount, BlockType};
 
 #[test]
 fn account_balance_is_none_for_unknown_account() {

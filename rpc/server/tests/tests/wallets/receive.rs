@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, BlockHash, WalletId, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, BlockHash, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{AnySet, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
 use rsnano_rpc_messages::ReceiveArgs;
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
@@ -14,7 +14,7 @@ fn receive() {
         .insert_adhoc2(&wallet, &DEV_GENESIS_KEY.raw_key(), false)
         .unwrap();
 
-    let key1 = rsnano_core::PrivateKey::new();
+    let key1 = rsnano_types::PrivateKey::new();
     node.wallets
         .insert_adhoc2(&wallet, &key1.raw_key(), false)
         .unwrap();

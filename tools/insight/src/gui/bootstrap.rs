@@ -1,6 +1,6 @@
 use eframe::egui::{self, CentralPanel, ScrollArea, TextEdit};
 use egui_extras::{Size, StripBuilder};
-use rsnano_core::Account;
+use rsnano_types::Account;
 
 use crate::app::InsightApp;
 

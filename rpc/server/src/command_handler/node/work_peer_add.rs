@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::utils::Peer;
+use rsnano_types::utils::Peer;
 use rsnano_rpc_messages::{AddressWithPortArgs, SuccessResponse};
 
 impl RpcCommandHandler {

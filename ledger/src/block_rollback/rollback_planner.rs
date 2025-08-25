@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixTimestamp, Account, AccountInfo, Amount, BlockHash, BlockSubType, BlockType,
     ConfirmationHeightInfo, Epoch, Epochs, PendingInfo, PendingKey, PublicKey, SavedBlock,
 };

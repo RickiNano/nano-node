@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Frontier};
+use rsnano_types::{Account, Frontier};
 use rsnano_nullable_clock::Timestamp;
 use std::{collections::BTreeSet, time::Duration};
 

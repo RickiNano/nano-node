@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use rsnano_ledger::{AnySet, ConfirmedSet, LedgerSet};
 use rsnano_rpc_messages::{WalletInfoResponse, WalletRpcMessage};
 use rsnano_store_lmdb::KeyType;

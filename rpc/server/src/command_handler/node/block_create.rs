@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::bail;
 
-use rsnano_core::{
+use rsnano_types::{
     Account, Amount, Block, BlockDetails, BlockHash, ChangeBlockArgs, Epoch, OpenBlockArgs,
     PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root, SavedBlock, SendBlockArgs,
     StateBlockArgs, WorkNonce, WorkRequest,

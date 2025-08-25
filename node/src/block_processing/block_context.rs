@@ -1,6 +1,6 @@
 use std::sync::{Arc, Condvar, Mutex};
 
-use rsnano_core::{Block, BlockHash, SavedBlock};
+use rsnano_types::{Block, BlockHash, SavedBlock};
 use rsnano_ledger::BlockError;
 use rsnano_network::ChannelId;
 

@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::{
+use rsnano_types::{
     deterministic_key, Account, Amount, Block, BlockHash, Epoch, EpochBlockArgs,
     KeyDerivationFunction, PrivateKey, PublicKey, RawKey, DEV_GENESIS_KEY,
 };

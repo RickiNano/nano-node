@@ -1,7 +1,7 @@
 use super::{fork_cache_toml::ForkCacheToml, *};
 use crate::config::NodeConfig;
 use bounded_backlog_toml::BoundedBacklogToml;
-use rsnano_core::{utils::Peer, Account, Amount};
+use rsnano_types::{utils::Peer, Account, Amount};
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr, time::Duration};
 use tcp_toml::TcpToml;

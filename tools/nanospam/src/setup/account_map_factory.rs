@@ -5,7 +5,7 @@ use std::{
 
 use tracing::info;
 
-use rsnano_core::RawKey;
+use rsnano_types::RawKey;
 
 use crate::domain::AccountMap;
 

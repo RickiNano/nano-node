@@ -3,7 +3,7 @@ use std::{
     time::SystemTime,
 };
 
-use rsnano_core::{PrivateKey, Signature};
+use rsnano_types::{PrivateKey, Signature};
 use rsnano_ledger::Ledger;
 use rsnano_messages::{TelemetryData, TelemetryMaker};
 use rsnano_network::{ChannelMode, Network};

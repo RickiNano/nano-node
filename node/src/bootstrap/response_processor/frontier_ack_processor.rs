@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use rsnano_core::Frontier;
+use rsnano_types::Frontier;
 use rsnano_ledger::Ledger;
 use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 

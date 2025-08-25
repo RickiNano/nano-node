@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixMillisTimestamp, Amount, Block, JsonBlock, Networks, PrivateKey, SendBlockArgs,
     Vote, VoteError, DEV_GENESIS_KEY,
 };

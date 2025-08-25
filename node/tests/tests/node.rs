@@ -1,6 +1,6 @@
 use std::{cmp::max, collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey,
     PublicKey, Root, Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
 };

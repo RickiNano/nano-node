@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, BlockHash};
+use rsnano_types::{Amount, BlockHash};
 
 use super::{Election, VoteSummary};
 

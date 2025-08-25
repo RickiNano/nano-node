@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex, RwLock};
 
 use tracing::debug;
 
-use rsnano_core::{Amount, Block, BlockHash, QualifiedRoot};
+use rsnano_types::{Amount, Block, BlockHash, QualifiedRoot};
 use rsnano_ledger::{BlockError, RepWeightCache};
 use rsnano_utils::stats::Stats;
 

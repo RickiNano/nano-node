@@ -1,5 +1,5 @@
 use super::{ActiveElectionsContainer, LocalVoteHistory};
-use rsnano_core::{BlockHash, QualifiedRoot};
+use rsnano_types::{BlockHash, QualifiedRoot};
 use std::sync::{Arc, RwLock};
 
 pub(crate) struct LocalVotesRemover {

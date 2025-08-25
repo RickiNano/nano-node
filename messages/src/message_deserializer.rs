@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, io::Read, sync::Arc};
 
-use rsnano_core::ProtocolInfo;
+use rsnano_types::ProtocolInfo;
 
 use crate::{
     validate_header, DeserializedMessage, Message, MessageHeader, MessageType, NetworkFilter,
@@ -206,7 +206,7 @@ mod tests {
     mod unhappy_path {
         use super::*;
         use crate::{ConfirmAck, Publish};
-        use rsnano_core::Networks;
+        use rsnano_types::Networks;
 
         #[test]
         fn push_incomplete_header() {

@@ -1,6 +1,6 @@
 use std::sync::{mpsc::SyncSender, Arc, RwLock};
 
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{

@@ -47,7 +47,7 @@ fn create_response(
 mod tests {
     use super::create_response;
     use crate::command_handler::test_rpc_command;
-    use rsnano_core::Amount;
+    use rsnano_types::Amount;
     use rsnano_node::representatives::OnlineReps;
     use rsnano_rpc_messages::{ConfirmationQuorumArgs, ConfirmationQuorumResponse, RpcCommand};
 

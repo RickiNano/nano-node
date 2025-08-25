@@ -1,6 +1,6 @@
 use std::{ops::RangeBounds, sync::Arc};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, Deserialize},
     Account, AccountInfo,
 };
@@ -154,7 +154,7 @@ impl ConfiguredAccountDatabaseBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{Amount, BlockHash};
+    use rsnano_types::{Amount, BlockHash};
     use rsnano_nullable_lmdb::{DeleteEvent, PutEvent};
     use std::sync::Mutex;
 

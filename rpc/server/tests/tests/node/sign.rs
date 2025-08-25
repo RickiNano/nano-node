@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, Block, WalletId, DEV_GENESIS_KEY};
+use rsnano_types::{Account, Amount, Block, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_rpc_messages::SignArgs;
 use test_helpers::{setup_rpc_client_and_server, System};
@@ -10,7 +10,7 @@ fn sign() {
 
     let server = setup_rpc_client_and_server(node.clone(), false);
 
-    let key = rsnano_core::PrivateKey::new();
+    let key = rsnano_types::PrivateKey::new();
 
     let wallet_id = WalletId::zero();
     node.wallets.create(wallet_id);

@@ -1,6 +1,6 @@
 use super::rollback_planner::{RollbackInstructions, RollbackPlanner, RollbackStep};
 use crate::ledger_constants::LEDGER_CONSTANTS_STUB;
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixTimestamp, Account, BlockHash, ConfirmationHeightInfo, SavedAccountChain,
 };
 

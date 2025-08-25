@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, Deserialize},
     Amount, PublicKey,
 };

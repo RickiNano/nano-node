@@ -1,5 +1,5 @@
 use crate::RpcU64;
-use rsnano_core::{Account, Amount};
+use rsnano_types::{Account, Amount};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -28,7 +28,7 @@ impl UnopenedResponse {
 mod tests {
     use super::*;
     use crate::RpcCommand;
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use serde_json::{from_value, json, to_value};
 
     #[test]

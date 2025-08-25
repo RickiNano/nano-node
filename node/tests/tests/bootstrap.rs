@@ -1,4 +1,4 @@
-use rsnano_core::{Account, PrivateKey};
+use rsnano_types::{Account, PrivateKey};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::{bootstrap::BootstrapConfig, config::NodeConfig};
 use rsnano_nullable_tcp::get_available_port;

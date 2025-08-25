@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{NULL_ENDPOINT, TEST_ENDPOINT_1},
     Account, Amount, Block, BlockHash, Epoch, Networks, PrivateKey, PublicKey, SavedBlock,
     StateBlockArgs, WalletId, DEV_GENESIS_KEY,

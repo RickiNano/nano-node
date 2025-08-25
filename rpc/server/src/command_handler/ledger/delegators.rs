@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::{Account, Amount, PublicKey};
+use rsnano_types::{Account, Amount, PublicKey};
 use rsnano_rpc_messages::{unwrap_u64_or, DelegatorsArgs, DelegatorsResponse};
 
 impl RpcCommandHandler {

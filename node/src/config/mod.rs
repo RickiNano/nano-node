@@ -14,7 +14,7 @@ pub use network_params::*;
 pub use node_config::*;
 pub use node_flags::*;
 pub use node_rpc_config::*;
-pub use rsnano_core::Networks;
+pub use rsnano_types::Networks;
 use rsnano_wallet::WalletsConfig;
 use serde::de::DeserializeOwned;
 use std::{

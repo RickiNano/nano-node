@@ -5,7 +5,7 @@ use std::{
 
 use rustc_hash::FxHashMap;
 
-use rsnano_core::{Block, BlockHash};
+use rsnano_types::{Block, BlockHash};
 
 const DELAY_LIMIT: Duration = Duration::from_secs(10);
 

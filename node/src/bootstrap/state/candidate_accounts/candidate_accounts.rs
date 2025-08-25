@@ -1,6 +1,6 @@
 use std::{cmp::min, time::Duration};
 
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::container_info::ContainerInfo;
 

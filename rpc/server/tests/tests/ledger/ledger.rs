@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use rsnano_rpc_messages::LedgerArgs;

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use rsnano_core::{Account, PublicKey};
+use rsnano_types::{Account, PublicKey};
 use rsnano_rpc_messages::{KeyExpandArgs, KeyPairDto};
 
 pub fn key_expand(args: KeyExpandArgs) -> anyhow::Result<KeyPairDto> {

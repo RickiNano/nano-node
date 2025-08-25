@@ -9,7 +9,7 @@ use std::{
 
 use tracing::debug;
 
-use rsnano_core::{Block, BlockHash, Networks};
+use rsnano_types::{Block, BlockHash, Networks};
 use rsnano_ledger::{ConfirmedSet, Ledger};
 use rsnano_messages::{Message, Publish};
 use rsnano_network::{token_bucket::TokenBucket, TrafficType};

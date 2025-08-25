@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use rsnano_core::{Account, Amount, BlockHash};
+use rsnano_types::{Account, Amount, BlockHash};
 use serde::{Deserialize, Serialize};
 
 use crate::{RpcBool, RpcU64, RpcU8};

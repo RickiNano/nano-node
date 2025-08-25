@@ -1,6 +1,6 @@
 use super::BlockValidationTest;
 use crate::BlockError;
-use rsnano_core::{Account, BlockDetails, BlockSideband, Epoch, PublicKey};
+use rsnano_types::{Account, BlockDetails, BlockSideband, Epoch, PublicKey};
 
 #[test]
 fn valid_legacy_change_block() {

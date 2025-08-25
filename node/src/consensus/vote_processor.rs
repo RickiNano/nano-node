@@ -11,7 +11,7 @@ use std::{
 
 use tracing::debug;
 
-use rsnano_core::{BlockHash, Vote, VoteError, VoteSource};
+use rsnano_types::{BlockHash, Vote, VoteError, VoteSource};
 use rsnano_network::Channel;
 use rsnano_utils::{
     stats::{DetailType, StatType, Stats},

@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use rsnano_core::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY,
 };

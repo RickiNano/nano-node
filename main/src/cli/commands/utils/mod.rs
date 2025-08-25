@@ -1,6 +1,6 @@
 use crate::cli::CliInfrastructure;
 use clap::{CommandFactory, Parser, Subcommand};
-use rsnano_core::{Account, PrivateKey, PublicKey};
+use rsnano_types::{Account, PrivateKey, PublicKey};
 
 #[derive(Parser, PartialEq, Debug)]
 pub(crate) struct UtilsCommand {

@@ -7,7 +7,7 @@ use std::{
 
 use tracing::warn;
 
-use rsnano_core::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, SavedBlock};
+use rsnano_types::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger, LedgerSet, OwningAnySet};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;

@@ -1,5 +1,5 @@
 use super::WebsocketListener;
-use rsnano_core::{Account, BlockHash, Vote, VoteError};
+use rsnano_types::{Account, BlockHash, Vote, VoteError};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_messages::TelemetryData;
 use rsnano_node::{

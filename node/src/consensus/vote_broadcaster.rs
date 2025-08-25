@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use rsnano_core::{Vote, VoteSource};
+use rsnano_types::{Vote, VoteSource};
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::TrafficType;
 use rsnano_utils::stats::{DetailType, StatType, Stats};

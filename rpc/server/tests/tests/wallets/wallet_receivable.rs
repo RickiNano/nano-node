@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, PublicKey, RawKey, WalletId};
+use rsnano_types::{Account, Amount, PublicKey, RawKey, WalletId};
 use rsnano_rpc_messages::{AccountsReceivableResponse, WalletReceivableArgs};
 use test_helpers::{send_block_to, setup_rpc_client_and_server, System};
 

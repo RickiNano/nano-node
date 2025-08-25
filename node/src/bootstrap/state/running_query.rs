@@ -1,5 +1,5 @@
 use crate::bootstrap::AscPullQuerySpec;
-use rsnano_core::{Account, BlockHash, Frontier, HashOrAccount};
+use rsnano_types::{Account, BlockHash, Frontier, HashOrAccount};
 use rsnano_messages::{AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload, HashType};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::DetailType;
@@ -488,7 +488,7 @@ mod tests {
     mod verify_blocks {
         use std::collections::VecDeque;
 
-        use rsnano_core::{Block, TestBlockBuilder};
+        use rsnano_types::{Block, TestBlockBuilder};
 
         use super::*;
 

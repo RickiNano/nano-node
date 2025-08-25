@@ -1,5 +1,5 @@
 use crate::{RpcBool, RpcCommand};
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {
@@ -58,7 +58,7 @@ impl ReceivableExistsArgsBuilder {
 #[cfg(test)]
 mod tests {
     use super::{ReceivableExistsArgs, RpcCommand};
-    use rsnano_core::BlockHash;
+    use rsnano_types::BlockHash;
     use serde_json::to_string_pretty;
 
     #[test]

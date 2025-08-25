@@ -1,5 +1,5 @@
 use crate::message_collection::MessageCollection;
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use rsnano_messages::TelemetryData;
 use rsnano_network::{Channel, ChannelDirection, ChannelId};
 use rsnano_node::representatives::PeeredRepInfo;

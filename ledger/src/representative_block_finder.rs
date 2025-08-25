@@ -1,4 +1,4 @@
-use rsnano_core::{Block, BlockHash};
+use rsnano_types::{Block, BlockHash};
 use rsnano_nullable_lmdb::Transaction;
 use rsnano_store_lmdb::LmdbStore;
 

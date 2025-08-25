@@ -3,7 +3,7 @@ use std::sync::{
     Condvar, Mutex, MutexGuard,
 };
 
-use rsnano_core::{Root, WorkNonce, WorkRequestAsync};
+use rsnano_types::{Root, WorkNonce, WorkRequestAsync};
 
 static NEVER_EXPIRES: AtomicI32 = AtomicI32::new(0);
 

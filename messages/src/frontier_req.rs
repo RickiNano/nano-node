@@ -1,6 +1,6 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
     Account,
 };

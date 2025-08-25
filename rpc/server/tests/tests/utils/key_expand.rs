@@ -1,4 +1,4 @@
-use rsnano_core::{Account, PublicKey, RawKey};
+use rsnano_types::{Account, PublicKey, RawKey};
 use test_helpers::{setup_rpc_client_and_server, System};
 
 #[test]

@@ -1,4 +1,4 @@
-use rsnano_core::{WalletId, DEV_GENESIS_KEY};
+use rsnano_types::{WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
 use test_helpers::{send_block, setup_rpc_client_and_server, System};
 

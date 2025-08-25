@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
-use rsnano_core::{Block, PrivateKey};
+use rsnano_types::{Block, PrivateKey};
 use rsnano_rpc_messages::{SignArgs, SignResponse};
 
 impl RpcCommandHandler {

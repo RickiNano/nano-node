@@ -1,7 +1,7 @@
 use super::{
     get_node_toml_config_path, read_toml_file, DaemonToml, NetworkParams, NodeConfig, NodeRpcConfig,
 };
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use std::path::Path;
 
 #[derive(Debug, PartialEq)]

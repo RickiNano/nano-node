@@ -5,7 +5,7 @@ use eframe::egui::{
 };
 use egui_extras::{Column, TableBuilder};
 
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use rsnano_messages::{Message, MessageType};
 use rsnano_network::ChannelDirection;
 

@@ -3,7 +3,7 @@ use std::time::Duration;
 use tokio::time::sleep;
 use tracing::{debug, info};
 
-use rsnano_core::{Amount, Block, BlockHash, JsonBlock, StateBlockArgs, WalletId, WorkNonce};
+use rsnano_types::{Amount, Block, BlockHash, JsonBlock, StateBlockArgs, WalletId, WorkNonce};
 use rsnano_rpc_client::NanoRpcClient;
 use rsnano_rpc_messages::{ReceiveArgs, SendArgs, WalletAddArgs, WalletRepresentativeSetArgs};
 

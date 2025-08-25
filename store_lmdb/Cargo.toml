@@ -12,7 +12,7 @@ output_tracking = []
 rsnano_store_lmdb = { path = ".", features = ["output_tracking"] }
 
 [dependencies]
-rsnano_core = { path = "../core" }
+rsnano_types = { path = "../types" }
 rsnano_output_tracker = { path = "../nullables/output_tracker" }
 rsnano_nullable_lmdb = { path = "../nullables/lmdb" }
 primitive-types = "0"

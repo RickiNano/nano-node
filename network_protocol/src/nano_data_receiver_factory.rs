@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
-use rsnano_core::{BlockHash, PrivateKey, ProtocolInfo};
+use rsnano_types::{BlockHash, PrivateKey, ProtocolInfo};
 use rsnano_messages::*;
 use rsnano_network::{Channel, DataReceiver, DataReceiverFactory, Network};
 use rsnano_utils::stats::Stats;

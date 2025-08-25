@@ -1,6 +1,6 @@
 use super::MessageFlooder;
 use crate::utils::ThreadPool;
-use rsnano_core::Block;
+use rsnano_types::Block;
 use rsnano_messages::{Message, Publish};
 use rsnano_network::TrafficType;
 use std::{

@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use rsnano_core::{
+use rsnano_types::{
     epoch_v1_link, epoch_v2_link,
     utils::{get_env_or_default_string, UnixMillisTimestamp},
     Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, Epoch, Epochs, Networks,
@@ -83,7 +83,7 @@ fn parse_block_from_genesis_data(genesis_data: &str) -> anyhow::Result<Block> {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_core::BlockType;
+    use rsnano_types::BlockType;
 
     use super::*;
 

@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::{Account, Amount, BlockHash, PendingKey};
+use rsnano_types::{Account, Amount, BlockHash, PendingKey};
 use rsnano_ledger::LedgerSet;
 use rsnano_rpc_messages::{unwrap_u64_or_max, UnopenedArgs, UnopenedResponse};
 use std::collections::HashMap;

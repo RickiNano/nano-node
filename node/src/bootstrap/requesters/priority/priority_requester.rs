@@ -155,7 +155,7 @@ impl StatsSource for PriorityRequesterStats {
 mod tests {
     use std::sync::{Arc, Mutex, RwLock};
 
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use rsnano_ledger::Ledger;
     use rsnano_network::{token_bucket::TokenBucket, Network};
     use rsnano_nullable_clock::SteadyClock;

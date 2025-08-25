@@ -14,7 +14,7 @@ use crate::{
     ledger_constants::{IMPOSSIBLE_WORK, LEDGER_CONSTANTS_STUB},
     BlockError,
 };
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixMillisTimestamp, Account, Amount, Block, Epoch, PendingInfo, SavedAccountChain,
 };
 

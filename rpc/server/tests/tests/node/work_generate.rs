@@ -1,4 +1,4 @@
-use rsnano_core::{BlockHash, DifficultyV1, WorkNonce};
+use rsnano_types::{BlockHash, DifficultyV1, WorkNonce};
 use test_helpers::{setup_rpc_client_and_server, System};
 
 #[test]

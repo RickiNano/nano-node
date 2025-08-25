@@ -1,4 +1,4 @@
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use std::path::PathBuf;
 use uuid::Uuid;
 

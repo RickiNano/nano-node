@@ -1,6 +1,6 @@
 use std::sync::{Arc, Condvar, Mutex};
 
-use rsnano_core::SavedBlock;
+use rsnano_types::SavedBlock;
 
 use super::WalletsError;
 

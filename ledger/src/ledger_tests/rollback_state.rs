@@ -2,7 +2,7 @@ use crate::{
     ledger_constants::DEV_GENESIS_PUB_KEY, AnySet, Ledger, LedgerInserter, LedgerSet,
     DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
 };
-use rsnano_core::{Account, Amount, Epoch, PendingInfo, PendingKey, PrivateKey, PublicKey};
+use rsnano_types::{Account, Amount, Epoch, PendingInfo, PendingKey, PrivateKey, PublicKey};
 
 #[test]
 fn rollback_send() {

@@ -83,7 +83,7 @@ impl DeadChannelCleanupStep for LatestKeepalivesCleanup {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::utils::{TEST_ENDPOINT_2, TEST_ENDPOINT_3};
+    use rsnano_types::utils::{TEST_ENDPOINT_2, TEST_ENDPOINT_3};
 
     #[test]
     fn empty() {

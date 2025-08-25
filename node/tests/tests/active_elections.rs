@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration, usize};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{MemoryStream, UnixMillisTimestamp},
     Account, Amount, PrivateKey, Vote, VoteError, VoteSource, DEV_GENESIS_KEY,
 };

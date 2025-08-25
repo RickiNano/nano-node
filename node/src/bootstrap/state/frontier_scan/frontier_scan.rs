@@ -1,6 +1,6 @@
 use primitive_types::U512;
 
-use rsnano_core::{Account, Frontier};
+use rsnano_types::{Account, Frontier};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::container_info::ContainerInfo;
 
@@ -119,7 +119,7 @@ impl FrontierHeadInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::BlockHash;
+    use rsnano_types::BlockHash;
     use std::time::Duration;
 
     #[test]

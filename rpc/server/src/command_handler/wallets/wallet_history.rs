@@ -1,5 +1,5 @@
 use crate::command_handler::{ledger::AccountHistoryHelper, RpcCommandHandler};
-use rsnano_core::{utils::UnixTimestamp, Account, BlockHash};
+use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
 use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{HistoryEntry, WalletHistoryArgs, WalletHistoryResponse};
 

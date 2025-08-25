@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rsnano_core::{Amount, PrivateKey};
+use rsnano_types::{Amount, PrivateKey};
 use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, LedgerSet};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{assert_always_eq, assert_timely2, assert_timely_eq2, start_election, System};

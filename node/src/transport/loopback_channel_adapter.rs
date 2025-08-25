@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 use tokio::{select, time::sleep};
 
-use rsnano_core::{Networks, NodeId, ProtocolInfo};
+use rsnano_types::{Networks, NodeId, ProtocolInfo};
 use rsnano_messages::MessageDeserializer;
 use rsnano_network::Channel;
 use rsnano_network_protocol::InboundMessageQueue;

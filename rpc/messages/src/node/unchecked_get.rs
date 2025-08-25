@@ -1,7 +1,7 @@
 use crate::RpcU64;
 use crate::{common::HashRpcMessage, RpcCommand};
-use rsnano_core::BlockHash;
-use rsnano_core::JsonBlock;
+use rsnano_types::BlockHash;
+use rsnano_types::JsonBlock;
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {

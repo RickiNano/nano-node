@@ -1,4 +1,4 @@
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };

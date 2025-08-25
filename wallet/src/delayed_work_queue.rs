@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 
-use rsnano_core::{Account, Root, WalletId};
+use rsnano_types::{Account, Root, WalletId};
 use rsnano_nullable_clock::Timestamp;
 
 #[derive(Default)]

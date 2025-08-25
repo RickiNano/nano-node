@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{Root, WorkNonce, WorkRequest, WorkRequestAsync};
+use rsnano_types::{Root, WorkNonce, WorkRequest, WorkRequestAsync};
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 
 #[cfg(feature = "opencl")]
@@ -276,7 +276,7 @@ impl WorkGenerator for StubWorkGenerator {
 mod tests {
     use super::*;
     use crate::{dev_difficulty, WorkThresholds};
-    use rsnano_core::{Block, TestBlockBuilder};
+    use rsnano_types::{Block, TestBlockBuilder};
     use std::sync::{mpsc, LazyLock};
 
     pub static WORK_POOL: LazyLock<WorkPool> =

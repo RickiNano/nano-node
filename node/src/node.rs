@@ -15,7 +15,7 @@ use bounded_vec_deque::BoundedVecDeque;
 use num_format::{Locale, ToFormattedString};
 use tracing::{error, info, warn};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::Peer, Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot,
     Root, SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
@@ -1757,7 +1757,7 @@ mod tests {
         utils::{TimerStartEvent, TimerStartType},
         NodeBuilder,
     };
-    use rsnano_core::Networks;
+    use rsnano_types::Networks;
     use rsnano_utils::stats::StatsSource;
     use std::{
         any::type_name,

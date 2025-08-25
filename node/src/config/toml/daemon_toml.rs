@@ -71,7 +71,7 @@ impl From<&DaemonConfig> for OpenclToml {
 #[cfg(test)]
 mod tests {
     use crate::config::{DaemonConfig, DaemonToml};
-    use rsnano_core::Networks;
+    use rsnano_types::Networks;
     use std::path::PathBuf;
 
     static CUSTOM_TOML_STR: &str = r#"[node]

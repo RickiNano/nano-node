@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use indexmap::IndexMap;
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use rsnano_ledger::{AnySet, ConfirmedSet};
 use rsnano_rpc_messages::{
     AccountsReceivableResponse, AccountsReceivableSimple, AccountsReceivableSource,

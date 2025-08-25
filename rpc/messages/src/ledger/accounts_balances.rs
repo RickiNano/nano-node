@@ -1,5 +1,5 @@
 use crate::{AccountBalanceResponse, RpcBool};
-use rsnano_core::Account;
+use rsnano_types::Account;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -59,7 +59,7 @@ mod tests {
     use crate::RpcCommand;
 
     use super::*;
-    use rsnano_core::Amount;
+    use rsnano_types::Amount;
 
     #[test]
     fn deserialize_accounts_balances_rpc_command() {

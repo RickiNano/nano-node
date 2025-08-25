@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use rsnano_core::{Amount, Block, BlockHash, Link, PublicKey, StateBlockArgs, WorkNonce};
+use rsnano_types::{Amount, Block, BlockHash, Link, PublicKey, StateBlockArgs, WorkNonce};
 
 use crate::domain::AccountMap;
 
@@ -127,7 +127,7 @@ impl BlockFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::PrivateKey;
+    use rsnano_types::PrivateKey;
     use std::time::Instant;
 
     const MAX_BLOCKS: usize = 4;

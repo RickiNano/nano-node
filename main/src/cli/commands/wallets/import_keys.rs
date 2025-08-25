@@ -3,7 +3,7 @@ use std::{fs::File, io::Read, path::PathBuf};
 use anyhow::{anyhow, Context};
 use clap::Parser;
 
-use rsnano_core::WalletId;
+use rsnano_types::WalletId;
 
 use crate::cli::{build_node, GlobalArgs};
 

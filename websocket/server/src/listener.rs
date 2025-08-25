@@ -14,7 +14,7 @@ use tokio::{
 use tokio_tungstenite::tungstenite::protocol::{frame::coding::CloseCode, CloseFrame};
 use tracing::{info, warn};
 
-use rsnano_core::{Account, Amount, BlockSideband, SavedBlock};
+use rsnano_types::{Account, Amount, BlockSideband, SavedBlock};
 use rsnano_ledger::Ledger;
 use rsnano_node::consensus::election::{ConfirmedElection, VoteSummary};
 use rsnano_wallet::Wallets;

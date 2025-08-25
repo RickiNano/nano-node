@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
-use rsnano_core::{BlockDetails, WorkNonce};
+use rsnano_types::{BlockDetails, WorkNonce};
 use rsnano_rpc_messages::{BlockDto, SendArgs};
 
 impl RpcCommandHandler {

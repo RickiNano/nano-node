@@ -4,7 +4,7 @@ extern crate num_derive;
 #[macro_use]
 extern crate strum_macros;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::milliseconds_since_epoch, BlockHash, DifficultyV1, SavedBlock, WorkNonce, WorkVersion,
 };
 use rsnano_work::WorkThresholds;

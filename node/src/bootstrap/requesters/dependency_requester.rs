@@ -64,7 +64,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
 mod tests {
     use super::*;
     use crate::bootstrap::progress;
-    use rsnano_core::{Account, BlockHash};
+    use rsnano_types::{Account, BlockHash};
     use rsnano_network::{token_bucket::TokenBucket, Network};
     use rsnano_nullable_clock::Timestamp;
     use std::sync::{Mutex, RwLock};

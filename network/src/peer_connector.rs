@@ -99,7 +99,7 @@ async fn connect_stream(peer: SocketAddrV6) -> tokio::io::Result<TcpStream> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::utils::TEST_ENDPOINT_1;
+    use rsnano_types::utils::TEST_ENDPOINT_1;
 
     #[tokio::test]
     async fn track_connections() {

@@ -1,4 +1,4 @@
-use rsnano_core::{utils::BlockPriority, BlockHash, SavedBlock};
+use rsnano_types::{utils::BlockPriority, BlockHash, SavedBlock};
 use std::{
     cmp::Ordering,
     collections::{BTreeSet, HashSet},
@@ -99,7 +99,7 @@ impl OrderedBlocks {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{utils::UnixMillisTimestamp, Amount, PrivateKey};
+    use rsnano_types::{utils::UnixMillisTimestamp, Amount, PrivateKey};
 
     #[test]
     fn empty() {

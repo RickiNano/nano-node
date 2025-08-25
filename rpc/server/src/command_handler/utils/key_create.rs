@@ -1,4 +1,4 @@
-use rsnano_core::{Account, PrivateKey};
+use rsnano_types::{Account, PrivateKey};
 use rsnano_rpc_messages::KeyPairDto;
 
 pub(crate) fn key_create() -> KeyPairDto {

@@ -1,7 +1,7 @@
 use crate::cli::{build_node2, GlobalArgs};
 use anyhow::{anyhow, Result};
 use clap::{ArgGroup, Parser};
-use rsnano_core::Account;
+use rsnano_types::Account;
 
 #[derive(Parser)]
 #[command(group = ArgGroup::new("input")

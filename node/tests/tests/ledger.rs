@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rsnano_core::{
+use rsnano_types::{
     Account, Amount, Block, BlockHash, Epoch, PrivateKey, QualifiedRoot, Signature, StateBlockArgs,
     Vote, VoteError, VoteSource, DEV_GENESIS_KEY,
 };

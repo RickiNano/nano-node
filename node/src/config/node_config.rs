@@ -2,7 +2,7 @@ use std::{cmp::max, net::Ipv6Addr, time::Duration};
 
 use once_cell::sync::Lazy;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{get_env_or_default_string, Peer},
     Account, Amount, PublicKey,
 };

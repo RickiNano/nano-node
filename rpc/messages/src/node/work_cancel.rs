@@ -1,5 +1,5 @@
 use crate::{common::HashRpcMessage, RpcCommand};
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 
 impl RpcCommand {
     pub fn work_cancel(hash: BlockHash) -> Self {

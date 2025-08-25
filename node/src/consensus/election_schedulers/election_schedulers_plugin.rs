@@ -33,7 +33,7 @@ impl LedgerEventProcessorPlugin for ElectionSchedulersPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{BlockHash, SavedBlock};
+    use rsnano_types::{BlockHash, SavedBlock};
 
     #[test]
     fn when_blocks_confirmed_should_activate_elections_for_sucessors() {

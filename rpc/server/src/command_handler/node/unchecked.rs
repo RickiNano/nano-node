@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rsnano_rpc_messages::{unwrap_u64_or_max, CountArgs, UncheckedResponse};
 
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::{BlockHash, JsonBlock};
+use rsnano_types::{BlockHash, JsonBlock};
 
 impl RpcCommandHandler {
     pub(crate) fn unchecked(&self, args: CountArgs) -> UncheckedResponse {

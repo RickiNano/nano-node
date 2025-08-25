@@ -1,4 +1,4 @@
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use rsnano_nullable_clock::Timestamp;
 use std::{
     collections::{BTreeMap, VecDeque},

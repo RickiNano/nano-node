@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::anyhow;
-use rsnano_core::{utils::UnixTimestamp, BlockType, SavedBlock};
+use rsnano_types::{utils::UnixTimestamp, BlockType, SavedBlock};
 use rsnano_ledger::AnySet;
 use rsnano_rpc_messages::{
     unwrap_bool_or_false, BlockInfoArgs, BlockInfoResponse, BlockSubTypeDto,

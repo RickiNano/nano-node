@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::Deref};
 
-use rsnano_core::{Amount, BlockHash, VoteError, VoteSource};
+use rsnano_types::{Amount, BlockHash, VoteError, VoteSource};
 use rsnano_utils::sync::backpressure_channel::Sender;
 
 use super::{
@@ -182,7 +182,7 @@ mod tests {
         },
         representatives::QuorumSpecs,
     };
-    use rsnano_core::{
+    use rsnano_types::{
         utils::{BlockPriority, UnixMillisTimestamp},
         Block, PrivateKey, QualifiedRoot, SavedBlock, StateBlockArgs, Vote,
     };

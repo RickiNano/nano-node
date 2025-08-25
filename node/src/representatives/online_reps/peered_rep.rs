@@ -1,4 +1,4 @@
-use rsnano_core::PublicKey;
+use rsnano_types::PublicKey;
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use std::sync::Arc;

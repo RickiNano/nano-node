@@ -1,7 +1,7 @@
 #[cfg(test)]
 use std::sync::Arc;
 
-use rsnano_core::{to_hex_string, Root, WorkNonce, WorkRequest};
+use rsnano_types::{to_hex_string, Root, WorkNonce, WorkRequest};
 #[cfg(test)]
 use rsnano_nullable_http_client::{ConfiguredHttpResponse, JsonResponse, Method, StatusCode};
 use rsnano_nullable_http_client::{HttpClient, IntoUrl, NulledHttpClientBuilder, Url};

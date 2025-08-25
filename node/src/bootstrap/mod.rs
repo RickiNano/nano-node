@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 pub use bootstrap_server::*;
 pub use bootstrapper::*;
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use rsnano_messages::{AscPullReqType, FrontiersReqPayload, HashType};
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;

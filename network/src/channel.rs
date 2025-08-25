@@ -1,5 +1,5 @@
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2},
     NodeId,
 };

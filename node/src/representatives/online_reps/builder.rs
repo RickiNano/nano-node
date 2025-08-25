@@ -1,5 +1,5 @@
 use super::OnlineReps;
-use rsnano_core::{Amount, Networks};
+use rsnano_types::{Amount, Networks};
 use rsnano_ledger::RepWeightCache;
 use std::{sync::Arc, time::Duration};
 

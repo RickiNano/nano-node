@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use rsnano_core::{BlockHash, Root};
+use rsnano_types::{BlockHash, Root};
 use rsnano_store_lmdb::LmdbStore;
 
 use crate::{AnySet, BorrowingAnySet, LedgerConstants, OwningAnySet};

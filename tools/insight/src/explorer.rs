@@ -1,4 +1,4 @@
-use rsnano_core::{Account, BlockHash, DetailedBlock};
+use rsnano_types::{Account, BlockHash, DetailedBlock};
 use rsnano_ledger::{AnySet, Ledger};
 
 pub(crate) struct Explorer {

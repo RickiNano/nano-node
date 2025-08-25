@@ -1,5 +1,5 @@
 use crate::RpcU64;
-use rsnano_core::{Account, Amount};
+use rsnano_types::{Account, Amount};
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-use rsnano_core::{Account, WalletId, WorkNonce};
+use rsnano_types::{Account, WalletId, WorkNonce};
 use test_helpers::{setup_rpc_client_and_server, System};
 
 #[test]

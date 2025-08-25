@@ -4,7 +4,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_core::{BlockHash, VoteSource};
+use rsnano_types::{BlockHash, VoteSource};
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 

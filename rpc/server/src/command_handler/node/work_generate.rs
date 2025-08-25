@@ -1,6 +1,6 @@
 use anyhow::bail;
 
-use rsnano_core::{Block, BlockType, DifficultyV1, WorkRequest};
+use rsnano_types::{Block, BlockType, DifficultyV1, WorkRequest};
 use rsnano_rpc_messages::{WorkGenerateArgs, WorkGenerateDto};
 
 use super::difficulty_ledger;

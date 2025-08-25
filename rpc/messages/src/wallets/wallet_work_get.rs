@@ -1,5 +1,5 @@
 use crate::{common::WalletRpcMessage, RpcCommand};
-use rsnano_core::{Account, WalletId, WorkNonce};
+use rsnano_types::{Account, WalletId, WorkNonce};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -23,7 +23,7 @@ impl AccountsWithWorkResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{Account, WalletId, WorkNonce};
+    use rsnano_types::{Account, WalletId, WorkNonce};
     use serde_json::to_string_pretty;
     use std::collections::HashMap;
 

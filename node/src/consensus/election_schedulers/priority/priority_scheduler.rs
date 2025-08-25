@@ -6,7 +6,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_core::{Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, SavedBlock};
+use rsnano_types::{Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, SavedBlock};
 use rsnano_ledger::{AnySet, ConfirmedSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -311,7 +311,7 @@ static BUCKET_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::PrivateKey;
+    use rsnano_types::PrivateKey;
     use rsnano_ledger::{Ledger, LedgerInserter};
 
     #[test]

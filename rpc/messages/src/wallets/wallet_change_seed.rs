@@ -1,5 +1,5 @@
 use crate::{RpcCommand, RpcU32};
-use rsnano_core::{Account, RawKey, WalletId};
+use rsnano_types::{Account, RawKey, WalletId};
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {
@@ -95,7 +95,7 @@ impl WalletChangeSeedResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{RawKey, WalletId};
+    use rsnano_types::{RawKey, WalletId};
 
     #[test]
     fn serialize_wallet_change_seed_command() {

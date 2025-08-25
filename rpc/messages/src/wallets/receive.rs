@@ -1,5 +1,5 @@
 use crate::RpcCommand;
-use rsnano_core::{Account, BlockHash, WalletId, WorkNonce};
+use rsnano_types::{Account, BlockHash, WalletId, WorkNonce};
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {

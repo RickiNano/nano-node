@@ -6,7 +6,7 @@ use crate::bootstrap::{
     state::{BootstrapState, PriorityResult},
     AscPullQuerySpec,
 };
-use rsnano_core::{Account, BlockHash, HashOrAccount};
+use rsnano_types::{Account, BlockHash, HashOrAccount};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_messages::{AscPullReqType, BlocksReqPayload, HashType};
 use rsnano_network::Channel;
@@ -144,7 +144,7 @@ impl PullStart {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{AccountInfo, ConfirmationHeightInfo};
+    use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
 
     #[test]
     fn empty() {

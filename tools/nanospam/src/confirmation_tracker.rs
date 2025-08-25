@@ -9,7 +9,7 @@ use std::{
 
 use tracing::info;
 
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use rsnano_websocket_messages::{BlockConfirmed, MessageEnvelope, Topic};
 
 use crate::{

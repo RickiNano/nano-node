@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount};
+use rsnano_types::{Account, Amount};
 use serde::{Deserialize, Serialize};
 
 use crate::{RpcBool, RpcU64};

@@ -1,6 +1,6 @@
 use super::{election::Election, ActiveElectionsContainer, AecTickerPlugin};
 use crate::bootstrap::Bootstrapper;
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 use std::{
@@ -99,7 +99,7 @@ impl StatsSource for StaleElectionsStats {
 mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
-    use rsnano_core::{utils::BlockPriority, SavedBlock};
+    use rsnano_types::{utils::BlockPriority, SavedBlock};
 
     #[test]
     fn process_empty() {

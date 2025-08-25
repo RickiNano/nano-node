@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_rpc_messages::{unwrap_bool_or_false, AccountsCreateArgs, AccountsRpcMessage};
 
 impl RpcCommandHandler {

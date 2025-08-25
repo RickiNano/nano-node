@@ -1,6 +1,6 @@
 use super::BlockValidator;
 use crate::BlockError;
-use rsnano_core::Block;
+use rsnano_types::Block;
 
 impl<'a> BlockValidator<'a> {
     /// If there's no link, the balance must remain the same, only the representative can change

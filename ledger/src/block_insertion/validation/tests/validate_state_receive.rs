@@ -1,5 +1,5 @@
 use crate::{block_insertion::validation::tests::BlockValidationTest, BlockError};
-use rsnano_core::{AccountInfo, Amount, BlockDetails, BlockSideband, Epoch, PendingKey};
+use rsnano_types::{AccountInfo, Amount, BlockDetails, BlockSideband, Epoch, PendingKey};
 
 #[test]
 fn valid_receive_block() {

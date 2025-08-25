@@ -9,7 +9,7 @@ use std::{
 
 use anyhow::bail;
 
-use rsnano_core::{
+use rsnano_types::{
     deterministic_key,
     utils::{
         BufferReader, BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt,

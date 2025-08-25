@@ -4,7 +4,7 @@ use ocl::{
     flags::MemFlags,
     Buffer, Platform, ProQue, Result,
 };
-use rsnano_core::Root;
+use rsnano_types::Root;
 use tracing::info;
 
 use crate::OpenClConfig;

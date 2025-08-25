@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use rsnano_core::{Amount, PrivateKey, Vote, VoteSource, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, PrivateKey, Vote, VoteSource, DEV_GENESIS_KEY};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::{
     config::NodeConfig,

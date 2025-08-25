@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, Block, BlockHash, PrivateKey, StateBlockArgs};
+use rsnano_types::{Account, Amount, Block, BlockHash, PrivateKey, StateBlockArgs};
 use rsnano_ledger::{DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY};
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 

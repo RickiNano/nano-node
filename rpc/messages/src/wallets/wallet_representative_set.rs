@@ -1,5 +1,5 @@
 use crate::{RpcBool, RpcCommand};
-use rsnano_core::{Account, WalletId};
+use rsnano_types::{Account, WalletId};
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {
@@ -63,7 +63,7 @@ impl SetResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{Account, WalletId};
+    use rsnano_types::{Account, WalletId};
     use serde_json::{from_str, to_string};
 
     #[test]

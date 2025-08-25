@@ -10,7 +10,7 @@ use std::{
 use rand::seq::SliceRandom;
 use tracing::{debug, warn};
 
-use rsnano_core::{Networks, NodeId, ProtocolInfo};
+use rsnano_types::{Networks, NodeId, ProtocolInfo};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{StatsCollection, StatsSource};
@@ -221,7 +221,7 @@ impl Network {
     }
 
     pub fn add_test_channel(&mut self) -> Arc<Channel> {
-        use rsnano_core::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
+        use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
 
         let channel = self
             .add_new_channel(
@@ -812,7 +812,7 @@ mod tests {
     use crate::TrafficType;
 
     use super::*;
-    use rsnano_core::utils::{NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
+    use rsnano_types::utils::{NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
 
     #[test]
     fn newly_added_channel_is_not_a_realtime_channel() {

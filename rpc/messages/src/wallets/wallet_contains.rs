@@ -1,5 +1,5 @@
 use crate::{RpcCommand, WalletWithAccountArgs};
-use rsnano_core::{Account, WalletId};
+use rsnano_types::{Account, WalletId};
 
 impl RpcCommand {
     pub fn wallet_contains(wallet: WalletId, account: Account) -> Self {
@@ -10,7 +10,7 @@ impl RpcCommand {
 #[cfg(test)]
 mod tests {
     use crate::RpcCommand;
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use serde_json::to_string_pretty;
 
     #[test]

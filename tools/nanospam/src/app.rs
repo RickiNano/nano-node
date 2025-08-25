@@ -19,7 +19,7 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-use rsnano_core::{Block, Networks, PrivateKey, ProtocolInfo, RawKey};
+use rsnano_types::{Block, Networks, PrivateKey, ProtocolInfo, RawKey};
 use rsnano_messages::{Message, MessageSerializer, Publish};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;

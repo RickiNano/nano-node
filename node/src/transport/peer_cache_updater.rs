@@ -109,7 +109,7 @@ mod tests {
 
     use tracing_test::traced_test;
 
-    use rsnano_core::utils::{
+    use rsnano_types::utils::{
         new_test_timestamp, NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3,
     };
     use rsnano_network::{ChannelDirection, ChannelMode};

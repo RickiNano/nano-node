@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::{BlockDetails, DifficultyV1};
+use rsnano_types::{BlockDetails, DifficultyV1};
 use rsnano_rpc_messages::{WorkValidateArgs, WorkValidateResponse};
 
 impl RpcCommandHandler {
@@ -43,7 +43,7 @@ impl RpcCommandHandler {
         };
 
         let receive_difficulty = self.node.network_params.work.threshold(&BlockDetails::new(
-            rsnano_core::Epoch::Epoch2,
+            rsnano_types::Epoch::Epoch2,
             false,
             true,
             false,

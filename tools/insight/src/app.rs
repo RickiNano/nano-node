@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use rsnano_node::{
     block_processing::BlockSource,
     cementation::ConfirmingSetInfo,

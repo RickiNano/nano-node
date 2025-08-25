@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde_json::Value;
 use tracing::warn;
 
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_wallet::Wallets;
 use rsnano_websocket_messages::ConfirmationJsonOptions;
 

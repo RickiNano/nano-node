@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use rsnano_core::utils::{BufferWriter, Serialize};
+use rsnano_types::utils::{BufferWriter, Serialize};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,

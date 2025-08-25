@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use rsnano_messages::AccountInfoAckPayload;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
@@ -78,7 +78,7 @@ impl AccountAckProcessor {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use rsnano_nullable_clock::Timestamp;
     use rsnano_utils::stats::Direction;
 

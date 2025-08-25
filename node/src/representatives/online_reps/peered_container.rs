@@ -1,5 +1,5 @@
 use super::PeeredRep;
-use rsnano_core::{Account, PublicKey};
+use rsnano_types::{Account, PublicKey};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use std::{collections::HashMap, mem::size_of, net::SocketAddrV6, sync::Arc};

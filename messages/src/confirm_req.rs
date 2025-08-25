@@ -2,7 +2,7 @@ use super::MessageVariant;
 use anyhow::Result;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     serialized_block_size,
     utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
     BlockHash, BlockType, Root,

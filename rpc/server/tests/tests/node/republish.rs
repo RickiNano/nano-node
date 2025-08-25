@@ -1,4 +1,4 @@
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, LedgerSet, DEV_GENESIS_HASH,
 };
@@ -9,7 +9,7 @@ use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 
 fn setup_test_environment(node: Arc<Node>) -> BlockHash {
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let key = rsnano_core::PrivateKey::new();
+    let key = rsnano_types::PrivateKey::new();
 
     // Create and process send block
     let send = lattice.genesis().send(&key, 100);

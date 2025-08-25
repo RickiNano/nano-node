@@ -1,5 +1,5 @@
 use crate::RpcCommand;
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {

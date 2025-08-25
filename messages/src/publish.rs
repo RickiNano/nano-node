@@ -1,7 +1,7 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     serialized_block_size,
     utils::{BufferWriter, Serialize, Stream},
     Block, BlockType,
@@ -109,7 +109,7 @@ impl Display for Publish {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{utils::MemoryStream, TestBlockBuilder};
+    use rsnano_types::{utils::MemoryStream, TestBlockBuilder};
 
     #[test]
     fn create_from_originator() {

@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use rsnano_core::{utils::UnixMillisTimestamp, Account, Amount, Block, PublicKey};
+use rsnano_types::{utils::UnixMillisTimestamp, Account, Amount, Block, PublicKey};
 use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_PUB_KEY};
 use rsnano_messages::ConfirmReq;
 use rsnano_network::Channel;

@@ -9,7 +9,7 @@ impl RpcCommand {
 #[cfg(test)]
 mod tests {
     use crate::RpcCommand;
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use serde_json::to_string_pretty;
 
     #[test]

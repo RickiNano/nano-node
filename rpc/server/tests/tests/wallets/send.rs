@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, WalletId, DEV_GENESIS_KEY};
+use rsnano_types::{Account, Amount, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{AnySet, LedgerSet, DEV_GENESIS_ACCOUNT};
 use rsnano_rpc_messages::SendArgs;
 use std::time::Duration;

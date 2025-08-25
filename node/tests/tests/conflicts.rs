@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rsnano_core::{Amount, BlockSideband, PrivateKey, SavedBlock};
+use rsnano_types::{Amount, BlockSideband, PrivateKey, SavedBlock};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_network::ChannelId;
 

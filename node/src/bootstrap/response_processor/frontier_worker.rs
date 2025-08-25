@@ -1,6 +1,6 @@
 use std::sync::Mutex;
 
-use rsnano_core::Frontier;
+use rsnano_types::Frontier;
 use rsnano_ledger::OwningAnySet;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
@@ -61,7 +61,7 @@ impl<'a> FrontierWorker<'a> {
 mod tests {
     use super::*;
     use crate::bootstrap::state::CandidateAccounts;
-    use rsnano_core::{Account, AccountInfo, BlockHash};
+    use rsnano_types::{Account, AccountInfo, BlockHash};
     use rsnano_ledger::Ledger;
 
     #[test]

@@ -1,6 +1,6 @@
 use std::{cmp::min, time::Duration};
 
-use rsnano_core::{utils::UnixMillisTimestamp, Amount, BlockHash, PublicKey, Vote};
+use rsnano_types::{utils::UnixMillisTimestamp, Amount, BlockHash, PublicKey, Vote};
 use rsnano_nullable_clock::Timestamp;
 
 use super::{BoundedHashMap, RebroadcastError};

@@ -1,6 +1,6 @@
 use std::ops::{RangeBounds, RangeFrom};
 
-use rsnano_core::{
+use rsnano_types::{
     block_priority, utils::BlockPriority, Account, AccountInfo, Amount, Block, BlockHash,
     DependentBlocks, DetailedBlock, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root,
     SavedBlock,

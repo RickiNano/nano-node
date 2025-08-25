@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, DEV_GENESIS_KEY};
 use std::time::Duration;
 use test_helpers::{assert_always_eq, assert_timely_eq2, System};
 

@@ -1,5 +1,5 @@
 use crate::{AnySet, LedgerConstants};
-use rsnano_core::{Block, BlockBase, BlockHash, DependentBlocks, SavedBlock, StateBlock};
+use rsnano_types::{Block, BlockBase, BlockHash, DependentBlocks, SavedBlock, StateBlock};
 
 /// Finds all dependent blocks for a given block.
 /// There can be at most two dependencies per block, namely "previous" and "link/source".

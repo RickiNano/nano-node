@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, BlockHash, PrivateKey, WalletId};
+use rsnano_types::{Amount, BlockHash, PrivateKey, WalletId};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use rsnano_rpc_messages::WalletLedgerArgs;

@@ -1,4 +1,4 @@
-use rsnano_core::{Amount, PrivateKey, DEV_GENESIS_KEY};
+use rsnano_types::{Amount, PrivateKey, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, ConfirmedSet, LedgerSet, DEV_GENESIS_ACCOUNT,
     DEV_GENESIS_PUB_KEY,

@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use rsnano_core::{
+use rsnano_types::{
     Amount, Epoch, PrivateKey, Signature, Vote, VoteError, VoteSource, WalletId, DEV_GENESIS_KEY,
 };
 use rsnano_ledger::{

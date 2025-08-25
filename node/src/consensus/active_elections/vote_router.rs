@@ -1,6 +1,6 @@
 use std::{collections::HashMap, mem::size_of};
 
-use rsnano_core::{BlockHash, QualifiedRoot};
+use rsnano_types::{BlockHash, QualifiedRoot};
 use rsnano_utils::container_info::ContainerInfo;
 
 use crate::consensus::election::Election;

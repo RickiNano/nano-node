@@ -1,6 +1,6 @@
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
     Account, Block, BlockHash, BlockType, Frontier,
 };
@@ -268,7 +268,7 @@ impl From<&AscPullAckType> for DetailType {
 mod tests {
     use super::*;
     use crate::{assert_deserializable, Message};
-    use rsnano_core::TestBlockBuilder;
+    use rsnano_types::TestBlockBuilder;
 
     #[test]
     fn serialize_blocks() {

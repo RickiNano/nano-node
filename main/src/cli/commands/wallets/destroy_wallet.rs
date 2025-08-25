@@ -1,6 +1,6 @@
 use crate::cli::{build_node, GlobalArgs};
 use clap::Parser;
-use rsnano_core::WalletId;
+use rsnano_types::WalletId;
 
 #[derive(Parser, PartialEq, Debug)]
 pub(crate) struct DestroyWalletArgs {

@@ -1,4 +1,4 @@
-use rsnano_core::{Account, PublicKey, WalletId};
+use rsnano_types::{Account, PublicKey, WalletId};
 use rsnano_rpc_messages::WalletRepresentativeSetArgs;
 use test_helpers::{setup_rpc_client_and_server, System};
 

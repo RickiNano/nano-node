@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey,
     SavedBlock,
 };
@@ -238,7 +238,7 @@ impl<'a> Iterator for ConfirmedReceivableIterator<'a> {
 #[cfg(test)]
 mod tests {
     use crate::Ledger;
-    use rsnano_core::{
+    use rsnano_types::{
         Account, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey, SavedBlock,
     };
 

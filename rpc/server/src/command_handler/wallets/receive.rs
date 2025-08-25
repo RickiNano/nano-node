@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use anyhow::{anyhow, bail};
 
-use rsnano_core::{Amount, BlockDetails, PendingKey, Root, WorkNonce};
+use rsnano_types::{Amount, BlockDetails, PendingKey, Root, WorkNonce};
 use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{BlockDto, ReceiveArgs};
 use rsnano_wallet::WalletsError;

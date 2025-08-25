@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing::trace;
 
-use rsnano_core::ProtocolInfo;
+use rsnano_types::ProtocolInfo;
 use rsnano_messages::{Message, MessageSerializer};
 use rsnano_network::{Channel, ChannelId, TrafficType};
 use rsnano_network_protocol::MessageCallback;

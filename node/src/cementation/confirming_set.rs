@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::{BlockHash, SavedBlock};
+use rsnano_types::{BlockHash, SavedBlock};
 use rsnano_ledger::{CementingObserver, Ledger};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},

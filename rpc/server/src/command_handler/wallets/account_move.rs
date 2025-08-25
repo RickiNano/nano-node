@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::PublicKey;
+use rsnano_types::PublicKey;
 use rsnano_rpc_messages::{AccountMoveArgs, MovedResponse};
 
 impl RpcCommandHandler {

@@ -9,7 +9,7 @@ use std::{
 use strum_macros::{EnumCount, EnumIter};
 use tracing::debug;
 
-use rsnano_core::PublicKey;
+use rsnano_types::PublicKey;
 use rsnano_ledger::RepWeightCache;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},

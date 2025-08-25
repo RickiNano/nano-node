@@ -1,5 +1,5 @@
 use crate::{common::AccountArg, RpcCommand};
-use rsnano_core::Account;
+use rsnano_types::Account;
 
 impl RpcCommand {
     pub fn delegators_count(account: Account) -> Self {

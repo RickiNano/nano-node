@@ -2,7 +2,7 @@ use std::sync::{atomic::Ordering, Arc, Mutex, RwLock, Weak};
 
 use tracing::{debug, warn};
 
-use rsnano_core::{NodeId, ProtocolInfo};
+use rsnano_types::{NodeId, ProtocolInfo};
 use rsnano_messages::*;
 use rsnano_network::{
     Channel, ChannelDirection, ChannelMode, DataReceiver, Network, ReceiveResult, TrafficType,

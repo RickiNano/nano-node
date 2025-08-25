@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, Networks, PublicKey};
+use rsnano_types::{Account, Amount, Networks, PublicKey};
 use rsnano_ledger::DEV_GENESIS_PUB_KEY;
 use std::time::Duration;
 

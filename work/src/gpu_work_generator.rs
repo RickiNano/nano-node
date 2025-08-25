@@ -1,6 +1,6 @@
 use tracing::error;
 
-use rsnano_core::{Root, WorkNonce};
+use rsnano_types::{Root, WorkNonce};
 
 use super::{gpu::Gpu, OpenClConfig, WorkGenerator, WorkRng, WorkTicket, XorShift1024Star};
 
@@ -60,7 +60,7 @@ impl WorkGenerator for GpuWorkGenerator {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_core::{Difficulty, DifficultyV1};
+    use rsnano_types::{Difficulty, DifficultyV1};
 
     use crate::WorkThresholds;
 

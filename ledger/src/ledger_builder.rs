@@ -6,7 +6,7 @@ use std::{
 
 use tracing::info;
 
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 use rsnano_store_lmdb::{
     create_and_update_lmdb_env, get_lmdb_flags, EnvironmentOptions, LedgerCache, LmdbConfig,

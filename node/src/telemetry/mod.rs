@@ -12,7 +12,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use rsnano_messages::{Message, TelemetryAck, TelemetryData};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, Network, TrafficType};
 use rsnano_nullable_clock::SteadyClock;

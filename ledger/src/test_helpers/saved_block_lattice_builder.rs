@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
-use rsnano_core::{
+use rsnano_types::{
     dev_epoch1_signer, epoch_v1_link, utils::UnixMillisTimestamp, Account, Amount, Block,
     BlockDetails, BlockHash, BlockSideband, ChangeBlockArgs, Epoch, EpochBlockArgs, Link,
     OpenBlockArgs, PendingInfo, PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root,

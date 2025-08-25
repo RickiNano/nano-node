@@ -2,7 +2,7 @@
 extern crate strum_macros;
 
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_websocket_messages::{ConfirmationJsonOptions, MessageEnvelope, Request, Topic};
 use std::{
     collections::HashSet,

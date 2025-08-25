@@ -1,5 +1,5 @@
 use crate::{common::AccountArg, RpcCommand};
-use rsnano_core::Account;
+use rsnano_types::Account;
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {
@@ -33,7 +33,7 @@ impl AccountRepresentativeDto {
 #[cfg(test)]
 mod tests {
     use crate::RpcCommand;
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use serde_json::{from_str, to_string_pretty};
 
     #[test]

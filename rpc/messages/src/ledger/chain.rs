@@ -1,5 +1,5 @@
 use crate::{RpcBool, RpcU64};
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

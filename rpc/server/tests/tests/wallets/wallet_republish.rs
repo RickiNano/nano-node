@@ -1,4 +1,4 @@
-use rsnano_core::{Block, WalletId, DEV_GENESIS_KEY};
+use rsnano_types::{Block, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use std::sync::Arc;

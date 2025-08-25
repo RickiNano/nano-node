@@ -2,7 +2,7 @@ use std::fs::remove_dir_all;
 
 use tracing::info;
 
-use rsnano_core::{Block, BlockHash, PrivateKey};
+use rsnano_types::{Block, BlockHash, PrivateKey};
 
 use crate::app::Args;
 

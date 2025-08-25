@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, PublicKey, RawKey, WalletId};
+use rsnano_types::{Account, Amount, PublicKey, RawKey, WalletId};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use rsnano_rpc_messages::{AccountBalanceResponse, AccountsBalancesResponse, WalletBalancesArgs};

@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, Networks};
+use rsnano_types::{Account, Amount, Networks};
 use rsnano_ledger::{BootstrapWeights, RepWeightCache, RepWeights};
 use tracing::info;
 

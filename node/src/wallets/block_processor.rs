@@ -1,6 +1,6 @@
 use std::sync::{mpsc, Arc};
 
-use rsnano_core::Block;
+use rsnano_types::Block;
 use rsnano_network::ChannelId;
 use rsnano_wallet::Wallets;
 

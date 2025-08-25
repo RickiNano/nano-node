@@ -5,7 +5,7 @@ use std::{
 
 use rsnano_nullable_clock::SteadyClock;
 
-use rsnano_core::{Amount, BlockHash, VoteError};
+use rsnano_types::{Amount, BlockHash, VoteError};
 use rsnano_ledger::RepWeightCache;
 use rsnano_utils::sync::backpressure_channel::Sender;
 
@@ -119,7 +119,7 @@ impl VoteApplier {
 mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
-    use rsnano_core::{
+    use rsnano_types::{
         utils::{BlockPriority, UnixMillisTimestamp},
         PrivateKey, SavedBlock, Vote, VoteSource,
     };

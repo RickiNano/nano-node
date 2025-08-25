@@ -1,5 +1,5 @@
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
     Account, Amount,
 };

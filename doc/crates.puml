@@ -1,7 +1,7 @@
 @startuml
 title RsNano Crates Overview
 
-[core]
+[types]
 [work]
 [utils]
 [ledger]
@@ -45,7 +45,7 @@ node "nullables" {
 [rpc_server] --> [node]
 [rpc_server] --> [rpc_messages]
 [rpc_client] --> [rpc_messages]
-[rpc_messages] --> [core]
+[rpc_messages] --> [types]
 [node] --> [ledger]
 [node] --> [network_protocol]
 [node] --> [wallet]
@@ -53,7 +53,7 @@ node "nullables" {
 [network_protocol] --> network
 [websocket_server] --> [websocket_messages]
 [websocket_server] --> [node]
-[websocket_messages] --> [core]
+[websocket_messages] --> [types]
 [websocket_client] --> [websocket_messages]
 [messages] --> [work]
 [messages] --> [utils]
@@ -61,9 +61,9 @@ node "nullables" {
 [ledger] --> [store_lmdb]
 [ledger] --> [work]
 [ledger] --> [utils]
-[store_lmdb] --> [core]
-[work] --> [core]
+[store_lmdb] --> [types]
+[work] --> [types]
 [work] --> [utils]
 [wallet] --> [ledger]
-[core] -[hidden]-> "nullables"
+[types] -[hidden]-> "nullables"
 @enduml

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use bitvec::prelude::BitArray;
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, BufferWriter, Serialize},
     ProtocolInfo,
 };
@@ -240,7 +240,7 @@ pub fn validate_header(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{TestBlockBuilder, Vote};
+    use rsnano_types::{TestBlockBuilder, Vote};
 
     #[test]
     fn exact_confirm_ack() {

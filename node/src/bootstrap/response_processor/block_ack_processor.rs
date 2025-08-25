@@ -132,7 +132,7 @@ impl BlockAckProcessor {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_core::Account;
+    use rsnano_types::Account;
 
     use crate::bootstrap::state::QueryType;
 

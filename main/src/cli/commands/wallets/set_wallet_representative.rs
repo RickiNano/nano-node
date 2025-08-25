@@ -1,7 +1,7 @@
 use crate::cli::{build_node, GlobalArgs};
 use anyhow::anyhow;
 use clap::Parser;
-use rsnano_core::{Account, WalletId};
+use rsnano_types::{Account, WalletId};
 
 #[derive(Parser, PartialEq, Debug)]
 pub(crate) struct SetWalletRepresentativeArgs {

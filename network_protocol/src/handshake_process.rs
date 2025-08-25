@@ -2,7 +2,7 @@ use std::{net::SocketAddrV6, sync::Arc};
 
 use tracing::{debug, warn};
 
-use rsnano_core::{BlockHash, NodeId, PrivateKey};
+use rsnano_types::{BlockHash, NodeId, PrivateKey};
 use rsnano_messages::{NodeIdHandshake, NodeIdHandshakeQuery, NodeIdHandshakeResponse};
 
 use crate::SynCookies;

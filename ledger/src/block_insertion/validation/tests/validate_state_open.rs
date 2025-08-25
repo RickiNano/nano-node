@@ -1,5 +1,5 @@
 use crate::{block_insertion::validation::tests::BlockValidationTest, BlockError};
-use rsnano_core::{
+use rsnano_types::{
     AccountInfo, Amount, BlockDetails, BlockSideband, Epoch, PendingKey, PrivateKey,
 };
 

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bitvec::prelude::*;
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferWriter, MemoryStream, Serialize, Stream},
     Networks, ProtocolInfo,
 };
@@ -262,7 +262,7 @@ impl From<MessageType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::utils::MemoryStream;
+    use rsnano_types::utils::MemoryStream;
 
     #[test]
     fn message_header_to_string() {

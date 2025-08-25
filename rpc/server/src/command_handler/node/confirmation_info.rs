@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::anyhow;
 use indexmap::IndexMap;
-use rsnano_core::{Account, Amount};
+use rsnano_types::{Account, Amount};
 use rsnano_rpc_messages::{
     ConfirmationBlockInfoDto, ConfirmationInfoArgs, ConfirmationInfoResponse,
 };

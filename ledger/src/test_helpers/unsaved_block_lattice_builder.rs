@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, Block, PrivateKey, PublicKey, DEV_GENESIS_KEY};
+use rsnano_types::{Account, Amount, Block, PrivateKey, PublicKey, DEV_GENESIS_KEY};
 
 use super::{SavedAccountChainBuilder, SavedBlockLatticeBuilder};
 
@@ -116,7 +116,7 @@ impl<'a> UnsavedAccountChainBuilder<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{BlockDetails, BlockHash, Epoch, StateBlockArgs, DEV_GENESIS_BLOCK};
+    use rsnano_types::{BlockDetails, BlockHash, Epoch, StateBlockArgs, DEV_GENESIS_BLOCK};
     use rsnano_work::WorkThresholds;
 
     #[test]

@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use rsnano_core::{Amount, BlockSubType, PublicKey};
+use rsnano_types::{Amount, BlockSubType, PublicKey};
 use rsnano_nullable_lmdb::WriteTransaction;
 use rsnano_utils::stats::{DetailType, StatType};
 

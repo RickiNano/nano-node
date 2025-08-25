@@ -1,6 +1,6 @@
 use eframe::egui::{self, CentralPanel, ProgressBar, ScrollArea};
 use egui_extras::{Size, StripBuilder};
-use rsnano_core::Account;
+use rsnano_types::Account;
 
 use crate::{app::InsightApp, frontier_scan::FrontierScanInfo};
 

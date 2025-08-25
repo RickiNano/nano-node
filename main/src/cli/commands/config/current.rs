@@ -4,7 +4,7 @@ use crate::cli::GlobalArgs;
 use clap::{ArgGroup, Parser};
 use toml::{from_str, to_string};
 
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use rsnano_node::config::{
     get_node_toml_config_path, get_rpc_toml_config_path, DaemonConfig, DaemonToml,
     NetworkConstants, NetworkParams,

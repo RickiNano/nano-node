@@ -1,4 +1,4 @@
-use rsnano_core::{BlockHash, Root};
+use rsnano_types::{BlockHash, Root};
 use rsnano_nullable_clock::Timestamp;
 use std::{
     collections::{BTreeMap, HashMap, HashSet},

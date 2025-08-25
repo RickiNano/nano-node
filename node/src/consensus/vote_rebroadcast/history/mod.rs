@@ -6,7 +6,7 @@ use std::{collections::HashMap, time::Duration};
 use crate::consensus::bounded_hash_map::BoundedHashMap;
 use rep_container::RepresentativeContainer;
 use rep_entry::RepresentativeEntry;
-use rsnano_core::{Amount, BlockHash, PublicKey, Vote};
+use rsnano_types::{Amount, BlockHash, PublicKey, Vote};
 use rsnano_nullable_clock::Timestamp;
 use strum_macros::{EnumCount, EnumIter};
 
@@ -171,7 +171,7 @@ impl RebroadcastError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{utils::UnixMillisTimestamp, Vote};
+    use rsnano_types::{utils::UnixMillisTimestamp, Vote};
     use std::time::Duration;
 
     #[test]

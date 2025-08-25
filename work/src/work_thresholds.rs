@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     Block, BlockDetails, BlockType, Difficulty, DifficultyV1, Epoch, Networks, Root,
     StubDifficulty, WorkNonce,
 };
@@ -282,7 +282,7 @@ pub fn dev_difficulty() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{Amount, BlockHash, JsonBlock};
+    use rsnano_types::{Amount, BlockHash, JsonBlock};
 
     #[test]
     fn test_parse_threshold() {

@@ -1,7 +1,7 @@
 use num_traits::FromPrimitive;
 use tracing::{debug, error, info};
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{UnixMillisTimestamp, UnixTimestamp},
     BlockType,
 };
@@ -282,7 +282,7 @@ fn v24_sideband_len(block_type: BlockType) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{
+    use rsnano_types::{
         utils::{MemoryStream, Serialize, Stream, StreamExt},
         Block, BlockHash, BlockSideband,
     };

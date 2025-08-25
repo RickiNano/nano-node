@@ -1,4 +1,4 @@
-use rsnano_core::{Account, PublicKey};
+use rsnano_types::{Account, PublicKey};
 use rsnano_nullable_clock::Timestamp;
 use std::{
     collections::{BTreeMap, HashMap},

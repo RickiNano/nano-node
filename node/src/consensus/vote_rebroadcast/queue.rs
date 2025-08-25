@@ -6,7 +6,7 @@ use std::{
     },
 };
 
-use rsnano_core::{BlockHash, PublicKey, Signature, Vote, VoteError};
+use rsnano_types::{BlockHash, PublicKey, Signature, Vote, VoteError};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     fair_queue::FairQueue,

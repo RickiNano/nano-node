@@ -3,7 +3,7 @@ use std::{
     sync::{mpsc::SyncSender, Arc},
 };
 
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use rsnano_messages::Message;
 use rsnano_network::ChannelId;
 use rsnano_network_protocol::MessageCallback;

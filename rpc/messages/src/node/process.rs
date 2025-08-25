@@ -1,5 +1,5 @@
 use crate::{BlockSubTypeDto, RpcBool, RpcCommand};
-use rsnano_core::JsonBlock;
+use rsnano_types::JsonBlock;
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {
@@ -76,7 +76,7 @@ impl ProcessArgsBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::Block;
+    use rsnano_types::Block;
     use serde_json::json;
 
     #[test]

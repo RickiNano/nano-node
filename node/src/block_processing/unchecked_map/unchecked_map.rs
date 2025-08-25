@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
-use rsnano_core::{Block, BlockHash};
+use rsnano_types::{Block, BlockHash};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
@@ -206,7 +206,7 @@ impl Ord for Entry {
 mod tests {
     use super::*;
     use ntest::assert_false;
-    use rsnano_core::Block;
+    use rsnano_types::Block;
 
     #[test]
     fn empty() {

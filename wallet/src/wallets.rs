@@ -10,7 +10,7 @@ use std::{
 use rand::{Rng, seq::IndexedRandom};
 use tracing::{debug, info, warn};
 
-use rsnano_core::{
+use rsnano_types::{
     Account, Amount, Block, BlockDetails, BlockHash, Epoch, KeyDerivationFunction, Link, Networks,
     PendingKey, PrivateKey, PublicKey, RawKey, Root, SavedBlock, StateBlockArgs, WalletId,
     WorkNonce, WorkRequest,
@@ -1579,7 +1579,7 @@ impl Tickable for WalletsTicker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::PendingInfo;
+    use rsnano_types::PendingInfo;
     use std::time::Duration;
 
     #[test]

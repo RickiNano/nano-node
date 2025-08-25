@@ -3,7 +3,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use rsnano_core::{utils::system_time_as_seconds, Amount, Networks};
+use rsnano_types::{utils::system_time_as_seconds, Amount, Networks};
 use rsnano_ledger::Ledger;
 use rsnano_nullable_lmdb::WriteTransaction;
 

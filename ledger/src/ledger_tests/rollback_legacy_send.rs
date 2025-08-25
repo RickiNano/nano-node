@@ -1,4 +1,4 @@
-use rsnano_core::{Account, Amount, PendingKey, PrivateKey, SavedBlock};
+use rsnano_types::{Account, Amount, PendingKey, PrivateKey, SavedBlock};
 
 use crate::{
     ledger_constants::{DEV_GENESIS_PUB_KEY, LEDGER_CONSTANTS_STUB},

@@ -1,5 +1,5 @@
 use super::{QuerySource, RunningQuery};
-use rsnano_core::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash};
 use std::{
     collections::{HashMap, VecDeque},
     mem::size_of,

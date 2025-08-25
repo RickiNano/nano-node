@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{Account, AccountInfo, ConfirmationHeightInfo};
+use rsnano_types::{Account, AccountInfo, ConfirmationHeightInfo};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;

@@ -11,7 +11,7 @@ mod local_block_broadcaster;
 mod process_queue;
 mod unchecked_map;
 
-use rsnano_core::{Block, BlockHash, SavedBlock};
+use rsnano_types::{Block, BlockHash, SavedBlock};
 use rsnano_ledger::{BlockError, RollbackResults};
 
 pub use backlog_scan::{BacklogScan, BacklogScanConfig};

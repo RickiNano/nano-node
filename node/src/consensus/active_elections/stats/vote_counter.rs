@@ -1,7 +1,7 @@
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 use strum::{EnumCount, IntoEnumIterator};
 
-use rsnano_core::VoteSource;
+use rsnano_types::VoteSource;
 
 #[derive(Default)]
 pub(crate) struct VoteCounter {

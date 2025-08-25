@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, Deserialize},
     BlockHash, QualifiedRoot,
 };

@@ -9,7 +9,7 @@ use tokio::{select, sync::mpsc::Sender, time::sleep};
 use tracing::info;
 
 use crate::domain::DelayedBlocks;
-use rsnano_core::{
+use rsnano_types::{
     Account, Amount, Block, BlockHash, JsonBlock, Link, PrivateKey, PublicKey, RawKey,
     StateBlockArgs, WalletId,
 };

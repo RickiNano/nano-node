@@ -40,7 +40,7 @@ pub use account_create::*;
 pub use account_move::*;
 pub use accounts_create::*;
 pub use receive::*;
-use rsnano_core::WalletId;
+use rsnano_types::WalletId;
 pub use send::*;
 use serde::{Deserialize, Serialize};
 pub use wallet_add::*;

@@ -1,5 +1,5 @@
 use crate::{RpcCommand, RpcF64, RpcU64};
-use rsnano_core::{BlockHash, WorkNonce};
+use rsnano_types::{BlockHash, WorkNonce};
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {

@@ -3,7 +3,7 @@ use super::{
     ordered_blocks::{BlockEntry, OrderedBlocks},
 };
 use crate::consensus::{ActiveElectionsContainer, AecInsertError, AecInsertRequest};
-use rsnano_core::{utils::BlockPriority, BlockHash, SavedBlock};
+use rsnano_types::{utils::BlockPriority, BlockHash, SavedBlock};
 use rsnano_nullable_clock::Timestamp;
 use std::sync::atomic::Ordering;
 
@@ -174,7 +174,7 @@ pub enum BucketInsertError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{utils::TimePriority, Amount};
+    use rsnano_types::{utils::TimePriority, Amount};
 
     #[test]
     fn construction() {

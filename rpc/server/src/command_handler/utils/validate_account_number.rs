@@ -1,4 +1,4 @@
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_rpc_messages::{AccountCandidateArg, ValidResponse};
 
 pub fn validate_account_number(args: AccountCandidateArg) -> ValidResponse {

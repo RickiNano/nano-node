@@ -1,6 +1,6 @@
 use crate::config::NetworkConstants;
 use once_cell::sync::Lazy;
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use rsnano_ledger::LedgerConstants;
 use rsnano_work::WorkThresholds;
 

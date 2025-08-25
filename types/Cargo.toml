@@ -1,5 +1,5 @@
 [package]
-name = "rsnano_core"
+name = "rsnano_types"
 version = "0.1.0"
 edition = "2021"
 

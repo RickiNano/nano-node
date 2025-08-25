@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rsnano_core::BlockHash;
+use rsnano_types::BlockHash;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };

@@ -10,7 +10,7 @@ use tokio::{select, task::JoinSet, time::timeout};
 use tokio_util::sync::CancellationToken;
 use tracing::warn;
 
-use rsnano_core::{utils::Peer, Root, WorkNonce, WorkRequest, WorkRequestAsync};
+use rsnano_types::{utils::Peer, Root, WorkNonce, WorkRequest, WorkRequestAsync};
 use rsnano_nullable_http_client::Url;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
@@ -373,7 +373,7 @@ mod tests {
         tokio_runner::TokioRunner,
         work::distributed_work_client::{ConfiguredWorkResponse, DistributedWorkClient},
     };
-    use rsnano_core::utils::Peer;
+    use rsnano_types::utils::Peer;
     use rsnano_nullable_http_client::Url;
     use std::{thread, time::Duration};
     use tracing_test::traced_test;

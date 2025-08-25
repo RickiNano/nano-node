@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use tracing::warn;
 
-use rsnano_core::Networks;
+use rsnano_types::Networks;
 use rsnano_wallet::Wallets;
 
 use crate::utils::ThreadPool;

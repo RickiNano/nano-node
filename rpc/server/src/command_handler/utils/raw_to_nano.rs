@@ -1,4 +1,4 @@
-use rsnano_core::Amount;
+use rsnano_types::Amount;
 use rsnano_rpc_messages::AmountRpcMessage;
 
 pub fn raw_to_nano(args: AmountRpcMessage) -> AmountRpcMessage {

@@ -6,7 +6,7 @@ use std::{
     },
 };
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, Deserialize},
     BlockHash, SavedBlock,
 };

@@ -1,6 +1,6 @@
 use super::BlockValidator;
 use crate::BlockError;
-use rsnano_core::PublicKey;
+use rsnano_types::PublicKey;
 
 impl<'a> BlockValidator<'a> {
     pub(crate) fn ensure_block_does_not_exist_yet(&self) -> Result<(), BlockError> {

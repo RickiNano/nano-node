@@ -1,6 +1,6 @@
 use super::database_crawler::{AccountCrawlSource, DatabaseCrawler, PendingCrawlSource};
 use crate::bootstrap::state::OutdatedAccounts;
-use rsnano_core::{Account, Frontier};
+use rsnano_types::{Account, Frontier};
 use rsnano_ledger::{AnySet, OwningAnySet};
 
 pub(crate) enum FrontierCheckResult {
@@ -103,7 +103,7 @@ impl<'a> FrontierChecker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::{AccountInfo, BlockHash, PendingInfo, PendingKey};
+    use rsnano_types::{AccountInfo, BlockHash, PendingInfo, PendingKey};
     use rsnano_ledger::Ledger;
 
     #[test]

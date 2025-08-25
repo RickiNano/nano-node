@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     Account, Amount, Block, PublicKey, RawKey, StateBlockArgs, WalletId, DEV_GENESIS_KEY,
 };
 use rsnano_ledger::{

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_node::{
     bootstrap::{state::BootstrapState, BootstrapCounters, FrontierHeadInfo},
     utils::RateCalculator,

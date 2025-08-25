@@ -1,6 +1,6 @@
 use crate::{RpcBool, RpcCommand, RpcU64};
-use rsnano_core::WalletId;
-use rsnano_core::{Account, Amount, BlockHash};
+use rsnano_types::WalletId;
+use rsnano_types::{Account, Amount, BlockHash};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferReader, Deserialize},
     Account, ConfirmationHeightInfo,
 };
@@ -152,7 +152,7 @@ impl ConfiguredConfirmationHeightDatabaseBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::BlockHash;
+    use rsnano_types::BlockHash;
     use rsnano_nullable_lmdb::PutEvent;
     use std::sync::Arc;
 

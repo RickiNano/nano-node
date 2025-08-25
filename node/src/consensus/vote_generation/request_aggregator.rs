@@ -4,7 +4,7 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_core::{BlockHash, Root};
+use rsnano_types::{BlockHash, Root};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, TrafficType};
 use rsnano_utils::{

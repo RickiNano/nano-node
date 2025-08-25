@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     AccountInfo, Amount, BlockDetails, BlockSideband, Epoch, PendingInfo, PendingKey,
 };
 

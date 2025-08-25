@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use rsnano_core::{Account, Block, BlockHash, HashOrAccount, SavedBlock, DEV_GENESIS_KEY};
+use rsnano_types::{Account, Block, BlockHash, HashOrAccount, SavedBlock, DEV_GENESIS_KEY};
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
 use rsnano_messages::{
     AccountInfoReqPayload, AscPullAck, AscPullAckType, AscPullReq, AscPullReqType,

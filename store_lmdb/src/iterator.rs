@@ -4,7 +4,7 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-use rsnano_core::utils::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
+use rsnano_types::utils::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
 use rsnano_nullable_lmdb::{
     sys::{MDB_cursor_op, MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE},
     Error, Result, RoCursor, EMPTY_DATABASE,

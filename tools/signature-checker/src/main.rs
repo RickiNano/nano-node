@@ -8,7 +8,7 @@ use std::{
     thread::{self, available_parallelism},
 };
 
-use rsnano_core::{Epochs, PublicKey, SavedBlock, Signature};
+use rsnano_types::{Epochs, PublicKey, SavedBlock, Signature};
 use rsnano_ledger::LedgerConstants;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbBlockStore};

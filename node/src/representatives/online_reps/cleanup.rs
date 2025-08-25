@@ -1,5 +1,5 @@
 use super::OnlineReps;
-use rsnano_core::Account;
+use rsnano_types::Account;
 use rsnano_network::{ChannelId, DeadChannelCleanupStep};
 use std::sync::{Arc, Mutex};
 use tracing::info;

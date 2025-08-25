@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::{Account, Amount};
+use rsnano_types::{Account, Amount};
 use rsnano_ledger::LedgerSet;
 use rsnano_rpc_messages::AvailableSupplyReponse;
 

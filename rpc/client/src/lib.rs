@@ -2,7 +2,7 @@ use crate::AccountBalanceResponse;
 use anyhow::{anyhow, Ok, Result};
 use reqwest::Client;
 pub use reqwest::Url;
-use rsnano_core::{
+use rsnano_types::{
     Account, Amount, BlockHash, HashOrAccount, JsonBlock, PublicKey, RawKey, WalletId, WorkNonce,
 };
 use rsnano_rpc_messages::*;

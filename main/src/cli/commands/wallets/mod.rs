@@ -21,7 +21,7 @@ use destroy_wallet::DestroyWalletArgs;
 use get_wallet_representative::GetWalletRepresentativeArgs;
 use import_keys::ImportKeysArgs;
 use remove_account::RemoveAccountArgs;
-use rsnano_core::Account;
+use rsnano_types::Account;
 use set_wallet_representative::SetWalletRepresentativeArgs;
 
 #[derive(Parser, PartialEq, Debug)]

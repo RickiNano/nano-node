@@ -1,4 +1,4 @@
-use rsnano_core::{
+use rsnano_types::{
     utils::UnixMillisTimestamp, Amount, PrivateKey, Vote, VoteSource, DEV_GENESIS_KEY,
 };
 use rsnano_ledger::{

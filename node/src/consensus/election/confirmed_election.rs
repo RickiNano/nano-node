@@ -3,7 +3,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use rsnano_core::{Amount, MaybeSavedBlock, PublicKey, SavedBlock};
+use rsnano_types::{Amount, MaybeSavedBlock, PublicKey, SavedBlock};
 use rsnano_utils::stats::DetailType;
 
 use super::VoteSummary;

@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use rsnano_core::{BlockHash, NoValue};
+use rsnano_types::{BlockHash, NoValue};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,

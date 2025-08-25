@@ -1,5 +1,5 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_core::{Account, PublicKey};
+use rsnano_types::{Account, PublicKey};
 use rsnano_node::representatives::OnlineRepInfo;
 use rsnano_rpc_messages::{
     DetailedRepresentativesOnline, RepWeightDto, RepresentativesOnlineArgs,
@@ -84,7 +84,7 @@ impl ResponseBuilder {
 mod tests {
     use super::ResponseBuilder;
     use crate::command_handler::test_rpc_command;
-    use rsnano_core::Account;
+    use rsnano_types::Account;
     use rsnano_rpc_messages::{
         RepWeightDto, RepresentativesOnlineArgs, RepresentativesOnlineResponse, RpcCommand,
         SimpleRepresentativesOnline,
@@ -106,7 +106,7 @@ mod tests {
 
     mod simple_result {
         use super::*;
-        use rsnano_core::Amount;
+        use rsnano_types::Amount;
         use rsnano_node::representatives::OnlineRepInfo;
 
         #[test]
@@ -168,7 +168,7 @@ mod tests {
 
     mod detailed_result {
         use super::*;
-        use rsnano_core::{Amount, PublicKey};
+        use rsnano_types::{Amount, PublicKey};
         use rsnano_node::representatives::OnlineRepInfo;
 
         #[test]

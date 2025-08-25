@@ -10,7 +10,7 @@ output_tracking = []
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rsnano_core = { path = "../core" }
+rsnano_types = { path = "../types" }
 rsnano_work = { path = "../work" }
 rsnano_utils = { path = "../utils" }
 rsnano_messages = { path = "../messages" }

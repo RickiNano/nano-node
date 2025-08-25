@@ -1,7 +1,7 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_core::{
+use rsnano_types::{
     utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
     Account, BlockHash, HashOrAccount,
 };

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use rsnano_core::{BlockHash, Root};
+use rsnano_types::{BlockHash, Root};
 use rsnano_messages::{ConfirmReq, Message};
 use rsnano_network::{Channel, ChannelId, TrafficType};
 

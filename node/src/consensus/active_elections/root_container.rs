@@ -5,7 +5,7 @@ use crate::consensus::{
     election::{Election, ElectionBehavior},
     election_schedulers::priority::{bucket_count, bucket_index},
 };
-use rsnano_core::{
+use rsnano_types::{
     utils::{BlockPriority, TimePriority},
     BlockHash, QualifiedRoot,
 };
