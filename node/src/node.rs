@@ -368,11 +368,11 @@ impl Node {
 
         let syn_cookies = Arc::new(SynCookies::new(network_params.network.max_peers_per_ip));
 
-        let workers = Arc::new(ThreadPool::create(
+        let workers = Arc::new(ThreadPool::new(
             config.background_threads as usize,
             "Worker".to_string(),
         ));
-        let wallet_workers = Arc::new(ThreadPool::create(1, "Wallet work"));
+        let wallet_workers = Arc::new(ThreadPool::new(1, "Wallet work"));
 
         let mut inbound_message_queue =
             InboundMessageQueue::new(config.message_processor.max_queue);

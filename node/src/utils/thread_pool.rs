@@ -1,62 +1,47 @@
-use std::sync::{Arc, Mutex};
-
 pub struct ThreadPool {
-    data: Arc<Mutex<Option<ThreadPoolData>>>,
-    stopped: Arc<Mutex<bool>>,
+    strategy: Strategy,
 }
 
 impl ThreadPool {
-    pub fn create(num_threads: usize, thread_name: impl Into<String>) -> Self {
-        Self::new(num_threads, thread_name.into())
-    }
-
-    pub fn new_null() -> Self {
-        Self::new(1, "nulled thread pool".to_string())
-    }
-
-    fn new(num_threads: usize, thread_name: String) -> Self {
+    pub fn new(num_threads: usize, thread_name: impl Into<String>) -> Self {
         Self {
-            stopped: Arc::new(Mutex::new(false)),
-            data: Arc::new(Mutex::new(Some(ThreadPoolData {
-                pool: threadpool::Builder::new()
+            strategy: Strategy::Real(
+                threadpool::Builder::new()
                     .num_threads(num_threads)
-                    .thread_name(thread_name)
+                    .thread_name(thread_name.into())
                     .build(),
-            }))),
+            ),
         }
     }
 
-    pub fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
-        let stopped_guard = self.stopped.lock().unwrap();
-        if !*stopped_guard {
-            let data_guard = self.data.lock().unwrap();
-            drop(stopped_guard);
-            if let Some(data) = data_guard.as_ref() {
-                data.execute(callback);
-            }
+    pub fn new_null() -> Self {
+        Self {
+            strategy: Strategy::Nulled,
+        }
+    }
+
+    pub fn execute<F>(&self, callback: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        match &self.strategy {
+            Strategy::Real(pool) => pool.execute(callback),
+            Strategy::Nulled => {}
         }
     }
 
     pub fn join(&self) {
-        let mut stopped_guard = self.stopped.lock().unwrap();
-        if !*stopped_guard {
-            let mut data_guard = self.data.lock().unwrap();
-            *stopped_guard = true;
-            drop(stopped_guard);
-            if let Some(data) = data_guard.take() {
-                drop(data_guard);
-                data.pool.join();
-            }
+        match &self.strategy {
+            Strategy::Real(pool) => pool.join(),
+            Strategy::Nulled => {}
         }
     }
 
-    pub fn num_queued_tasks(&self) -> usize {
-        self.data
-            .lock()
-            .unwrap()
-            .as_ref()
-            .map(|i| i.pool.queued_count())
-            .unwrap_or_default()
+    pub fn queued_count(&self) -> usize {
+        match &self.strategy {
+            Strategy::Real(pool) => pool.queued_count(),
+            Strategy::Nulled => 0,
+        }
     }
 }
 
@@ -66,29 +51,41 @@ impl Drop for ThreadPool {
     }
 }
 
-struct ThreadPoolData {
-    pool: threadpool::ThreadPool,
-}
-
-impl ThreadPoolData {
-    fn execute(&self, callback: Box<dyn FnOnce() + Send>) {
-        self.pool.execute(callback);
-    }
+enum Strategy {
+    Real(threadpool::ThreadPool),
+    Nulled,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
+    use ntest::assert_false;
+    use std::{
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        },
+        time::Duration,
+    };
 
     #[test]
-    fn push_task() {
+    fn execute_task() {
         let (tx, rx) = std::sync::mpsc::channel();
-        let pool = ThreadPool::create(1, "test thread".to_string());
+        let pool = ThreadPool::new(1, "test thread".to_string());
         pool.execute(Box::new(move || {
             tx.send("foo").unwrap();
         }));
-        let result = rx.recv_timeout(Duration::from_millis(300));
+        let result = rx.recv_timeout(Duration::from_millis(2000));
         assert_eq!(result, Ok("foo"));
+    }
+
+    #[test]
+    fn can_be_nulled() {
+        let pool = ThreadPool::new_null();
+        let called = Arc::new(AtomicBool::new(false));
+        let called2 = called.clone();
+        pool.execute(move || called2.store(true, Ordering::SeqCst));
+        assert_eq!(pool.queued_count(), 0);
+        assert_false!(called.load(Ordering::SeqCst));
     }
 }

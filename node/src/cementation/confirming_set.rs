@@ -1,8 +1,8 @@
 use std::{
     collections::{HashSet, VecDeque},
     sync::{
-        Arc, Condvar, Mutex,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex,
     },
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -19,7 +19,7 @@ use rsnano_utils::{
 use super::ordered_entries::OrderedEntries;
 use crate::{
     block_processing::{LedgerEvent, ProcessedResult},
-    consensus::{ConfirmedElectionsCache, election::ConfirmedElection},
+    consensus::{election::ConfirmedElection, ConfirmedElectionsCache},
     utils::ThreadPool,
 };
 
@@ -83,7 +83,7 @@ impl ConfirmingSet {
                 ledger,
                 stats,
                 config,
-                workers: ThreadPool::create(1, "Conf notif"),
+                workers: ThreadPool::new(1, "Conf notif"),
                 event_publisher: Mutex::new(None),
             }),
         }

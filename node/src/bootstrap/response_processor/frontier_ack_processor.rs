@@ -25,7 +25,7 @@ impl FrontierAckProcessor {
         ledger: Arc<Ledger>,
         state: Arc<Mutex<BootstrapState>>,
     ) -> Self {
-        let workers = Arc::new(ThreadPool::create(1, "Bootstrap work"));
+        let workers = Arc::new(ThreadPool::new(1, "Bootstrap work"));
         Self {
             stats,
             ledger,
@@ -77,15 +77,15 @@ impl FrontierAckProcessor {
         let ledger = self.ledger.clone();
         let stats = self.stats.clone();
         let state = self.state.clone();
-        self.workers.execute(Box::new(move || {
+        self.workers.execute(move || {
             let any = ledger.any();
             let mut worker = FrontierWorker::new(&any, &stats, &state);
             worker.process(frontiers);
-        }));
+        });
     }
 
     fn update_state(&self, query: &RunningQuery, frontiers: &[Frontier]) {
-        let queued_tasks = self.workers.num_queued_tasks();
+        let queued_tasks = self.workers.queued_count();
         let mut guard = self.state.lock().unwrap();
         guard.frontier_scan.process(query.start.into(), &frontiers);
         guard.frontier_ack_processor_busy = queued_tasks >= self.max_pending;
