@@ -99,8 +99,9 @@ mod tests {
         consensus::{RepTiers, RepTiersConsumer},
         transport::FloodEvent,
     };
-    use rsnano_core::{utils::OneShotNotification, Vote};
+    use rsnano_core::Vote;
     use rsnano_output_tracker::OutputTrackerMt;
+    use rsnano_utils::sync::OneShotNotification;
 
     #[test]
     fn rebroadcast() {

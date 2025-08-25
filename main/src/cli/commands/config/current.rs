@@ -1,13 +1,16 @@
+use std::fs::read_to_string;
+
 use crate::cli::GlobalArgs;
 use clap::{ArgGroup, Parser};
-use rsnano_core::{utils::get_cpu_count, Networks};
+use toml::{from_str, to_string};
+
+use rsnano_core::Networks;
 use rsnano_node::config::{
     get_node_toml_config_path, get_rpc_toml_config_path, DaemonConfig, DaemonToml,
     NetworkConstants, NetworkParams,
 };
 use rsnano_rpc_server::{RpcServerConfig, RpcServerToml};
-use std::fs::read_to_string;
-use toml::{from_str, to_string};
+use rsnano_utils::get_cpu_count;
 
 #[derive(Parser, PartialEq, Debug)]
 #[command(group = ArgGroup::new("input1")

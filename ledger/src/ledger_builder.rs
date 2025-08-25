@@ -6,12 +6,13 @@ use std::{
 
 use tracing::info;
 
-use rsnano_core::{utils::get_cpu_count, Amount};
+use rsnano_core::Amount;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
-use rsnano_utils::stats::Stats;
 use rsnano_store_lmdb::{
     create_and_update_lmdb_env, get_lmdb_flags, EnvironmentOptions, LedgerCache, LmdbConfig,
 };
+use rsnano_utils::get_cpu_count;
+use rsnano_utils::stats::Stats;
 
 use crate::{BootstrapWeights, Ledger, LedgerConstants, RepWeightCache};
 

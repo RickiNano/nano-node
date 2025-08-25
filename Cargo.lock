@@ -4371,6 +4371,7 @@ dependencies = [
  "rsnano_nullable_tracing_subscriber",
  "rsnano_rpc_server",
  "rsnano_store_lmdb",
+ "rsnano_utils",
  "tokio",
  "toml 0.9.5",
  "tracing",

@@ -1,12 +1,13 @@
 use std::{
     mem::size_of,
+    num::NonZero,
     sync::Arc,
-    thread::{self, JoinHandle},
+    thread::{self, available_parallelism, JoinHandle},
     time::Duration,
 };
 
 use rsnano_core::{
-    utils::{get_cpu_count, ContainerInfo, ContainerInfoProvider},
+    utils::{ContainerInfo, ContainerInfoProvider},
     Root, WorkNonce, WorkRequest, WorkRequestAsync,
 };
 
@@ -61,7 +62,11 @@ impl WorkPoolBuilder {
     }
 
     pub fn finish(self) -> WorkPool {
-        let thread_count = self.cpu_thread_count.unwrap_or_else(|| get_cpu_count());
+        let thread_count = self.cpu_thread_count.unwrap_or_else(|| {
+            available_parallelism()
+                .unwrap_or(NonZero::new(1).unwrap())
+                .into()
+        });
         let cpu_rate_limiter = self.cpu_rate_limiter.unwrap_or(Duration::ZERO);
         let opencl_config = self.opencl_config.unwrap_or_default();
 

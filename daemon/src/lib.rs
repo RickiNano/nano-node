@@ -1,12 +1,12 @@
 mod http_callbacks;
 
 use http_callbacks::HttpCallbacks;
-use rsnano_core::utils::get_cpu_count;
 use rsnano_node::{
     config::{DaemonConfig, Networks, NodeFlags},
     CompositeNodeEventHandler, Node, NodeBuilder, NodeCallbacks,
 };
 use rsnano_rpc_server::{run_rpc_server, RpcServerConfig};
+use rsnano_utils::get_cpu_count;
 use rsnano_websocket_server::{create_websocket_server, WebsocketListenerExt};
 use std::{
     future::Future,

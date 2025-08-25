@@ -3,10 +3,11 @@ use std::{
     sync::{mpsc::SyncSender, Arc},
 };
 
-use rsnano_core::{utils::get_cpu_count, Networks};
+use rsnano_core::Networks;
 use rsnano_messages::Message;
 use rsnano_network::ChannelId;
 use rsnano_network_protocol::MessageCallback;
+use rsnano_utils::get_cpu_count;
 
 use crate::{
     config::{

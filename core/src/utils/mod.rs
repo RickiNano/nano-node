@@ -17,7 +17,6 @@ use crate::Amount;
 use std::{
     net::{Ipv6Addr, SocketAddrV6},
     ops::{Add, Mul},
-    sync::{Arc, Condvar, Mutex},
     thread::available_parallelism,
     time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH},
 };
@@ -89,8 +88,6 @@ pub fn get_cpu_count() -> usize {
 
     available_parallelism().unwrap().get()
 }
-
-pub type MemoryIntensiveInstrumentationCallback = extern "C" fn() -> bool;
 
 pub fn milliseconds_since_epoch() -> u64 {
     SystemTime::now()
@@ -308,17 +305,6 @@ pub fn get_env_or_default_string(variable_name: &str, default: impl Into<String>
     std::env::var(variable_name).unwrap_or_else(|_| default.into())
 }
 
-pub fn get_env_bool(variable_name: impl AsRef<str>) -> Option<bool> {
-    let variable_name = variable_name.as_ref();
-    std::env::var(variable_name)
-        .ok()
-        .map(|val| match val.to_lowercase().as_ref() {
-            "1" | "true" | "on" => true,
-            "0" | "false" | "off" => false,
-            _ => panic!("Invalid environment boolean value: {variable_name} = {val}"),
-        })
-}
-
 pub fn parse_endpoint(s: &str) -> SocketAddrV6 {
     s.parse().unwrap()
 }
@@ -336,31 +322,6 @@ pub const TEST_ENDPOINT_3: SocketAddrV6 =
 
 pub fn new_test_timestamp() -> SystemTime {
     UNIX_EPOCH + Duration::from_secs(1_000_000)
-}
-
-/// contains (done, Option<result>)
-#[derive(Clone)]
-pub struct OneShotNotification<T>(Arc<(Mutex<(bool, Option<T>)>, Condvar)>);
-
-impl<T> OneShotNotification<T> {
-    pub fn new() -> Self {
-        Self(Arc::new((Mutex::new((false, None)), Condvar::new())))
-    }
-
-    pub fn notify(&self, t: T) {
-        *self.0 .0.lock().unwrap() = (true, Some(t));
-        self.0 .1.notify_one();
-    }
-
-    pub fn cancel(&self) {
-        *self.0 .0.lock().unwrap() = (true, None);
-        self.0 .1.notify_one();
-    }
-
-    pub fn wait(&self) -> Option<T> {
-        let guard = self.0 .0.lock().unwrap();
-        self.0 .1.wait_while(guard, |i| !i.0).unwrap().1.take()
-    }
 }
 
 pub trait Tickable: Send {

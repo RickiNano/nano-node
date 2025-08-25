@@ -1,1 +1,19 @@
+use std::thread::available_parallelism;
+
+pub mod env;
 pub mod stats;
+pub mod sync;
+
+pub fn get_cpu_count() -> usize {
+    // Try to read overridden value from environment variable
+    let value = std::env::var("NANO_HARDWARE_CONCURRENCY")
+        .unwrap_or_else(|_| "0".into())
+        .parse::<usize>()
+        .unwrap_or_default();
+
+    if value > 0 {
+        return value;
+    }
+
+    available_parallelism().unwrap().get()
+}

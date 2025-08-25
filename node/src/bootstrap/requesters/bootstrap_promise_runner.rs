@@ -86,7 +86,7 @@ impl BootstrapPromiseRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_core::utils::OneShotNotification;
+    use rsnano_utils::sync::OneShotNotification;
     use std::thread::spawn;
 
     #[test]

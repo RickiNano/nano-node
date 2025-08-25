@@ -11,9 +11,8 @@ use anyhow::Result;
 use bounded_vec_deque::BoundedVecDeque;
 use tracing::debug;
 
-use rsnano_core::utils::get_env_bool;
-
 use super::{DetailType, Direction, Sample, StatType, StatsCollection, StatsLogSink, StatsSource};
+use crate::env::get_env_bool;
 
 pub struct Stats {
     max_samples: usize,

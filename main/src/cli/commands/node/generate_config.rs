@@ -1,9 +1,12 @@
+use std::io::BufRead;
+
 use anyhow::Result;
 use clap::{ArgGroup, Parser};
-use rsnano_core::{utils::get_cpu_count, Networks};
+
+use rsnano_core::Networks;
 use rsnano_node::config::{DaemonConfig, DaemonToml, NetworkParams};
 use rsnano_rpc_server::{RpcServerConfig, RpcServerToml};
-use std::io::BufRead;
+use rsnano_utils::get_cpu_count;
 
 #[derive(Parser, PartialEq, Debug)]
 #[command(group = ArgGroup::new("input1")
