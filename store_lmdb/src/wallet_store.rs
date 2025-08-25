@@ -9,15 +9,15 @@ use std::{
 
 use anyhow::bail;
 
+use rsnano_nullable_lmdb::{
+    DatabaseFlags, Error, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+};
 use rsnano_types::{
     deterministic_key,
     utils::{
         BufferReader, BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt,
     },
     Account, KeyDerivationFunction, PublicKey, RawKey, WorkNonce,
-};
-use rsnano_nullable_lmdb::{
-    DatabaseFlags, Error, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::{Fan, LmdbDatabase, LmdbRangeIterator};
@@ -399,7 +399,7 @@ impl LmdbWalletStore {
     pub fn iter<'tx>(
         &self,
         tx: &'tx dyn Transaction,
-    ) -> impl Iterator<Item = (PublicKey, WalletValue)> + 'tx {
+    ) -> impl Iterator<Item = (PublicKey, WalletValue)> + 'tx + use<'tx> {
         self.iter_range(tx, Self::special_count()..)
     }
 

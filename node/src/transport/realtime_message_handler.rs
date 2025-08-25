@@ -5,9 +5,9 @@ use std::{
 
 use tracing::trace;
 
-use rsnano_types::VoteSource;
 use rsnano_messages::{Message, NetworkFilter};
 use rsnano_network::{Channel, Network};
+use rsnano_types::VoteSource;
 use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use rsnano_work::WorkThresholds;
 

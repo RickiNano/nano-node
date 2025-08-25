@@ -1,9 +1,5 @@
 use std::{cmp::max, collections::HashMap, sync::Arc, thread::sleep, time::Duration};
 
-use rsnano_types::{
-    utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey,
-    PublicKey, Root, Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
-};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, BlockError, ConfirmedSet, LedgerSet,
     DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
@@ -16,6 +12,10 @@ use rsnano_node::{
     consensus::{election::VoteType, AecEvent, FilteredVote, ReceivedVote},
 };
 use rsnano_nullable_tcp::get_available_port;
+use rsnano_types::{
+    utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, DifficultyV1, PrivateKey,
+    PublicKey, Root, Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, DEV_GENESIS_KEY,
+};
 use rsnano_utils::{
     stats::{DetailType, Direction, StatType},
     sync::backpressure_channel,

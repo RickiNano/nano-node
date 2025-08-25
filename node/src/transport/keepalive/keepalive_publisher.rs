@@ -1,10 +1,10 @@
 use super::KeepaliveMessageFactory;
 use crate::transport::MessageSender;
-use rsnano_types::utils::Peer;
 use rsnano_network::{
     utils::into_ipv6_socket_address, Channel, Network, PeerConnector, TrafficType,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::utils::Peer;
 use std::{
     net::SocketAddr,
     sync::{Arc, Mutex, RwLock},

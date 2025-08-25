@@ -6,9 +6,9 @@ use std::{
     time::Duration,
 };
 
-use rsnano_types::Vote;
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::TrafficType;
+use rsnano_types::Vote;
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::history::{RebroadcastError, RebroadcastHistory, RebroadcastHistoryConfig};

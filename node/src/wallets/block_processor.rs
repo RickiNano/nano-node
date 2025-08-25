@@ -1,7 +1,7 @@
 use std::sync::{mpsc, Arc};
 
-use rsnano_types::Block;
 use rsnano_network::ChannelId;
+use rsnano_types::Block;
 use rsnano_wallet::Wallets;
 
 use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};

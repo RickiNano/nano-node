@@ -1,6 +1,6 @@
 use anyhow::anyhow;
-use rsnano_types::Amount;
 use rsnano_rpc_messages::AmountRpcMessage;
+use rsnano_types::Amount;
 
 pub fn nano_to_raw(args: AmountRpcMessage) -> anyhow::Result<AmountRpcMessage> {
     if let Some(raw) = args.amount.number().checked_mul(Amount::nano(1).number()) {

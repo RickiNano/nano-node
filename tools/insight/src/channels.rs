@@ -1,8 +1,8 @@
 use crate::message_collection::MessageCollection;
-use rsnano_types::Amount;
 use rsnano_messages::TelemetryData;
 use rsnano_network::{Channel, ChannelDirection, ChannelId};
 use rsnano_node::representatives::PeeredRepInfo;
+use rsnano_types::Amount;
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddrV6,

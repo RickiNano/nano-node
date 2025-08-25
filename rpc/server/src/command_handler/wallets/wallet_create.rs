@@ -1,5 +1,5 @@
-use rsnano_types::WalletId;
 use rsnano_rpc_messages::{WalletCreateArgs, WalletCreateResponse};
+use rsnano_types::WalletId;
 
 use crate::command_handler::RpcCommandHandler;
 

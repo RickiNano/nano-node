@@ -3,7 +3,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_types::{Amount, PrivateKey, DEV_GENESIS_KEY};
 use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, AnySet};
 use rsnano_messages::ConfirmAck;
 use rsnano_node::{
@@ -11,6 +10,7 @@ use rsnano_node::{
     consensus::{AggregatorRequest, VoteGenerationEvent},
 };
 use rsnano_output_tracker::OutputTrackerMt;
+use rsnano_types::{Amount, PrivateKey, DEV_GENESIS_KEY};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 
 use test_helpers::{

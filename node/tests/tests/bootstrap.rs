@@ -1,7 +1,7 @@
-use rsnano_types::{Account, PrivateKey};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::{bootstrap::BootstrapConfig, config::NodeConfig};
 use rsnano_nullable_tcp::get_available_port;
+use rsnano_types::{Account, PrivateKey};
 use std::time::Duration;
 use test_helpers::{assert_always_eq, assert_timely, System};
 

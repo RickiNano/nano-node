@@ -9,7 +9,6 @@ use std::{
     time::Duration,
 };
 
-use rsnano_types::{Block, BlockHash, Frontier};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, OwningAnySet};
 use rsnano_messages::{
     AccountInfoAckPayload, AccountInfoReqPayload, AscPullAck, AscPullAckType, AscPullReq,
@@ -19,6 +18,7 @@ use rsnano_network::{
     token_bucket::TokenBucket, Channel, ChannelId, DeadChannelCleanupStep, TrafficType,
 };
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::{Block, BlockHash, Frontier};
 use rsnano_utils::{
     fair_queue::FairQueue,
     stats::{DetailType, Direction, StatType, Stats},

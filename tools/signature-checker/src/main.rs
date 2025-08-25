@@ -8,10 +8,10 @@ use std::{
     thread::{self, available_parallelism},
 };
 
-use rsnano_types::{Epochs, PublicKey, SavedBlock, Signature};
 use rsnano_ledger::LedgerConstants;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbBlockStore};
+use rsnano_types::{Epochs, PublicKey, SavedBlock, Signature};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

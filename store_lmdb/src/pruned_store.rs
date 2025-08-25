@@ -1,10 +1,10 @@
 use std::ops::RangeBounds;
 
-use rsnano_types::{BlockHash, NoValue};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
+use rsnano_types::{BlockHash, NoValue};
 
 use crate::{LmdbIterator, LmdbRangeIterator, PRUNED_TEST_DATABASE};
 
@@ -35,7 +35,10 @@ impl LmdbPrunedStore {
         tx.exists(self.database, hash.as_bytes())
     }
 
-    pub fn iter<'tx>(&self, tx: &'tx dyn Transaction) -> impl Iterator<Item = BlockHash> + 'tx {
+    pub fn iter<'tx>(
+        &self,
+        tx: &'tx dyn Transaction,
+    ) -> impl Iterator<Item = BlockHash> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
 
         LmdbIterator::new(cursor, |key, _| {

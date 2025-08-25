@@ -3,8 +3,8 @@ use std::{
     time::Duration,
 };
 
-use rsnano_types::{BlockHash, Networks, Root};
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::{BlockHash, Networks, Root};
 use rsnano_utils::{ticker::Tickable, CancellationToken};
 
 use super::{CpsLimiter, VoteGenerators};

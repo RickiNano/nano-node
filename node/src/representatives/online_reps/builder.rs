@@ -1,6 +1,6 @@
 use super::OnlineReps;
-use rsnano_types::{Amount, Networks};
 use rsnano_ledger::RepWeightCache;
+use rsnano_types::{Amount, Networks};
 use std::{sync::Arc, time::Duration};
 
 pub struct OnlineRepsBuilder {

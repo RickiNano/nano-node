@@ -1,7 +1,7 @@
 use anyhow::bail;
 
-use rsnano_types::{Block, BlockType, DifficultyV1, WorkRequest};
 use rsnano_rpc_messages::{WorkGenerateArgs, WorkGenerateDto};
+use rsnano_types::{Block, BlockType, DifficultyV1, WorkRequest};
 
 use super::difficulty_ledger;
 use crate::command_handler::RpcCommandHandler;

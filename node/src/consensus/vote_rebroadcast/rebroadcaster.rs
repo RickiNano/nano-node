@@ -99,8 +99,8 @@ mod tests {
         consensus::{RepTiers, RepTiersConsumer},
         transport::FloodEvent,
     };
-    use rsnano_types::Vote;
     use rsnano_output_tracker::OutputTrackerMt;
+    use rsnano_types::Vote;
     use rsnano_utils::sync::OneShotNotification;
 
     #[test]

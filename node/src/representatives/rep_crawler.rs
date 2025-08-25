@@ -10,11 +10,11 @@ use std::{
 use bounded_vec_deque::BoundedVecDeque;
 use tracing::{debug, info, warn};
 
-use rsnano_types::{Account, BlockHash, Root, Vote};
 use rsnano_ledger::{AnySet, Ledger, LedgerSet};
 use rsnano_messages::{ConfirmReq, Message};
 use rsnano_network::{Channel, ChannelId, Network, TrafficType};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_types::{Account, BlockHash, Root, Vote};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, Direction, Sample, StatType, Stats},

@@ -1,6 +1,6 @@
 use anyhow::anyhow;
-use rsnano_types::{Account, PublicKey};
 use rsnano_rpc_messages::{KeyExpandArgs, KeyPairDto};
+use rsnano_types::{Account, PublicKey};
 
 pub fn key_expand(args: KeyExpandArgs) -> anyhow::Result<KeyPairDto> {
     let public: PublicKey = (&args.key)

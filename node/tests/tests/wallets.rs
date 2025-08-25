@@ -1,8 +1,8 @@
-use rsnano_types::{Amount, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY,
 };
 use rsnano_node::config::{NodeConfig, NodeFlags};
+use rsnano_types::{Amount, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use test_helpers::{assert_timely_eq2, System};
 
 #[test]

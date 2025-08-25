@@ -6,11 +6,11 @@ use crate::bootstrap::{
     state::{BootstrapState, PriorityResult},
     AscPullQuerySpec,
 };
-use rsnano_types::{Account, BlockHash, HashOrAccount};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
 use rsnano_messages::{AscPullReqType, BlocksReqPayload, HashType};
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Account, BlockHash, HashOrAccount};
 use std::sync::Arc;
 
 /// Creates a query for the next priority account

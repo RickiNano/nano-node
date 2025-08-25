@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use std::{fmt::Write, str::FromStr};
 
 use clap::Parser;
-use rsnano_types::{Amount, Networks};
 use rsnano_rpc_client::{NanoRpcClient, Url};
 use rsnano_rpc_messages::{RepresentativesArgs, RepresentativesResponse};
+use rsnano_types::{Amount, Networks};
 
 const CUTOFF: u64 = 250_000;
 const PERCENTAGE_LIMIT: u128 = 99;

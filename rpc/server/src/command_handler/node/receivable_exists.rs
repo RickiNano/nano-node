@@ -1,9 +1,9 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
-use rsnano_types::{BlockHash, PendingKey};
 use rsnano_ledger::{AnySet, ConfirmedSet};
 use rsnano_node::Node;
 use rsnano_rpc_messages::{ExistsResponse, ReceivableExistsArgs};
+use rsnano_types::{BlockHash, PendingKey};
 use std::sync::Arc;
 
 impl RpcCommandHandler {

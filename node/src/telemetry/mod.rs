@@ -12,10 +12,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_types::BlockHash;
 use rsnano_messages::{Message, TelemetryAck, TelemetryData};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, Network, TrafficType};
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::BlockHash;
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 

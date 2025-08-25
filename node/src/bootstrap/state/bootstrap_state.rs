@@ -1,9 +1,9 @@
 use std::{collections::VecDeque, sync::Arc};
 
-use rsnano_types::{Account, BlockHash};
 use rsnano_messages::AscPullReqType;
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Account, BlockHash};
 use rsnano_utils::container_info::ContainerInfo;
 
 use super::{

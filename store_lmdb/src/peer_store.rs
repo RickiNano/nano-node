@@ -6,12 +6,12 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use rsnano_types::utils::{BufferWriter, Serialize};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags,
     WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::utils::{BufferWriter, Serialize};
 
 use crate::{iterator::LmdbIterator, PEERS_TEST_DATABASE};
 
@@ -76,7 +76,7 @@ impl LmdbPeerStore {
     pub fn iter<'a>(
         &self,
         txn: &'a dyn Transaction,
-    ) -> impl Iterator<Item = (SocketAddrV6, SystemTime)> + 'a {
+    ) -> impl Iterator<Item = (SocketAddrV6, SystemTime)> + 'a + use<'a> {
         let cursor = txn
             .open_ro_cursor(self.database)
             .expect("Could not read peer store database");

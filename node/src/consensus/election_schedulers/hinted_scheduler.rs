@@ -10,9 +10,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_types::{Amount, BlockHash};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::{Amount, BlockHash};
 use rsnano_utils::{
     container_info::ContainerInfo,
     stats::{DetailType, StatType, Stats},

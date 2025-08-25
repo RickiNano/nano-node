@@ -8,8 +8,8 @@ use std::{
     },
 };
 
-use rsnano_types::{Account, Amount, PublicKey};
 use rsnano_store_lmdb::LedgerCache;
+use rsnano_types::{Account, Amount, PublicKey};
 use rsnano_utils::container_info::ContainerInfo;
 
 #[derive(Default)]

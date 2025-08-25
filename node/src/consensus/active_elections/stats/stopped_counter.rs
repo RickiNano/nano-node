@@ -80,8 +80,8 @@ impl StatsSource for StoppedCounter {
 mod tests {
 
     use super::*;
-    use rsnano_types::SavedBlock;
     use rsnano_nullable_clock::Timestamp;
+    use rsnano_types::SavedBlock;
     use std::time::Duration;
 
     #[test]

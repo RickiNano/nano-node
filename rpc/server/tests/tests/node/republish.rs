@@ -1,9 +1,9 @@
-use rsnano_types::BlockHash;
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, AnySet, LedgerSet, DEV_GENESIS_HASH,
 };
 use rsnano_node::Node;
 use rsnano_rpc_messages::RepublishArgs;
+use rsnano_types::BlockHash;
 use std::sync::Arc;
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 

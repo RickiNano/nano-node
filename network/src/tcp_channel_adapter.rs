@@ -2,9 +2,9 @@ use crate::{
     bandwidth_limiter::BandwidthLimiter, channel_stats::ChannelStats, Channel, ChannelDirection,
     ChannelId,
 };
-use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_nullable_tcp::TcpStream;
+use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
 use std::{
     fmt::Display,
     sync::{Arc, Weak},

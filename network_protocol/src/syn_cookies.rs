@@ -8,8 +8,8 @@ use std::{
 use anyhow::Result;
 use rand::Rng;
 
-use rsnano_types::{Account, Signature};
 use rsnano_messages::Cookie;
+use rsnano_types::{Account, Signature};
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 
 /// Node ID cookies for node ID handshakes

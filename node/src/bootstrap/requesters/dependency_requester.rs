@@ -47,13 +47,14 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
                 }
             },
             DependencyState::WaitBlocking(ref channel) => {
-                if let Some(spec) = state.next_blocking_query(channel) {
-                    self.stats
-                        .inc(StatType::BootstrapNext, DetailType::NextBlocking);
-                    self.state = DependencyState::Initial;
-                    PollResult::Finished(spec)
-                } else {
-                    PollResult::Wait
+                match state.next_blocking_query(channel) {
+                    Some(spec) => {
+                        self.stats
+                            .inc(StatType::BootstrapNext, DetailType::NextBlocking);
+                        self.state = DependencyState::Initial;
+                        PollResult::Finished(spec)
+                    }
+                    _ => PollResult::Wait,
                 }
             }
         }
@@ -64,9 +65,9 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
 mod tests {
     use super::*;
     use crate::bootstrap::progress;
-    use rsnano_types::{Account, BlockHash};
     use rsnano_network::{token_bucket::TokenBucket, Network};
     use rsnano_nullable_clock::Timestamp;
+    use rsnano_types::{Account, BlockHash};
     use std::sync::{Mutex, RwLock};
 
     #[test]

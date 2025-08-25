@@ -5,9 +5,9 @@ use eframe::egui::{
 };
 use egui_extras::{Column, TableBuilder};
 
-use rsnano_types::{Account, BlockHash};
 use rsnano_messages::{Message, MessageType};
 use rsnano_network::ChannelDirection;
+use rsnano_types::{Account, BlockHash};
 
 use super::{badge::Badge, MessageViewModel, PaletteColor};
 use crate::message_collection::{MessageCollection, RecordedMessage};
@@ -220,11 +220,16 @@ impl MessageTableViewModel {
         if self.hash_filter.trim().is_empty() {
             self.messages.write().unwrap().filter_hash(None);
             self.hash_error = false;
-        } else if let Ok(hash) = BlockHash::decode_hex(self.hash_filter.trim()) {
-            self.messages.write().unwrap().filter_hash(Some(hash));
-            self.hash_error = false;
         } else {
-            self.hash_error = true;
+            match BlockHash::decode_hex(self.hash_filter.trim()) {
+                Ok(hash) => {
+                    self.messages.write().unwrap().filter_hash(Some(hash));
+                    self.hash_error = false;
+                }
+                _ => {
+                    self.hash_error = true;
+                }
+            }
         }
     }
 
@@ -232,14 +237,22 @@ impl MessageTableViewModel {
         if self.account_filter.trim().is_empty() {
             self.messages.write().unwrap().filter_account(None);
             self.account_error = false;
-        } else if let Ok(account) = Account::decode_account(self.account_filter.trim()) {
-            self.messages.write().unwrap().filter_account(Some(account));
-            self.account_error = false;
-        } else if let Ok(account) = Account::decode_hex(self.account_filter.trim()) {
-            self.messages.write().unwrap().filter_account(Some(account));
-            self.account_error = false;
         } else {
-            self.account_error = true;
+            match Account::decode_account(self.account_filter.trim()) {
+                Ok(account) => {
+                    self.messages.write().unwrap().filter_account(Some(account));
+                    self.account_error = false;
+                }
+                _ => match Account::decode_hex(self.account_filter.trim()) {
+                    Ok(account) => {
+                        self.messages.write().unwrap().filter_account(Some(account));
+                        self.account_error = false;
+                    }
+                    _ => {
+                        self.account_error = true;
+                    }
+                },
+            }
         }
     }
 

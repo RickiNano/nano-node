@@ -86,10 +86,13 @@ impl<T: Clone + 'static> OutputListenerMt<T> {
         let mut guard = self.trackers.lock().unwrap();
         let mut should_clean = false;
         for tracker in guard.iter() {
-            if let Some(tracker) = tracker.upgrade() {
-                tracker.add(t.clone());
-            } else {
-                should_clean = true;
+            match tracker.upgrade() {
+                Some(tracker) => {
+                    tracker.add(t.clone());
+                }
+                _ => {
+                    should_clean = true;
+                }
             }
         }
 

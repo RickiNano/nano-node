@@ -1,5 +1,5 @@
-use rsnano_types::Account;
 use rsnano_ledger::DEV_GENESIS_ACCOUNT;
+use rsnano_types::Account;
 use test_helpers::{setup_rpc_client_and_server, System};
 
 #[test]

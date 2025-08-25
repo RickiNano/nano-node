@@ -2,11 +2,11 @@ use std::sync::{atomic::Ordering, Arc, Mutex, RwLock, Weak};
 
 use tracing::{debug, warn};
 
-use rsnano_types::{NodeId, ProtocolInfo};
 use rsnano_messages::*;
 use rsnano_network::{
     Channel, ChannelDirection, ChannelMode, DataReceiver, Network, ReceiveResult, TrafficType,
 };
+use rsnano_types::{NodeId, ProtocolInfo};
 use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use crate::{HandshakeProcess, HandshakeStats, HandshakeStatus, LatestKeepalives};

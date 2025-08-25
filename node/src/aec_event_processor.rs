@@ -2,10 +2,10 @@ use std::sync::{mpsc::SyncSender, Arc, Mutex, RwLock};
 
 use tracing::debug;
 
-use rsnano_types::{utils::MemoryStream, Block, VoteError, VoteSource};
 use rsnano_messages::NetworkFilter;
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::{utils::MemoryStream, Block, VoteError, VoteSource};
 use rsnano_utils::stats::{Sample, Stats};
 
 use crate::{

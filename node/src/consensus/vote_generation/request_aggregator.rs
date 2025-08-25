@@ -4,9 +4,9 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_types::{BlockHash, Root};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep, TrafficType};
+use rsnano_types::{BlockHash, Root};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     fair_queue::FairQueue,

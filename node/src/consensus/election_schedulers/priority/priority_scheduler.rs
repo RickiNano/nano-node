@@ -6,10 +6,10 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_types::{Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, SavedBlock};
 use rsnano_ledger::{AnySet, ConfirmedSet};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, SavedBlock};
 use rsnano_utils::{
     container_info::ContainerInfo,
     stats::{DetailType, StatType, Stats, StatsCollection, StatsSource},
@@ -311,8 +311,8 @@ static BUCKET_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::PrivateKey;
     use rsnano_ledger::{Ledger, LedgerInserter};
+    use rsnano_types::PrivateKey;
 
     #[test]
     fn can_track_successor_activation() {

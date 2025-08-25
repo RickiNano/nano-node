@@ -1,7 +1,7 @@
-use rsnano_types::Amount;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
+use rsnano_types::Amount;
 
 use crate::LmdbIterator;
 
@@ -39,7 +39,7 @@ impl LmdbOnlineWeightStore {
     pub fn iter<'txn>(
         &self,
         tx: &'txn dyn Transaction,
-    ) -> impl Iterator<Item = (u64, Amount)> + 'txn {
+    ) -> impl Iterator<Item = (u64, Amount)> + 'txn + use<'txn> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
 
         LmdbIterator::new(cursor, |key, value| {
@@ -53,7 +53,7 @@ impl LmdbOnlineWeightStore {
     pub fn iter_rev<'txn>(
         &self,
         tx: &'txn dyn Transaction,
-    ) -> impl Iterator<Item = (u64, Amount)> + 'txn {
+    ) -> impl Iterator<Item = (u64, Amount)> + 'txn + use<'txn> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
 
         LmdbIterator::new_descending(cursor, |key, value| {

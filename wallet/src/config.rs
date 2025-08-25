@@ -1,5 +1,5 @@
-use rsnano_types::{Account, Amount, Networks, PublicKey};
 use rsnano_ledger::DEV_GENESIS_PUB_KEY;
+use rsnano_types::{Account, Amount, Networks, PublicKey};
 use std::time::Duration;
 
 #[derive(Clone)]

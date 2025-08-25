@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_types::Amount;
 use rsnano_ledger::LedgerSet;
 use rsnano_rpc_messages::{AccountBalanceResponse, AccountsBalancesResponse, WalletBalancesArgs};
+use rsnano_types::Amount;
 use std::collections::HashMap;
 
 impl RpcCommandHandler {

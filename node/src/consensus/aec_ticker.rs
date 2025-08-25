@@ -80,8 +80,8 @@ pub trait AecTickerPlugin: Send + 'static {
 mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
-    use rsnano_types::{utils::BlockPriority, SavedBlock};
     use rsnano_nullable_clock::Timestamp;
+    use rsnano_types::{utils::BlockPriority, SavedBlock};
     use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
+use rsnano_store_lmdb::{LmdbAccountStore, LmdbPrunedStore};
 use rsnano_types::{
     utils::{new_test_timestamp, UnixMillisTimestamp, TEST_ENDPOINT_1},
     Account, AccountInfo, Amount, BlockHash, PrivateKey, PublicKey, Root, SavedBlock,
     TestBlockBuilder, DEV_GENESIS_KEY,
 };
-use rsnano_store_lmdb::{LmdbAccountStore, LmdbPrunedStore};
 use rsnano_utils::stats::Stats;
 
 use crate::{

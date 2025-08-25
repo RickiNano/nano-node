@@ -6,8 +6,8 @@ use std::{collections::HashMap, time::Duration};
 use crate::consensus::bounded_hash_map::BoundedHashMap;
 use rep_container::RepresentativeContainer;
 use rep_entry::RepresentativeEntry;
-use rsnano_types::{Amount, BlockHash, PublicKey, Vote};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Amount, BlockHash, PublicKey, Vote};
 use strum_macros::{EnumCount, EnumIter};
 
 /// Keeps track of past rebroadcasts and decides whether a new rebroadcast is necessary

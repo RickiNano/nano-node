@@ -2,10 +2,10 @@ use std::{path::Path, sync::Arc};
 
 use anyhow::Context;
 
-use rsnano_types::{KeyDerivationFunction, PrivateKey, PublicKey, WalletId, WorkNonce};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_store_lmdb::LmdbWalletStore;
+use rsnano_types::{KeyDerivationFunction, PrivateKey, PublicKey, WalletId, WorkNonce};
 
 pub struct Wallet {
     id: WalletId,

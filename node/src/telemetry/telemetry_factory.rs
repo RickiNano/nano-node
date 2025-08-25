@@ -3,11 +3,11 @@ use std::{
     time::SystemTime,
 };
 
-use rsnano_types::{PrivateKey, Signature};
 use rsnano_ledger::Ledger;
 use rsnano_messages::{TelemetryData, TelemetryMaker};
 use rsnano_network::{ChannelMode, Network};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_types::{PrivateKey, Signature};
 
 use crate::block_processing::UncheckedMap;
 

@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::BTreeMap};
 
-use rsnano_types::{Block, BlockHash};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Block, BlockHash};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{StatsCollection, StatsSource},

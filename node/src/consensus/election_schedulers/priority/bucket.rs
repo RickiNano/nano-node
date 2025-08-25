@@ -3,8 +3,8 @@ use super::{
     ordered_blocks::{BlockEntry, OrderedBlocks},
 };
 use crate::consensus::{ActiveElectionsContainer, AecInsertError, AecInsertRequest};
-use rsnano_types::{utils::BlockPriority, BlockHash, SavedBlock};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{utils::BlockPriority, BlockHash, SavedBlock};
 use std::sync::atomic::Ordering;
 
 #[derive(Clone, Debug, PartialEq)]

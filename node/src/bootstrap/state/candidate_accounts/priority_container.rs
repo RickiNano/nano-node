@@ -1,5 +1,5 @@
-use rsnano_types::Account;
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::Account;
 use std::collections::BTreeMap;
 use std::mem::size_of;
 

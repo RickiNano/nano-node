@@ -1,5 +1,5 @@
-use rsnano_types::{BlockHash, Root};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{BlockHash, Root};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     time::Duration,
@@ -86,7 +86,7 @@ impl EntryContainer {
         id
     }
 
-    pub fn by_root(&self, root: &Root) -> impl Iterator<Item = &Entry> + '_ {
+    pub fn by_root(&self, root: &Root) -> impl Iterator<Item = &Entry> + '_ + use<'_> {
         match self.by_root.get(root) {
             Some(ids) => self.iter_entries(ids),
             None => self.iter_entries(&self.empty_id_set),

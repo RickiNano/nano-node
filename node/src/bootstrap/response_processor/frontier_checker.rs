@@ -1,7 +1,7 @@
 use super::database_crawler::{AccountCrawlSource, DatabaseCrawler, PendingCrawlSource};
 use crate::bootstrap::state::OutdatedAccounts;
-use rsnano_types::{Account, Frontier};
 use rsnano_ledger::{AnySet, OwningAnySet};
+use rsnano_types::{Account, Frontier};
 
 pub(crate) enum FrontierCheckResult {
     /// Account doesn't exist in the ledger and has no pending blocks, can't be prioritized right now
@@ -103,8 +103,8 @@ impl<'a> FrontierChecker<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{AccountInfo, BlockHash, PendingInfo, PendingKey};
     use rsnano_ledger::Ledger;
+    use rsnano_types::{AccountInfo, BlockHash, PendingInfo, PendingKey};
 
     #[test]
     fn no_frontiers_and_empty_ledger() {

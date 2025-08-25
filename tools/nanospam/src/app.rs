@@ -19,13 +19,13 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-use rsnano_types::{Block, Networks, PrivateKey, ProtocolInfo, RawKey};
 use rsnano_messages::{Message, MessageSerializer, Publish};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_tcp::{TcpStream, TcpStreamFactory};
 use rsnano_nullable_tracing_subscriber::TracingInitializer;
 use rsnano_rpc_client::NanoRpcClient;
+use rsnano_types::{Block, Networks, PrivateKey, ProtocolInfo, RawKey};
 use rsnano_websocket_messages::MessageEnvelope;
 
 use crate::{

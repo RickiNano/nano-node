@@ -1,5 +1,5 @@
-use rsnano_types::Account;
 use rsnano_node::bootstrap::state::{BlockingEntry, BootstrapState, Priority};
+use rsnano_types::Account;
 
 #[derive(Default)]
 pub(crate) struct BootstrapInfo {

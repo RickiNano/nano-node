@@ -1,15 +1,15 @@
 use std::{ops::Deref, sync::Arc, thread::sleep, time::Duration};
 
-use rsnano_types::{
-    utils::UnixMillisTimestamp, Account, Amount, Block, Networks, PrivateKey, ProtocolInfo, Root,
-    StateBlockArgs, Vote, DEV_GENESIS_KEY,
-};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
 };
 use rsnano_messages::{ConfirmAck, Keepalive, Message, MessageHeader, MessageSerializer};
 use rsnano_network::{ChannelMode, TrafficType};
 use rsnano_node::{config::NodeConfig, consensus::VoteProcessorConfig};
+use rsnano_types::{
+    utils::UnixMillisTimestamp, Account, Amount, Block, Networks, PrivateKey, ProtocolInfo, Root,
+    StateBlockArgs, Vote, DEV_GENESIS_KEY,
+};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 
 use test_helpers::{

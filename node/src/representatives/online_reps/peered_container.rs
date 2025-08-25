@@ -1,7 +1,7 @@
 use super::PeeredRep;
-use rsnano_types::{Account, PublicKey};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Account, PublicKey};
 use std::{collections::HashMap, mem::size_of, net::SocketAddrV6, sync::Arc};
 
 #[derive(Debug, PartialEq, Eq)]

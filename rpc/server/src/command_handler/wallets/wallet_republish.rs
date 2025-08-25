@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_types::{Account, Block, BlockHash};
 use rsnano_ledger::AnySet;
 use rsnano_rpc_messages::{BlockHashesResponse, WalletWithCountArgs};
+use rsnano_types::{Account, Block, BlockHash};
 use std::{collections::VecDeque, time::Duration};
 
 impl RpcCommandHandler {

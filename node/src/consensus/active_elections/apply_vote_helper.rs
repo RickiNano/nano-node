@@ -182,12 +182,12 @@ mod tests {
         },
         representatives::QuorumSpecs,
     };
+    use rsnano_ledger::RepWeights;
+    use rsnano_nullable_clock::Timestamp;
     use rsnano_types::{
         utils::{BlockPriority, UnixMillisTimestamp},
         Block, PrivateKey, QualifiedRoot, SavedBlock, StateBlockArgs, Vote,
     };
-    use rsnano_ledger::RepWeights;
-    use rsnano_nullable_clock::Timestamp;
     use rsnano_utils::sync::backpressure_channel::channel;
     use std::time::Duration;
 

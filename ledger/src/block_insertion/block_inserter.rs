@@ -1,9 +1,9 @@
 use std::sync::atomic::Ordering;
 
+use rsnano_nullable_lmdb::WriteTransaction;
 use rsnano_types::{
     Account, AccountInfo, Amount, Block, BlockSideband, PendingInfo, PendingKey, SavedBlock,
 };
-use rsnano_nullable_lmdb::WriteTransaction;
 
 use crate::Ledger;
 

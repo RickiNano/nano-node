@@ -64,8 +64,8 @@ where
 mod tests {
     use std::time::Duration;
 
-    use rsnano_types::BlockHash;
     use rsnano_nullable_clock::Timestamp;
+    use rsnano_types::BlockHash;
 
     use crate::consensus::election::VoteType;
 

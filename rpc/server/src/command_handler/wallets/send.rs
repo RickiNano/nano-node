@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
 use anyhow::bail;
-use rsnano_types::{BlockDetails, WorkNonce};
 use rsnano_rpc_messages::{BlockDto, SendArgs};
+use rsnano_types::{BlockDetails, WorkNonce};
 
 impl RpcCommandHandler {
     pub(crate) fn send(&self, args: SendArgs) -> anyhow::Result<BlockDto> {

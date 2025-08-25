@@ -1,5 +1,5 @@
-use rsnano_types::{Account, AccountInfo, BlockHash, PendingInfo, PendingKey};
 use rsnano_ledger::OwningAnySet;
+use rsnano_types::{Account, AccountInfo, BlockHash, PendingInfo, PendingKey};
 
 pub(super) struct DatabaseCrawler<'a, T>
 where

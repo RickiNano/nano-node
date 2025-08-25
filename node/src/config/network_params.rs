@@ -1,7 +1,7 @@
 use crate::config::NetworkConstants;
 use once_cell::sync::Lazy;
-use rsnano_types::Networks;
 use rsnano_ledger::LedgerConstants;
+use rsnano_types::Networks;
 use rsnano_work::WorkThresholds;
 
 pub static DEV_NETWORK_PARAMS: Lazy<NetworkParams> =

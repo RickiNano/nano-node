@@ -1,7 +1,7 @@
 use chrono::{DateTime, TimeZone, Utc};
-use rsnano_types::{Account, BlockHash};
 use rsnano_messages::{AscPullAckType, AscPullReqType, HashType, Message, MessageType};
 use rsnano_network::{ChannelDirection, ChannelId};
+use rsnano_types::{Account, BlockHash};
 use std::collections::HashMap;
 
 #[derive(Clone)]

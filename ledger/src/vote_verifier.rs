@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
-use rsnano_types::{BlockHash, Root};
 use rsnano_store_lmdb::LmdbStore;
+use rsnano_types::{BlockHash, Root};
 
 use crate::{AnySet, BorrowingAnySet, LedgerConstants, OwningAnySet};
 use rsnano_nullable_lmdb::{Transaction, WriteTransaction};

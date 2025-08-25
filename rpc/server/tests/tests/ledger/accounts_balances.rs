@@ -1,7 +1,7 @@
-use rsnano_types::{Amount, DEV_GENESIS_KEY};
 use rsnano_ledger::{test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT};
 use rsnano_node::Node;
 use rsnano_rpc_messages::AccountsBalancesArgs;
+use rsnano_types::{Amount, DEV_GENESIS_KEY};
 use std::sync::Arc;
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 

@@ -1,11 +1,11 @@
 use std::ops::RangeBounds;
 
+use rsnano_nullable_lmdb::{
+    DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+};
 use rsnano_types::{
     utils::{BufferReader, Deserialize},
     BlockHash, QualifiedRoot,
-};
-use rsnano_nullable_lmdb::{
-    DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 
 use crate::{LmdbIterator, LmdbRangeIterator};
@@ -51,7 +51,7 @@ impl LmdbFinalVoteStore {
     pub fn iter<'tx>(
         &self,
         tx: &'tx dyn Transaction,
-    ) -> impl Iterator<Item = (QualifiedRoot, BlockHash)> + 'tx {
+    ) -> impl Iterator<Item = (QualifiedRoot, BlockHash)> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
 
         LmdbIterator::new(cursor, |key, value| {

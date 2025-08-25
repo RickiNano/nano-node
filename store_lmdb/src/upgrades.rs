@@ -1,14 +1,14 @@
 use num_traits::FromPrimitive;
 use tracing::{debug, error, info};
 
-use rsnano_types::{
-    utils::{UnixMillisTimestamp, UnixTimestamp},
-    BlockType,
-};
 use rsnano_nullable_lmdb::{
     sys::{MDB_FIRST, MDB_NEXT},
     DatabaseFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory, Transaction,
     WriteFlags,
+};
+use rsnano_types::{
+    utils::{UnixMillisTimestamp, UnixTimestamp},
+    BlockType,
 };
 
 use crate::{

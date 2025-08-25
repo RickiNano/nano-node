@@ -210,13 +210,15 @@ impl AsyncWrite for TcpStream {
 }
 
 unsafe fn downcast_stream(stream: Pin<&mut TcpStream>) -> Pin<&mut tokio::net::TcpStream> {
-    stream.map_unchecked_mut(|i| {
-        let StreamType::Tokio(s) = &mut i.stream else {
-            unreachable!()
-        };
+    unsafe {
+        stream.map_unchecked_mut(|i| {
+            let StreamType::Tokio(s) = &mut i.stream else {
+                unreachable!()
+            };
 
-        s
-    })
+            s
+        })
+    }
 }
 
 #[cfg(test)]

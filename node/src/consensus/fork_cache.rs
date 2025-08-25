@@ -77,7 +77,7 @@ impl ForkCache {
         self.forks.contains_key(root)
     }
 
-    pub fn get_forks(&self, root: &QualifiedRoot) -> impl Iterator<Item = &Block> {
+    pub fn get_forks(&self, root: &QualifiedRoot) -> impl Iterator<Item = &Block> + use<'_> {
         self.forks.get(root).unwrap_or(&self.empty).iter()
     }
 }

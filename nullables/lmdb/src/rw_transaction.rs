@@ -76,7 +76,7 @@ impl WriteTransaction {
         name: Option<&str>,
         flags: lmdb::DatabaseFlags,
     ) -> lmdb::Result<LmdbDatabase> {
-        self.txn.create_db(name, flags)
+        unsafe { self.txn.create_db(name, flags) }
     }
 
     pub fn put(
@@ -126,7 +126,7 @@ impl WriteTransaction {
     /// This method is unsafe in the same ways as `Environment::close_db`, and
     /// should be used accordingly.
     pub unsafe fn drop_db(&mut self, database: LmdbDatabase) -> lmdb::Result<()> {
-        self.txn.drop_db(database)
+        unsafe { self.txn.drop_db(database) }
     }
 }
 
@@ -221,9 +221,11 @@ impl RwTransaction {
         name: Option<&str>,
         flags: DatabaseFlags,
     ) -> lmdb::Result<LmdbDatabase> {
-        match &self.strategy {
-            RwTransactionStrategy::Real(s) => s.create_db(name, flags),
-            RwTransactionStrategy::Nulled(s) => s.create_db(name, flags),
+        unsafe {
+            match &self.strategy {
+                RwTransactionStrategy::Real(s) => s.create_db(name, flags),
+                RwTransactionStrategy::Nulled(s) => s.create_db(name, flags),
+            }
         }
     }
 
@@ -232,10 +234,12 @@ impl RwTransaction {
     /// This method is unsafe in the same ways as `Environment::close_db`, and
     /// should be used accordingly.
     pub unsafe fn drop_db(&mut self, database: LmdbDatabase) -> lmdb::Result<()> {
-        if let RwTransactionStrategy::Real(s) = &mut self.strategy {
-            s.drop_db(database.as_real())?;
+        unsafe {
+            if let RwTransactionStrategy::Real(s) = &mut self.strategy {
+                s.drop_db(database.as_real())?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 
     pub fn clear_db(&mut self, database: LmdbDatabase) -> lmdb::Result<()> {
@@ -334,7 +338,7 @@ impl RwTransactionWrapper {
     /// This method is unsafe in the same ways as `Environment::close_db`, and
     /// should be used accordingly.
     unsafe fn drop_db(&mut self, database: lmdb::Database) -> lmdb::Result<()> {
-        lmdb::RwTransaction::drop_db(&mut self.0, database)
+        unsafe { lmdb::RwTransaction::drop_db(&mut self.0, database) }
     }
 
     /// ## Safety
@@ -349,7 +353,7 @@ impl RwTransactionWrapper {
         name: Option<&str>,
         flags: DatabaseFlags,
     ) -> lmdb::Result<LmdbDatabase> {
-        lmdb::RwTransaction::create_db(&self.0, name, flags).map(LmdbDatabase::new)
+        unsafe { lmdb::RwTransaction::create_db(&self.0, name, flags).map(LmdbDatabase::new) }
     }
 }
 

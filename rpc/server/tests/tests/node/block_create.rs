@@ -1,6 +1,6 @@
-use rsnano_types::{Amount, Block, BlockType, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
 use rsnano_rpc_messages::{BlockCreateArgs, BlockTypeDto};
+use rsnano_types::{Amount, Block, BlockType, PrivateKey, WalletId, DEV_GENESIS_KEY};
 use test_helpers::{setup_rpc_client_and_server, System};
 
 #[test]

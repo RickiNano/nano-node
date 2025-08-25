@@ -1,8 +1,8 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use rsnano_types::Networks;
 use rsnano_daemon::DaemonBuilder;
 use rsnano_node::{working_path_for, Node};
+use rsnano_types::Networks;
 use std::{
     path::PathBuf,
     sync::{

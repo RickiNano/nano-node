@@ -1,7 +1,7 @@
-use rsnano_types::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use rsnano_rpc_messages::LedgerArgs;
+use rsnano_types::{Amount, Block, PrivateKey, StateBlockArgs, DEV_GENESIS_KEY};
 use std::sync::Arc;
 use test_helpers::{setup_rpc_client_and_server, System};
 

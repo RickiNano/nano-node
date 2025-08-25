@@ -1,5 +1,5 @@
-use rsnano_types::Amount;
 use rsnano_rpc_messages::AmountRpcMessage;
+use rsnano_types::Amount;
 
 pub fn raw_to_nano(args: AmountRpcMessage) -> AmountRpcMessage {
     AmountRpcMessage::new(Amount::raw(args.amount.number() / Amount::nano(1).number()))

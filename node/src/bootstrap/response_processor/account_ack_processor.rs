@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use rsnano_types::{Account, BlockHash};
 use rsnano_messages::AccountInfoAckPayload;
+use rsnano_types::{Account, BlockHash};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::bootstrap::state::{BootstrapState, CandidateAccounts, RunningQuery};
@@ -78,8 +78,8 @@ impl AccountAckProcessor {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_types::Account;
     use rsnano_nullable_clock::Timestamp;
+    use rsnano_types::Account;
     use rsnano_utils::stats::Direction;
 
     use super::*;

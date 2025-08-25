@@ -1,10 +1,10 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_types::{Account, PublicKey};
 use rsnano_node::representatives::OnlineRepInfo;
 use rsnano_rpc_messages::{
     DetailedRepresentativesOnline, RepWeightDto, RepresentativesOnlineArgs,
     RepresentativesOnlineResponse, SimpleRepresentativesOnline,
 };
+use rsnano_types::{Account, PublicKey};
 use std::collections::{HashMap, HashSet};
 
 impl RpcCommandHandler {
@@ -84,11 +84,11 @@ impl ResponseBuilder {
 mod tests {
     use super::ResponseBuilder;
     use crate::command_handler::test_rpc_command;
-    use rsnano_types::Account;
     use rsnano_rpc_messages::{
         RepWeightDto, RepresentativesOnlineArgs, RepresentativesOnlineResponse, RpcCommand,
         SimpleRepresentativesOnline,
     };
+    use rsnano_types::Account;
     use std::collections::HashMap;
 
     #[test]
@@ -106,8 +106,8 @@ mod tests {
 
     mod simple_result {
         use super::*;
-        use rsnano_types::Amount;
         use rsnano_node::representatives::OnlineRepInfo;
+        use rsnano_types::Amount;
 
         #[test]
         fn empty() {
@@ -168,8 +168,8 @@ mod tests {
 
     mod detailed_result {
         use super::*;
-        use rsnano_types::{Amount, PublicKey};
         use rsnano_node::representatives::OnlineRepInfo;
+        use rsnano_types::{Amount, PublicKey};
 
         #[test]
         fn empty() {

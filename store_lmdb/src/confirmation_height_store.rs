@@ -1,12 +1,12 @@
 use std::ops::RangeBounds;
 
-use rsnano_types::{
-    utils::{BufferReader, Deserialize},
-    Account, ConfirmationHeightInfo,
-};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
     WriteFlags, WriteTransaction,
+};
+use rsnano_types::{
+    utils::{BufferReader, Deserialize},
+    Account, ConfirmationHeightInfo,
 };
 
 use crate::{
@@ -75,7 +75,7 @@ impl LmdbConfirmationHeightStore {
     pub fn iter<'tx>(
         &self,
         tx: &'tx dyn Transaction,
-    ) -> impl Iterator<Item = (Account, ConfirmationHeightInfo)> + 'tx {
+    ) -> impl Iterator<Item = (Account, ConfirmationHeightInfo)> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
 
         LmdbIterator::new(cursor, |key, value| {
@@ -152,8 +152,8 @@ impl ConfiguredConfirmationHeightDatabaseBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::BlockHash;
     use rsnano_nullable_lmdb::PutEvent;
+    use rsnano_types::BlockHash;
     use std::sync::Arc;
 
     struct Fixture {

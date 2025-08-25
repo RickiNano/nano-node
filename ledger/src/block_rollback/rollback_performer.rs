@@ -1,5 +1,5 @@
-use rsnano_types::{AccountInfo, BlockHash, SavedBlock};
 use rsnano_nullable_lmdb::WriteTransaction;
+use rsnano_types::{AccountInfo, BlockHash, SavedBlock};
 
 use crate::{AnySet, BorrowingAnySet, Ledger, LedgerSet};
 

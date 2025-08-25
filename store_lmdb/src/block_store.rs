@@ -6,15 +6,15 @@ use std::{
     },
 };
 
-use rsnano_types::{
-    utils::{BufferReader, Deserialize},
-    BlockHash, SavedBlock,
-};
 use rsnano_nullable_lmdb::{
     sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment,
     Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{
+    utils::{BufferReader, Deserialize},
+    BlockHash, SavedBlock,
+};
 
 use crate::{LmdbIterator, LmdbRangeIterator, BLOCK_DATA_DATABASE, BLOCK_INDEX_DATABASE};
 

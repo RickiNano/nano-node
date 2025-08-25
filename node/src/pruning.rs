@@ -9,8 +9,8 @@ use std::{
 
 use tracing::info;
 
-use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
 use rsnano_ledger::Ledger;
+use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use crate::{

@@ -1,6 +1,6 @@
-use rsnano_types::{Account, Amount, WalletId, DEV_GENESIS_KEY};
 use rsnano_ledger::{AnySet, LedgerSet, DEV_GENESIS_ACCOUNT};
 use rsnano_rpc_messages::SendArgs;
+use rsnano_types::{Account, Amount, WalletId, DEV_GENESIS_KEY};
 use std::time::Duration;
 use test_helpers::{assert_timely_msg, setup_rpc_client_and_server, System};
 

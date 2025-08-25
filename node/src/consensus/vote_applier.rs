@@ -5,8 +5,8 @@ use std::{
 
 use rsnano_nullable_clock::SteadyClock;
 
-use rsnano_types::{Amount, BlockHash, VoteError};
 use rsnano_ledger::RepWeightCache;
+use rsnano_types::{Amount, BlockHash, VoteError};
 use rsnano_utils::sync::backpressure_channel::Sender;
 
 use super::{ActiveElectionsContainer, AecEvent, FilteredVote, ReceivedVote};

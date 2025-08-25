@@ -6,10 +6,10 @@ use std::{
 use anyhow::bail;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use rsnano_types::{BlockHash, PrivateKey, ProtocolInfo};
 use rsnano_messages::{Message, MessageDeserializer, MessageSerializer};
 use rsnano_network_protocol::{HandshakeProcess, SynCookies};
 use rsnano_nullable_tcp::TcpStream;
+use rsnano_types::{BlockHash, PrivateKey, ProtocolInfo};
 
 pub(crate) async fn perform_handshake(
     protocol: ProtocolInfo,

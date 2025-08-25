@@ -15,10 +15,6 @@ use bounded_vec_deque::BoundedVecDeque;
 use num_format::{Locale, ToFormattedString};
 use tracing::{error, info, warn};
 
-use rsnano_types::{
-    utils::Peer, Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot,
-    Root, SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
-};
 use rsnano_ledger::{AnySet, BlockError, Ledger, LedgerBuilder, LedgerSet};
 use rsnano_messages::NetworkFilter;
 use rsnano_network::{
@@ -35,6 +31,10 @@ use rsnano_nullable_lmdb::{
     EnvironmentFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory,
 };
 use rsnano_output_tracker::OutputListenerMt;
+use rsnano_types::{
+    utils::Peer, Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot,
+    Root, SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
+};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},

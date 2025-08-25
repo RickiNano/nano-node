@@ -10,8 +10,8 @@ use rsnano_utils::stats::Stats;
 
 use super::{try_send_serialized_message, MessageSender};
 use crate::representatives::OnlineReps;
-use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
 
 /// Floods messages to PRs and non PRs
 pub struct MessageFlooder {

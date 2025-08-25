@@ -3,11 +3,11 @@ use std::{
     time::Duration,
 };
 
-use rsnano_types::{BlockHash, Networks, Root, SavedBlock};
 use rsnano_ledger::Ledger;
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{BlockHash, Networks, Root, SavedBlock};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{DetailType, StatType, Stats},

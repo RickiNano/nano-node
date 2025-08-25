@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_types::Account;
 use rsnano_ledger::LedgerSet;
 use rsnano_rpc_messages::{AccountsRepresentativesResponse, AccountsRpcMessage};
+use rsnano_types::Account;
 use std::collections::HashMap;
 
 impl RpcCommandHandler {

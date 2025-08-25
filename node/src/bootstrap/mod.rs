@@ -12,10 +12,10 @@ use std::sync::Arc;
 
 pub use bootstrap_server::*;
 pub use bootstrapper::*;
-use rsnano_types::{Account, BlockHash};
 use rsnano_messages::{AscPullReqType, FrontiersReqPayload, HashType};
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Account, BlockHash};
 
 pub(self) trait BootstrapPromise<T> {
     fn poll(&mut self, state: &mut state::BootstrapState, now: Timestamp) -> PollResult<T>;

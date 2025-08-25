@@ -1,5 +1,5 @@
-use rsnano_types::{Account, BlockHash};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Account, BlockHash};
 use std::{
     collections::{BTreeMap, VecDeque},
     mem::size_of,

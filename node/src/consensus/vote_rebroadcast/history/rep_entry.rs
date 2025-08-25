@@ -1,7 +1,7 @@
 use std::{cmp::min, time::Duration};
 
-use rsnano_types::{utils::UnixMillisTimestamp, Amount, BlockHash, PublicKey, Vote};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{utils::UnixMillisTimestamp, Amount, BlockHash, PublicKey, Vote};
 
 use super::{BoundedHashMap, RebroadcastError};
 

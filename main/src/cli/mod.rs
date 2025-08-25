@@ -7,9 +7,9 @@ use commands::{
     utils::{run_utils_command, UtilsCommand},
     wallets::{run_wallets_command, WalletsCommand},
 };
-use rsnano_types::{Networks, PrivateKeyFactory};
 use rsnano_node::{working_path_for, Node, NodeBuilder};
 use rsnano_nullable_console::Console;
+use rsnano_types::{Networks, PrivateKeyFactory};
 use std::{path::PathBuf, str::FromStr};
 
 mod commands;

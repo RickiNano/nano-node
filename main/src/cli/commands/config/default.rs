@@ -3,9 +3,9 @@ use std::io::BufRead;
 use anyhow::Result;
 use clap::{ArgGroup, Parser};
 
-use rsnano_types::Networks;
 use rsnano_node::config::{DaemonConfig, DaemonToml, NetworkConstants, NetworkParams};
 use rsnano_rpc_server::{RpcServerConfig, RpcServerToml};
+use rsnano_types::Networks;
 use rsnano_utils::get_cpu_count;
 
 #[derive(Parser, PartialEq, Debug)]

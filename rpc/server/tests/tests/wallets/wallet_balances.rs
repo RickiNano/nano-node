@@ -1,7 +1,7 @@
-use rsnano_types::{Account, Amount, PublicKey, RawKey, WalletId};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::Node;
 use rsnano_rpc_messages::{AccountBalanceResponse, AccountsBalancesResponse, WalletBalancesArgs};
+use rsnano_types::{Account, Amount, PublicKey, RawKey, WalletId};
 use std::{collections::HashMap, sync::Arc};
 use test_helpers::{assert_timely2, setup_rpc_client_and_server, System};
 

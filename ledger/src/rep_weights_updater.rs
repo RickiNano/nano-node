@@ -3,9 +3,9 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use rsnano_types::{Amount, PublicKey};
 use rsnano_nullable_lmdb::WriteTransaction;
 use rsnano_store_lmdb::LmdbRepWeightStore;
+use rsnano_types::{Amount, PublicKey};
 
 use crate::{RepWeightCache, RepWeights};
 

@@ -103,15 +103,19 @@ impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
                 }
             },
             PriorityState::WaitPriority(ref channel) => {
-                if let Some(query) =
-                    self.query_factory
-                        .next_priority_query(state, channel.clone(), self.clock.now())
-                {
-                    self.state = PriorityState::Initial;
-                    PollResult::Finished(query)
-                } else {
-                    self.stats.wait_priority.fetch_add(1, Ordering::Relaxed);
-                    PollResult::Wait
+                match self.query_factory.next_priority_query(
+                    state,
+                    channel.clone(),
+                    self.clock.now(),
+                ) {
+                    Some(query) => {
+                        self.state = PriorityState::Initial;
+                        PollResult::Finished(query)
+                    }
+                    _ => {
+                        self.stats.wait_priority.fetch_add(1, Ordering::Relaxed);
+                        PollResult::Wait
+                    }
                 }
             }
         }
@@ -155,10 +159,10 @@ impl StatsSource for PriorityRequesterStats {
 mod tests {
     use std::sync::{Arc, Mutex, RwLock};
 
-    use rsnano_types::Account;
     use rsnano_ledger::Ledger;
     use rsnano_network::{token_bucket::TokenBucket, Network};
     use rsnano_nullable_clock::SteadyClock;
+    use rsnano_types::Account;
 
     use super::PriorityRequester;
     use crate::{

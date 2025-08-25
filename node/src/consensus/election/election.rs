@@ -5,11 +5,11 @@ use std::{
 };
 
 use super::{block_tallies::BlockTallies, ConfirmationType, ConfirmedElection, ElectionState};
+use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{
     utils::UnixMillisTimestamp, Account, Amount, Block, BlockHash, MaybeSavedBlock, PublicKey,
     QualifiedRoot, SavedBlock, Vote, VoteError,
 };
-use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::DetailType;
 use strum_macros::{EnumCount, EnumIter};
 

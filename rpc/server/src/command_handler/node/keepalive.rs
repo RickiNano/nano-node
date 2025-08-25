@@ -17,9 +17,9 @@ impl RpcCommandHandler {
 mod tests {
     use super::*;
     use crate::command_handler::{test_rpc_command_requires_control, test_rpc_command_with_node};
-    use rsnano_types::utils::Peer;
     use rsnano_node::Node;
     use rsnano_rpc_messages::RpcCommand;
+    use rsnano_types::utils::Peer;
     use std::{sync::Arc, thread::spawn};
 
     #[test]

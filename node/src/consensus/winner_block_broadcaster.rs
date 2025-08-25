@@ -1,9 +1,9 @@
 use std::{cmp::max, collections::HashMap, sync::Arc, time::Duration};
 
-use rsnano_types::{Block, BlockHash, Networks, PublicKey};
 use rsnano_messages::{Message, Publish};
 use rsnano_network::{token_bucket::TokenBucket, TrafficType};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_types::{Block, BlockHash, Networks, PublicKey};
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::{bounded_hash_map::BoundedHashMap, election::VoteSummary};

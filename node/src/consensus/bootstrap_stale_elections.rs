@@ -1,7 +1,7 @@
 use super::{election::Election, ActiveElectionsContainer, AecTickerPlugin};
 use crate::bootstrap::Bootstrapper;
-use rsnano_types::Account;
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::Account;
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 use std::{
     any::Any,

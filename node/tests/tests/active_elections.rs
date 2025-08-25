@@ -1,9 +1,5 @@
 use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration, usize};
 
-use rsnano_types::{
-    utils::{MemoryStream, UnixMillisTimestamp},
-    Account, Amount, PrivateKey, Vote, VoteError, VoteSource, DEV_GENESIS_KEY,
-};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, BlockError, LedgerSet, DEV_GENESIS_ACCOUNT,
     DEV_GENESIS_PUB_KEY,
@@ -14,6 +10,10 @@ use rsnano_node::{
     consensus::{FilteredVote, ReceivedVote},
 };
 use rsnano_nullable_tcp::get_available_port;
+use rsnano_types::{
+    utils::{MemoryStream, UnixMillisTimestamp},
+    Account, Amount, PrivateKey, Vote, VoteError, VoteSource, DEV_GENESIS_KEY,
+};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
     assert_always_eq, assert_never, assert_timely2, assert_timely_eq, assert_timely_eq2,

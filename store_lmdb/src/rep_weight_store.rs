@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use rsnano_types::{
-    utils::{BufferReader, Deserialize},
-    Amount, PublicKey,
-};
 use rsnano_nullable_lmdb::{
     sys::{MDB_cursor_op, MDB_FIRST, MDB_NEXT},
     ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, RoCursor, Transaction,
     WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{
+    utils::{BufferReader, Deserialize},
+    Amount, PublicKey,
+};
 
 use crate::REP_WEIGHT_TEST_DATABASE;
 

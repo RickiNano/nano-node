@@ -8,10 +8,10 @@ use std::{
     time::Duration,
 };
 
-use rsnano_types::{Account, AccountInfo, ConfirmationHeightInfo};
 use rsnano_ledger::{AnySet, ConfirmedSet, Ledger};
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::{Account, AccountInfo, ConfirmationHeightInfo};
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 #[derive(Clone, PartialEq, Eq, Debug)]

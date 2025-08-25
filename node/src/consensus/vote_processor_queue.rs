@@ -6,8 +6,8 @@ use std::{
 
 use strum::IntoEnumIterator;
 
-use rsnano_types::{BlockHash, Vote, VoteSource};
 use rsnano_network::{Channel, ChannelId, DeadChannelCleanupStep};
+use rsnano_types::{BlockHash, Vote, VoteSource};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     fair_queue::{FairQueue, FairQueueInfo},

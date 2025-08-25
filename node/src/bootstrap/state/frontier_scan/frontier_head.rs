@@ -1,5 +1,5 @@
-use rsnano_types::{Account, Frontier};
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Account, Frontier};
 use std::{collections::BTreeSet, time::Duration};
 
 /// Represents a range of accounts to scan, once the full range is scanned (goes past `end`)

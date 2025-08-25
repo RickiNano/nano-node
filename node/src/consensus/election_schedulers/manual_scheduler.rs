@@ -5,9 +5,9 @@ use std::{
     thread::JoinHandle,
 };
 
-use rsnano_types::{Amount, Block, BlockHash, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::{Amount, Block, BlockHash, SavedBlock};
 use rsnano_utils::{
     container_info::ContainerInfo,
     stats::{DetailType, StatType, Stats},

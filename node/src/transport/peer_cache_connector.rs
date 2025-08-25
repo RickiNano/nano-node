@@ -76,8 +76,8 @@ mod tests {
 
     use tracing_test::traced_test;
 
-    use rsnano_types::utils::{parse_endpoint, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
     use rsnano_output_tracker::OutputTrackerMt;
+    use rsnano_types::utils::{parse_endpoint, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
     use rsnano_utils::stats::Direction;
 
     use super::*;

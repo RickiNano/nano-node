@@ -2,11 +2,11 @@ use std::{collections::HashMap, time::Duration};
 
 use strum::EnumCount;
 
+use rsnano_ledger::RepWeights;
+use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{
     utils::TimePriority, Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError,
 };
-use rsnano_ledger::RepWeights;
-use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{StatsCollection, StatsSource},

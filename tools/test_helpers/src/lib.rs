@@ -5,11 +5,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rsnano_types::{
-    utils::{NULL_ENDPOINT, TEST_ENDPOINT_1},
-    Account, Amount, Block, BlockHash, Epoch, Networks, PrivateKey, PublicKey, SavedBlock,
-    StateBlockArgs, WalletId, DEV_GENESIS_KEY,
-};
 use rsnano_ledger::{
     AnySet, LedgerSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
 };
@@ -22,6 +17,11 @@ use rsnano_node::{
 use rsnano_rpc_client::{NanoRpcClient, Url};
 use rsnano_rpc_server::run_rpc_server;
 use rsnano_store_lmdb::SyncStrategy;
+use rsnano_types::{
+    utils::{NULL_ENDPOINT, TEST_ENDPOINT_1},
+    Account, Amount, Block, BlockHash, Epoch, Networks, PrivateKey, PublicKey, SavedBlock,
+    StateBlockArgs, WalletId, DEV_GENESIS_KEY,
+};
 
 pub struct System {
     pub network_params: NetworkParams,

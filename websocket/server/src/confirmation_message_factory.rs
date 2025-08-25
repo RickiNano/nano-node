@@ -1,6 +1,6 @@
-use rsnano_types::{Amount, BlockType, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_node::consensus::election::ConfirmedElection;
+use rsnano_types::{Amount, BlockType, SavedBlock};
 use rsnano_websocket_messages::{
     BlockConfirmed, ElectionInfo, JsonSideband, MessageEnvelope, Topic,
 };

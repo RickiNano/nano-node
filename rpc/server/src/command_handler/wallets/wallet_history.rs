@@ -1,7 +1,7 @@
 use crate::command_handler::{ledger::AccountHistoryHelper, RpcCommandHandler};
-use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
 use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{HistoryEntry, WalletHistoryArgs, WalletHistoryResponse};
+use rsnano_types::{utils::UnixTimestamp, Account, BlockHash};
 
 impl RpcCommandHandler {
     pub(crate) fn wallet_history(

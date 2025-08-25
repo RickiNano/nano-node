@@ -11,15 +11,15 @@ use std::{
 
 use tracing::debug;
 
-use rsnano_types::{
-    utils::UnixTimestamp, Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo,
-    Epoch, Link, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
-};
 use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
 use rsnano_store_lmdb::{
     ConfiguredAccountDatabaseBuilder, ConfiguredBlockDatabaseBuilder,
     ConfiguredConfirmationHeightDatabaseBuilder, ConfiguredPeersDatabaseBuilder,
     ConfiguredPendingDatabaseBuilder, ConfiguredPrunedDatabaseBuilder, LmdbStore, MemoryStats,
+};
+use rsnano_types::{
+    utils::UnixTimestamp, Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo,
+    Epoch, Link, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},

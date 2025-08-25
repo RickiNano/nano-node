@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use rsnano_types::BlockHash;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::BlockHash;
 
 /// Stores the hash of the successor block for a given block hash
 pub struct LmdbSuccessorStore {

@@ -39,11 +39,11 @@ impl RunningQueryContainer {
             .count()
     }
 
-    pub fn iter_hash(&self, hash: &BlockHash) -> impl Iterator<Item = &RunningQuery> {
+    pub fn iter_hash(&self, hash: &BlockHash) -> impl Iterator<Item = &RunningQuery> + use<'_> {
         self.iter_ids(self.by_hash.get(hash))
     }
 
-    pub fn iter_account(&self, account: &Account) -> impl Iterator<Item = &RunningQuery> {
+    pub fn iter_account(&self, account: &Account) -> impl Iterator<Item = &RunningQuery> + use<'_> {
         self.iter_ids(self.by_account.get(account))
     }
 

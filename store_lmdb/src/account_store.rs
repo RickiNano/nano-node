@@ -1,14 +1,14 @@
 use std::{ops::RangeBounds, sync::Arc};
 
-use rsnano_types::{
-    utils::{BufferReader, Deserialize},
-    Account, AccountInfo,
-};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
     WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{
+    utils::{BufferReader, Deserialize},
+    Account, AccountInfo,
+};
 
 use crate::{
     iterator::{LmdbIterator, LmdbRangeIterator},
@@ -74,7 +74,7 @@ impl LmdbAccountStore {
     pub fn iter<'txn>(
         &self,
         tx: &'txn dyn Transaction,
-    ) -> impl Iterator<Item = (Account, AccountInfo)> + 'txn {
+    ) -> impl Iterator<Item = (Account, AccountInfo)> + 'txn + use<'txn> {
         let cursor = tx
             .open_ro_cursor(self.database)
             .expect("could not read from account store");
@@ -154,8 +154,8 @@ impl ConfiguredAccountDatabaseBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{Amount, BlockHash};
     use rsnano_nullable_lmdb::{DeleteEvent, PutEvent};
+    use rsnano_types::{Amount, BlockHash};
     use std::sync::Mutex;
 
     struct Fixture {

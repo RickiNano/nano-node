@@ -1,7 +1,7 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_types::{Amount, Epoch};
 use rsnano_ledger::{AnySet, ConfirmedSet, LedgerSet};
 use rsnano_rpc_messages::{unwrap_bool_or_false, AccountInfoArgs, AccountInfoResponse};
+use rsnano_types::{Amount, Epoch};
 
 impl RpcCommandHandler {
     pub(crate) fn account_info(

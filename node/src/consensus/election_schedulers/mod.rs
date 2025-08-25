@@ -11,10 +11,10 @@ pub use optimistic_scheduler::*;
 
 use std::sync::{Arc, Mutex, RwLock};
 
-use rsnano_types::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, Networks, SavedBlock};
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{Account, AccountInfo, BlockHash, ConfirmationHeightInfo, Networks, SavedBlock};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{Stats, StatsCollection, StatsSource},

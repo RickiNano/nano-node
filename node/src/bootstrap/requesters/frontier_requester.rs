@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use rsnano_types::{Account, BlockHash};
 use rsnano_messages::{AscPullReqType, FrontiersReqPayload};
 use rsnano_network::{token_bucket::TokenBucket, Channel};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_types::{Account, BlockHash};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::channel_waiter::ChannelWaiter;

@@ -1,6 +1,6 @@
-use rsnano_types::{Account, AccountInfo, Amount, BlockHash};
 use rsnano_nullable_lmdb::ReadTransaction;
 use rsnano_store_lmdb::LmdbStore;
+use rsnano_types::{Account, AccountInfo, Amount, BlockHash};
 
 use super::LedgerSet;
 

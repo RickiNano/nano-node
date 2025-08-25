@@ -1,8 +1,5 @@
 use std::{sync::Arc, time::Duration};
 
-use rsnano_types::{
-    Amount, Epoch, PrivateKey, Signature, Vote, VoteError, VoteSource, WalletId, DEV_GENESIS_KEY,
-};
 use rsnano_ledger::{
     test_helpers::UnsavedBlockLatticeBuilder, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH,
     DEV_GENESIS_PUB_KEY,
@@ -10,6 +7,9 @@ use rsnano_ledger::{
 use rsnano_node::{
     config::NodeFlags,
     consensus::{election::VoteType, ReceivedVote},
+};
+use rsnano_types::{
+    Amount, Epoch, PrivateKey, Signature, Vote, VoteError, VoteSource, WalletId, DEV_GENESIS_KEY,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{

@@ -1,14 +1,14 @@
 use std::{ops::RangeBounds, sync::Arc};
 
-use rsnano_types::{
-    utils::{BufferReader, Deserialize},
-    Account, BlockHash, PendingInfo, PendingKey,
-};
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
     WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::{
+    utils::{BufferReader, Deserialize},
+    Account, BlockHash, PendingInfo, PendingKey,
+};
 
 use crate::{iterator::LmdbRangeIterator, LmdbIterator, PENDING_TEST_DATABASE};
 
@@ -77,7 +77,7 @@ impl LmdbPendingStore {
     pub fn iter<'tx>(
         &self,
         tx: &'tx dyn Transaction,
-    ) -> impl Iterator<Item = (PendingKey, PendingInfo)> + 'tx {
+    ) -> impl Iterator<Item = (PendingKey, PendingInfo)> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
 
         LmdbIterator::new(cursor, |key, value| {

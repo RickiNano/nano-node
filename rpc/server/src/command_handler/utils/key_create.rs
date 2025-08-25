@@ -1,5 +1,5 @@
-use rsnano_types::{Account, PrivateKey};
 use rsnano_rpc_messages::KeyPairDto;
+use rsnano_types::{Account, PrivateKey};
 
 pub(crate) fn key_create() -> KeyPairDto {
     let keypair = PrivateKey::new();

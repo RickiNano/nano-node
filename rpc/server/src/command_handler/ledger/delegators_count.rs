@@ -1,6 +1,6 @@
 use crate::command_handler::RpcCommandHandler;
-use rsnano_types::PublicKey;
 use rsnano_rpc_messages::{AccountArg, CountResponse};
+use rsnano_types::PublicKey;
 
 impl RpcCommandHandler {
     pub(crate) fn delegators_count(&self, args: AccountArg) -> CountResponse {
