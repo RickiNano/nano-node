@@ -5,7 +5,8 @@ use std::{
 };
 
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_utils::{ticker::Tickable, CancellationToken};
+
+use crate::{ticker::Tickable, CancellationToken};
 
 // Runs a task periodically in it's own thread
 pub struct TimerThread<T: Tickable + 'static> {

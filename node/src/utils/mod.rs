@@ -3,7 +3,6 @@ mod processing_queue;
 mod rate_calculator;
 mod thread_pool;
 mod timer;
-mod timer_thread;
 
 use std::net::Ipv6Addr;
 
@@ -22,7 +21,6 @@ pub use crate::utils::timer::{NullTimer, Timer, TimerStrategy, TimerWrapper};
 pub use processing_queue::*;
 pub use rate_calculator::RateCalculator;
 pub use thread_pool::*;
-pub use timer_thread::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ErrorCode {
