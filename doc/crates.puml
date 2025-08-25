@@ -64,7 +64,6 @@ node "nullables" {
 [store_lmdb] --> [core]
 [work] --> [core]
 [work] --> [utils]
-[utils] --> [core]
 [wallet] --> [ledger]
 [core] -[hidden]-> "nullables"
 @enduml

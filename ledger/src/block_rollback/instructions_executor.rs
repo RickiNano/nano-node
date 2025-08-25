@@ -1,8 +1,8 @@
 use std::sync::atomic::Ordering;
 
-use rsnano_core::{Amount, PublicKey};
+use rsnano_core::{Amount, BlockSubType, PublicKey};
 use rsnano_nullable_lmdb::WriteTransaction;
-use rsnano_utils::stats::StatType;
+use rsnano_utils::stats::{DetailType, StatType};
 
 use super::rollback_planner::RollbackInstructions;
 use crate::Ledger;
@@ -38,9 +38,10 @@ impl<'a> RollbackInstructionsExecutor<'a> {
             .block_count
             .fetch_sub(1, Ordering::SeqCst);
 
-        self.ledger
-            .stats
-            .inc(StatType::Rollback, self.instructions.block_sub_type.into());
+        self.ledger.stats.inc(
+            StatType::Rollback,
+            sub_type_to_detail(self.instructions.block_sub_type),
+        );
     }
 
     fn update_block_table(&mut self) {
@@ -96,5 +97,15 @@ impl<'a> RollbackInstructionsExecutor<'a> {
             self.instructions.old_account_info.representative,
             Amount::zero().wrapping_sub(self.instructions.old_account_info.balance),
         );
+    }
+}
+
+fn sub_type_to_detail(block_type: BlockSubType) -> DetailType {
+    match block_type {
+        BlockSubType::Send => DetailType::Send,
+        BlockSubType::Receive => DetailType::Receive,
+        BlockSubType::Open => DetailType::Open,
+        BlockSubType::Change => DetailType::Change,
+        BlockSubType::Epoch => DetailType::EpochBlock,
     }
 }
