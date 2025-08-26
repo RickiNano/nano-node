@@ -4528,6 +4528,7 @@ dependencies = [
  "num",
  "num-derive",
  "num-traits 0.2.19",
+ "rsnano_nullable_clock",
  "rsnano_output_tracker",
  "serde",
  "serde_json",

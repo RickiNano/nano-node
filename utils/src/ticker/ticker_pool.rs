@@ -1,9 +1,10 @@
 use super::Tickable;
 use crate::{
+    CancellationToken,
     thread_factory::{JoinHandle, ThreadFactory},
     thread_pool::ThreadPool,
-    CancellationToken,
 };
+use rsnano_nullable_clock::SteadyClock;
 use std::{sync::Arc, time::Duration};
 
 pub struct TickerPool {
@@ -12,6 +13,7 @@ pub struct TickerPool {
     cancel_token: CancellationToken,
     main_thread: Option<JoinHandle>,
     workers: Arc<ThreadPool>,
+    clock: Arc<SteadyClock>,
 }
 
 impl TickerPool {
@@ -19,6 +21,7 @@ impl TickerPool {
         workers: Arc<ThreadPool>,
         thread_factory: Arc<ThreadFactory>,
         cancel_token: CancellationToken,
+        clock: Arc<SteadyClock>,
     ) -> Self {
         Self {
             thread_factory,
@@ -26,6 +29,7 @@ impl TickerPool {
             cancel_token,
             main_thread: None,
             workers,
+            clock,
         }
     }
 
@@ -72,17 +76,19 @@ impl Drop for TickerPool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{thread_pool::ThreadPool, CancellationToken};
+    use crate::{CancellationToken, thread_pool::ThreadPool};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
     fn spawn_main_thread() {
+        let clock = Arc::new(SteadyClock::new_null());
         let thread_factory = Arc::new(ThreadFactory::new_null());
         let spawn_tracker = thread_factory.track_spawns();
         let thread_pool = Arc::new(ThreadPool::new_null());
         let cancel_token = CancellationToken::new_null_with_uncancelled_waits(1);
         let wait_tracker = cancel_token.track_waits();
-        let mut ticker_pool = TickerPool::new(thread_pool.clone(), thread_factory, cancel_token);
+        let mut ticker_pool =
+            TickerPool::new(thread_pool.clone(), thread_factory, cancel_token, clock);
 
         let ticker = TestTicker::new();
         let call_count = ticker.call_count.clone();
@@ -94,7 +100,39 @@ mod tests {
         assert_eq!(spawns[0].thread_name, "Ticker pool");
         spawns[0].run();
         assert_eq!(call_count.load(Ordering::SeqCst), 1);
-        assert_eq!(wait_tracker.output().len(), 2);
+        let waits = wait_tracker.output();
+        assert_eq!(waits.len(), 2);
+        assert_eq!(waits[0], Duration::from_millis(100));
+    }
+
+    #[test]
+    #[ignore = "TODO"]
+    fn wait_for_specified_interval_between_ticks() {
+        let clock = Arc::new(SteadyClock::new_null_with_offsets([
+            Duration::from_secs(30),
+            Duration::from_secs(30),
+        ]));
+        let thread_factory = Arc::new(ThreadFactory::new_null());
+        let spawn_tracker = thread_factory.track_spawns();
+        let thread_pool = Arc::new(ThreadPool::new_null());
+        let cancel_token = CancellationToken::new_null_with_uncancelled_waits(2);
+        let wait_tracker = cancel_token.track_waits();
+        let mut ticker_pool =
+            TickerPool::new(thread_pool.clone(), thread_factory, cancel_token, clock);
+
+        let ticker = TestTicker::new();
+        let call_count = ticker.call_count.clone();
+        ticker_pool.insert(ticker, Duration::from_millis(1));
+        ticker_pool.start();
+
+        let spawns = spawn_tracker.output();
+        assert_eq!(spawns.len(), 1);
+        assert_eq!(spawns[0].thread_name, "Ticker pool");
+        spawns[0].run();
+        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+        let waits = wait_tracker.output();
+        assert_eq!(waits.len(), 2);
+        assert_eq!(waits[0], Duration::from_millis(100));
     }
 
     struct TestTicker {
