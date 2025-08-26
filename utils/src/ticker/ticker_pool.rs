@@ -1,10 +1,10 @@
 use super::Tickable;
 use crate::{
-    CancellationToken,
     thread_factory::{JoinHandle, ThreadFactory},
     thread_pool::ThreadPool,
+    CancellationToken,
 };
-use rsnano_nullable_clock::SteadyClock;
+use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use std::{sync::Arc, time::Duration};
 
 pub struct TickerPool {
@@ -42,9 +42,10 @@ impl TickerPool {
         std::mem::swap(&mut tickers_copy, &mut self.tickers);
 
         let cancel_token = self.cancel_token.clone();
+        let clock = self.clock.clone();
 
         self.main_thread = Some(self.thread_factory.spawn("Ticker pool", move || {
-            run_tickers(tickers_copy, cancel_token);
+            run_tickers(tickers_copy, cancel_token, clock);
         }));
     }
 
@@ -59,10 +60,47 @@ impl TickerPool {
 fn run_tickers(
     mut tickers: Vec<(Box<dyn Tickable + 'static>, Duration)>,
     cancel_token: CancellationToken,
+    clock: Arc<SteadyClock>,
 ) {
-    while !cancel_token.wait_for_cancellation(Duration::from_millis(100)) {
-        for (ticker, interval) in &mut tickers {
-            ticker.tick(&cancel_token);
+    let mut tickers: Vec<_> = tickers
+        .drain(..)
+        .map(|(ticker, interval)| TickerState::new(ticker, interval))
+        .collect();
+
+    loop {
+        let now = clock.now();
+        for t in &mut tickers {
+            if t.should_run(now) {
+                t.ticker.tick(&cancel_token);
+                t.last_execution = Some(now);
+            }
+        }
+
+        if cancel_token.wait_for_cancellation(Duration::from_millis(100)) {
+            break;
+        }
+    }
+}
+
+struct TickerState {
+    ticker: Box<dyn Tickable + 'static>,
+    interval: Duration,
+    last_execution: Option<Timestamp>,
+}
+
+impl TickerState {
+    fn new(ticker: Box<dyn Tickable + 'static>, interval: Duration) -> Self {
+        Self {
+            ticker,
+            interval,
+            last_execution: None,
+        }
+    }
+
+    fn should_run(&self, now: Timestamp) -> bool {
+        match self.last_execution {
+            Some(t) => t.elapsed(now) >= self.interval,
+            None => true,
         }
     }
 }
@@ -76,7 +114,7 @@ impl Drop for TickerPool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CancellationToken, thread_pool::ThreadPool};
+    use crate::{thread_pool::ThreadPool, CancellationToken};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
@@ -85,7 +123,7 @@ mod tests {
         let thread_factory = Arc::new(ThreadFactory::new_null());
         let spawn_tracker = thread_factory.track_spawns();
         let thread_pool = Arc::new(ThreadPool::new_null());
-        let cancel_token = CancellationToken::new_null_with_uncancelled_waits(1);
+        let cancel_token = CancellationToken::new_null_with_uncancelled_waits(0);
         let wait_tracker = cancel_token.track_waits();
         let mut ticker_pool =
             TickerPool::new(thread_pool.clone(), thread_factory, cancel_token, clock);
@@ -96,43 +134,40 @@ mod tests {
         ticker_pool.start();
 
         let spawns = spawn_tracker.output();
-        assert_eq!(spawns.len(), 1);
+        assert_eq!(spawns.len(), 1, "main thread spawn count");
         assert_eq!(spawns[0].thread_name, "Ticker pool");
         spawns[0].run();
-        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+        assert_eq!(call_count.load(Ordering::SeqCst), 1, "call count");
         let waits = wait_tracker.output();
-        assert_eq!(waits.len(), 2);
+        assert_eq!(waits.len(), 1, "waits");
         assert_eq!(waits[0], Duration::from_millis(100));
     }
 
     #[test]
-    #[ignore = "TODO"]
-    fn wait_for_specified_interval_between_ticks() {
+    fn dont_call_ticker_if_interval_has_not_elapsed_yet() {
         let clock = Arc::new(SteadyClock::new_null_with_offsets([
-            Duration::from_secs(30),
-            Duration::from_secs(30),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
         ]));
         let thread_factory = Arc::new(ThreadFactory::new_null());
         let spawn_tracker = thread_factory.track_spawns();
         let thread_pool = Arc::new(ThreadPool::new_null());
-        let cancel_token = CancellationToken::new_null_with_uncancelled_waits(2);
-        let wait_tracker = cancel_token.track_waits();
+        let cancel_token = CancellationToken::new_null_with_uncancelled_waits(4);
         let mut ticker_pool =
             TickerPool::new(thread_pool.clone(), thread_factory, cancel_token, clock);
 
         let ticker = TestTicker::new();
         let call_count = ticker.call_count.clone();
-        ticker_pool.insert(ticker, Duration::from_millis(1));
+        ticker_pool.insert(ticker, Duration::from_secs(60));
         ticker_pool.start();
 
         let spawns = spawn_tracker.output();
         assert_eq!(spawns.len(), 1);
-        assert_eq!(spawns[0].thread_name, "Ticker pool");
         spawns[0].run();
-        assert_eq!(call_count.load(Ordering::SeqCst), 1);
-        let waits = wait_tracker.output();
-        assert_eq!(waits.len(), 2);
-        assert_eq!(waits[0], Duration::from_millis(100));
+
+        assert_eq!(call_count.load(Ordering::SeqCst), 1, "ticker call count");
     }
 
     struct TestTicker {
