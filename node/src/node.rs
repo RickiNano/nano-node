@@ -141,15 +141,12 @@ pub struct Node {
     network_threads: Arc<Mutex<NetworkThreads>>,
     pub peer_connector: Arc<PeerConnector>,
     pub inbound_message_queue: Arc<InboundMessageQueue>,
-    monitor: TimerThread<NodeMonitor>,
     stopped: AtomicBool,
     pub network_filter: Arc<NetworkFilter>,
     pub message_sender: Arc<Mutex<MessageSender>>, // TODO remove this. It is needed right now
     pub message_flooder: Arc<Mutex<MessageFlooder>>, // TODO remove this. It is needed right now
     pub keepalive_publisher: Arc<KeepalivePublisher>,
     start_stop_listener: OutputListenerMt<&'static str>,
-    wallet_backup: TimerThread<WalletBackup>,
-    receivable_search: TimerThread<ReceivableSearch>,
     vote_rebroadcaster: VoteRebroadcaster,
     tokio_runner: TokioRunner,
     pub aec_ticker: TimerThread<AecTicker>,
@@ -1106,16 +1103,16 @@ impl Node {
             ticker_pool.insert(peer_cache_connector, config.network.cached_peer_reachout);
         }
 
-        let monitor = TimerThread::new(
-            "Monitor",
-            NodeMonitor::new(
-                ledger.clone(),
-                network.clone(),
-                online_reps.clone(),
-                active_elections.clone(),
-                block_rates.clone(),
-            ),
+        let monitor = NodeMonitor::new(
+            ledger.clone(),
+            network.clone(),
+            online_reps.clone(),
+            active_elections.clone(),
+            block_rates.clone(),
         );
+        if config.enable_monitor {
+            ticker_pool.insert(monitor, config.monitor.interval)
+        }
 
         let wallets_ticker = WalletsTicker(wallets.clone());
 
@@ -1141,8 +1138,22 @@ impl Node {
             data_path: application_path.clone(),
             wallets: wallets.clone(),
         };
+        if !flags.disable_backup {
+            ticker_pool.insert(wallet_backup, BACKUP_INTERVAL);
+        }
 
         let receivable_search = ReceivableSearch::new(wallets.clone());
+        if !flags.disable_search_pending {
+            ticker_pool.insert(
+                receivable_search,
+                if is_dev_network {
+                    Duration::from_secs(1)
+                } else {
+                    Duration::from_secs(5)
+                },
+            );
+        }
+
         let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
         let message_flooder = Arc::new(Mutex::new(message_flooder.clone()));
 
@@ -1322,15 +1333,12 @@ impl Node {
             network_threads,
             message_processor,
             inbound_message_queue,
-            monitor,
             message_sender: message_publisher_l,
             message_flooder,
             network_filter,
             keepalive_publisher,
             stopped: AtomicBool::new(false),
             start_stop_listener: OutputListenerMt::new(),
-            wallet_backup: TimerThread::new("Wallet bak", wallet_backup),
-            receivable_search: TimerThread::new("Recv search", receivable_search),
             vote_rebroadcaster,
             tokio_runner,
             aec_ticker: TimerThread::new("AEC ticker", aec_ticker),
@@ -1559,18 +1567,6 @@ impl Node {
             warn!("Peering is disabled");
         }
 
-        if !self.flags.disable_backup {
-            self.wallet_backup.start(BACKUP_INTERVAL);
-        }
-
-        if !self.flags.disable_search_pending {
-            self.receivable_search.start(if is_dev_network {
-                Duration::from_secs(1)
-            } else {
-                Duration::from_secs(5)
-            });
-        }
-
         self.unchecked_reenqueuer.start(Duration::from_millis(1000));
         if self.config.enable_vote_processor {
             self.vote_processor.start();
@@ -1597,9 +1593,6 @@ impl Node {
         self.telemetry.start();
         self.local_block_broadcaster.start();
 
-        if self.config.enable_monitor {
-            self.monitor.start_delayed(self.config.monitor.interval);
-        }
         if self.config.enable_vote_rebroadcast {
             self.vote_rebroadcaster.start();
         }
@@ -1620,8 +1613,6 @@ impl Node {
 
         self.ticker_pool.stop();
         self.tcp_listener.stop();
-        self.wallet_backup.stop();
-        self.receivable_search.stop();
         self.aec_voter.stop();
         self.local_reps_computation.stop();
         self.wallet_reps_checker.stop();
@@ -1649,7 +1640,6 @@ impl Node {
         self.local_block_broadcaster.stop();
         self.message_processor.lock().unwrap().stop();
         self.network_threads.lock().unwrap().stop(); // Stop network last to avoid killing in-use sockets
-        self.monitor.stop();
         self.vote_rebroadcaster.stop();
         self.block_rate_calculator.stop();
         self.workers.join();
@@ -1721,6 +1711,9 @@ mod tests {
         assert_ticker::<OnlineWeightCalculation>(&node, Duration::from_secs(20));
         assert_ticker::<RepTiersCalculator>(&node, Duration::from_secs(10));
         assert_ticker::<PeerCacheConnector>(&node, node.config.network.cached_peer_reachout);
+        assert_ticker::<NodeMonitor>(&node, node.config.monitor.interval);
+        assert_ticker::<WalletBackup>(&node, BACKUP_INTERVAL);
+        assert_ticker::<ReceivableSearch>(&node, Duration::from_secs(5));
 
         // helper:
         fn assert_ticker<T: Tickable + 'static>(node: &Node, expected: Duration) {
