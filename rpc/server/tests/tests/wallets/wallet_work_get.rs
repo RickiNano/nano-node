@@ -8,7 +8,7 @@ fn wallet_work_get() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     let private_key = RawKey::zero();
     let public_key = PublicKey::try_from(&private_key).unwrap().into();
 
@@ -41,7 +41,7 @@ fn wallet_work_get_fails_without_enable_control() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.wallet_work_get(WalletId::zero()).await });
+        .block_on(async { server.client.wallet_work_get(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),
@@ -58,7 +58,7 @@ fn wallet_work_get_fails_with_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.wallet_work_get(WalletId::zero()).await });
+        .block_on(async { server.client.wallet_work_get(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

@@ -8,7 +8,7 @@ fn wallet_export() {
 
     let server = setup_rpc_client_and_server(node.clone(), false);
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     node.wallets.create(wallet);
 
     let result = node

@@ -9,7 +9,7 @@ fn wallet_add_watch() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
 
     node.wallets.create(wallet_id);
 
@@ -31,7 +31,7 @@ fn wallet_add_watch_without_enable_control() {
 
     let server = setup_rpc_client_and_server(node.clone(), false);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
 
     node.wallets.create(wallet_id);
 

@@ -8,7 +8,7 @@ fn receive() {
     let mut system = System::new();
     let node = system.make_node();
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     node.wallets.create(wallet);
     node.wallets
         .insert_adhoc2(&wallet, &DEV_GENESIS_KEY.raw_key(), false)

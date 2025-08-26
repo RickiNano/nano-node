@@ -8,7 +8,7 @@ fn wallet_info() {
 
     let server = setup_rpc_client_and_server(node.clone(), false);
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
 
     node.wallets.create(wallet);
     node.wallets
@@ -42,7 +42,7 @@ fn wallet_info_fails_with_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.wallet_info(WalletId::zero()).await });
+        .block_on(async { server.client.wallet_info(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

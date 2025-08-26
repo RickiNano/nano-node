@@ -67,7 +67,7 @@ fn password_enter_fails_with_wallet_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .password_enter(WalletId::zero(), "password".to_string())
+            .password_enter(WalletId::random(), "password".to_string())
             .await
     });
 

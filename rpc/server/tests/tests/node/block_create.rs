@@ -10,7 +10,7 @@ fn block_create_state() {
     config.online_weight_minimum = Amount::MAX;
     let node = system.build_node().config(config).finish();
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)

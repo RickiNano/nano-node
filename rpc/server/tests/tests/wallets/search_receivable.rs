@@ -63,7 +63,7 @@ fn search_receivable_fails_without_enable_control() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.search_receivable(WalletId::zero()).await });
+        .block_on(async { server.client.search_receivable(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),
@@ -80,7 +80,7 @@ fn search_receivable_fails_with_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.search_receivable(WalletId::zero()).await });
+        .block_on(async { server.client.search_receivable(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

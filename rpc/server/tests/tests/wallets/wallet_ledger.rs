@@ -24,7 +24,7 @@ fn wallet_ledger() {
     let send_amount = Amount::from(100);
     let open_hash = setup_test_environment(node.clone(), keys.clone(), send_amount);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     node.wallets
         .insert_adhoc2(&wallet_id, &keys.raw_key(), true)
@@ -79,7 +79,7 @@ fn account_create_fails_without_enable_control() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.wallet_ledger(WalletId::zero()).await });
+        .block_on(async { server.client.wallet_ledger(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),
@@ -96,7 +96,7 @@ fn account_create_fails_with_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.wallet_ledger(WalletId::zero()).await });
+        .block_on(async { server.client.wallet_ledger(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

@@ -799,11 +799,7 @@ fn search_receivable_same() {
         .unwrap();
     node.wallets.search_receivable(&wallet_id).wait().unwrap();
 
-    assert_timely_msg(
-        Duration::from_secs(10),
-        || node.balance(&key2.account()) == node.config.receive_minimum * 2,
-        "balance is not equal to twice the receive minimum",
-    );
+    assert_timely2(|| node.balance(&key2.account()) == node.config.receive_minimum * 2);
 }
 
 #[test]

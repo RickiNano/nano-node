@@ -9,7 +9,7 @@ fn wallet_change_seed() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     let new_seed =
         RawKey::decode_hex("74F2B37AAD20F4A260F0A5B3CB3D7FB51673212263E58A380BC10474BB039CEE")
@@ -36,7 +36,7 @@ fn wallet_change_seed_fails_without_enable_control() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .wallet_change_seed(WalletWithSeedArgs::new(WalletId::zero(), RawKey::zero()))
+            .wallet_change_seed(WalletWithSeedArgs::new(WalletId::random(), RawKey::zero()))
             .await
     });
 

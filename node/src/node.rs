@@ -117,7 +117,6 @@ pub struct Node {
     pub telemetry: Arc<Telemetry>,
     pub bootstrap_server: Arc<BootstrapServer>,
     pub online_reps: Arc<Mutex<OnlineReps>>,
-    rep_tiers_calculator: TimerThread<RepTiersCalculator>,
     pub rep_tiers: Arc<CurrentRepTiers>,
     pub vote_processor_queue: Arc<VoteProcessorQueue>,
     pub history: Arc<LocalVoteHistory>,
@@ -141,7 +140,6 @@ pub struct Node {
     message_processor: Mutex<MessageProcessor>,
     network_threads: Arc<Mutex<NetworkThreads>>,
     pub peer_connector: Arc<PeerConnector>,
-    peer_cache_connector: TimerThread<PeerCacheConnector>,
     pub inbound_message_queue: Arc<InboundMessageQueue>,
     monitor: TimerThread<NodeMonitor>,
     stopped: AtomicBool,
@@ -1104,6 +1102,9 @@ impl Node {
             stats.clone(),
             config.network.cached_peer_reachout,
         );
+        if !config.network.peer_reachout.is_zero() {
+            ticker_pool.insert(peer_cache_connector, config.network.cached_peer_reachout);
+        }
 
         let monitor = TimerThread::new(
             "Monitor",
@@ -1127,6 +1128,14 @@ impl Node {
         rep_tiers_calculator.add_tiers_consumer(vote_processor_queue.clone());
         rep_tiers_calculator.add_tiers_consumer(vote_rebroadcast_queue.clone());
         rep_tiers_calculator.add_tiers_consumer(rep_tiers.clone());
+        ticker_pool.insert(
+            rep_tiers_calculator,
+            if is_dev_network {
+                Duration::from_millis(500)
+            } else {
+                Duration::from_secs(10)
+            },
+        );
 
         let wallet_backup = WalletBackup {
             data_path: application_path.clone(),
@@ -1273,7 +1282,6 @@ impl Node {
         Self {
             is_nulled,
             steady_clock,
-            peer_cache_connector: TimerThread::new("Net reachout", peer_cache_connector),
             peer_connector,
             node_id: node_id_key,
             workers,
@@ -1291,7 +1299,6 @@ impl Node {
             runtime,
             bootstrap_server,
             online_reps,
-            rep_tiers_calculator: TimerThread::new("Rep tiers", rep_tiers_calculator),
             rep_tiers,
             vote_processor_queue,
             history: vote_history,
@@ -1565,11 +1572,6 @@ impl Node {
         }
 
         self.unchecked_reenqueuer.start(Duration::from_millis(1000));
-        self.rep_tiers_calculator.start(if is_dev_network {
-            Duration::from_millis(500)
-        } else {
-            Duration::from_secs(10)
-        });
         if self.config.enable_vote_processor {
             self.vote_processor.start();
         }
@@ -1595,10 +1597,6 @@ impl Node {
         self.telemetry.start();
         self.local_block_broadcaster.start();
 
-        if !self.config.network.peer_reachout.is_zero() {
-            self.peer_cache_connector
-                .start(self.config.network.cached_peer_reachout);
-        }
         if self.config.enable_monitor {
             self.monitor.start_delayed(self.config.monitor.interval);
         }
@@ -1628,7 +1626,6 @@ impl Node {
         self.local_reps_computation.stop();
         self.wallet_reps_checker.stop();
         self.peer_connector.stop();
-        self.peer_cache_connector.stop();
         // Cancels ongoing work generation tasks, which may be blocking other threads
         // No tasks may wait for work generation in I/O threads, or termination signal capturing will be unable to call node::stop()
         self.work_factory.stop();
@@ -1641,7 +1638,6 @@ impl Node {
         self.request_aggregator.stop();
         self.vote_cache_processor.stop();
         self.vote_processor.stop();
-        self.rep_tiers_calculator.stop();
         self.election_schedulers.stop();
         self.aec_ticker.stop();
         self.active.write().unwrap().stop();
@@ -1723,31 +1719,16 @@ mod tests {
 
         assert_ticker::<PeerCacheUpdater>(&node, Duration::from_secs(15));
         assert_ticker::<OnlineWeightCalculation>(&node, Duration::from_secs(20));
+        assert_ticker::<RepTiersCalculator>(&node, Duration::from_secs(10));
+        assert_ticker::<PeerCacheConnector>(&node, node.config.network.cached_peer_reachout);
 
+        // helper:
         fn assert_ticker<T: Tickable + 'static>(node: &Node, expected: Duration) {
             let Some(interval) = node.ticker_pool.get::<T>() else {
                 panic!("Should schedule ticker of type: {}", type_name::<T>());
             };
             assert_eq!(interval, expected, "interval for {}", type_name::<T>());
         }
-    }
-
-    #[test]
-    fn start_peer_cache_connector() {
-        let mut node = TestNode::new();
-        let merge_period = node.config.network.cached_peer_reachout;
-        let start_tracker = node.peer_cache_connector.track_start();
-
-        node.start();
-
-        assert_eq!(
-            start_tracker.output(),
-            vec![TimerStartEvent {
-                thread_name: "Net reachout".to_string(),
-                interval: merge_period,
-                start_type: TimerStartType::Start
-            }]
-        );
     }
 
     #[test]
@@ -1781,19 +1762,6 @@ mod tests {
                 interval: Duration::from_millis(1000),
                 start_type: TimerStartType::Start
             }]
-        );
-    }
-
-    #[test]
-    fn stop_node() {
-        let mut node = TestNode::new();
-        node.start();
-        node.stop();
-
-        assert_eq!(
-            node.peer_cache_connector.is_running(),
-            false,
-            "peer_cache_connector running"
         );
     }
 

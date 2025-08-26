@@ -10,7 +10,7 @@ fn chain() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
@@ -58,7 +58,7 @@ fn chain_limit() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
@@ -105,7 +105,7 @@ fn chain_offset() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)

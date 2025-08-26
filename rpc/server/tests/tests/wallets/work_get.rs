@@ -8,7 +8,7 @@ fn work_get() {
 
     let server = setup_rpc_client_and_server(node.clone(), true);
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     let account = Account::zero();
 
     node.wallets.create(wallet);
@@ -34,7 +34,7 @@ fn work_get_fails_without_enable_control() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .work_get(WalletId::zero(), Account::zero())
+            .work_get(WalletId::random(), Account::zero())
             .await
     });
 
@@ -54,7 +54,7 @@ fn work_get_fails_with_wallet_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .work_get(WalletId::zero(), Account::zero())
+            .work_get(WalletId::random(), Account::zero())
             .await
     });
 

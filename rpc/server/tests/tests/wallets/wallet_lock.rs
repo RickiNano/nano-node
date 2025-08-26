@@ -54,7 +54,7 @@ fn wallet_lock_fails_with_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.wallet_lock(WalletId::zero()).await });
+        .block_on(async { server.client.wallet_lock(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

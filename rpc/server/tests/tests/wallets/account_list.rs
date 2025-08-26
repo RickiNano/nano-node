@@ -34,7 +34,7 @@ fn account_list_fails_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.account_list(WalletId::zero()).await });
+        .block_on(async { server.client.account_list(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

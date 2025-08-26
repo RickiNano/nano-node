@@ -88,7 +88,7 @@ fn account_remove_fails_wallet_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_remove(WalletId::zero(), Account::zero())
+            .account_remove(WalletId::random(), Account::zero())
             .await
     });
 

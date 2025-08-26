@@ -9,7 +9,7 @@ fn account_history() {
     let node = system.make_node();
 
     // Create and process blocks
-    let wallet_id = WalletId::zero();
+    let wallet_id = WalletId::random();
     node.wallets.create(wallet_id);
     node.wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)

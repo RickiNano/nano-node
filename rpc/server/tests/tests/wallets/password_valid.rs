@@ -38,7 +38,7 @@ fn password_valid_fails_with_wallet_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.password_valid(WalletId::zero()).await });
+        .block_on(async { server.client.password_valid(WalletId::random()).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

@@ -68,7 +68,7 @@ fn wallet_add_fails_with_wallet_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .wallet_add(WalletAddArgs::new(WalletId::zero(), RawKey::zero()))
+            .wallet_add(WalletAddArgs::new(WalletId::random(), RawKey::zero()))
             .await
     });
 
