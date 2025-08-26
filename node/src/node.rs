@@ -153,12 +153,9 @@ pub struct Node {
     pub recently_cemented: Arc<Mutex<BoundedVecDeque<ConfirmedElection>>>,
     pub stats_collector: StatsCollector,
     container_info_factory: ContainerInfoFactory,
-    wallet_reps_checker: TimerThread<WalletRepsChecker>,
     winner_block_broadcaster: Arc<Mutex<WinnerBlockBroadcaster>>,
-    block_rate_calculator: TimerThread<BlockRateCalculator>,
     pub block_rates: Arc<CurrentBlockRates>,
     aec_voter: TimerThread<AecVoter>,
-    unchecked_reenqueuer: TimerThread<UncheckedBlockReenqueuer>,
     local_reps_computation: TimerThread<LocalRepsComputation>,
     pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
     wallets_ticker: TimerThread<WalletsTicker>,
@@ -501,6 +498,7 @@ impl Node {
             block_processor_queue.clone(),
             steady_clock.clone(),
         );
+        ticker_pool.insert(unchecked_reenqueuer.clone(), Duration::from_secs(1));
 
         let mut wallets_path = application_path.clone();
         wallets_path.push("wallets.ldb");
@@ -604,6 +602,7 @@ impl Node {
 
         let block_rate_calculator = BlockRateCalculator::new(steady_clock.clone(), ledger.clone());
         let block_rates = block_rate_calculator.rates().clone();
+        ticker_pool.insert(block_rate_calculator, Duration::from_millis(500));
         let cps_limiter = if config.cps_limit > 0 {
             info!(
                 "Confirmations per second (CPS) is limited to: {}",
@@ -1118,6 +1117,14 @@ impl Node {
 
         let mut wallet_reps_checker = WalletRepsChecker::new(wallet_reps.clone());
         wallet_reps_checker.add_consumer(vote_rebroadcast_queue.clone());
+        ticker_pool.insert(
+            wallet_reps_checker,
+            if is_dev_network {
+                Duration::from_millis(500)
+            } else {
+                Duration::from_secs(60)
+            },
+        );
 
         let rep_tiers = Arc::new(CurrentRepTiers::new());
         let mut rep_tiers_calculator =
@@ -1297,7 +1304,6 @@ impl Node {
             node_id: node_id_key,
             workers,
             work_factory,
-            unchecked_reenqueuer: TimerThread::new("Unchecked", unchecked_reenqueuer),
             unchecked,
             telemetry,
             network,
@@ -1345,9 +1351,7 @@ impl Node {
             recently_cemented,
             stats_collector,
             container_info_factory: container_info,
-            wallet_reps_checker: TimerThread::new("Wallet reps check", wallet_reps_checker),
             winner_block_broadcaster,
-            block_rate_calculator: TimerThread::new("Blk rate", block_rate_calculator),
             block_rates,
             aec_voter: TimerThread::new("AEC voter", aec_voter),
             local_reps_computation: TimerThread::new("Reps comp", local_reps_computation),
@@ -1539,17 +1543,10 @@ impl Node {
             panic!("Genesis block not found!");
         }
 
-        self.block_rate_calculator.start(Duration::from_millis(500));
-
         self.local_reps_computation.start(if is_dev_network {
             Duration::from_millis(10)
         } else {
             Duration::from_secs(10)
-        });
-        self.wallet_reps_checker.start(if is_dev_network {
-            Duration::from_millis(500)
-        } else {
-            Duration::from_secs(60)
         });
         self.wallets_ticker.start(Duration::from_millis(500));
 
@@ -1567,7 +1564,6 @@ impl Node {
             warn!("Peering is disabled");
         }
 
-        self.unchecked_reenqueuer.start(Duration::from_millis(1000));
         if self.config.enable_vote_processor {
             self.vote_processor.start();
         }
@@ -1615,7 +1611,6 @@ impl Node {
         self.tcp_listener.stop();
         self.aec_voter.stop();
         self.local_reps_computation.stop();
-        self.wallet_reps_checker.stop();
         self.peer_connector.stop();
         // Cancels ongoing work generation tasks, which may be blocking other threads
         // No tasks may wait for work generation in I/O threads, or termination signal capturing will be unable to call node::stop()
@@ -1624,7 +1619,6 @@ impl Node {
         self.bootstrapper.stop();
         self.bounded_backlog.stop();
         self.rep_crawler.stop();
-        self.unchecked_reenqueuer.stop();
         self.block_processor.stop();
         self.request_aggregator.stop();
         self.vote_cache_processor.stop();
@@ -1641,7 +1635,6 @@ impl Node {
         self.message_processor.lock().unwrap().stop();
         self.network_threads.lock().unwrap().stop(); // Stop network last to avoid killing in-use sockets
         self.vote_rebroadcaster.stop();
-        self.block_rate_calculator.stop();
         self.workers.join();
         self.tokio_runner.stop();
         // work pool is not stopped on purpose due to testing setup
@@ -1693,10 +1686,7 @@ mod tests {
         consensus::{AecEvent, AecTickerPlugin, BootstrapStaleElections, StaleElectionsStats},
     };
     use rsnano_types::Networks;
-    use rsnano_utils::{
-        stats::StatsSource,
-        ticker::{Tickable, TimerStartEvent, TimerStartType},
-    };
+    use rsnano_utils::{stats::StatsSource, ticker::Tickable};
     use std::{
         any::type_name,
         ops::{Deref, DerefMut},
@@ -1714,6 +1704,9 @@ mod tests {
         assert_ticker::<NodeMonitor>(&node, node.config.monitor.interval);
         assert_ticker::<WalletBackup>(&node, BACKUP_INTERVAL);
         assert_ticker::<ReceivableSearch>(&node, Duration::from_secs(5));
+        assert_ticker::<WalletRepsChecker>(&node, Duration::from_secs(60));
+        assert_ticker::<BlockRateCalculator>(&node, Duration::from_millis(500));
+        assert_ticker::<UncheckedBlockReenqueuer>(&node, Duration::from_secs(1));
 
         // helper:
         fn assert_ticker<T: Tickable + 'static>(node: &Node, expected: Duration) {
@@ -1722,40 +1715,6 @@ mod tests {
             };
             assert_eq!(interval, expected, "interval for {}", type_name::<T>());
         }
-    }
-
-    #[test]
-    fn start_block_rate_calculator() {
-        let mut node = TestNode::new();
-        let start_tracker = node.block_rate_calculator.track_start();
-
-        node.start();
-
-        assert_eq!(
-            start_tracker.output(),
-            vec![TimerStartEvent {
-                thread_name: "Blk rate".to_string(),
-                interval: Duration::from_millis(500),
-                start_type: TimerStartType::Start
-            }]
-        );
-    }
-
-    #[test]
-    fn start_unchecked_reenqueuer() {
-        let mut node = TestNode::new();
-        let start_tracker = node.unchecked_reenqueuer.track_start();
-
-        node.start();
-
-        assert_eq!(
-            start_tracker.output(),
-            vec![TimerStartEvent {
-                thread_name: "Unchecked".to_string(),
-                interval: Duration::from_millis(1000),
-                start_type: TimerStartType::Start
-            }]
-        );
     }
 
     #[test]
@@ -1823,49 +1782,5 @@ mod tests {
         source.collect_stats(&mut col);
         let (key, _) = col.iter().next().unwrap().clone();
         assert!(node_stats.contains(key.stat, key.detail, key.dir));
-    }
-
-    struct TestNode {
-        app_path: PathBuf,
-        node: Node,
-    }
-
-    impl TestNode {
-        pub fn new() -> Self {
-            let mut app_path = std::env::temp_dir();
-            app_path.push(format!("rsnano-test-{}", Uuid::new_v4().simple()));
-            let config = NodeConfig::new_test_instance();
-            let network_params = NetworkParams::new(Networks::NanoDevNetwork);
-
-            let node = NodeBuilder::new(Networks::NanoDevNetwork)
-                .data_path(app_path.clone())
-                .config(config)
-                .network_params(network_params)
-                .finish()
-                .unwrap();
-
-            Self { node, app_path }
-        }
-    }
-
-    impl Drop for TestNode {
-        fn drop(&mut self) {
-            self.node.stop();
-            std::fs::remove_dir_all(&self.app_path).unwrap();
-        }
-    }
-
-    impl Deref for TestNode {
-        type Target = Node;
-
-        fn deref(&self) -> &Self::Target {
-            &self.node
-        }
-    }
-
-    impl DerefMut for TestNode {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            &mut self.node
-        }
     }
 }
