@@ -1,18 +1,21 @@
+use std::{
+    any::TypeId,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
+
+use rsnano_nullable_clock::{SteadyClock, Timestamp};
+
 use super::Tickable;
 use crate::{
     thread_factory::{JoinHandle, ThreadFactory},
     thread_pool::ThreadPool,
     CancellationToken,
 };
-use rsnano_nullable_clock::{SteadyClock, Timestamp};
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
 
 pub struct TickerPool {
     thread_factory: Arc<ThreadFactory>,
-    tickers: Vec<(Box<dyn Tickable>, Duration)>,
+    tickers: Mutex<Vec<TickerState>>,
     cancel_token: CancellationToken,
     main_thread: Option<JoinHandle>,
     workers: Arc<ThreadPool>,
@@ -20,6 +23,14 @@ pub struct TickerPool {
 }
 
 impl TickerPool {
+    pub fn with_thread_pool(workers: Arc<ThreadPool>) -> Self {
+        Self::new(
+            workers,
+            Arc::new(ThreadFactory::default()),
+            CancellationToken::default(),
+            Arc::new(SteadyClock::default()),
+        )
+    }
     pub fn new(
         workers: Arc<ThreadPool>,
         thread_factory: Arc<ThreadFactory>,
@@ -28,7 +39,7 @@ impl TickerPool {
     ) -> Self {
         Self {
             thread_factory,
-            tickers: Default::default(),
+            tickers: Mutex::new(Default::default()),
             cancel_token,
             main_thread: None,
             workers,
@@ -36,13 +47,19 @@ impl TickerPool {
         }
     }
 
-    pub fn insert(&mut self, ticker: impl Tickable + 'static, interval: Duration) {
-        self.tickers.push((Box::new(ticker), interval));
+    pub fn insert<T>(&mut self, ticker: T, interval: Duration)
+    where
+        T: Tickable + 'static,
+    {
+        self.tickers
+            .lock()
+            .unwrap()
+            .push(TickerState::new(ticker, interval));
     }
 
     pub fn start(&mut self) {
         let mut tickers_copy = Vec::new();
-        std::mem::swap(&mut tickers_copy, &mut self.tickers);
+        std::mem::swap(&mut tickers_copy, self.tickers.lock().unwrap().as_mut());
 
         let mut ticker_loop = TickerLoop::new(
             tickers_copy,
@@ -62,6 +79,16 @@ impl TickerPool {
             handle.join().expect("Main ticker thread should not fail");
         }
     }
+
+    pub fn get<T: Tickable + 'static>(&self) -> Option<Duration> {
+        self.tickers.lock().unwrap().iter().find_map(|s| {
+            if s.ticker_type == TypeId::of::<T>() {
+                Some(s.interval)
+            } else {
+                None
+            }
+        })
+    }
 }
 
 struct TickerLoop {
@@ -73,15 +100,11 @@ struct TickerLoop {
 
 impl TickerLoop {
     fn new(
-        mut tickers: Vec<(Box<dyn Tickable + 'static>, Duration)>,
+        tickers: Vec<TickerState>,
         cancel_token: CancellationToken,
         clock: Arc<SteadyClock>,
         workers: Arc<ThreadPool>,
     ) -> Self {
-        let tickers: Vec<_> = tickers
-            .drain(..)
-            .map(|(ticker, interval)| TickerState::new(ticker, interval))
-            .collect();
         let tickers = Arc::new(Mutex::new(tickers));
 
         Self {
@@ -129,15 +152,20 @@ impl TickerLoop {
 }
 
 struct TickerState {
-    ticker: Box<dyn Tickable + 'static>,
+    ticker: Box<dyn Tickable>,
+    ticker_type: TypeId,
     interval: Duration,
     last_started: Option<Timestamp>,
 }
 
 impl TickerState {
-    fn new(ticker: Box<dyn Tickable + 'static>, interval: Duration) -> Self {
+    fn new<T>(ticker: T, interval: Duration) -> Self
+    where
+        T: Tickable + 'static,
+    {
         Self {
-            ticker,
+            ticker_type: TypeId::of::<T>(),
+            ticker: Box::new(ticker),
             interval,
             last_started: None,
         }
@@ -203,8 +231,7 @@ mod tests {
         let cancel_token = CancellationToken::new_null();
         let clock = Arc::new(SteadyClock::new_null());
         let workers = Arc::new(ThreadPool::new_null());
-        let tickers: Vec<(Box<dyn Tickable + 'static>, Duration)> =
-            vec![(Box::new(ticker), Duration::from_secs(60))];
+        let tickers = vec![TickerState::new(ticker, Duration::from_secs(60))];
         let mut ticker_loop = TickerLoop::new(tickers, cancel_token, clock, workers.clone());
 
         let now = Timestamp::new_test_instance();
