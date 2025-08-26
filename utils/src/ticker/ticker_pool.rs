@@ -71,8 +71,8 @@ fn run_tickers(
         let now = clock.now();
         for t in &mut tickers {
             if t.should_run(now) {
+                t.last_started = Some(now);
                 t.ticker.tick(&cancel_token);
-                t.last_execution = Some(now);
             }
         }
 
@@ -85,7 +85,7 @@ fn run_tickers(
 struct TickerState {
     ticker: Box<dyn Tickable + 'static>,
     interval: Duration,
-    last_execution: Option<Timestamp>,
+    last_started: Option<Timestamp>,
 }
 
 impl TickerState {
@@ -93,12 +93,12 @@ impl TickerState {
         Self {
             ticker,
             interval,
-            last_execution: None,
+            last_started: None,
         }
     }
 
     fn should_run(&self, now: Timestamp) -> bool {
-        match self.last_execution {
+        match self.last_started {
             Some(t) => t.elapsed(now) >= self.interval,
             None => true,
         }
@@ -168,6 +168,35 @@ mod tests {
         spawns[0].run();
 
         assert_eq!(call_count.load(Ordering::SeqCst), 1, "ticker call count");
+    }
+
+    #[test]
+    fn call_ticker_when_interval_has_elapsed() {
+        let clock = Arc::new(SteadyClock::new_null_with_offsets([
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+            Duration::from_secs(10),
+        ]));
+        let thread_factory = Arc::new(ThreadFactory::new_null());
+        let spawn_tracker = thread_factory.track_spawns();
+        let thread_pool = Arc::new(ThreadPool::new_null());
+        let cancel_token = CancellationToken::new_null_with_uncancelled_waits(6);
+        let mut ticker_pool =
+            TickerPool::new(thread_pool.clone(), thread_factory, cancel_token, clock);
+
+        let ticker = TestTicker::new();
+        let call_count = ticker.call_count.clone();
+        ticker_pool.insert(ticker, Duration::from_secs(60));
+        ticker_pool.start();
+
+        let spawns = spawn_tracker.output();
+        assert_eq!(spawns.len(), 1);
+        spawns[0].run();
+
+        assert_eq!(call_count.load(Ordering::SeqCst), 2, "ticker call count");
     }
 
     struct TestTicker {
