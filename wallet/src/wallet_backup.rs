@@ -1,11 +1,11 @@
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, sync::Arc};
 
 use tracing::error;
 
+use super::Wallets;
 use rsnano_utils::{CancellationToken, ticker::Tickable};
-use rsnano_wallet::Wallets;
 
-pub(crate) struct WalletBackup {
+pub struct WalletBackup {
     pub data_path: PathBuf,
     pub wallets: Arc<Wallets>,
 }
@@ -19,5 +19,3 @@ impl Tickable for WalletBackup {
         }
     }
 }
-
-pub(crate) const BACKUP_INTERVAL: Duration = Duration::from_secs(60 * 5);

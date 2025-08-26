@@ -4,14 +4,18 @@ extern crate anyhow;
 mod config;
 mod delayed_work_queue;
 mod promises;
+mod receivable_search;
 mod wallet;
+mod wallet_backup;
 mod wallets;
 
 use serde::{Deserialize, Serialize};
 
 pub use config::{WalletsConfig, default_preconfigured_representatives_for_live};
 pub use promises::*;
+pub use receivable_search::ReceivableSearch;
 pub use wallet::Wallet;
+pub use wallet_backup::WalletBackup;
 pub use wallets::{Wallets, WalletsTicker};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

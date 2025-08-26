@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use tracing::warn;
 
+use super::Wallets;
 use rsnano_utils::{CancellationToken, ticker::Tickable};
-use rsnano_wallet::Wallets;
 
-pub(crate) struct ReceivableSearch {
+pub struct ReceivableSearch {
     wallets: Arc<Wallets>,
 }
 
 impl ReceivableSearch {
-    pub(crate) fn new(wallets: Arc<Wallets>) -> Self {
+    pub fn new(wallets: Arc<Wallets>) -> Self {
         Self { wallets }
     }
 }
