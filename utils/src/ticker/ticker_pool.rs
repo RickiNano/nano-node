@@ -8,9 +8,9 @@ use rsnano_nullable_clock::{SteadyClock, Timestamp};
 
 use super::Tickable;
 use crate::{
+    CancellationToken,
     thread_factory::{JoinHandle, ThreadFactory},
     thread_pool::ThreadPool,
-    CancellationToken,
 };
 
 pub struct TickerPool {
@@ -188,7 +188,7 @@ impl Drop for TickerPool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{thread_pool::ThreadPool, CancellationToken};
+    use crate::{CancellationToken, thread_pool::ThreadPool};
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]

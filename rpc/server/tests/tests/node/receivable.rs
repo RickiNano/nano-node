@@ -39,7 +39,7 @@ fn receivable_include_only_confirmed() {
     let mut system = System::new();
     let node = system.make_node();
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     node.wallets.create(wallet);
     let private_key = RawKey::zero();
     let public_key: PublicKey = (&private_key).try_into().unwrap();
@@ -90,7 +90,7 @@ fn receivable_options_none() {
     let mut system = System::new();
     let node = system.make_node();
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     node.wallets.create(wallet);
     let private_key = RawKey::zero();
     let public_key: PublicKey = (&private_key).try_into().unwrap();
@@ -123,7 +123,7 @@ fn receivable_threshold_some() {
     let mut system = System::new();
     let node = system.make_node();
 
-    let wallet = WalletId::zero();
+    let wallet = WalletId::random();
     node.wallets.create(wallet);
     let private_key = RawKey::zero();
     let public_key: PublicKey = (&private_key).try_into().unwrap();
