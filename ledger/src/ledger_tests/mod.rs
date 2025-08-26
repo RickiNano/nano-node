@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{net::SocketAddrV6, sync::Arc};
 
 use rsnano_store_lmdb::LmdbAccountStore;
 use rsnano_types::{
     Account, AccountInfo, Amount, BlockHash, DEV_GENESIS_KEY, PrivateKey, PublicKey, Root,
     SavedBlock, TestBlockBuilder,
-    utils::{TEST_ENDPOINT_1, UnixMillisTimestamp, new_test_timestamp},
+    utils::{UnixMillisTimestamp, new_test_timestamp},
 };
 use rsnano_utils::stats::Stats;
 
@@ -362,7 +362,7 @@ fn sideband_height() {
 
 #[test]
 fn configured_peers_response() {
-    let endpoint = TEST_ENDPOINT_1;
+    let endpoint = "[::ffff:10:0:0:1]:1111".parse::<SocketAddrV6>().unwrap();
     let now = new_test_timestamp();
     let ledger = Ledger::new_null_builder().peers([(endpoint, now)]).finish();
     let tx = ledger.store.begin_read();

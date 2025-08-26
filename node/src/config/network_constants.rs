@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use rsnano_types::{Networks, ProtocolInfo, utils::get_env_or_default};
+use rsnano_types::{Networks, ProtocolInfo};
 use rsnano_work::WorkThresholds;
 
 use crate::bootstrap::BootstrapConfig;
@@ -244,4 +244,13 @@ fn test_ipc_port() -> u16 {
 
 fn test_websocket_port() -> u16 {
     get_env_or_default("NANO_TEST_WEBSOCKET_PORT", 17078)
+}
+
+fn get_env_or_default<T>(variable_name: &str, default: T) -> T
+where
+    T: core::str::FromStr + Copy,
+{
+    std::env::var(variable_name)
+        .map(|v| v.parse::<T>().unwrap_or(default))
+        .unwrap_or(default)
 }

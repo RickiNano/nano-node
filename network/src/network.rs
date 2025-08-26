@@ -221,12 +221,10 @@ impl Network {
     }
 
     pub fn add_test_channel(&mut self) -> Arc<Channel> {
-        use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2};
-
         let channel = self
             .add_new_channel(
-                TEST_ENDPOINT_1,
-                TEST_ENDPOINT_2,
+                crate::TEST_ENDPOINT_1,
+                crate::TEST_ENDPOINT_2,
                 ChannelDirection::Outbound,
                 Timestamp::new_test_instance(),
             )
@@ -812,7 +810,7 @@ mod tests {
     use crate::TrafficType;
 
     use super::*;
-    use rsnano_types::utils::{NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
+    use crate::{NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
 
     #[test]
     fn newly_added_channel_is_not_a_realtime_channel() {

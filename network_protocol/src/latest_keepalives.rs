@@ -1,10 +1,12 @@
-use rand::seq::IteratorRandom;
-use rsnano_messages::Keepalive;
-use rsnano_network::{ChannelId, DeadChannelCleanupStep};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+
+use rand::seq::IteratorRandom;
+
+use rsnano_messages::Keepalive;
+use rsnano_network::{ChannelId, DeadChannelCleanupStep};
 
 /// Keeps the last keepalive message per channel in memory, so that we can
 /// later use that information, when we want to connect to more nodes
@@ -83,7 +85,7 @@ impl DeadChannelCleanupStep for LatestKeepalivesCleanup {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::utils::{TEST_ENDPOINT_2, TEST_ENDPOINT_3};
+    use rsnano_network::{TEST_ENDPOINT_2, TEST_ENDPOINT_3};
 
     #[test]
     fn empty() {

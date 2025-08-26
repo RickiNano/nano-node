@@ -76,8 +76,8 @@ mod tests {
 
     use tracing_test::traced_test;
 
+    use rsnano_network::{TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3};
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_types::utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3, parse_endpoint};
     use rsnano_utils::stats::Direction;
 
     use super::*;
@@ -212,5 +212,9 @@ mod tests {
                 .peers(cached_peers.into_iter().map(|peer| (peer, UNIX_EPOCH)))
                 .finish(),
         )
+    }
+
+    fn parse_endpoint(s: &str) -> SocketAddrV6 {
+        s.parse().unwrap()
     }
 }

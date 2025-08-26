@@ -1,18 +1,20 @@
-use crate::{
-    Channel, ChannelDirection, ChannelId, DeadChannelCleanupStep, Network, NetworkError,
-    ReceiveResult, TcpChannelAdapter, utils::into_ipv6_socket_address,
-};
-use rsnano_nullable_clock::SteadyClock;
-use rsnano_nullable_tcp::TcpStream;
-use rsnano_types::utils::NULL_ENDPOINT;
 use std::{
     collections::HashMap,
     net::SocketAddrV6,
     sync::{Arc, Mutex, RwLock},
     time::{Duration, Instant},
 };
+
 use tokio::time::sleep;
 use tracing::{debug, warn};
+
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_nullable_tcp::TcpStream;
+
+use crate::{
+    Channel, ChannelDirection, ChannelId, DeadChannelCleanupStep, NULL_ENDPOINT, Network,
+    NetworkError, ReceiveResult, TcpChannelAdapter, utils::into_ipv6_socket_address,
+};
 
 /// Connects the Network to TcpStreams
 pub struct TcpNetworkAdapter {

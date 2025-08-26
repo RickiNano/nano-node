@@ -109,11 +109,12 @@ mod tests {
 
     use tracing_test::traced_test;
 
-    use rsnano_network::{ChannelDirection, ChannelMode};
-    use rsnano_nullable_clock::Timestamp;
-    use rsnano_types::utils::{
-        NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TEST_ENDPOINT_3, new_test_timestamp,
+    use rsnano_network::{
+        ChannelDirection, ChannelMode, NULL_ENDPOINT, TEST_ENDPOINT_1, TEST_ENDPOINT_2,
+        TEST_ENDPOINT_3,
     };
+    use rsnano_nullable_clock::Timestamp;
+    use rsnano_types::utils::new_test_timestamp;
     use rsnano_utils::stats::Direction;
 
     use super::*;

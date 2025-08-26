@@ -1,9 +1,11 @@
-use crate::{ChannelDirection, NetworkError, TcpNetworkAdapter};
-use rsnano_nullable_tcp::{TcpSocket, TcpStream};
-use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use std::{net::SocketAddrV6, sync::Arc, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::debug;
+
+use rsnano_nullable_tcp::{TcpSocket, TcpStream};
+use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+
+use crate::{ChannelDirection, NetworkError, TcpNetworkAdapter};
 
 /// Establishes a network connection to a given peer
 pub struct PeerConnector {
@@ -99,7 +101,7 @@ async fn connect_stream(peer: SocketAddrV6) -> tokio::io::Result<TcpStream> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::utils::TEST_ENDPOINT_1;
+    use crate::TEST_ENDPOINT_1;
 
     #[tokio::test]
     async fn track_connections() {

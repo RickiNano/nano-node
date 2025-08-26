@@ -1,17 +1,17 @@
 mod peer;
 mod stream;
 
-use chrono::{DateTime, TimeZone, Utc};
-pub use peer::*;
-pub use stream::*;
-
-use crate::Amount;
 use std::{
-    net::{Ipv6Addr, SocketAddrV6},
     ops::{Add, Mul},
     time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH},
 };
 
+use chrono::{DateTime, TimeZone, Utc};
+
+pub use peer::*;
+pub use stream::*;
+
+use crate::Amount;
 pub trait Serialize {
     fn serialize(&self, stream: &mut dyn BufferWriter);
 }
@@ -269,33 +269,9 @@ impl std::fmt::Debug for UnixMillisTimestamp {
     }
 }
 
-pub fn get_env_or_default<T>(variable_name: &str, default: T) -> T
-where
-    T: core::str::FromStr + Copy,
-{
-    std::env::var(variable_name)
-        .map(|v| v.parse::<T>().unwrap_or(default))
-        .unwrap_or(default)
-}
-
 pub fn get_env_or_default_string(variable_name: &str, default: impl Into<String>) -> String {
     std::env::var(variable_name).unwrap_or_else(|_| default.into())
 }
-
-pub fn parse_endpoint(s: &str) -> SocketAddrV6 {
-    s.parse().unwrap()
-}
-
-pub const NULL_ENDPOINT: SocketAddrV6 = SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0);
-
-pub const TEST_ENDPOINT_1: SocketAddrV6 =
-    SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0xffff, 0x10, 0, 0, 1), 1111, 0, 0);
-
-pub const TEST_ENDPOINT_2: SocketAddrV6 =
-    SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0xffff, 0x10, 0, 0, 2), 2222, 0, 0);
-
-pub const TEST_ENDPOINT_3: SocketAddrV6 =
-    SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0xffff, 0x10, 0, 0, 3), 3333, 0, 0);
 
 pub fn new_test_timestamp() -> SystemTime {
     UNIX_EPOCH + Duration::from_secs(1_000_000)

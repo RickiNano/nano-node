@@ -1,9 +1,3 @@
-use num_traits::FromPrimitive;
-use rsnano_nullable_clock::Timestamp;
-use rsnano_types::{
-    NodeId,
-    utils::{TEST_ENDPOINT_1, TEST_ENDPOINT_2},
-};
 use std::{
     net::{Ipv6Addr, SocketAddrV6},
     sync::{
@@ -12,16 +6,21 @@ use std::{
     },
     time::Duration,
 };
+
+use num_traits::FromPrimitive;
 use tokio_util::sync::{CancellationToken, WaitForCancellationFuture};
+use tracing::debug;
+
+use rsnano_nullable_clock::Timestamp;
+use rsnano_types::NodeId;
 
 use crate::{
-    ChannelDirection, ChannelId, ChannelMode, TrafficType,
+    ChannelDirection, ChannelId, ChannelMode, TEST_ENDPOINT_1, TEST_ENDPOINT_2, TrafficType,
     bandwidth_limiter::BandwidthLimiter,
     channel_stats::ChannelStats,
     utils::{ipv4_address_or_ipv6_subnet, map_address_to_subnetwork},
     write_queue::{Entry, WriteQueue},
 };
-use tracing::debug;
 
 /// Default timeout in seconds
 const DEFAULT_TIMEOUT: u64 = 120;

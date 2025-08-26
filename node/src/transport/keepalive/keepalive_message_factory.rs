@@ -1,10 +1,11 @@
-use rsnano_messages::{Keepalive, Message};
-use rsnano_network::Network;
-use rsnano_types::utils::{NULL_ENDPOINT, Peer};
 use std::{
     net::{Ipv6Addr, SocketAddrV6},
     sync::{Arc, RwLock},
 };
+
+use rsnano_messages::{Keepalive, Message};
+use rsnano_network::{NULL_ENDPOINT, Network};
+use rsnano_types::utils::Peer;
 
 #[derive(Clone)]
 pub struct KeepaliveMessageFactory {

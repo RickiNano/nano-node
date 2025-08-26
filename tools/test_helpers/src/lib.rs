@@ -8,7 +8,7 @@ use std::{
 use rsnano_ledger::{
     AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY, LedgerSet,
 };
-use rsnano_network::{Channel, ChannelDirection};
+use rsnano_network::{Channel, ChannelDirection, NULL_ENDPOINT, TEST_ENDPOINT_1};
 use rsnano_node::{
     Node, NodeBuilder, NodeEvent,
     block_processing::BacklogScanConfig,
@@ -21,7 +21,6 @@ use rsnano_store_lmdb::SyncStrategy;
 use rsnano_types::{
     Account, Amount, Block, BlockHash, DEV_GENESIS_KEY, Epoch, Networks, PrivateKey, PublicKey,
     SavedBlock, StateBlockArgs, WalletId,
-    utils::{NULL_ENDPOINT, TEST_ENDPOINT_1},
 };
 
 pub struct System {
