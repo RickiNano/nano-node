@@ -81,7 +81,7 @@ mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
     use rsnano_nullable_clock::Timestamp;
-    use rsnano_types::{SavedBlock, utils::BlockPriority};
+    use rsnano_types::{BlockPriority, SavedBlock};
     use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]

@@ -12,7 +12,7 @@ mod election_scheduler {
             election_schedulers::OptimisticSchedulerConfig,
         },
     };
-    use rsnano_types::{Amount, DEV_GENESIS_KEY, PrivateKey, utils::BlockPriority};
+    use rsnano_types::{Amount, BlockPriority, DEV_GENESIS_KEY, PrivateKey};
     use test_helpers::{setup_chains, setup_rep};
 
     #[test]

@@ -1,8 +1,3 @@
-use super::{ActiveElectionsContainer, AecTickerPlugin, election::Election};
-use crate::bootstrap::Bootstrapper;
-use rsnano_nullable_clock::SteadyClock;
-use rsnano_types::Account;
-use rsnano_utils::stats::{StatsCollection, StatsSource};
 use std::{
     any::Any,
     sync::{
@@ -11,6 +6,13 @@ use std::{
     },
     time::Duration,
 };
+
+use rsnano_nullable_clock::SteadyClock;
+use rsnano_types::Account;
+use rsnano_utils::stats::{StatsCollection, StatsSource};
+
+use super::{ActiveElectionsContainer, AecTickerPlugin, election::Election};
+use crate::bootstrap::Bootstrapper;
 
 /// If an election isn't confirmed within "stale_threshold", then try to bootstrap
 /// the election account, so that missing dependencies will be pulled
@@ -99,7 +101,7 @@ impl StatsSource for StaleElectionsStats {
 mod tests {
     use super::*;
     use crate::consensus::AecInsertRequest;
-    use rsnano_types::{SavedBlock, utils::BlockPriority};
+    use rsnano_types::{BlockPriority, SavedBlock};
 
     #[test]
     fn process_empty() {

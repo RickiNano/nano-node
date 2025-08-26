@@ -5,7 +5,7 @@ use std::{
 
 use rsnano_ledger::Ledger;
 use rsnano_nullable_lmdb::WriteTransaction;
-use rsnano_types::{Amount, Networks, utils::system_time_as_seconds};
+use rsnano_types::{Amount, Networks};
 
 pub struct TrendResult {
     pub trended: Amount,
@@ -143,4 +143,10 @@ impl OnlineWeightSampler {
             &current_online_weight,
         );
     }
+}
+
+fn system_time_as_seconds(time: SystemTime) -> u64 {
+    time.duration_since(SystemTime::UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs()
 }

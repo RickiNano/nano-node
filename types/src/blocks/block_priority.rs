@@ -1,4 +1,4 @@
-use crate::{Amount, SavedBlock, utils::BlockPriority};
+use crate::{Amount, BlockPriority, SavedBlock};
 use std::cmp::max;
 
 pub fn block_priority(block: &SavedBlock, previous_block: Option<&SavedBlock>) -> BlockPriority {

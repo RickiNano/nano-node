@@ -1,8 +1,9 @@
-use rsnano_types::{BlockHash, SavedBlock, utils::BlockPriority};
 use std::{
     cmp::Ordering,
     collections::{BTreeSet, HashSet},
 };
+
+use rsnano_types::{BlockHash, BlockPriority, SavedBlock};
 
 #[derive(Debug, Eq)]
 pub(super) struct BlockEntry {

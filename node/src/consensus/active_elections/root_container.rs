@@ -1,15 +1,13 @@
 use std::{cmp::Ordering, collections::BTreeSet};
 
+use rsnano_types::{BlockHash, BlockPriority, QualifiedRoot, TimePriority};
+use rustc_hash::FxHashMap;
+
 use super::{AecInsertRequest, vote_router::VoteRouter};
 use crate::consensus::{
     election::{Election, ElectionBehavior},
     election_schedulers::priority::{bucket_count, bucket_index},
 };
-use rsnano_types::{
-    BlockHash, QualifiedRoot,
-    utils::{BlockPriority, TimePriority},
-};
-use rustc_hash::FxHashMap;
 
 pub(crate) struct Entry {
     pub root: QualifiedRoot,

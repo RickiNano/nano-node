@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
 
-use rsnano_types::{Account, BlockHash, utils::TimePriority};
+use rsnano_types::{Account, BlockHash, TimePriority};
 use rsnano_utils::container_info::ContainerInfo;
 
 #[derive(Clone)]

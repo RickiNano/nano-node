@@ -5,7 +5,7 @@ use strum::EnumCount;
 use rsnano_ledger::RepWeights;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{
-    Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, VoteError, utils::TimePriority,
+    Amount, Block, BlockHash, PublicKey, QualifiedRoot, SavedBlock, TimePriority, VoteError,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
@@ -496,10 +496,7 @@ pub struct ApplyVoteArgs<'a> {
 mod tests {
     use super::*;
     use crate::consensus::ReceivedVote;
-    use rsnano_types::{
-        PrivateKey, Vote, VoteSource,
-        utils::{BlockPriority, TimePriority},
-    };
+    use rsnano_types::{BlockPriority, PrivateKey, TimePriority, Vote, VoteSource};
     use std::sync::Arc;
 
     #[test]
