@@ -3,9 +3,9 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     sync::{
-        Arc, Mutex, MutexGuard, RwLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, SyncSender},
+        Arc, Mutex, MutexGuard, RwLock,
     },
     time::Duration,
 };
@@ -31,21 +31,20 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_output_tracker::OutputListenerMt;
 use rsnano_types::{
-    Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot, Root,
-    SavedBlock, Vote, VoteError, WorkNonce, WorkRequest, utils::Peer,
+    utils::Peer, Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot,
+    Root, SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
-    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},
     sync::backpressure_channel,
     thread_pool::ThreadPool,
     ticker::{Tickable, TickerPool, TimerThread},
+    CancellationToken,
 };
 use rsnano_wallet::{Wallets, WalletsTicker};
 
 use crate::{
-    NodeCallbacks, OnlineWeightSampler,
     aec_event_processor::AecEventProcessor,
     block_processing::{
         BacklogScan, BacklogWaiter, BlockContext, BlockProcessor, BlockProcessorQueue, BlockSource,
@@ -60,17 +59,16 @@ use crate::{
     cementation::{ConfirmingSet, TrackConfirmationTimes},
     config::{GlobalConfig, NetworkParams, NodeConfig, NodeFlags},
     consensus::{
-        ActiveElectionsContainer, AecTicker, AecVoter, BootstrapElectionActivator,
-        BootstrapStaleElections, ConfirmReqSender, ConfirmationSolicitorPlugin, CpsLimiter,
-        CurrentRepTiers, DependentElectionsConfirmer, ForkCache, ForkCacheUpdater, ForkProcessor,
-        ForkProcessorPlugin, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
-        RequestAggregator, RequestAggregatorCleanup, VoteApplier, VoteBroadcaster, VoteCache,
-        VoteCacheProcessor, VoteGenerators, VoteProcessor, VoteProcessorExt, VoteProcessorQueue,
-        VoteProcessorQueueCleanup, VoteRebroadcastQueue, VoteRebroadcaster, WalletRepsChecker,
-        WinnerBlockBroadcaster,
         election::ConfirmedElection,
         election_schedulers::{ElectionSchedulers, ElectionSchedulersPlugin},
-        get_bootstrap_weights, log_bootstrap_weights,
+        get_bootstrap_weights, log_bootstrap_weights, ActiveElectionsContainer, AecTicker,
+        AecVoter, BootstrapElectionActivator, BootstrapStaleElections, ConfirmReqSender,
+        ConfirmationSolicitorPlugin, CpsLimiter, CurrentRepTiers, DependentElectionsConfirmer,
+        ForkCache, ForkCacheUpdater, ForkProcessor, ForkProcessorPlugin, LocalVoteHistory,
+        LocalVotesRemover, RepTiersCalculator, RequestAggregator, RequestAggregatorCleanup,
+        VoteApplier, VoteBroadcaster, VoteCache, VoteCacheProcessor, VoteGenerators, VoteProcessor,
+        VoteProcessorExt, VoteProcessorQueue, VoteProcessorQueueCleanup, VoteRebroadcastQueue,
+        VoteRebroadcaster, WalletRepsChecker, WinnerBlockBroadcaster,
     },
     ledger_event_processor::{LedgerEventProcessor, LedgerEventProcessorPlugin},
     node_id_key_file::NodeIdKeyFile,
@@ -80,22 +78,22 @@ use crate::{
         OnlineReps, OnlineRepsCleanup, OnlineWeightCalculation, RepCrawler, RepCrawlerExt,
     },
     telemetry::{
-        TelementryConfig, TelementryExt, Telemetry, TelemetryFactory, rsnano_build_info,
-        rsnano_version_string,
+        rsnano_build_info, rsnano_version_string, TelementryConfig, TelementryExt, Telemetry,
+        TelemetryFactory,
     },
     tokio_runner::TokioRunner,
     transport::{
-        MessageFlooder, MessageProcessor, MessageSender, NetworkThreads, PeerCacheConnector,
-        PeerCacheUpdater, RealtimeMessageHandler,
         keepalive::{KeepaliveMessageFactory, KeepalivePublisher},
-        run_loopback_channel_adapter,
+        run_loopback_channel_adapter, MessageFlooder, MessageProcessor, MessageSender,
+        NetworkThreads, PeerCacheConnector, PeerCacheUpdater, RealtimeMessageHandler,
     },
     utils::spawn_backpressure_processor,
     wallets::{
-        BACKUP_INTERVAL, LocalRepsComputation, ReceivableSearch, WalletBackup,
-        WalletRepresentatives, block_processor::WalletBlockProcessor, work::WalletWorkProvider,
+        block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
+        ReceivableSearch, WalletBackup, WalletRepresentatives, BACKUP_INTERVAL,
     },
     work::WorkFactory,
+    NodeCallbacks, OnlineWeightSampler,
 };
 
 #[allow(dead_code)]
@@ -156,9 +154,7 @@ pub struct Node {
     winner_block_broadcaster: Arc<Mutex<WinnerBlockBroadcaster>>,
     pub block_rates: Arc<CurrentBlockRates>,
     aec_voter: TimerThread<AecVoter>,
-    local_reps_computation: TimerThread<LocalRepsComputation>,
     pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
-    wallets_ticker: TimerThread<WalletsTicker>,
     ticker_pool: TickerPool,
 }
 
@@ -1114,6 +1110,7 @@ impl Node {
         }
 
         let wallets_ticker = WalletsTicker(wallets.clone());
+        ticker_pool.insert(wallets_ticker, Duration::from_millis(500));
 
         let mut wallet_reps_checker = WalletRepsChecker::new(wallet_reps.clone());
         wallet_reps_checker.add_consumer(vote_rebroadcast_queue.clone());
@@ -1162,6 +1159,14 @@ impl Node {
         }
 
         let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
+        ticker_pool.insert(
+            local_reps_computation,
+            if is_dev_network {
+                Duration::from_millis(10)
+            } else {
+                Duration::from_secs(10)
+            },
+        );
         let message_flooder = Arc::new(Mutex::new(message_flooder.clone()));
 
         let recently_cemented_inserter = RecentlyCementedInserter {
@@ -1354,9 +1359,7 @@ impl Node {
             winner_block_broadcaster,
             block_rates,
             aec_voter: TimerThread::new("AEC voter", aec_voter),
-            local_reps_computation: TimerThread::new("Reps comp", local_reps_computation),
             wallet_reps,
-            wallets_ticker: TimerThread::new("Wallet tick", wallets_ticker),
             ticker_pool,
         }
     }
@@ -1525,8 +1528,6 @@ impl Node {
             return; // TODO better nullability implementation
         }
 
-        let is_dev_network = self.network_params.network.is_dev_network();
-
         if !self
             .ledger
             .any()
@@ -1542,13 +1543,6 @@ impl Node {
 
             panic!("Genesis block not found!");
         }
-
-        self.local_reps_computation.start(if is_dev_network {
-            Duration::from_millis(10)
-        } else {
-            Duration::from_secs(10)
-        });
-        self.wallets_ticker.start(Duration::from_millis(500));
 
         self.network_threads.lock().unwrap().start();
         self.message_processor.lock().unwrap().start();
@@ -1610,7 +1604,6 @@ impl Node {
         self.ticker_pool.stop();
         self.tcp_listener.stop();
         self.aec_voter.stop();
-        self.local_reps_computation.stop();
         self.peer_connector.stop();
         // Cancels ongoing work generation tasks, which may be blocking other threads
         // No tasks may wait for work generation in I/O threads, or termination signal capturing will be unable to call node::stop()
@@ -1681,17 +1674,11 @@ impl CompositeNodeEventHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        NodeBuilder,
-        consensus::{AecEvent, AecTickerPlugin, BootstrapStaleElections, StaleElectionsStats},
+    use crate::consensus::{
+        AecEvent, AecTickerPlugin, BootstrapStaleElections, StaleElectionsStats,
     };
-    use rsnano_types::Networks;
     use rsnano_utils::{stats::StatsSource, ticker::Tickable};
-    use std::{
-        any::type_name,
-        ops::{Deref, DerefMut},
-    };
-    use uuid::Uuid;
+    use std::any::type_name;
 
     #[test]
     fn schedule_tickers() {
@@ -1707,6 +1694,8 @@ mod tests {
         assert_ticker::<WalletRepsChecker>(&node, Duration::from_secs(60));
         assert_ticker::<BlockRateCalculator>(&node, Duration::from_millis(500));
         assert_ticker::<UncheckedBlockReenqueuer>(&node, Duration::from_secs(1));
+        assert_ticker::<LocalRepsComputation>(&node, Duration::from_secs(10));
+        assert_ticker::<WalletsTicker>(&node, Duration::from_millis(500));
 
         // helper:
         fn assert_ticker<T: Tickable + 'static>(node: &Node, expected: Duration) {
