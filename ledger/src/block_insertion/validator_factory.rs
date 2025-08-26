@@ -1,8 +1,7 @@
-use rsnano_types::{Account, Block, PendingKey, SavedBlock, utils::UnixMillisTimestamp};
-
-use crate::{AnySet, LedgerConstants};
+use rsnano_types::{Account, Block, PendingKey, SavedBlock, UnixMillisTimestamp};
 
 use super::BlockValidator;
+use crate::{AnySet, LedgerConstants};
 
 pub(crate) struct BlockValidatorFactory<'a> {
     any: &'a dyn AnySet,

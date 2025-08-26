@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::utils::UnixMillisTimestamp;
+use crate::UnixMillisTimestamp;
 
 /// Combination of a unix timestamp + duration.
 /// Duration field is specified in the 4 low-order bits of the timestamp.

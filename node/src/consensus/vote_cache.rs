@@ -535,7 +535,7 @@ impl OrderedVoters {
 mod tests {
     use super::*;
     use mock_instant::thread_local::MockClock;
-    use rsnano_types::{PrivateKey, utils::UnixMillisTimestamp};
+    use rsnano_types::{PrivateKey, UnixMillisTimestamp};
     use rsnano_utils::stats::Direction;
 
     fn create_vote(rep: &PrivateKey, hash: &BlockHash, timestamp_offset: u64) -> Arc<Vote> {

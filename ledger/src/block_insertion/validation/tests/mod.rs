@@ -9,16 +9,16 @@ mod validate_state_open;
 mod validate_state_receive;
 mod validate_state_send;
 
+use rsnano_types::{
+    Account, Amount, Block, Epoch, PendingInfo, SavedAccountChain, UnixMillisTimestamp,
+};
+
+use super::BlockValidator;
 use crate::{
     BlockError,
     block_insertion::BlockInsertInstructions,
     ledger_constants::{IMPOSSIBLE_WORK, LEDGER_CONSTANTS_STUB},
 };
-use rsnano_types::{
-    Account, Amount, Block, Epoch, PendingInfo, SavedAccountChain, utils::UnixMillisTimestamp,
-};
-
-use super::BlockValidator;
 
 pub(crate) struct BlockValidationTest {
     pub now: UnixMillisTimestamp,

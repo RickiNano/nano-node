@@ -185,7 +185,7 @@ fn clean(data: &mut LocalVoteHistoryData, max_cache: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{PrivateKey, utils::UnixMillisTimestamp};
+    use rsnano_types::{PrivateKey, UnixMillisTimestamp};
 
     #[test]
     fn empty_history() {

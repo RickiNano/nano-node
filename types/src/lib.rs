@@ -17,6 +17,7 @@ mod amount;
 mod block_hash;
 mod node_id;
 mod public_key;
+mod timestamp;
 mod vote;
 mod vote_timestamp;
 
@@ -30,6 +31,7 @@ pub use block_hash::{Blake2HashBuilder, BlockHash};
 pub use node_id::NodeId;
 pub use public_key::PublicKey;
 use serde::de::{Unexpected, Visitor};
+pub use timestamp::{UnixMillisTimestamp, UnixTimestamp, milliseconds_since_epoch};
 pub use vote::*;
 pub use vote_timestamp::*;
 

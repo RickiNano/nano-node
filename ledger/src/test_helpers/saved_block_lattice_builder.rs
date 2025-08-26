@@ -4,8 +4,7 @@ use rsnano_types::{
     Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, ChangeBlockArgs,
     DEV_GENESIS_BLOCK, DEV_GENESIS_KEY, Epoch, EpochBlockArgs, Link, OpenBlockArgs, PendingInfo,
     PendingKey, PrivateKey, PublicKey, ReceiveBlockArgs, Root, SavedBlock, SendBlockArgs,
-    StateBlockArgs, WorkNonce, WorkRequest, dev_epoch1_signer, epoch_v1_link,
-    utils::UnixMillisTimestamp,
+    StateBlockArgs, UnixMillisTimestamp, WorkNonce, WorkRequest, dev_epoch1_signer, epoch_v1_link,
 };
 use rsnano_work::{WorkPool, dev_difficulty};
 

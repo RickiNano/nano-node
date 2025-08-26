@@ -1,8 +1,6 @@
 use super::rollback_planner::{RollbackInstructions, RollbackPlanner, RollbackStep};
 use crate::ledger_constants::LEDGER_CONSTANTS_STUB;
-use rsnano_types::{
-    Account, BlockHash, ConfirmationHeightInfo, SavedAccountChain, utils::UnixTimestamp,
-};
+use rsnano_types::{Account, BlockHash, ConfirmationHeightInfo, SavedAccountChain, UnixTimestamp};
 
 mod rollback_tests;
 

@@ -33,7 +33,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::{BlockSideband, StateBlockArgs, utils::UnixMillisTimestamp};
+    use crate::{BlockSideband, StateBlockArgs, UnixMillisTimestamp};
 
     #[test]
     fn open_block() {

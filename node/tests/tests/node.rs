@@ -14,7 +14,7 @@ use rsnano_node::{
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_types::{
     Account, Amount, Block, BlockHash, DEV_GENESIS_KEY, DifficultyV1, PrivateKey, PublicKey, Root,
-    Signature, StateBlockArgs, Vote, VoteSource, WorkRequest, utils::UnixMillisTimestamp,
+    Signature, StateBlockArgs, UnixMillisTimestamp, Vote, VoteSource, WorkRequest,
 };
 use rsnano_utils::{
     stats::{DetailType, Direction, StatType},

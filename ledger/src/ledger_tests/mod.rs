@@ -3,8 +3,7 @@ use std::{net::SocketAddrV6, sync::Arc};
 use rsnano_store_lmdb::LmdbAccountStore;
 use rsnano_types::{
     Account, AccountInfo, Amount, BlockHash, DEV_GENESIS_KEY, PrivateKey, PublicKey, Root,
-    SavedBlock, TestBlockBuilder,
-    utils::{UnixMillisTimestamp, new_test_timestamp},
+    SavedBlock, TestBlockBuilder, UnixMillisTimestamp, utils::new_test_timestamp,
 };
 use rsnano_utils::stats::Stats;
 

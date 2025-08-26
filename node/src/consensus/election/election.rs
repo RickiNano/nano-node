@@ -4,14 +4,16 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use super::{ConfirmationType, ConfirmedElection, ElectionState, block_tallies::BlockTallies};
+use strum_macros::{EnumCount, EnumIter};
+
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{
-    Account, Amount, Block, BlockHash, MaybeSavedBlock, PublicKey, QualifiedRoot, SavedBlock, Vote,
-    VoteError, utils::UnixMillisTimestamp,
+    Account, Amount, Block, BlockHash, MaybeSavedBlock, PublicKey, QualifiedRoot, SavedBlock,
+    UnixMillisTimestamp, Vote, VoteError,
 };
 use rsnano_utils::stats::DetailType;
-use strum_macros::{EnumCount, EnumIter};
+
+use super::{ConfirmationType, ConfirmedElection, ElectionState, block_tallies::BlockTallies};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
 pub enum VoteType {

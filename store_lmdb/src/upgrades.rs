@@ -6,10 +6,7 @@ use rsnano_nullable_lmdb::{
     WriteFlags,
     sys::{MDB_FIRST, MDB_NEXT},
 };
-use rsnano_types::{
-    BlockType,
-    utils::{UnixMillisTimestamp, UnixTimestamp},
-};
+use rsnano_types::{BlockType, UnixMillisTimestamp, UnixTimestamp};
 
 use crate::{
     FIRST_INCOMPATIBLE_STORE_VERSION, LmdbVersionStore, STORE_VERSION_CURRENT,

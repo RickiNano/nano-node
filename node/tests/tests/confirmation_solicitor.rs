@@ -11,7 +11,7 @@ use rsnano_node::{
     },
     representatives::PeeredRepInfo,
 };
-use rsnano_types::{Account, Amount, Block, PublicKey, utils::UnixMillisTimestamp};
+use rsnano_types::{Account, Amount, Block, PublicKey, UnixMillisTimestamp};
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::System;
 

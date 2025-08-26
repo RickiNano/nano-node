@@ -1,11 +1,14 @@
-use crate::command_handler::RpcCommandHandler;
+use std::collections::HashMap;
+
 use anyhow::bail;
+
 use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{
     BlockInfoResponse, BlocksInfoArgs, BlocksInfoResponse, unwrap_bool_or_false,
 };
-use rsnano_types::{BlockHash, BlockType, PendingKey, utils::UnixTimestamp};
-use std::collections::HashMap;
+use rsnano_types::{BlockHash, BlockType, PendingKey, UnixTimestamp};
+
+use crate::command_handler::RpcCommandHandler;
 
 impl RpcCommandHandler {
     pub(crate) fn blocks_info(&self, args: BlocksInfoArgs) -> anyhow::Result<BlocksInfoResponse> {

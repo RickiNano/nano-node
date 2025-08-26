@@ -1,11 +1,11 @@
-use crate::command_handler::RpcCommandHandler;
+use std::{collections::HashMap, sync::Arc};
+
 use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_node::Node;
 use rsnano_rpc_messages::{AccountInfo, WalletLedgerArgs, WalletLedgerResponse};
-use rsnano_types::Account;
-use rsnano_types::utils::UnixTimestamp;
-use std::collections::HashMap;
-use std::sync::Arc;
+use rsnano_types::{Account, UnixTimestamp};
+
+use crate::command_handler::RpcCommandHandler;
 
 impl RpcCommandHandler {
     pub(crate) fn wallet_ledger(

@@ -3,12 +3,14 @@ mod rep_entry;
 
 use std::{collections::HashMap, time::Duration};
 
+use strum_macros::{EnumCount, EnumIter};
+
+use rsnano_nullable_clock::Timestamp;
+use rsnano_types::{Amount, BlockHash, PublicKey, Vote};
+
 use crate::consensus::bounded_hash_map::BoundedHashMap;
 use rep_container::RepresentativeContainer;
 use rep_entry::RepresentativeEntry;
-use rsnano_nullable_clock::Timestamp;
-use rsnano_types::{Amount, BlockHash, PublicKey, Vote};
-use strum_macros::{EnumCount, EnumIter};
 
 /// Keeps track of past rebroadcasts and decides whether a new rebroadcast is necessary
 pub(crate) struct RebroadcastHistory {
@@ -171,7 +173,7 @@ impl RebroadcastError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{Vote, utils::UnixMillisTimestamp};
+    use rsnano_types::{UnixMillisTimestamp, Vote};
     use std::time::Duration;
 
     #[test]

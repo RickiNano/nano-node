@@ -1,9 +1,7 @@
 use super::{BlockHash, Epoch};
 use crate::{
-    Amount, PublicKey,
-    utils::{
-        BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt, UnixTimestamp,
-    },
+    Amount, PublicKey, UnixTimestamp,
+    utils::{BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt},
 };
 use anyhow::Result;
 use num_traits::FromPrimitive;

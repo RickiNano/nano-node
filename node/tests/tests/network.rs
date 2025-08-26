@@ -8,7 +8,7 @@ use rsnano_network::{ChannelMode, TrafficType};
 use rsnano_node::{config::NodeConfig, consensus::VoteProcessorConfig};
 use rsnano_types::{
     Account, Amount, Block, DEV_GENESIS_KEY, Networks, PrivateKey, ProtocolInfo, Root,
-    StateBlockArgs, Vote, utils::UnixMillisTimestamp,
+    StateBlockArgs, UnixMillisTimestamp, Vote,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 

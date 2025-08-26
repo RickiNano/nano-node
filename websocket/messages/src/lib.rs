@@ -4,13 +4,15 @@ extern crate num_derive;
 #[macro_use]
 extern crate strum_macros;
 
-use rsnano_types::{
-    BlockHash, DifficultyV1, SavedBlock, WorkNonce, WorkVersion, utils::milliseconds_since_epoch,
-};
-use rsnano_work::WorkThresholds;
+use std::{fmt::Debug, hash::Hash, time::Duration};
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{fmt::Debug, hash::Hash, time::Duration};
+
+use rsnano_types::{
+    BlockHash, DifficultyV1, SavedBlock, WorkNonce, WorkVersion, milliseconds_since_epoch,
+};
+use rsnano_work::WorkThresholds;
 
 #[derive(
     Clone, Copy, FromPrimitive, PartialEq, Eq, Hash, Serialize, Debug, Deserialize, IntoStaticStr,

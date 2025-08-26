@@ -15,8 +15,8 @@ use rsnano_node::{
 };
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_types::{
-    Amount, Block, DEV_GENESIS_KEY, JsonBlock, Networks, PrivateKey, SendBlockArgs, Vote,
-    VoteError, utils::UnixMillisTimestamp,
+    Amount, Block, DEV_GENESIS_KEY, JsonBlock, Networks, PrivateKey, SendBlockArgs,
+    UnixMillisTimestamp, Vote, VoteError,
 };
 use rsnano_websocket_client::{
     ConfirmationSubArgs, ConfirmationTypeFilter, NanoWebSocketClient, NanoWebSocketClientFactory,

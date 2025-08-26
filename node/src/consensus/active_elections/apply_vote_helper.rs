@@ -185,8 +185,8 @@ mod tests {
     use rsnano_ledger::RepWeights;
     use rsnano_nullable_clock::Timestamp;
     use rsnano_types::{
-        Block, PrivateKey, QualifiedRoot, SavedBlock, StateBlockArgs, Vote,
-        utils::{BlockPriority, UnixMillisTimestamp},
+        Block, PrivateKey, QualifiedRoot, SavedBlock, StateBlockArgs, UnixMillisTimestamp, Vote,
+        utils::BlockPriority,
     };
     use rsnano_utils::sync::backpressure_channel::channel;
     use std::time::Duration;

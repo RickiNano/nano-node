@@ -99,7 +99,7 @@ impl OrderedBlocks {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{Amount, PrivateKey, utils::UnixMillisTimestamp};
+    use rsnano_types::{Amount, PrivateKey, UnixMillisTimestamp};
 
     #[test]
     fn empty() {

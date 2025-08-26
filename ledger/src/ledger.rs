@@ -19,7 +19,7 @@ use rsnano_store_lmdb::{
 };
 use rsnano_types::{
     Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo, Epoch, Link,
-    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, utils::UnixTimestamp,
+    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, UnixTimestamp,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},

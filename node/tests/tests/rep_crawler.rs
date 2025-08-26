@@ -5,9 +5,7 @@ use rsnano_ledger::{
 use rsnano_messages::{ConfirmAck, Message};
 use rsnano_network::{ChannelMode, TrafficType};
 use rsnano_node::consensus::ReceivedVote;
-use rsnano_types::{
-    Amount, DEV_GENESIS_KEY, PrivateKey, Vote, VoteSource, utils::UnixMillisTimestamp,
-};
+use rsnano_types::{Amount, DEV_GENESIS_KEY, PrivateKey, UnixMillisTimestamp, Vote, VoteSource};
 use std::{sync::Arc, time::Duration};
 use test_helpers::{System, assert_always_eq, assert_never, assert_timely_eq, assert_timely_eq2};
 

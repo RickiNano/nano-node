@@ -2,7 +2,7 @@ use crate::{
     Account, AccountInfo, Amount, Block, BlockDetails, BlockHash, BlockSideband, DEV_GENESIS_KEY,
     Epoch, PrivateKey, PublicKey, SavedBlock, TestBlockBuilder, TestLegacyChangeBlockBuilder,
     TestLegacyOpenBlockBuilder, TestLegacyReceiveBlockBuilder, TestLegacySendBlockBuilder,
-    TestStateBlockBuilder, epoch_v1_link, epoch_v2_link, utils::UnixMillisTimestamp,
+    TestStateBlockBuilder, UnixMillisTimestamp, epoch_v1_link, epoch_v2_link,
 };
 
 /// Builds blocks with sideband data as if they were saved in the ledger

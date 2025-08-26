@@ -120,10 +120,7 @@ impl Display for ConfirmAck {
 mod tests {
     use super::*;
     use crate::{Message, assert_deserializable};
-    use rsnano_types::{
-        BlockHash, PrivateKey,
-        utils::{MemoryStream, UnixMillisTimestamp},
-    };
+    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp, utils::MemoryStream};
 
     #[test]
     fn serialize_v1() {

@@ -7,12 +7,13 @@ mod send_block_rules;
 #[cfg(test)]
 mod tests;
 
-use super::BlockInsertInstructions;
-use crate::BlockError;
 use rsnano_types::{
-    Account, AccountInfo, Block, Epochs, PendingInfo, SavedBlock, utils::UnixMillisTimestamp,
+    Account, AccountInfo, Block, Epochs, PendingInfo, SavedBlock, UnixMillisTimestamp,
 };
 use rsnano_work::WorkThresholds;
+
+use super::BlockInsertInstructions;
+use crate::BlockError;
 
 /// Validates a single block before it gets inserted into the ledger
 pub(crate) struct BlockValidator<'a> {

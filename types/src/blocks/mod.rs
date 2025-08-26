@@ -31,8 +31,8 @@ pub use builders::*;
 
 use crate::{
     Account, Amount, BlockHash, Epoch, Epochs, Link, PrivateKey, PublicKey, QualifiedRoot, Root,
-    Signature, WorkNonce,
-    utils::{BufferWriter, Deserialize, MemoryStream, Stream, UnixMillisTimestamp},
+    Signature, UnixMillisTimestamp, WorkNonce,
+    utils::{BufferWriter, Deserialize, MemoryStream, Stream},
 };
 use num::FromPrimitive;
 use std::{

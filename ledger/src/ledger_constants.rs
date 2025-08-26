@@ -2,8 +2,8 @@ use std::sync::LazyLock;
 
 use rsnano_types::{
     Account, Amount, Block, BlockDetails, BlockHash, BlockSideband, DEV_GENESIS_KEY, Epoch, Epochs,
-    Networks, PublicKey, SavedBlock, epoch_v1_link, epoch_v2_link,
-    utils::{UnixMillisTimestamp, get_env_or_default_string},
+    Networks, PublicKey, SavedBlock, UnixMillisTimestamp, epoch_v1_link, epoch_v2_link,
+    utils::get_env_or_default_string,
 };
 use rsnano_work::{WORK_THRESHOLDS_STUB, WorkThresholds};
 
