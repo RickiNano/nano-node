@@ -187,6 +187,17 @@ impl BlocksAckPayload {
         }
         Ok(())
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        for block in self.blocks() {
+            block.serialize_writer(writer)?;
+        }
+        // For convenience, end with null block terminator
+        writer.write_all(&[BlockType::NotABlock as u8])
+    }
 }
 
 impl Serialize for BlocksAckPayload {

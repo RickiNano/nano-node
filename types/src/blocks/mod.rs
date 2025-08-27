@@ -237,6 +237,15 @@ impl Block {
         self.serialize_without_block_type(stream);
     }
 
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        let block_type = self.block_type() as u8;
+        writer.write_all(&[block_type])?;
+        self.serialize_without_block_type_writer(writer)
+    }
+
     pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
