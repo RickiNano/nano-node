@@ -53,13 +53,7 @@ impl LmdbFinalVoteStore {
         tx: &'tx dyn Transaction,
     ) -> impl Iterator<Item = (QualifiedRoot, BlockHash)> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-
-        LmdbIterator::new(cursor, |key, value| {
-            let mut stream = BufferReader::new(key);
-            let root = QualifiedRoot::deserialize(&mut stream).unwrap();
-            let hash = BlockHash::from_slice(value).unwrap();
-            (root, hash)
-        })
+        LmdbIterator::new(cursor, read_final_vote_record)
     }
 
     pub fn iter_range<'tx>(
@@ -72,6 +66,7 @@ impl LmdbFinalVoteStore {
             cursor,
             range.start_bound().map(|b| b.to_bytes().to_vec()),
             range.end_bound().map(|b| b.to_bytes().to_vec()),
+            read_final_vote_record,
         )
     }
 
@@ -99,6 +94,13 @@ impl LmdbFinalVoteStore {
     pub fn clear(&self, txn: &mut WriteTransaction) {
         txn.clear_db(self.database).unwrap();
     }
+}
+
+fn read_final_vote_record(key: &[u8], value: &[u8]) -> (QualifiedRoot, BlockHash) {
+    let mut stream = BufferReader::new(key);
+    let root = QualifiedRoot::deserialize(&mut stream).unwrap();
+    let hash = BlockHash::from_slice(value).unwrap();
+    (root, hash)
 }
 
 #[cfg(test)]

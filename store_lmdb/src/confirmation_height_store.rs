@@ -77,13 +77,7 @@ impl LmdbConfirmationHeightStore {
         tx: &'tx dyn Transaction,
     ) -> impl Iterator<Item = (Account, ConfirmationHeightInfo)> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-
-        LmdbIterator::new(cursor, |key, value| {
-            let account = Account::from_bytes(key.try_into().unwrap());
-            let mut stream = BufferReader::new(value);
-            let info = ConfirmationHeightInfo::deserialize(&mut stream).unwrap();
-            (account, info)
-        })
+        LmdbIterator::new(cursor, read_conf_height_record)
     }
 
     pub fn iter_range<'txn>(
@@ -96,6 +90,7 @@ impl LmdbConfirmationHeightStore {
             cursor,
             range.start_bound().map(|b| b.as_bytes().to_vec()),
             range.end_bound().map(|b| b.as_bytes().to_vec()),
+            read_conf_height_record,
         )
     }
 
@@ -151,6 +146,13 @@ impl ConfiguredConfirmationHeightDatabaseBuilder {
         }
         builder.build()
     }
+}
+
+fn read_conf_height_record(key: &[u8], value: &[u8]) -> (Account, ConfirmationHeightInfo) {
+    let account = Account::from_bytes(key.try_into().unwrap());
+    let mut stream = BufferReader::new(value);
+    let info = ConfirmationHeightInfo::deserialize(&mut stream).unwrap();
+    (account, info)
 }
 
 #[cfg(test)]

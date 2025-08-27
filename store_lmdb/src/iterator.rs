@@ -1,10 +1,10 @@
-use std::{cmp::Ordering, marker::PhantomData, ops::Bound};
+use std::{cmp::Ordering, ops::Bound};
 
 use rsnano_nullable_lmdb::{
     EMPTY_DATABASE, Error, Result, RoCursor,
     sys::{MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE, MDB_cursor_op},
 };
-use rsnano_types::stream::{BufferReader, Deserialize};
+use rsnano_types::stream::Deserialize;
 
 pub struct LmdbRangeIterator<'txn, K, V> {
     cursor: RoCursor<'txn>,
@@ -12,7 +12,7 @@ pub struct LmdbRangeIterator<'txn, K, V> {
     end: Bound<Vec<u8>>,
     initialized: bool,
     empty: bool,
-    phantom: PhantomData<(K, V)>,
+    convert: fn(&[u8], &[u8]) -> (K, V),
 }
 
 impl<'txn, K, V> LmdbRangeIterator<'txn, K, V>
@@ -20,25 +20,30 @@ where
     K: Deserialize<Target = K>,
     V: Deserialize<Target = V>,
 {
-    pub fn new(cursor: RoCursor<'txn>, start: Bound<Vec<u8>>, end: Bound<Vec<u8>>) -> Self {
+    pub fn new(
+        cursor: RoCursor<'txn>,
+        start: Bound<Vec<u8>>,
+        end: Bound<Vec<u8>>,
+        convert: fn(&[u8], &[u8]) -> (K, V),
+    ) -> Self {
         Self {
             cursor,
             start,
             end,
             initialized: false,
             empty: false,
-            phantom: Default::default(),
+            convert,
         }
     }
 
-    pub fn empty() -> Self {
+    pub fn empty(convert: fn(&[u8], &[u8]) -> (K, V)) -> Self {
         Self {
             cursor: RoCursor::new_null_with(&EMPTY_DATABASE),
             start: Bound::Unbounded,
             end: Bound::Unbounded,
             initialized: false,
             empty: true,
-            phantom: Default::default(),
+            convert,
         }
     }
 
@@ -59,14 +64,6 @@ where
             Bound::Excluded(_) => unimplemented!(),
             Bound::Unbounded => self.cursor.get(None, None, MDB_FIRST),
         }
-    }
-
-    fn deserialize(&self, key_bytes: Option<&[u8]>, value_bytes: &[u8]) -> (K, V) {
-        let mut stream = BufferReader::new(key_bytes.unwrap());
-        let key = K::deserialize(&mut stream).unwrap();
-        let mut stream = BufferReader::new(value_bytes);
-        let value = V::deserialize(&mut stream).unwrap();
-        (key, value)
     }
 
     fn should_include(&self, key: &[u8]) -> bool {
@@ -90,8 +87,9 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.get_next_result() {
             Ok((key, value)) => {
-                if self.should_include(key.unwrap()) {
-                    let result = self.deserialize(key, value);
+                let key = key.expect("Key should exist");
+                if self.should_include(key) {
+                    let result = (self.convert)(key, value);
                     Some(result)
                 } else {
                     None

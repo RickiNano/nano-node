@@ -79,14 +79,7 @@ impl LmdbPendingStore {
         tx: &'tx dyn Transaction,
     ) -> impl Iterator<Item = (PendingKey, PendingInfo)> + 'tx + use<'tx> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-
-        LmdbIterator::new(cursor, |key, value| {
-            let mut stream = BufferReader::new(key);
-            let key = PendingKey::deserialize(&mut stream).unwrap();
-            let mut stream = BufferReader::new(value);
-            let info = PendingInfo::deserialize(&mut stream).unwrap();
-            (key, info)
-        })
+        LmdbIterator::new(cursor, read_pending_record)
     }
 
     pub fn iter_range<'tx>(
@@ -99,6 +92,7 @@ impl LmdbPendingStore {
             cursor,
             range.start_bound().map(|b| b.to_bytes().to_vec()),
             range.end_bound().map(|b| b.to_bytes().to_vec()),
+            read_pending_record,
         )
     }
 
@@ -145,6 +139,14 @@ impl ConfiguredPendingDatabaseBuilder {
         }
         builder.build()
     }
+}
+
+pub fn read_pending_record(key: &[u8], value: &[u8]) -> (PendingKey, PendingInfo) {
+    let mut stream = BufferReader::new(key);
+    let key = PendingKey::deserialize(&mut stream).unwrap();
+    let mut stream = BufferReader::new(value);
+    let info = PendingInfo::deserialize(&mut stream).unwrap();
+    (key, info)
 }
 
 #[cfg(test)]

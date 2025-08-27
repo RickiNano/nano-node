@@ -1,7 +1,7 @@
 use std::ops::{Bound, RangeBounds};
 
 use rsnano_nullable_lmdb::{ReadTransaction, Transaction};
-use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore};
+use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore, read_pending_record};
 use rsnano_types::{
     Account, AccountInfo, Amount, Block, BlockHash, BlockPriority, DependentBlocks, DetailedBlock,
     PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, block_priority,
@@ -589,9 +589,14 @@ impl<'a> AnyReceivableIterator<'a> {
                 let start = PendingKey::new(requested_account, hash);
                 let start_bytes = start.to_bytes().to_vec();
 
-                LmdbRangeIterator::new(cursor, Bound::Included(start_bytes), Bound::Unbounded)
+                LmdbRangeIterator::new(
+                    cursor,
+                    Bound::Included(start_bytes),
+                    Bound::Unbounded,
+                    read_pending_record,
+                )
             }
-            None => LmdbRangeIterator::empty(),
+            None => LmdbRangeIterator::empty(read_pending_record),
         };
 
         Self {

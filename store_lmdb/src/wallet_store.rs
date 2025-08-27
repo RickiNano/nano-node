@@ -415,6 +415,7 @@ impl LmdbWalletStore {
             cursor,
             range.start_bound().map(|b| b.as_bytes().to_vec()),
             range.end_bound().map(|b| b.as_bytes().to_vec()),
+            read_wallet_record,
         )
     }
 
@@ -723,4 +724,11 @@ impl LmdbWalletStore {
     pub fn is_open(&self) -> bool {
         self.db_handle.lock().unwrap().is_some()
     }
+}
+
+fn read_wallet_record(k: &[u8], v: &[u8]) -> (PublicKey, WalletValue) {
+    let key = PublicKey::from_slice(k).expect("Should be a valid key");
+    let mut stream = BufferReader::new(v);
+    let value = WalletValue::deserialize(&mut stream).expect("Should be a valid wallet value");
+    (key, value)
 }

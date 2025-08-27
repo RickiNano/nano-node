@@ -128,7 +128,7 @@ impl LmdbBlockStore {
             .open_ro_cursor(self.index_db)
             .expect("Could not open cursor for block index table");
 
-        LmdbIterator::new(cursor, |_, v| (0, get_block_id(v))).map(move |(_, id)| {
+        LmdbIterator::new(cursor, read_block_index_record).map(move |(_, id)| {
             let data = tx
                 .get(self.block_db, &id.to_be_bytes())
                 .expect("Block data missing (id: {id})");
@@ -154,6 +154,7 @@ impl LmdbBlockStore {
             cursor,
             range.start_bound().map(|b| b.as_bytes().to_vec()),
             range.end_bound().map(|b| b.as_bytes().to_vec()),
+            read_block_index_record,
         )
         .map(move |(_, id)| {
             let data = tx
@@ -193,10 +194,6 @@ impl LmdbBlockStore {
     }
 }
 
-fn get_block_id(id_bytes: &[u8]) -> u64 {
-    u64::from_be_bytes(id_bytes.try_into().expect("Invalid block ID"))
-}
-
 fn find_next_free_id(env: &LmdbEnvironment, block_db: LmdbDatabase) -> Result<u64, anyhow::Error> {
     let tx = env.begin_read();
     let cursor = tx.open_ro_cursor(block_db)?;
@@ -210,6 +207,17 @@ fn find_next_free_id(env: &LmdbEnvironment, block_db: LmdbDatabase) -> Result<u6
 
 pub(crate) const BLOCK_INDEX_DB_NAME: &str = "block_index";
 pub(crate) const BLOCK_DATA_DB_NAME: &str = "block_data";
+
+fn read_block_index_record(k: &[u8], v: &[u8]) -> (BlockHash, u64) {
+    (
+        BlockHash::from_slice(k).expect("Should be valid block hash bytes"),
+        get_block_id(v),
+    )
+}
+
+fn get_block_id(id_bytes: &[u8]) -> u64 {
+    u64::from_be_bytes(id_bytes.try_into().expect("Invalid block ID"))
+}
 
 #[cfg(test)]
 mod tests {

@@ -80,12 +80,7 @@ impl LmdbAccountStore {
             .open_ro_cursor(self.database)
             .expect("could not read from account store");
 
-        LmdbIterator::new(cursor, |key, value| {
-            let account = Account::from_bytes(key.try_into().unwrap());
-            let mut stream = BufferReader::new(value);
-            let info = AccountInfo::deserialize(&mut stream).unwrap();
-            (account, info)
-        })
+        LmdbIterator::new(cursor, read_account_info_record)
     }
 
     pub fn iter_range<'txn>(
@@ -96,7 +91,12 @@ impl LmdbAccountStore {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
         let start = range.start_bound().map(|b| b.as_bytes().to_vec());
         let end = range.end_bound().map(|b| b.as_bytes().to_vec());
-        Box::new(LmdbRangeIterator::new(cursor, start, end))
+        Box::new(LmdbRangeIterator::new(
+            cursor,
+            start,
+            end,
+            read_account_info_record,
+        ))
     }
 
     pub fn for_each_par(
@@ -152,6 +152,13 @@ impl ConfiguredAccountDatabaseBuilder {
         }
         builder.build()
     }
+}
+
+fn read_account_info_record(key: &[u8], value: &[u8]) -> (Account, AccountInfo) {
+    let account = Account::from_bytes(key.try_into().unwrap());
+    let mut stream = BufferReader::new(value);
+    let info = AccountInfo::deserialize(&mut stream).unwrap();
+    (account, info)
 }
 
 #[cfg(test)]

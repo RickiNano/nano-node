@@ -35,7 +35,7 @@ pub use iterator::{LmdbIterator, LmdbRangeIterator};
 pub use lmdb_config::{LmdbConfig, SyncStrategy, default_ledger_lmdb_options, get_lmdb_flags};
 pub use online_weight_store::LmdbOnlineWeightStore;
 pub use peer_store::*;
-pub use pending_store::{ConfiguredPendingDatabaseBuilder, LmdbPendingStore};
+pub use pending_store::{ConfiguredPendingDatabaseBuilder, LmdbPendingStore, read_pending_record};
 pub use rep_weight_store::*;
 pub use rsnano_nullable_lmdb::EnvironmentFlags;
 pub use rsnano_nullable_lmdb::EnvironmentOptions;
