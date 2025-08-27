@@ -152,7 +152,7 @@ impl Vote {
         stream.read_bytes(&mut buffer, 8)?;
         self.timestamp = VoteTimestamp::from_le_bytes(buffer);
         self.hashes = Vec::new();
-        while stream.in_avail()? > 0 && self.hashes.len() < Self::MAX_HASHES {
+        while stream.data_available()? > 0 && self.hashes.len() < Self::MAX_HASHES {
             self.hashes.push(BlockHash::deserialize(stream)?);
         }
         Ok(())

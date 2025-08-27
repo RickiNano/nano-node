@@ -3,12 +3,10 @@ use std::{cmp::max, net::Ipv6Addr, time::Duration};
 use once_cell::sync::Lazy;
 
 use rsnano_network::NetworkConfig;
+use rsnano_nullable_env::get_env_or_default_string;
 use rsnano_nullable_http_client::Url;
 use rsnano_store_lmdb::LmdbConfig;
-use rsnano_types::{
-    Account, Amount, PublicKey,
-    utils::{Peer, get_env_or_default_string},
-};
+use rsnano_types::{Account, Amount, Peer, PublicKey};
 use rsnano_wallet::default_preconfigured_representatives_for_live;
 use rsnano_work::OpenClConfig;
 

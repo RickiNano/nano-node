@@ -13,75 +13,64 @@ extern crate static_assertions;
 extern crate strum_macros;
 
 mod account;
+mod account_info;
 mod amount;
 mod block_hash;
+mod blocks;
+mod confirmation_height_info;
+mod difficulty;
+mod epoch;
+mod kdf;
 mod node_id;
+mod peer;
+mod pending_info;
+mod pending_key;
 mod priority;
+mod private_key;
 mod public_key;
+mod qualified_root;
+mod raw_key;
+mod signature;
 mod timestamp;
+mod u256_struct;
+pub mod utils;
 mod vote;
 mod vote_timestamp;
 
+use std::{
+    fmt::{Debug, Display},
+    str::FromStr,
+    sync::{Arc, Condvar, Mutex},
+};
+
 pub use account::Account;
+pub use account_info::AccountInfo;
 pub use amount::{Amount, DescTallyKey};
 use blake2::{
     Blake2bVar,
     digest::{Update, VariableOutput},
 };
 pub use block_hash::{Blake2HashBuilder, BlockHash};
-pub use node_id::NodeId;
-pub use priority::{BlockPriority, TimePriority};
-pub use public_key::PublicKey;
-use serde::de::{Unexpected, Visitor};
-pub use timestamp::{UnixMillisTimestamp, UnixTimestamp, milliseconds_since_epoch};
-pub use vote::*;
-pub use vote_timestamp::VoteTimestamp;
-
-mod private_key;
-pub use private_key::{PrivateKey, PrivateKeyFactory};
-
-mod raw_key;
-pub use raw_key::RawKey;
-
-mod signature;
-pub use signature::Signature;
-
-mod u256_struct;
-
-pub mod utils;
-
-mod qualified_root;
-pub use qualified_root::QualifiedRoot;
-
-mod account_info;
-pub use account_info::AccountInfo;
-
-mod epoch;
-pub use epoch::*;
-
-mod confirmation_height_info;
-pub use confirmation_height_info::ConfirmationHeightInfo;
-
-mod pending_key;
-pub use pending_key::PendingKey;
-
-mod pending_info;
-pub use pending_info::PendingInfo;
-
-mod difficulty;
-pub use difficulty::{Difficulty, DifficultyV1, StubDifficulty, WorkVersion};
-
-mod blocks;
 pub use blocks::*;
-
-mod kdf;
+pub use confirmation_height_info::ConfirmationHeightInfo;
+pub use difficulty::{Difficulty, DifficultyV1, StubDifficulty, WorkVersion};
+pub use epoch::*;
 pub use kdf::KeyDerivationFunction;
-use std::{
-    fmt::{Debug, Display},
-    str::FromStr,
-    sync::{Arc, Condvar, Mutex},
-};
+pub use node_id::NodeId;
+pub use peer::Peer;
+pub use pending_info::PendingInfo;
+pub use pending_key::PendingKey;
+pub use priority::{BlockPriority, TimePriority};
+pub use private_key::{PrivateKey, PrivateKeyFactory};
+pub use public_key::PublicKey;
+pub use qualified_root::QualifiedRoot;
+pub use raw_key::RawKey;
+use serde::de::{Unexpected, Visitor};
+pub use signature::Signature;
+pub use timestamp::{UnixMillisTimestamp, UnixTimestamp, milliseconds_since_epoch};
 use utils::{BufferWriter, Deserialize, Serialize, Stream};
+pub use vote::{TestVoteBuilder, Vote, VoteError, VoteSource};
+pub use vote_timestamp::VoteTimestamp;
 
 pub fn write_hex_bytes(bytes: &[u8], f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
     for &byte in bytes {

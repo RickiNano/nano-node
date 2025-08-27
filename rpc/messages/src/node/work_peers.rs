@@ -1,5 +1,5 @@
 use crate::RpcCommand;
-use rsnano_types::utils::Peer;
+use rsnano_types::Peer;
 use serde::{Deserialize, Serialize};
 
 impl RpcCommand {
@@ -9,7 +9,6 @@ impl RpcCommand {
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
-
 pub struct WorkPeersResponse {
     pub work_peers: Vec<Peer>,
 }

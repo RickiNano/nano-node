@@ -31,8 +31,8 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_output_tracker::OutputListenerMt;
 use rsnano_types::{
-    Account, Amount, Block, BlockHash, Networks, NodeId, PrivateKey, QualifiedRoot, Root,
-    SavedBlock, Vote, VoteError, WorkNonce, WorkRequest, utils::Peer,
+    Account, Amount, Block, BlockHash, Networks, NodeId, Peer, PrivateKey, QualifiedRoot, Root,
+    SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
     CancellationToken,

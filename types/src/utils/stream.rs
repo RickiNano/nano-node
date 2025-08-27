@@ -9,7 +9,7 @@ pub trait Stream {
     ///  If a read position is available, returns the number of characters
     ///  available for reading before the buffer must be refilled.
     ///  Otherwise returns the derived showmanyc().
-    fn in_avail(&mut self) -> anyhow::Result<usize>;
+    fn data_available(&mut self) -> anyhow::Result<usize>;
 }
 
 pub trait StreamExt: Stream {
@@ -149,7 +149,7 @@ impl Stream for MemoryStream {
         Ok(())
     }
 
-    fn in_avail(&mut self) -> anyhow::Result<usize> {
+    fn data_available(&mut self) -> anyhow::Result<usize> {
         Ok(self.bytes.len() - self.read_index)
     }
 }
@@ -255,7 +255,7 @@ impl<'a> Stream for MutStreamAdapter<'a> {
         Ok(())
     }
 
-    fn in_avail(&mut self) -> anyhow::Result<usize> {
+    fn data_available(&mut self) -> anyhow::Result<usize> {
         Ok(self.bytes.len() - self.read_index)
     }
 }
@@ -307,7 +307,7 @@ impl<'a> Stream for BufferReader<'a> {
         Ok(())
     }
 
-    fn in_avail(&mut self) -> anyhow::Result<usize> {
+    fn data_available(&mut self) -> anyhow::Result<usize> {
         Ok(self.bytes.len() - self.read_index)
     }
 }

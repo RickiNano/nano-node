@@ -1,5 +1,5 @@
 use super::KeepalivePublisher;
-use rsnano_types::utils::Peer;
+use rsnano_types::Peer;
 use std::sync::Arc;
 
 /// Connect to preconfigured peers or send keepalive messages

@@ -5,7 +5,7 @@ use std::{
 
 use rsnano_messages::{Keepalive, Message};
 use rsnano_network::{NULL_ENDPOINT, Network};
-use rsnano_types::utils::Peer;
+use rsnano_types::Peer;
 
 #[derive(Clone)]
 pub struct KeepaliveMessageFactory {

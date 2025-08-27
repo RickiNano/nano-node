@@ -1,15 +1,18 @@
-use super::KeepaliveMessageFactory;
-use crate::transport::MessageSender;
-use rsnano_network::{
-    Channel, Network, PeerConnector, TrafficType, utils::into_ipv6_socket_address,
-};
-use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::utils::Peer;
 use std::{
     net::SocketAddr,
     sync::{Arc, Mutex, RwLock},
 };
+
 use tracing::error;
+
+use rsnano_network::{
+    Channel, Network, PeerConnector, TrafficType, utils::into_ipv6_socket_address,
+};
+use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
+use rsnano_types::Peer;
+
+use super::KeepaliveMessageFactory;
+use crate::transport::MessageSender;
 
 /// Connects to a peer if we don't have a connection
 /// or it sends a keepalive message if we are already connected

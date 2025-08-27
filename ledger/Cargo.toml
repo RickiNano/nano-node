@@ -14,6 +14,7 @@ rsnano_work = { path = "../work" }
 rsnano_utils = { path = "../utils" }
 rsnano_store_lmdb = { path = "../store_lmdb" }
 rsnano_nullable_lmdb = { path = "../nullables/lmdb" }
+rsnano_nullable_env = { path = "../nullables/env" }
 anyhow = "1"
 once_cell = "1"
 num-traits = "0"

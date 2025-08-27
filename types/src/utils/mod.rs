@@ -1,9 +1,5 @@
-mod peer;
 mod stream;
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-pub use peer::*;
 pub use stream::*;
 
 pub trait Serialize {
@@ -58,12 +54,4 @@ impl Deserialize for [u8; 64] {
         stream.read_bytes(&mut buffer, 64)?;
         Ok(buffer)
     }
-}
-
-pub fn get_env_or_default_string(variable_name: &str, default: impl Into<String>) -> String {
-    std::env::var(variable_name).unwrap_or_else(|_| default.into())
-}
-
-pub fn new_test_timestamp() -> SystemTime {
-    UNIX_EPOCH + Duration::from_secs(1_000_000)
 }

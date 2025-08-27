@@ -114,7 +114,6 @@ mod tests {
         TEST_ENDPOINT_3,
     };
     use rsnano_nullable_clock::Timestamp;
-    use rsnano_types::utils::new_test_timestamp;
     use rsnano_utils::stats::Direction;
 
     use super::*;
@@ -318,5 +317,9 @@ mod tests {
         peer_history.tick(&CancellationToken::new());
 
         (put_tracker.output(), delete_tracker.output(), stats)
+    }
+
+    fn new_test_timestamp() -> SystemTime {
+        std::time::UNIX_EPOCH + Duration::from_secs(1_000_000)
     }
 }

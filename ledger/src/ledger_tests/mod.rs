@@ -1,9 +1,14 @@
-use std::{net::SocketAddrV6, sync::Arc};
+use std::{
+    net::SocketAddrV6,
+    sync::Arc,
+    time::{Duration, UNIX_EPOCH},
+};
 
+use rsnano_nullable_lmdb::LmdbEnvironment;
 use rsnano_store_lmdb::LmdbAccountStore;
 use rsnano_types::{
     Account, AccountInfo, Amount, BlockHash, DEV_GENESIS_KEY, PrivateKey, PublicKey, Root,
-    SavedBlock, TestBlockBuilder, UnixMillisTimestamp, utils::new_test_timestamp,
+    SavedBlock, TestBlockBuilder, UnixMillisTimestamp,
 };
 use rsnano_utils::stats::Stats;
 
@@ -12,7 +17,6 @@ use crate::{
     ledger_constants::{DEV_GENESIS_BLOCK, DEV_GENESIS_PUB_KEY},
     test_helpers::SavedBlockLatticeBuilder,
 };
-use rsnano_nullable_lmdb::LmdbEnvironment;
 
 mod empty_ledger;
 mod receivable_iteration;
@@ -362,7 +366,7 @@ fn sideband_height() {
 #[test]
 fn configured_peers_response() {
     let endpoint = "[::ffff:10:0:0:1]:1111".parse::<SocketAddrV6>().unwrap();
-    let now = new_test_timestamp();
+    let now = UNIX_EPOCH + Duration::from_secs(1_000_000);
     let ledger = Ledger::new_null_builder().peers([(endpoint, now)]).finish();
     let tx = ledger.store.begin_read();
     assert_eq!(ledger.store.peer.iter(&tx).next().unwrap(), (endpoint, now));
