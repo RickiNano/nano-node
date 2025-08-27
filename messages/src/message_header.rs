@@ -3,7 +3,7 @@ use bitvec::prelude::*;
 use num_traits::FromPrimitive;
 use rsnano_types::{
     Networks, ProtocolInfo,
-    stream::{BufferWriter, MemoryStream, Serialize, Stream},
+    stream::{MemoryStream, Serialize, Stream},
 };
 use rsnano_utils::stats::DetailType;
 use std::{
@@ -180,15 +180,6 @@ impl MessageHeader {
         writer.write_all(&self.extensions.data.to_le_bytes())
     }
 
-    pub fn serialize(&self, stream: &mut dyn BufferWriter) {
-        stream.write_bytes_safe(&(self.protocol.network as u16).to_be_bytes());
-        stream.write_u8_safe(self.protocol.version_max);
-        stream.write_u8_safe(self.protocol.version_using);
-        stream.write_u8_safe(self.protocol.version_min);
-        stream.write_u8_safe(self.message_type as u8);
-        stream.write_bytes_safe(&self.extensions.data.to_le_bytes());
-    }
-
     const BULK_PULL_COUNT_PRESENT_FLAG: usize = 0;
 
     pub fn bulk_pull_is_count_present(&self) -> bool {
@@ -276,7 +267,6 @@ impl From<MessageType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::stream::MemoryStream;
 
     #[test]
     fn message_header_to_string() {
@@ -289,8 +279,10 @@ mod tests {
     #[test]
     fn serialize_and_deserialize() {
         let original = test_header();
-        let mut stream = MemoryStream::new();
-        original.serialize(&mut stream);
+        let mut buffer = Vec::new();
+        original.serialize_writer(&mut buffer).unwrap();
+
+        let mut stream = BufferReader::new(&buffer);
         let deserialized = MessageHeader::deserialize(&mut stream).unwrap();
         assert_eq!(original, deserialized);
     }
@@ -315,18 +307,17 @@ mod tests {
         let mut header = MessageHeader::new(MessageType::Publish, protocol_info);
         header.extensions = 0xABCD.into();
 
-        let mut stream = MemoryStream::new();
-        header.serialize(&mut stream);
+        let mut buffer = Vec::new();
+        header.serialize_writer(&mut buffer).unwrap();
 
-        let bytes = stream.as_bytes();
-        assert_eq!(bytes.len(), 8);
-        assert_eq!(bytes[0], 0x52);
-        assert_eq!(bytes[1], 0x41);
-        assert_eq!(bytes[2], protocol_info.version_using);
-        assert_eq!(bytes[3], protocol_info.version_max);
-        assert_eq!(bytes[4], protocol_info.version_min);
-        assert_eq!(bytes[5], 0x03); // publish
-        assert_eq!(bytes[6], 0xCD); // extensions
-        assert_eq!(bytes[7], 0xAB); // extensions
+        assert_eq!(buffer.len(), 8);
+        assert_eq!(buffer[0], 0x52);
+        assert_eq!(buffer[1], 0x41);
+        assert_eq!(buffer[2], protocol_info.version_using);
+        assert_eq!(buffer[3], protocol_info.version_max);
+        assert_eq!(buffer[4], protocol_info.version_min);
+        assert_eq!(buffer[5], 0x03); // publish
+        assert_eq!(buffer[6], 0xCD); // extensions
+        assert_eq!(buffer[7], 0xAB); // extensions
     }
 }

@@ -54,16 +54,6 @@ impl AscPullReqType {
     }
 }
 
-impl Serialize for AscPullReqType {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        match &self {
-            AscPullReqType::Blocks(blocks) => blocks.serialize(writer),
-            AscPullReqType::AccountInfo(account_info) => account_info.serialize(writer),
-            AscPullReqType::Frontiers(frontiers) => frontiers.serialize(writer),
-        }
-    }
-}
-
 #[derive(FromPrimitive, PartialEq, Eq, Clone, Copy, Debug, Default, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum HashType {
@@ -110,14 +100,6 @@ impl BlocksReqPayload {
     }
 }
 
-impl Serialize for BlocksReqPayload {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        writer.write_bytes_safe(self.start.as_bytes());
-        writer.write_u8_safe(self.count);
-        writer.write_u8_safe(self.start_type as u8);
-    }
-}
-
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct AccountInfoReqPayload {
@@ -145,13 +127,6 @@ impl AccountInfoReqPayload {
     {
         writer.write_all(self.target.as_bytes())?;
         writer.write_all(&[self.target_type as u8])
-    }
-}
-
-impl Serialize for AccountInfoReqPayload {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        writer.write_bytes_safe(self.target.as_bytes());
-        writer.write_u8_safe(self.target_type as u8);
     }
 }
 
@@ -288,14 +263,6 @@ impl AscPullReq {
         writer.write_all(&[self.payload_type() as u8])?;
         writer.write_all(&self.id.to_be_bytes())?;
         self.req_type.serialize_writer(writer)
-    }
-}
-
-impl Serialize for AscPullReq {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        writer.write_u8_safe(self.payload_type() as u8);
-        writer.write_u64_be_safe(self.id);
-        self.req_type.serialize(writer);
     }
 }
 

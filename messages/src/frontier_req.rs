@@ -2,7 +2,7 @@ use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use rsnano_types::{
     Account,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{Deserialize, FixedSizeSerialize, Stream},
 };
 use serde_derive::Serialize;
 use std::{fmt::Display, mem::size_of};
@@ -57,14 +57,6 @@ impl FrontierReq {
         self.start.serialize_writer(writer)?;
         writer.write_all(&self.age.to_le_bytes())?;
         writer.write_all(&self.count.to_le_bytes())
-    }
-}
-
-impl Serialize for FrontierReq {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.start.serialize(writer);
-        writer.write_bytes_safe(&self.age.to_le_bytes());
-        writer.write_bytes_safe(&self.count.to_le_bytes());
     }
 }
 

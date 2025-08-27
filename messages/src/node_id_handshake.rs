@@ -142,23 +142,6 @@ impl NodeIdHandshakeResponse {
     }
 }
 
-impl Serialize for NodeIdHandshakeResponse {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        match &self.v2 {
-            Some(v2) => {
-                self.node_id.serialize(stream);
-                stream.write_bytes_safe(&v2.salt);
-                v2.genesis.serialize(stream);
-                self.signature.serialize(stream);
-            }
-            None => {
-                self.node_id.serialize(stream);
-                self.signature.serialize(stream);
-            }
-        }
-    }
-}
-
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct V2Payload {
     pub salt: [u8; 32],
@@ -286,17 +269,6 @@ impl NodeIdHandshake {
             response.serialize_writer(writer)?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for NodeIdHandshake {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        if let Some(query) = &self.query {
-            writer.write_bytes_safe(&query.cookie);
-        }
-        if let Some(response) = &self.response {
-            response.serialize(writer);
-        }
     }
 }
 

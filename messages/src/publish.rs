@@ -1,10 +1,7 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{
-    Block, BlockType, serialized_block_size,
-    stream::{BufferWriter, Serialize, Stream},
-};
+use rsnano_types::{Block, BlockType, serialized_block_size, stream::Stream};
 use serde_derive::Serialize;
 use std::fmt::{Debug, Display};
 
@@ -86,12 +83,6 @@ impl PartialEq for Publish {
     }
 }
 
-impl Serialize for Publish {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.block.serialize_without_block_type(writer);
-    }
-}
-
 impl MessageVariant for Publish {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
         let mut flags = (self.block.block_type() as u16) << 8;
@@ -115,7 +106,7 @@ impl Display for Publish {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{TestBlockBuilder, stream::MemoryStream};
+    use rsnano_types::{TestBlockBuilder, stream::BufferReader};
 
     #[test]
     fn create_from_originator() {
@@ -149,10 +140,11 @@ mod tests {
         let mut publish1 = Publish::new_from_originator(block);
         publish1.digest = 123;
 
-        let mut stream = MemoryStream::new();
-        publish1.serialize(&mut stream);
+        let mut buffer = Vec::new();
+        publish1.serialize_writer(&mut buffer).unwrap();
 
         let extensions = publish1.header_extensions(0);
+        let mut stream = BufferReader::new(&buffer);
         let publish2 = Publish::deserialize(&mut stream, extensions, 123).unwrap();
         assert_eq!(publish1, publish2);
     }

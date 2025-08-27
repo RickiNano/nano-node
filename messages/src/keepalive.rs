@@ -1,4 +1,4 @@
-use rsnano_types::stream::{BufferWriter, Serialize, Stream};
+use rsnano_types::stream::Stream;
 use serde_derive::Serialize;
 use std::{
     fmt::Display,
@@ -75,18 +75,6 @@ impl Default for Keepalive {
 }
 
 impl MessageVariant for Keepalive {}
-
-impl Serialize for Keepalive {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        for peer in &self.peers {
-            let ip_bytes = peer.ip().octets();
-            stream.write_bytes_safe(&ip_bytes);
-
-            let port_bytes = peer.port().to_le_bytes();
-            stream.write_bytes_safe(&port_bytes);
-        }
-    }
-}
 
 impl Display for Keepalive {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
