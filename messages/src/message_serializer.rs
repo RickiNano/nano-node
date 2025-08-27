@@ -1,5 +1,5 @@
 use super::{Message, MessageHeader};
-use rsnano_types::{ProtocolInfo, stream::MutStreamAdapter};
+use rsnano_types::ProtocolInfo;
 
 #[derive(Clone)]
 pub struct MessageSerializer {
@@ -12,30 +12,31 @@ impl MessageSerializer {
     pub fn new(protocol: ProtocolInfo) -> Self {
         Self {
             protocol,
-            buffer: vec![0; Self::BUFFER_SIZE],
+            buffer: Vec::with_capacity(Self::BUFFER_SIZE),
         }
     }
 
     pub fn new_with_buffer_size(protocol: ProtocolInfo, buffer_size: usize) -> Self {
         Self {
             protocol,
-            buffer: vec![0; buffer_size],
+            buffer: Vec::with_capacity(buffer_size),
         }
     }
 
     pub fn serialize(&'_ mut self, message: &Message) -> &'_ [u8] {
+        self.buffer.resize(MessageHeader::SERIALIZED_SIZE, 0);
         let payload_len;
         {
-            let mut payload_writer =
-                MutStreamAdapter::new(&mut self.buffer[MessageHeader::SERIALIZED_SIZE..]);
-            message.serialize(&mut payload_writer);
-            payload_len = payload_writer.bytes_written();
+            message
+                .serialize_writer(&mut self.buffer)
+                .expect("Writing message body should succeed");
+            payload_len = self.buffer.len() - MessageHeader::SERIALIZED_SIZE;
 
-            let mut header_writer =
-                MutStreamAdapter::new(&mut self.buffer[..MessageHeader::SERIALIZED_SIZE]);
             let mut header = MessageHeader::new(message.message_type(), self.protocol);
             header.extensions = message.header_extensions(payload_len as u16);
-            header.serialize(&mut header_writer);
+            header
+                .serialize_writer(&mut &mut self.buffer[..MessageHeader::SERIALIZED_SIZE])
+                .expect("Writing header should succeed");
         }
         &self.buffer[..MessageHeader::SERIALIZED_SIZE + payload_len]
     }

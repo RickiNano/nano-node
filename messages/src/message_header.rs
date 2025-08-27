@@ -166,6 +166,20 @@ impl MessageHeader {
         + size_of::<u16>() // extensions
     }
 
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&(self.protocol.network as u16).to_be_bytes())?;
+        writer.write_all(&[
+            self.protocol.version_max,
+            self.protocol.version_using,
+            self.protocol.version_min,
+            self.message_type as u8,
+        ])?;
+        writer.write_all(&self.extensions.data.to_le_bytes())
+    }
+
     pub fn serialize(&self, stream: &mut dyn BufferWriter) {
         stream.write_bytes_safe(&(self.protocol.network as u16).to_be_bytes());
         stream.write_u8_safe(self.protocol.version_max);
