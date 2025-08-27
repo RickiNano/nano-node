@@ -345,7 +345,7 @@ pub struct JsonStateBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, TestBlockBuilder, TestStateBlockBuilder, stream::MemoryStream};
+    use crate::{Block, TestBlockBuilder, TestStateBlockBuilder, stream::BufferReader};
 
     #[test]
     fn send() {
@@ -359,11 +359,14 @@ mod tests {
     #[test]
     fn serialization() {
         let block1 = TestBlockBuilder::state().work(5).build();
-        let mut stream = MemoryStream::new();
-        block1.serialize_without_block_type(&mut stream);
-        assert_eq!(StateBlock::serialized_size(), stream.bytes_written());
-        assert_eq!(stream.byte_at(215), 0x5); // Ensure work is serialized big-endian
+        let mut buffer = Vec::new();
+        block1
+            .serialize_without_block_type_writer(&mut buffer)
+            .unwrap();
+        assert_eq!(StateBlock::serialized_size(), buffer.len());
+        assert_eq!(buffer[215], 0x5); // Ensure work is serialized big-endian
 
+        let mut stream = BufferReader::new(&buffer);
         let block2 = StateBlock::deserialize(&mut stream).unwrap();
         assert_eq!(block1, Block::State(block2));
     }

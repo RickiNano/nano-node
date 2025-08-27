@@ -384,7 +384,7 @@ impl Visitor<'_> for AmountHexVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, stream::MemoryStream};
+    use crate::{Block, PrivateKey, stream::BufferReader};
 
     #[test]
     fn create_send_block() {
@@ -433,10 +433,13 @@ mod tests {
             work: 5.into(),
         }
         .into();
-        let mut stream = MemoryStream::new();
-        block1.serialize_without_block_type(&mut stream);
-        assert_eq!(SendBlock::serialized_size(), stream.bytes_written());
+        let mut buffer = Vec::new();
+        block1
+            .serialize_without_block_type_writer(&mut buffer)
+            .unwrap();
+        assert_eq!(SendBlock::serialized_size(), buffer.len());
 
+        let mut stream = BufferReader::new(&buffer);
         let block2 = SendBlock::deserialize(&mut stream).unwrap();
         assert_eq!(block1, block2);
     }

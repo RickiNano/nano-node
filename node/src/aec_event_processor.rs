@@ -5,7 +5,7 @@ use tracing::debug;
 use rsnano_messages::NetworkFilter;
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::SteadyClock;
-use rsnano_types::{Block, VoteError, VoteSource, stream::MemoryStream};
+use rsnano_types::{Block, VoteError, VoteSource};
 use rsnano_utils::stats::{Sample, Stats};
 
 use crate::{
@@ -170,9 +170,11 @@ impl AecEventProcessor {
     }
 
     fn clear_network_filter(&mut self, block: &Block) {
-        let mut buf = MemoryStream::new();
-        block.serialize_without_block_type(&mut buf);
-        self.network_filter.clear_bytes(buf.as_bytes());
+        let mut buffer = Vec::new();
+        block
+            .serialize_without_block_type_writer(&mut buffer)
+            .expect("Should serialize block successfully");
+        self.network_filter.clear_bytes(&buffer);
     }
 
     fn try_update_online_reps(&mut self, vote: &ReceivedVote, result: Result<(), VoteError>) {

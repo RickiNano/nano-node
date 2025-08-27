@@ -32,7 +32,7 @@ pub use builders::*;
 use crate::{
     Account, Amount, BlockHash, Epoch, Epochs, Link, PrivateKey, PublicKey, QualifiedRoot, Root,
     Signature, UnixMillisTimestamp, WorkNonce,
-    stream::{BufferWriter, Deserialize, MemoryStream, Stream},
+    stream::{BufferWriter, Deserialize, Stream},
 };
 use num::FromPrimitive;
 use std::{
@@ -525,11 +525,14 @@ impl SavedBlock {
     }
 
     pub fn serialize_with_sideband(&self) -> Vec<u8> {
-        let mut stream = MemoryStream::new();
-        self.block.serialize(&mut stream);
+        let mut buffer = Vec::with_capacity(300);
+        self.block
+            .serialize_writer(&mut buffer)
+            .expect("Should serialize block");
         self.sideband
-            .serialize(&mut stream, self.block.block_type());
-        stream.to_vec()
+            .serialize(self.block.block_type(), &mut buffer)
+            .expect("Should serialize sideband");
+        buffer
     }
 
     pub fn balance(&self) -> Amount {
@@ -712,6 +715,7 @@ pub struct DetailedBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stream::BufferReader;
 
     #[test]
     fn serialize_legacy_open() {
@@ -744,9 +748,10 @@ mod tests {
     }
 
     fn assert_serializable(block: Block) {
-        let mut buffer = MemoryStream::new();
-        block.serialize(&mut buffer);
-        let deserialized = Block::deserialize(&mut buffer).unwrap();
+        let mut buffer = Vec::new();
+        block.serialize_writer(&mut buffer).unwrap();
+        let mut stream = BufferReader::new(&buffer);
+        let deserialized = Block::deserialize(&mut stream).unwrap();
         assert_eq!(deserialized, block);
     }
 }

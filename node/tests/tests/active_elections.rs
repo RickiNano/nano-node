@@ -12,7 +12,6 @@ use rsnano_node::{
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_types::{
     Account, Amount, DEV_GENESIS_KEY, PrivateKey, UnixMillisTimestamp, Vote, VoteError, VoteSource,
-    stream::MemoryStream,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
@@ -852,9 +851,8 @@ fn dropped_cleanup() {
     let qual_root = chain[0].qualified_root();
 
     // Add to network filter to ensure proper cleanup after the election is dropped
-    let mut stream = MemoryStream::new();
-    chain[0].serialize(&mut stream);
-    let block_bytes = stream.as_bytes();
+    let mut block_bytes = Vec::new();
+    chain[0].serialize_writer(&mut block_bytes).unwrap();
     assert!(!node.network_filter.apply(&block_bytes).1);
     assert!(node.network_filter.apply(&block_bytes).1);
 
@@ -940,9 +938,8 @@ fn fork_filter_cleanup() {
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let key = PrivateKey::new();
     let send1 = lattice.genesis().send(&key, 1);
-    let mut stream = MemoryStream::new();
-    send1.serialize(&mut stream);
-    let send_block_bytes = stream.as_bytes();
+    let mut send_block_bytes = Vec::new();
+    send1.serialize_writer(&mut send_block_bytes).unwrap();
 
     // Generate 10 forks to prevent new block insertion to election
     for i in 0..10 {

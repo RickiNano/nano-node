@@ -245,7 +245,7 @@ impl From<JsonReceiveBlock> for ReceiveBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, stream::MemoryStream};
+    use crate::{Block, PrivateKey, stream::BufferReader};
 
     #[test]
     fn create_block() {
@@ -277,10 +277,13 @@ mod tests {
             work: 4.into(),
         }
         .into();
-        let mut stream = MemoryStream::new();
-        block1.serialize_without_block_type(&mut stream);
-        assert_eq!(ReceiveBlock::serialized_size(), stream.bytes_written());
+        let mut buffer = Vec::new();
+        block1
+            .serialize_without_block_type_writer(&mut buffer)
+            .unwrap();
+        assert_eq!(ReceiveBlock::serialized_size(), buffer.len());
 
+        let mut stream = BufferReader::new(&buffer);
         let block2 = ReceiveBlock::deserialize(&mut stream).unwrap();
         assert_eq!(block1, block2);
     }

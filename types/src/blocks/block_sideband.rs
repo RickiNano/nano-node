@@ -1,10 +1,11 @@
 use crate::{
     Account, Amount, BlockDetails, BlockType, Epoch, UnixMillisTimestamp,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{Deserialize, FixedSizeSerialize, Stream},
 };
 use num::FromPrimitive;
 
 use super::Block;
+use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockSideband {
@@ -57,28 +58,31 @@ impl BlockSideband {
         size
     }
 
-    pub fn serialize(&self, stream: &mut dyn BufferWriter, block_type: BlockType) {
+    pub fn serialize<T>(&self, block_type: BlockType, writer: &mut T) -> std::io::Result<()>
+    where
+        T: Write,
+    {
         if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
-            self.account.serialize(stream);
+            self.account.serialize_writer(writer)?;
         }
 
         if block_type != BlockType::LegacyOpen {
-            stream.write_bytes_safe(&self.height.to_be_bytes());
+            writer.write_all(&self.height.to_be_bytes())?;
         }
 
         if block_type == BlockType::LegacyReceive
             || block_type == BlockType::LegacyChange
             || block_type == BlockType::LegacyOpen
         {
-            self.balance.serialize(stream);
+            self.balance.serialize_writer(writer)?;
         }
 
-        stream.write_bytes_safe(&self.timestamp.to_be_bytes());
+        writer.write_all(&self.timestamp.to_be_bytes())?;
 
         if block_type == BlockType::State {
-            self.details.serialize(stream);
-            stream.write_u8_safe(self.source_epoch as u8);
+            writer.write_all(&[self.details.packed(), self.source_epoch as u8])?;
         }
+        Ok(())
     }
 
     pub fn from_stream(stream: &mut dyn Stream, block_type: BlockType) -> anyhow::Result<Self> {
@@ -150,7 +154,7 @@ impl BlockSideband {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::stream::MemoryStream;
+    use crate::stream::BufferReader;
 
     #[test]
     fn serialize() {
@@ -163,8 +167,13 @@ mod tests {
             details,
             source_epoch: Epoch::Epoch0,
         };
-        let mut stream = MemoryStream::new();
-        sideband.serialize(&mut stream, BlockType::LegacyReceive);
+        let mut buffer = Vec::new();
+
+        sideband
+            .serialize(BlockType::LegacyReceive, &mut buffer)
+            .unwrap();
+
+        let mut stream = BufferReader::new(&buffer);
         let deserialized =
             BlockSideband::from_stream(&mut stream, BlockType::LegacyReceive).unwrap();
         assert_eq!(deserialized, sideband);

@@ -1,10 +1,11 @@
-use super::{BlockHash, Epoch};
-use crate::{
-    Amount, PublicKey, UnixTimestamp,
-    stream::{BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt},
-};
 use anyhow::Result;
 use num_traits::FromPrimitive;
+
+use super::{BlockHash, Epoch};
+use crate::{
+    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
+    Amount, PublicKey, UnixTimestamp,
+};
 
 /// Latest information about an account
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
@@ -22,8 +23,8 @@ pub struct AccountInfo {
 impl AccountInfo {
     pub fn to_bytes(&self) -> [u8; 129] {
         let mut buffer = [0; 129];
-        let mut stream = MutStreamAdapter::new(&mut buffer);
-        self.serialize(&mut stream);
+        self.serialize_writer(&mut buffer.as_mut())
+            .expect("Should serialize account info");
         buffer
     }
 
@@ -47,7 +48,7 @@ impl AccountInfo {
         self.representative.serialize_writer(writer)?;
         self.open_block.serialize_writer(writer)?;
         self.balance.serialize_writer(writer)?;
-        writer.write_all(&self.modified.as_u64().to_be_bytes())?;
+        writer.write_all(&self.modified.as_u64().to_ne_bytes())?;
         writer.write_all(&self.block_count.to_ne_bytes())?;
         writer.write_all(&[self.epoch as u8])
     }

@@ -14,9 +14,7 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_types::{
     Account, KeyDerivationFunction, PublicKey, RawKey, WorkNonce, deterministic_key,
-    stream::{
-        BufferReader, BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt,
-    },
+    stream::{BufferReader, BufferWriter, Deserialize, Serialize, Stream, StreamExt},
 };
 
 use crate::{Fan, LmdbDatabase, LmdbRangeIterator};
@@ -47,9 +45,16 @@ impl WalletValue {
 
     pub fn to_bytes(&self) -> [u8; 40] {
         let mut buffer = [0; 40];
-        let mut stream = MutStreamAdapter::new(&mut buffer);
-        self.serialize(&mut stream);
+        self.serialize_writer(&mut buffer.as_mut()).unwrap();
         buffer
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: Write,
+    {
+        writer.write_all(self.key.as_bytes())?;
+        writer.write_all(&u64::from(self.work).to_ne_bytes())
     }
 }
 

@@ -1,7 +1,8 @@
 use crate::{
     BlockHash,
-    stream::{BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt},
+    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
 };
+use std::io::Write;
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct ConfirmationHeightInfo {
@@ -14,18 +15,26 @@ impl ConfirmationHeightInfo {
         Self { height, frontier }
     }
 
-    pub fn to_bytes(&self) -> [u8; 40] {
-        let mut buffer = [0; 40];
-        let mut stream = MutStreamAdapter::new(&mut buffer);
-        self.serialize(&mut stream);
-        buffer
-    }
-
-    pub fn test_instance() -> Self {
+    pub fn new_test_instance() -> Self {
         Self {
             height: 42,
             frontier: BlockHash::from(7),
         }
+    }
+
+    pub fn to_bytes(&self) -> [u8; 40] {
+        let mut buffer = [0; 40];
+        self.serialize_writer(&mut buffer.as_mut())
+            .expect("Should serialize conf height info");
+        buffer
+    }
+
+    fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: Write,
+    {
+        writer.write_all(&self.height.to_ne_bytes())?;
+        writer.write_all(self.frontier.as_bytes())
     }
 }
 

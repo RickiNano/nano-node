@@ -1,10 +1,10 @@
 use crate::{
     BlockHash, Root,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, MutStreamAdapter, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use primitive_types::U512;
 use serde::de::Unexpected;
-use std::hash::Hash;
+use std::{hash::Hash, io::Write};
 
 #[derive(Default, Clone, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub struct QualifiedRoot {
@@ -21,9 +21,17 @@ impl QualifiedRoot {
 
     pub fn to_bytes(&self) -> [u8; 64] {
         let mut buffer = [0; 64];
-        let mut stream = MutStreamAdapter::new(&mut buffer);
-        self.serialize(&mut stream);
+        self.serialize_writer(&mut buffer.as_mut())
+            .expect("Should serialize qualified root");
         buffer
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: Write,
+    {
+        writer.write_all(self.root.as_bytes())?;
+        writer.write_all(self.previous.as_bytes())
     }
 
     pub fn new_test_instance() -> Self {

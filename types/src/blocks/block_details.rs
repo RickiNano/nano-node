@@ -1,11 +1,8 @@
-use crate::{
-    Epoch,
-    stream::{BufferWriter, Serialize, Stream},
-};
 use anyhow::Result;
 use num::FromPrimitive;
 
 use super::BlockSubType;
+use crate::{Epoch, stream::Stream};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BlockDetails {
@@ -81,17 +78,10 @@ impl BlockDetails {
     }
 }
 
-impl Serialize for BlockDetails {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        stream.write_u8_safe(self.packed())
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use crate::stream::MemoryStream;
-
     use super::*;
+    use crate::stream::BufferReader;
 
     #[test]
     fn test_block_details() {
@@ -154,8 +144,8 @@ mod test {
     #[test]
     fn serialize() {
         let details = BlockDetails::new(Epoch::Epoch2, false, true, false);
-        let mut stream = MemoryStream::new();
-        details.serialize(&mut stream);
+        let buffer = [details.packed()];
+        let mut stream = BufferReader::new(&buffer);
         let deserialized = BlockDetails::deserialize(&mut stream).unwrap();
         assert_eq!(deserialized, details);
     }
