@@ -283,10 +283,7 @@ fn v24_sideband_len(block_type: BlockType) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{
-        Block, BlockHash, BlockSideband,
-        stream::{MemoryStream, Serialize, Stream, StreamExt},
-    };
+    use rsnano_types::{Block, BlockHash, BlockSideband};
 
     #[test]
     fn old_sideband_len() {
@@ -306,22 +303,18 @@ mod tests {
 
     #[test]
     fn get_successor_from_v24_sideband() {
-        let mut stream = MemoryStream::new();
+        let mut buffer = Vec::new();
         let block = Block::new_test_instance();
         assert_eq!(block.block_type(), BlockType::State);
-        block.serialize(&mut stream);
+        block.serialize_writer(&mut buffer).unwrap();
         let successor = BlockHash::from(12345);
-        successor.serialize(&mut stream);
-        stream.write_u64_be(123).unwrap(); // block height
-        stream
-            .write_bytes(&UnixTimestamp::from(123).to_be_bytes())
-            .unwrap();
-        stream.write_u8(42).unwrap(); // block details;
-        stream.write_u8(42).unwrap(); // source epoch;
+        successor.serialize_writer(&mut buffer).unwrap();
+        buffer.extend_from_slice(&123_u64.to_be_bytes()); // block height
+        buffer.extend_from_slice(&UnixTimestamp::from(123).to_be_bytes());
+        buffer.push(42); // block details;
+        buffer.push(42); // source epoch;
 
-        let data = stream.to_vec();
-
-        let sideband = V24Sideband::new(&data);
+        let sideband = V24Sideband::new(&buffer);
 
         assert_eq!(sideband.successor(), *successor.as_bytes());
     }

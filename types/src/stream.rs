@@ -1,5 +1,4 @@
 pub trait Stream {
-    fn write_u8(&mut self, value: u8) -> anyhow::Result<()>;
     fn write_bytes(&mut self, bytes: &[u8]) -> anyhow::Result<()>;
     fn read_u8(&mut self) -> anyhow::Result<u8>;
     fn read_bytes(&mut self, buffer: &mut [u8], len: usize) -> anyhow::Result<()>;
@@ -119,11 +118,6 @@ impl BufferWriter for MemoryStream {
 }
 
 impl Stream for MemoryStream {
-    fn write_u8(&mut self, value: u8) -> anyhow::Result<()> {
-        self.bytes.push(value);
-        Ok(())
-    }
-
     fn write_bytes(&mut self, bytes: &[u8]) -> anyhow::Result<()> {
         self.bytes.extend_from_slice(bytes);
         Ok(())
@@ -217,15 +211,6 @@ impl<'a> BufferWriter for MutStreamAdapter<'a> {
 }
 
 impl<'a> Stream for MutStreamAdapter<'a> {
-    fn write_u8(&mut self, value: u8) -> anyhow::Result<()> {
-        if self.write_index >= self.bytes.len() {
-            bail!("buffer full");
-        }
-        self.bytes[self.write_index] = value;
-        self.write_index += 1;
-        Ok(())
-    }
-
     fn write_bytes(&mut self, bytes: &[u8]) -> anyhow::Result<()> {
         if self.write_index + bytes.len() > self.bytes.len() {
             bail!("buffer full");
@@ -279,10 +264,6 @@ impl<'a> BufferReader<'a> {
 }
 
 impl<'a> Stream for BufferReader<'a> {
-    fn write_u8(&mut self, _value: u8) -> anyhow::Result<()> {
-        bail!("not supported");
-    }
-
     fn write_bytes(&mut self, _bytes: &[u8]) -> anyhow::Result<()> {
         bail!("not supported");
     }

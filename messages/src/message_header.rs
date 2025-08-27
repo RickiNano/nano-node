@@ -1,15 +1,14 @@
-use anyhow::Result;
-use bitvec::prelude::*;
-use num_traits::FromPrimitive;
-use rsnano_types::{
-    Networks, ProtocolInfo,
-    stream::{MemoryStream, Serialize, Stream},
-};
-use rsnano_utils::stats::DetailType;
 use std::{
     fmt::{Debug, Display},
     mem::size_of,
 };
+
+use anyhow::Result;
+use bitvec::prelude::*;
+use num_traits::FromPrimitive;
+
+use rsnano_types::{Networks, ProtocolInfo, stream::Stream};
+use rsnano_utils::stats::DetailType;
 
 use super::*;
 
@@ -104,22 +103,6 @@ impl MessageHeader {
             message_type,
             protocol,
             ..Default::default()
-        }
-    }
-
-    pub fn new_with_payload_len(
-        message_type: MessageType,
-        protocol: ProtocolInfo,
-        payload: &impl Serialize,
-    ) -> Self {
-        let mut stream = MemoryStream::new();
-        payload.serialize(&mut stream);
-        let payload_len: u16 = stream.bytes_written() as u16;
-
-        Self {
-            message_type,
-            protocol,
-            extensions: payload_len.into(),
         }
     }
 
