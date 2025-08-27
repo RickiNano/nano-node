@@ -4,7 +4,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use rsnano_types::{
     BlockHash, BlockType, Root, serialized_block_size,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{Deserialize, FixedSizeSerialize, Stream},
 };
 use serde::ser::{SerializeSeq, SerializeStruct};
 use std::fmt::{Debug, Display, Write};
@@ -171,15 +171,6 @@ impl ConfirmReq {
             writer.write_all(root.as_bytes())?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for ConfirmReq {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        for (hash, root) in &self.roots_hashes {
-            writer.write_bytes_safe(hash.as_bytes());
-            writer.write_bytes_safe(root.as_bytes());
-        }
     }
 }
 

@@ -1,9 +1,6 @@
 use super::{ConfirmReq, MessageVariant};
 use bitvec::prelude::BitArray;
-use rsnano_types::{
-    Vote,
-    stream::{BufferWriter, Serialize, Stream},
-};
+use rsnano_types::{Vote, stream::Stream};
 use std::fmt::{Debug, Display};
 /*
  * Binary Format:
@@ -94,12 +91,6 @@ impl ConfirmAck {
     }
 }
 
-impl Serialize for ConfirmAck {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.vote.serialize(writer);
-    }
-}
-
 impl MessageVariant for ConfirmAck {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
         let mut extensions = BitArray::default();
@@ -127,7 +118,7 @@ impl Display for ConfirmAck {
 mod tests {
     use super::*;
     use crate::{Message, assert_deserializable};
-    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp, stream::MemoryStream};
+    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp, stream::BufferReader};
 
     #[test]
     fn serialize_v1() {
@@ -183,13 +174,14 @@ mod tests {
 
     #[test]
     fn deserialize_set_rebroadcasted_flag() {
-        let mut stream = MemoryStream::new();
+        let mut bytes = Vec::new();
         let vote = Vote::new_test_instance();
-        vote.serialize(&mut stream);
+        vote.serialize_writer(&mut bytes).unwrap();
 
         let mut extensions = BitArray::<u16>::new(0);
         extensions.set(ConfirmAck::REBROADCASTED_FLAG, true);
 
+        let mut stream = BufferReader::new(&bytes);
         let ack = ConfirmAck::deserialize(&mut stream, extensions, 0).unwrap();
 
         assert_eq!(ack.is_rebroadcasted(), true);
@@ -197,13 +189,14 @@ mod tests {
 
     #[test]
     fn deserialize_unset_rebroadcasted_flag() {
-        let mut stream = MemoryStream::new();
+        let mut bytes = Vec::new();
         let vote = Vote::new_test_instance();
-        vote.serialize(&mut stream);
+        vote.serialize_writer(&mut bytes).unwrap();
 
         let mut extensions = BitArray::<u16>::new(0);
         extensions.set(ConfirmAck::REBROADCASTED_FLAG, false);
 
+        let mut stream = BufferReader::new(&bytes);
         let ack = ConfirmAck::deserialize(&mut stream, extensions, 0).unwrap();
 
         assert_eq!(ack.is_rebroadcasted(), false);

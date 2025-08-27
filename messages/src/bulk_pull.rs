@@ -1,11 +1,14 @@
-use super::MessageVariant;
+use std::{fmt::Display, mem::size_of};
+
 use bitvec::prelude::BitArray;
+use serde_derive::Serialize;
+
 use rsnano_types::{
     BlockHash, HashOrAccount,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{Deserialize, FixedSizeSerialize, Stream},
 };
-use serde_derive::Serialize;
-use std::{fmt::Display, mem::size_of};
+
+use super::MessageVariant;
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Default)]
 #[serde(rename_all = "snake_case")]
@@ -88,21 +91,6 @@ impl BulkPull {
             writer.write_all(&count_buffer)?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for BulkPull {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.start.serialize(writer);
-        self.end.serialize(writer);
-
-        if self.count > 0 {
-            let mut count_buffer = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];
-            const_assert!(size_of::<u32>() < (BulkPull::EXTENDED_PARAMETERS_SIZE - 1)); // count must fit within buffer
-
-            count_buffer[1..5].copy_from_slice(&self.count.to_le_bytes());
-            writer.write_bytes_safe(&count_buffer);
-        }
     }
 }
 

@@ -1,11 +1,13 @@
+use std::{fmt::Display, mem::size_of};
+
 use num_traits::FromPrimitive;
-use rsnano_types::{
-    Account, Amount,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
-};
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
-use std::{fmt::Display, mem::size_of};
+
+use rsnano_types::{
+    Account, Amount,
+    stream::{Deserialize, FixedSizeSerialize, Stream},
+};
 
 use super::MessageVariant;
 
@@ -58,14 +60,6 @@ impl BulkPullAccount {
 }
 
 impl MessageVariant for BulkPullAccount {}
-
-impl Serialize for BulkPullAccount {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.account.serialize(writer);
-        self.minimum_amount.serialize(writer);
-        writer.write_u8_safe(self.flags as u8);
-    }
-}
 
 impl Display for BulkPullAccount {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -1,13 +1,15 @@
+use std::{collections::VecDeque, fmt::Display, mem::size_of};
+
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{
-    Account, Block, BlockHash, BlockType, Frontier,
-    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
-};
-use rsnano_utils::stats::DetailType;
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
-use std::{collections::VecDeque, fmt::Display, mem::size_of};
+
+use rsnano_types::{
+    Account, Block, BlockHash, BlockType, Frontier,
+    stream::{Deserialize, Stream, StreamExt},
+};
+use rsnano_utils::stats::DetailType;
 
 use super::{AscPullPayloadId, MessageVariant};
 
@@ -79,7 +81,7 @@ impl AscPullAck {
         }
     }
 
-    fn serialize_pull_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    fn serialize_pull_type<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -92,20 +94,6 @@ impl AscPullAck {
                     frontier.serialize_writer(writer)?;
                 }
                 Frontier::default().serialize_writer(writer)
-            }
-        }
-    }
-
-    fn serialize_pull_type(&self, writer: &mut dyn BufferWriter) {
-        match &self.pull_type {
-            AscPullAckType::Blocks(blocks) => blocks.serialize(writer),
-            AscPullAckType::AccountInfo(account_info) => account_info.serialize(writer),
-            AscPullAckType::Frontiers(frontiers) => {
-                debug_assert!(frontiers.len() <= Self::MAX_FRONTIERS);
-                for frontier in frontiers {
-                    frontier.serialize(writer);
-                }
-                Frontier::default().serialize(writer);
             }
         }
     }
@@ -124,15 +112,7 @@ impl AscPullAck {
     {
         writer.write_all(&[self.payload_type() as u8])?;
         writer.write_all(&self.id.to_be_bytes())?;
-        self.serialize_pull_type_writer(writer)
-    }
-}
-
-impl Serialize for AscPullAck {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        writer.write_u8_safe(self.payload_type() as u8);
-        writer.write_u64_be_safe(self.id);
-        self.serialize_pull_type(writer);
+        self.serialize_pull_type(writer)
     }
 }
 
@@ -226,16 +206,6 @@ impl BlocksAckPayload {
     }
 }
 
-impl Serialize for BlocksAckPayload {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        for block in self.blocks() {
-            block.serialize(writer);
-        }
-        // For convenience, end with null block terminator
-        writer.write_u8_safe(BlockType::NotABlock as u8)
-    }
-}
-
 impl serde::Serialize for BlocksAckPayload {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -289,17 +259,6 @@ impl AccountInfoAckPayload {
         writer.write_all(&self.account_block_count.to_be_bytes())?;
         self.account_conf_frontier.serialize_writer(writer)?;
         writer.write_all(&self.account_conf_height.to_be_bytes())
-    }
-}
-
-impl Serialize for AccountInfoAckPayload {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.account.serialize(writer);
-        self.account_open.serialize(writer);
-        self.account_head.serialize(writer);
-        writer.write_u64_be_safe(self.account_block_count);
-        self.account_conf_frontier.serialize(writer);
-        writer.write_u64_be_safe(self.account_conf_height);
     }
 }
 

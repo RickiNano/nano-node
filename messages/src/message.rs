@@ -1,10 +1,7 @@
 use std::fmt::Display;
 
 use bitvec::prelude::BitArray;
-use rsnano_types::{
-    ProtocolInfo,
-    stream::{BufferReader, BufferWriter, Serialize},
-};
+use rsnano_types::{ProtocolInfo, stream::BufferReader};
 use rsnano_utils::stats::DetailType;
 
 use super::*;
@@ -26,7 +23,7 @@ pub enum Message {
     TelemetryReq,
 }
 
-pub trait MessageVariant: Display + Serialize {
+pub trait MessageVariant: Display {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
         Default::default()
     }
@@ -171,12 +168,6 @@ impl Message {
             Message::NodeIdHandshake(m) => m.serialize_writer(writer),
             Message::TelemetryAck(m) => m.serialize_writer(writer),
             Message::BulkPush | Message::TelemetryReq => Ok(()),
-        }
-    }
-
-    pub fn serialize(&self, stream: &mut dyn BufferWriter) {
-        if let Some(variant) = self.as_message_variant() {
-            variant.serialize(stream);
         }
     }
 
