@@ -1,7 +1,10 @@
-use crate::stream::{Deserialize, Stream};
+use crate::{
+    DeserializationError,
+    stream::{Deserialize, Stream},
+};
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
-use std::{fmt::Debug, iter::Sum, ops::Deref};
+use std::{fmt::Debug, io::Read, iter::Sum, ops::Deref};
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub struct Amount {
@@ -126,6 +129,15 @@ impl Amount {
         T: std::io::Write,
     {
         writer.write_all(&self.raw.to_be_bytes())
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let mut buffer = [0u8; 16];
+        reader.read_exact(&mut buffer)?;
+        Ok(Amount::raw(u128::from_be_bytes(buffer)))
     }
 }
 

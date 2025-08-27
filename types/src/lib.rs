@@ -69,6 +69,7 @@ pub use raw_key::RawKey;
 use serde::de::{Unexpected, Visitor};
 pub use signature::Signature;
 use stream::{Deserialize, Stream};
+use thiserror::Error;
 pub use timestamp::{UnixMillisTimestamp, UnixTimestamp, milliseconds_since_epoch};
 pub use vote::{TestVoteBuilder, Vote, VoteError, VoteSource};
 pub use vote_timestamp::VoteTimestamp;
@@ -350,6 +351,15 @@ impl Frontier {
         self.account.serialize_writer(writer)?;
         self.hash.serialize_writer(writer)
     }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let account = Account::deserialize_reader(reader)?;
+        let hash = BlockHash::deserialize_reader(reader)?;
+        Ok(Self::new(account, hash))
+    }
 }
 
 impl Frontier {
@@ -552,6 +562,33 @@ impl Visitor<'_> for WorkNonceVisitor {
         })?;
         Ok(WorkNonce(u64::from_be_bytes(bytes)))
     }
+}
+
+#[derive(Error, Debug)]
+pub enum DeserializationError {
+    #[error("invalid data")]
+    InvalidData,
+
+    #[error("too much data")]
+    TooMuchData,
+
+    #[error("I/O error")]
+    IoError(std::io::Error),
+}
+
+impl From<std::io::Error> for DeserializationError {
+    fn from(value: std::io::Error) -> Self {
+        Self::IoError(value)
+    }
+}
+
+pub fn read_u64_le<T>(reader: &mut T) -> std::io::Result<u64>
+where
+    T: Read,
+{
+    let mut buffer = [0; 8];
+    reader.read_exact(&mut buffer)?;
+    Ok(u64::from_le_bytes(buffer))
 }
 
 pub fn read_u64_be<T>(reader: &mut T) -> std::io::Result<u64>

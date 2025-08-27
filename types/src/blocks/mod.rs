@@ -30,12 +30,13 @@ mod builders;
 pub use builders::*;
 
 use crate::{
-    Account, Amount, BlockHash, Epoch, Epochs, Link, PrivateKey, PublicKey, QualifiedRoot, Root,
-    Signature, UnixMillisTimestamp, WorkNonce,
+    Account, Amount, BlockHash, DeserializationError, Epoch, Epochs, Link, PrivateKey, PublicKey,
+    QualifiedRoot, Root, Signature, UnixMillisTimestamp, WorkNonce,
     stream::{Deserialize, Stream},
 };
 use num::FromPrimitive;
 use std::{
+    io::Read,
     ops::{Deref, DerefMut},
     sync::LazyLock,
 };
@@ -250,6 +251,28 @@ impl Block {
             Block::LegacyChange(b) => b.serialize_without_block_type_writer(writer),
             Block::State(b) => b.serialize_without_block_type_writer(writer),
         }
+    }
+
+    pub fn deserialize_block_type_reader<T>(
+        block_type: BlockType,
+        reader: &mut T,
+    ) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let block = match block_type {
+            BlockType::LegacyReceive => {
+                Self::LegacyReceive(ReceiveBlock::deserialize_reader(reader)?)
+            }
+            BlockType::LegacyOpen => Self::LegacyOpen(OpenBlock::deserialize_reader(reader)?),
+            BlockType::LegacyChange => Self::LegacyChange(ChangeBlock::deserialize_reader(reader)?),
+            BlockType::State => Self::State(StateBlock::deserialize_reader(reader)?),
+            BlockType::LegacySend => Self::LegacySend(SendBlock::deserialize_reader(reader)?),
+            BlockType::Invalid | BlockType::NotABlock => {
+                return Err(DeserializationError::InvalidData);
+            }
+        };
+        Ok(block)
     }
 
     pub fn deserialize_block_type(

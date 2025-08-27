@@ -1,10 +1,10 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PrivateKey,
-    PublicKey, Root, Signature, WorkNonce,
+    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
+    JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
     stream::{Deserialize, Stream},
 };
-use anyhow::Result;
+use std::io::Read;
 
 #[derive(Clone, Debug)]
 pub struct ReceiveBlock {
@@ -37,7 +37,25 @@ impl ReceiveBlock {
             + std::mem::size_of::<u64>()
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let previous = BlockHash::deserialize_reader(reader)?;
+        let source = BlockHash::deserialize_reader(reader)?;
+        let signature = Signature::deserialize_reader(reader)?;
+        let work = read_u64_le(reader)?;
+        let hashables = ReceiveHashables { previous, source };
+        let hash = hashables.hash();
+        Ok(Self {
+            work: work.into(),
+            signature,
+            hashables,
+            hash,
+        })
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
         let previous = BlockHash::deserialize(stream)?;
         let source = BlockHash::deserialize(stream)?;
         let signature = Signature::deserialize(stream)?;

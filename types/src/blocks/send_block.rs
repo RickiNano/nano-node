@@ -1,10 +1,11 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PendingKey,
-    PrivateKey, PublicKey, Root, Signature, WorkNonce, stream::Stream,
+    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
+    JsonBlock, Link, PendingKey, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
+    stream::Stream,
 };
-use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
+use std::io::Read;
 
 #[derive(Clone, Default, Debug)]
 pub struct SendBlock {
@@ -30,7 +31,24 @@ impl SendBlock {
         .into()
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let hashables = SendHashables::deserialize_reader(reader)?;
+        let signature = Signature::deserialize_reader(reader)?;
+
+        let work = read_u64_le(reader)?;
+        let hash = hashables.hash();
+        Ok(SendBlock {
+            hashables,
+            signature,
+            work: work.into(),
+            hash,
+        })
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
         let hashables = SendHashables::deserialize(stream)?;
         let signature = Signature::deserialize(stream)?;
 
@@ -221,7 +239,22 @@ impl SendHashables {
         self.balance.serialize_writer(writer)
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let previous = BlockHash::deserialize_reader(reader)?;
+        let destination = Account::deserialize_reader(reader)?;
+        let balance = Amount::deserialize_reader(reader)?;
+
+        Ok(Self {
+            previous,
+            destination,
+            balance,
+        })
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
         let mut buffer_32 = [0u8; 32];
         let mut buffer_16 = [0u8; 16];
 

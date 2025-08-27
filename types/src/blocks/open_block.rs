@@ -1,10 +1,10 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PrivateKey,
-    PublicKey, Root, Signature, WorkNonce,
+    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
+    JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
     stream::{Deserialize, Stream},
 };
-use anyhow::Result;
+use std::io::Read;
 
 #[derive(Clone, Debug)]
 pub struct OpenBlock {
@@ -42,7 +42,27 @@ impl OpenBlock {
         OpenHashables::serialized_size() + Signature::serialized_size() + std::mem::size_of::<u64>()
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let hashables = OpenHashables {
+            source: BlockHash::deserialize_reader(reader)?,
+            representative: PublicKey::deserialize_reader(reader)?,
+            account: Account::deserialize_reader(reader)?,
+        };
+        let signature = Signature::deserialize_reader(reader)?;
+        let work = read_u64_le(reader)?;
+        let hash = hashables.hash();
+        Ok(OpenBlock {
+            work: work.into(),
+            signature,
+            hashables,
+            hash,
+        })
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
         let hashables = OpenHashables {
             source: BlockHash::deserialize(stream)?,
             representative: PublicKey::deserialize(stream)?,

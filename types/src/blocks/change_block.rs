@@ -1,10 +1,11 @@
 use super::{Block, BlockBase};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, BlockType, DependentBlocks, JsonBlock, Link,
-    PrivateKey, PublicKey, Root, Signature, WorkNonce,
+    Account, Amount, Blake2HashBuilder, BlockHash, BlockType, DependentBlocks,
+    DeserializationError, JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce,
+    read_u64_le,
     stream::{Deserialize, Stream},
 };
-use anyhow::Result;
+use std::io::Read;
 
 #[derive(Clone, Debug)]
 pub struct ChangeBlock {
@@ -36,7 +37,27 @@ impl ChangeBlock {
             + std::mem::size_of::<u64>()
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let hashables = ChangeHashables {
+            previous: BlockHash::deserialize_reader(reader)?,
+            representative: PublicKey::deserialize_reader(reader)?,
+        };
+
+        let signature = Signature::deserialize_reader(reader)?;
+        let work = read_u64_le(reader)?;
+        let hash = hashables.hash();
+        Ok(Self {
+            work: work.into(),
+            signature,
+            hashables,
+            hash,
+        })
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
         let hashables = ChangeHashables {
             previous: BlockHash::deserialize(stream)?,
             representative: PublicKey::deserialize(stream)?,

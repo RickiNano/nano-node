@@ -1,11 +1,12 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, JsonBlock, Link, PrivateKey, PublicKey, Root,
-    Signature, WorkNonce,
+    Account, Amount, Blake2HashBuilder, BlockHash, DeserializationError, JsonBlock, Link,
+    PrivateKey, PublicKey, Root, Signature, WorkNonce,
     private_key::TEST_KEY,
+    read_u64_be,
     stream::{Deserialize, Stream},
 };
-use anyhow::Result;
+use std::io::Read;
 
 #[derive(Clone, Default, Debug)]
 pub struct StateBlock {
@@ -56,7 +57,34 @@ impl StateBlock {
         Account::zero()
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let account = Account::deserialize_reader(reader)?;
+        let previous = BlockHash::deserialize_reader(reader)?;
+        let representative = PublicKey::deserialize_reader(reader)?;
+        let balance = Amount::deserialize_reader(reader)?;
+        let link = Link::deserialize_reader(reader)?;
+        let signature = Signature::deserialize_reader(reader)?;
+        let work = read_u64_be(reader)?;
+        let hashables = StateHashables {
+            account,
+            previous,
+            representative,
+            balance,
+            link,
+        };
+        let hash = hashables.hash();
+        Ok(Self {
+            work: work.into(),
+            signature,
+            hashables,
+            hash,
+        })
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
         let account = Account::deserialize(stream)?;
         let previous = BlockHash::deserialize(stream)?;
         let representative = PublicKey::deserialize(stream)?;
