@@ -1,7 +1,4 @@
-use std::{
-    ops::{Bound, RangeBounds},
-    sync::Arc,
-};
+use std::{ops::RangeBounds, sync::Arc};
 
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,

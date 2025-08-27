@@ -4,7 +4,7 @@ use rsnano_nullable_lmdb::{
     EMPTY_DATABASE, Error, Result, RoCursor,
     sys::{MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE, MDB_cursor_op},
 };
-use rsnano_types::stream::{BufferReader, Deserialize, Serialize};
+use rsnano_types::stream::{BufferReader, Deserialize};
 
 pub struct LmdbRangeIterator<'txn, K, V> {
     cursor: RoCursor<'txn>,
@@ -17,7 +17,7 @@ pub struct LmdbRangeIterator<'txn, K, V> {
 
 impl<'txn, K, V> LmdbRangeIterator<'txn, K, V>
 where
-    K: Deserialize<Target = K> + Serialize + Ord,
+    K: Deserialize<Target = K>,
     V: Deserialize<Target = V>,
 {
     pub fn new(cursor: RoCursor<'txn>, start: Bound<Vec<u8>>, end: Bound<Vec<u8>>) -> Self {
@@ -82,7 +82,7 @@ where
 
 impl<'txn, K, V> Iterator for LmdbRangeIterator<'txn, K, V>
 where
-    K: Deserialize<Target = K> + Serialize + Ord,
+    K: Deserialize<Target = K>,
     V: Deserialize<Target = V>,
 {
     type Item = (K, V);
