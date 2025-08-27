@@ -178,7 +178,11 @@ impl Message {
         }
     }
 
-    pub fn deserialize(payload_bytes: &[u8], header: &MessageHeader, digest: u128) -> Option<Self> {
+    pub fn deserialize(
+        mut payload_bytes: &[u8],
+        header: &MessageHeader,
+        digest: u128,
+    ) -> Option<Self> {
         let mut stream = BufferReader::new(payload_bytes);
         let msg = match header.message_type {
             MessageType::Keepalive => Message::Keepalive(Keepalive::deserialize(&mut stream)?),
@@ -211,9 +215,9 @@ impl Message {
                 &mut stream,
                 header.extensions,
             )?),
-            MessageType::TelemetryAck => {
-                Message::TelemetryAck(TelemetryAck::deserialize(&mut stream, header.extensions)?)
-            }
+            MessageType::TelemetryAck => Message::TelemetryAck(
+                TelemetryAck::deserialize(&mut payload_bytes, header.extensions).ok()?,
+            ),
             MessageType::TelemetryReq => Message::TelemetryReq,
             MessageType::Invalid | MessageType::NotAType => return None,
         };

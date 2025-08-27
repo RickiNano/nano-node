@@ -1,6 +1,6 @@
 use crate::{Account, PrivateKey, PublicKey};
 use serde::de::{Unexpected, Visitor};
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, io::Read, str::FromStr};
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Default, PartialOrd, Ord)]
 pub struct NodeId([u8; 32]);
@@ -25,6 +25,15 @@ impl NodeId {
         T: std::io::Write,
     {
         writer.write_all(self.as_bytes())
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> std::io::Result<Self>
+    where
+        T: Read,
+    {
+        let mut result = Self::ZERO;
+        reader.read_exact(&mut result.0)?;
+        Ok(result)
     }
 }
 

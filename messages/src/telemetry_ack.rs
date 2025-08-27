@@ -1,5 +1,6 @@
 use std::{
     fmt::Display,
+    io::Read,
     mem::size_of,
     time::{Duration, SystemTime},
 };
@@ -8,8 +9,8 @@ use anyhow::Result;
 use bitvec::prelude::BitArray;
 use serde_derive::Serialize;
 
-use rsnano_types::stream::{Deserialize, Stream, StreamExt};
 use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
+use rsnano_types::{read_u8, read_u32_be, read_u64_be};
 
 use super::MessageVariant;
 
@@ -140,31 +141,35 @@ impl TelemetryData {
         writer.write_all(&self.unknown_data)
     }
 
-    pub fn deserialize(stream: &mut dyn Stream, payload_len: usize) -> anyhow::Result<Self> {
-        let signature = Signature::deserialize(stream)?;
-        let node_id = NodeId::deserialize(stream)?;
-        let block_count = stream.read_u64_be()?;
-        let cemented_count = stream.read_u64_be()?;
-        let unchecked_count = stream.read_u64_be()?;
-        let account_count = stream.read_u64_be()?;
-        let bandwidth_cap = stream.read_u64_be()?;
-        let peer_count = stream.read_u32_be()?;
-        let protocol_version = stream.read_u8()?;
-        let uptime = stream.read_u64_be()?;
-        let genesis_block = BlockHash::deserialize(stream)?;
-        let major_version = stream.read_u8()?;
-        let minor_version = stream.read_u8()?;
-        let patch_version = stream.read_u8()?;
-        let pre_release_version = stream.read_u8()?;
-        let maker = stream.read_u8()?;
-        let timestamp_ms = stream.read_u64_be()?;
-        let active_difficulty = stream.read_u64_be()?;
+    pub fn deserialize<T>(reader: &mut T, payload_len: usize) -> std::io::Result<Self>
+    where
+        T: Read,
+    {
+        let signature = Signature::deserialize_reader(reader)?;
+        let node_id = NodeId::deserialize_reader(reader)?;
+
+        let block_count = read_u64_be(reader)?;
+        let cemented_count = read_u64_be(reader)?;
+        let unchecked_count = read_u64_be(reader)?;
+        let account_count = read_u64_be(reader)?;
+        let bandwidth_cap = read_u64_be(reader)?;
+        let peer_count = read_u32_be(reader)?;
+        let protocol_version = read_u8(reader)?;
+        let uptime = read_u64_be(reader)?;
+        let genesis_block = BlockHash::deserialize_reader(reader)?;
+        let major_version = read_u8(reader)?;
+        let minor_version = read_u8(reader)?;
+        let patch_version = read_u8(reader)?;
+        let pre_release_version = read_u8(reader)?;
+        let maker = read_u8(reader)?;
+        let timestamp_ms = read_u64_be(reader)?;
+        let active_difficulty = read_u64_be(reader)?;
         let mut unknown_data = Vec::new();
         if payload_len as usize > TelemetryData::serialized_size_of_known_data() {
             let unknown_len =
                 (payload_len as usize) - TelemetryData::serialized_size_of_known_data();
             unknown_data.resize(unknown_len, 0);
-            stream.read_bytes(&mut unknown_data, unknown_len)?;
+            reader.read_exact(&mut unknown_data)?;
         }
 
         let data = TelemetryData {
@@ -263,17 +268,6 @@ impl TelemetryAck {
         (extensions.data & TelemetryData::SIZE_MASK) as usize
     }
 
-    pub fn deserialize(stream: &mut dyn Stream, extensions: BitArray<u16>) -> Option<Self> {
-        let payload_length = Self::serialized_size(extensions);
-        if payload_length == 0 {
-            return Some(Self(None));
-        }
-
-        let result = TelemetryData::deserialize(stream, payload_length).ok()?;
-
-        Some(Self(Some(result)))
-    }
-
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
@@ -283,6 +277,19 @@ impl TelemetryAck {
             data.serialize_without_signature(writer)?;
         }
         Ok(())
+    }
+
+    pub fn deserialize<T>(reader: &mut T, extensions: BitArray<u16>) -> std::io::Result<Self>
+    where
+        T: Read,
+    {
+        let payload_length = Self::serialized_size(extensions);
+        if payload_length == 0 {
+            return Ok(Self(None));
+        }
+
+        let result = TelemetryData::deserialize(reader, payload_length)?;
+        Ok(Self(Some(result)))
     }
 }
 

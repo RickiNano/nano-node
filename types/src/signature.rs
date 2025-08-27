@@ -1,6 +1,9 @@
 use crate::stream::Stream;
 use serde::de::{Unexpected, Visitor};
-use std::fmt::{Debug, Write};
+use std::{
+    fmt::{Debug, Write},
+    io::Read,
+};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Signature {
@@ -24,6 +27,15 @@ impl Signature {
 
     pub const fn serialized_size() -> usize {
         64
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> std::io::Result<Signature>
+    where
+        T: Read,
+    {
+        let mut result = Signature { bytes: [0; 64] };
+        reader.read_exact(&mut result.bytes)?;
+        Ok(result)
     }
 
     pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Signature> {

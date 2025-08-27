@@ -12,12 +12,6 @@ pub trait Stream {
 }
 
 pub trait StreamExt: Stream {
-    fn read_u32_be(&mut self) -> anyhow::Result<u32> {
-        let mut buffer = [0u8; 4];
-        self.read_bytes(&mut buffer, 4)?;
-        Ok(u32::from_be_bytes(buffer))
-    }
-
     fn read_u64_be(&mut self) -> anyhow::Result<u64> {
         let mut buffer = [0u8; 8];
         self.read_bytes(&mut buffer, 8)?;
@@ -62,14 +56,6 @@ pub trait StreamExt: Stream {
 }
 
 impl<T: Stream + ?Sized> StreamExt for T {}
-
-pub trait BufferWriter {
-    fn write_bytes_safe(&mut self, bytes: &[u8]);
-    fn write_u8_safe(&mut self, value: u8);
-    fn write_u32_be_safe(&mut self, value: u32);
-    fn write_u64_be_safe(&mut self, value: u64);
-    fn write_u64_ne_safe(&mut self, value: u64);
-}
 
 pub struct BufferReader<'a> {
     bytes: &'a [u8],

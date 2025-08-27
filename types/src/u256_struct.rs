@@ -69,6 +69,15 @@ macro_rules! u256_struct {
             {
                 writer.write_all(&self.0)
             }
+
+            pub fn deserialize_reader<T>(reader: &mut T) -> std::io::Result<Self>
+            where
+                T: std::io::Read,
+            {
+                let mut result = Self::zero();
+                reader.read_exact(&mut result.0)?;
+                Ok(result)
+            }
         }
 
         impl $crate::stream::Deserialize for $name {

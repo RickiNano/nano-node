@@ -39,6 +39,7 @@ mod vote_timestamp;
 
 use std::{
     fmt::{Debug, Display},
+    io::Read,
     str::FromStr,
     sync::{Arc, Condvar, Mutex},
 };
@@ -551,6 +552,33 @@ impl Visitor<'_> for WorkNonceVisitor {
         })?;
         Ok(WorkNonce(u64::from_be_bytes(bytes)))
     }
+}
+
+pub fn read_u64_be<T>(reader: &mut T) -> std::io::Result<u64>
+where
+    T: Read,
+{
+    let mut buffer = [0; 8];
+    reader.read_exact(&mut buffer)?;
+    Ok(u64::from_be_bytes(buffer))
+}
+
+pub fn read_u32_be<T>(reader: &mut T) -> std::io::Result<u32>
+where
+    T: Read,
+{
+    let mut buffer = [0; 4];
+    reader.read_exact(&mut buffer)?;
+    Ok(u32::from_be_bytes(buffer))
+}
+
+pub fn read_u8<T>(reader: &mut T) -> std::io::Result<u8>
+where
+    T: Read,
+{
+    let mut buffer = [0; 1];
+    reader.read_exact(&mut buffer)?;
+    Ok(buffer[0])
 }
 
 #[cfg(test)]
