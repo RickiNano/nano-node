@@ -152,8 +152,6 @@ impl LmdbBlockStore {
 
         LmdbRangeIterator::<BlockHash, u64>::new(
             cursor,
-            range.start_bound().cloned(),
-            range.end_bound().cloned(),
             range.start_bound().map(|b| b.as_bytes().to_vec()),
             range.end_bound().map(|b| b.as_bytes().to_vec()),
         )

@@ -589,13 +589,7 @@ impl<'a> AnyReceivableIterator<'a> {
                 let start = PendingKey::new(requested_account, hash);
                 let start_bytes = start.to_bytes().to_vec();
 
-                LmdbRangeIterator::new(
-                    cursor,
-                    Bound::Included(start),
-                    Bound::Unbounded,
-                    Bound::Included(start_bytes),
-                    Bound::Unbounded,
-                )
+                LmdbRangeIterator::new(cursor, Bound::Included(start_bytes), Bound::Unbounded)
             }
             None => LmdbRangeIterator::empty(),
         };

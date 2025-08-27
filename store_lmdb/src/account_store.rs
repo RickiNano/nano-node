@@ -99,14 +99,7 @@ impl LmdbAccountStore {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
         let start = range.start_bound().map(|b| b.as_bytes().to_vec());
         let end = range.end_bound().map(|b| b.as_bytes().to_vec());
-
-        Box::new(LmdbRangeIterator::new(
-            cursor,
-            range.start_bound().cloned(),
-            range.end_bound().cloned(),
-            start,
-            end,
-        ))
+        Box::new(LmdbRangeIterator::new(cursor, start, end))
     }
 
     pub fn for_each_par(

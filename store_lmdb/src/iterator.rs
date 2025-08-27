@@ -4,14 +4,12 @@ use rsnano_nullable_lmdb::{
     EMPTY_DATABASE, Error, Result, RoCursor,
     sys::{MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE, MDB_cursor_op},
 };
-use rsnano_types::stream::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
+use rsnano_types::stream::{BufferReader, Deserialize, Serialize};
 
 pub struct LmdbRangeIterator<'txn, K, V> {
     cursor: RoCursor<'txn>,
-    start: Bound<K>,
-    end: Bound<K>,
-    start2: Bound<Vec<u8>>,
-    end2: Bound<Vec<u8>>,
+    start: Bound<Vec<u8>>,
+    end: Bound<Vec<u8>>,
     initialized: bool,
     empty: bool,
     phantom: PhantomData<(K, V)>,
@@ -22,19 +20,11 @@ where
     K: Deserialize<Target = K> + Serialize + Ord,
     V: Deserialize<Target = V>,
 {
-    pub fn new(
-        cursor: RoCursor<'txn>,
-        start: Bound<K>,
-        end: Bound<K>,
-        start2: Bound<Vec<u8>>,
-        end2: Bound<Vec<u8>>,
-    ) -> Self {
+    pub fn new(cursor: RoCursor<'txn>, start: Bound<Vec<u8>>, end: Bound<Vec<u8>>) -> Self {
         Self {
             cursor,
             start,
             end,
-            start2,
-            end2,
             initialized: false,
             empty: false,
             phantom: Default::default(),
@@ -46,8 +36,6 @@ where
             cursor: RoCursor::new_null_with(&EMPTY_DATABASE),
             start: Bound::Unbounded,
             end: Bound::Unbounded,
-            start2: Bound::Unbounded,
-            end2: Bound::Unbounded,
             initialized: false,
             empty: true,
             phantom: Default::default(),
@@ -67,12 +55,7 @@ where
 
     fn get_first_result(&self) -> Result<(Option<&'txn [u8]>, &'txn [u8])> {
         match &self.start {
-            Bound::Included(start) => {
-                let mut key_bytes = [0u8; 64];
-                let mut stream = MutStreamAdapter::new(&mut key_bytes);
-                start.serialize(&mut stream);
-                self.cursor.get(Some(stream.written()), None, MDB_SET_RANGE)
-            }
+            Bound::Included(start) => self.cursor.get(Some(start), None, MDB_SET_RANGE),
             Bound::Excluded(_) => unimplemented!(),
             Bound::Unbounded => self.cursor.get(None, None, MDB_FIRST),
         }
@@ -86,7 +69,7 @@ where
         (key, value)
     }
 
-    fn should_include(&self, key: &K) -> bool {
+    fn should_include(&self, key: &[u8]) -> bool {
         match &self.end {
             Bound::Included(end) => {
                 matches!(key.cmp(end), Ordering::Less | Ordering::Equal)
@@ -107,8 +90,8 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.get_next_result() {
             Ok((key, value)) => {
-                let result = self.deserialize(key, value);
-                if self.should_include(&result.0) {
+                if self.should_include(key.unwrap()) {
+                    let result = self.deserialize(key, value);
                     Some(result)
                 } else {
                     None
