@@ -6,7 +6,7 @@ use serde_derive::Serialize;
 
 use rsnano_types::{
     Account, BlockHash, HashOrAccount,
-    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
+    stream::{Deserialize, Stream, StreamExt},
 };
 use rsnano_utils::stats::DetailType;
 
@@ -157,14 +157,6 @@ impl FrontiersReqPayload {
         self.start.serialize_writer(writer)?;
         let count_bytes = self.count.to_be_bytes();
         writer.write_all(&count_bytes)
-    }
-}
-
-impl Serialize for FrontiersReqPayload {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        self.start.serialize(stream);
-        let count_bytes = self.count.to_be_bytes();
-        stream.write_bytes_safe(&count_bytes);
     }
 }
 

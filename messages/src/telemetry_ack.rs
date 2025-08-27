@@ -1,14 +1,17 @@
-use super::MessageVariant;
+use std::{
+    fmt::Display,
+    mem::size_of,
+    time::{Duration, SystemTime},
+};
+
 use anyhow::Result;
 use bitvec::prelude::BitArray;
-use rsnano_types::stream::{
-    BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream, StreamExt,
-};
-use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
 use serde_derive::Serialize;
-use std::fmt::Display;
-use std::mem::size_of;
-use std::time::{Duration, SystemTime};
+
+use rsnano_types::stream::{Deserialize, FixedSizeSerialize, Stream, StreamExt};
+use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
+
+use super::MessageVariant;
 
 #[repr(u8)]
 #[derive(FromPrimitive, Copy, Clone, PartialEq, Eq)]
@@ -103,7 +106,7 @@ impl TelemetryData {
           + size_of::<u64>() //active_difficulty)
     }
 
-    pub fn serialize_without_signature_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize_without_signature<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -135,33 +138,6 @@ impl TelemetryData {
         )?;
         writer.write_all(&self.active_difficulty.to_be_bytes())?;
         writer.write_all(&self.unknown_data)
-    }
-
-    pub fn serialize_without_signature(&self, writer: &mut dyn BufferWriter) {
-        // All values should be serialized in big endian
-        self.node_id.serialize(writer);
-        writer.write_u64_be_safe(self.block_count);
-        writer.write_u64_be_safe(self.cemented_count);
-        writer.write_u64_be_safe(self.unchecked_count);
-        writer.write_u64_be_safe(self.account_count);
-        writer.write_u64_be_safe(self.bandwidth_cap);
-        writer.write_u32_be_safe(self.peer_count);
-        writer.write_u8_safe(self.protocol_version);
-        writer.write_u64_be_safe(self.uptime);
-        self.genesis_block.serialize(writer);
-        writer.write_u8_safe(self.major_version);
-        writer.write_u8_safe(self.minor_version);
-        writer.write_u8_safe(self.patch_version);
-        writer.write_u8_safe(self.pre_release_version);
-        writer.write_u8_safe(self.maker);
-        writer.write_u64_be_safe(
-            self.timestamp
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-        );
-        writer.write_u64_be_safe(self.active_difficulty);
-        writer.write_bytes_safe(&self.unknown_data);
     }
 
     pub fn deserialize(stream: &mut dyn Stream, payload_len: usize) -> anyhow::Result<Self> {
@@ -218,18 +194,20 @@ impl TelemetryData {
 
     pub fn sign(&mut self, key: &PrivateKey) -> Result<()> {
         debug_assert!(key.public_key() == self.node_id.into());
-        let mut stream = MemoryStream::new();
-        self.serialize_without_signature(&mut stream);
-        self.signature = key.sign(stream.as_bytes());
+        let mut buffer = Vec::new();
+        self.serialize_without_signature(&mut buffer)
+            .expect("Should succeed serializing telemetry data");
+        self.signature = key.sign(&buffer);
         Ok(())
     }
 
     pub fn validate_signature(&self) -> bool {
-        let mut stream = MemoryStream::new();
-        self.serialize_without_signature(&mut stream);
+        let mut buffer = Vec::new();
+        self.serialize_without_signature(&mut buffer)
+            .expect("Should succeed serializing telemetry data");
         self.node_id
             .as_key()
-            .verify(stream.as_bytes(), &self.signature)
+            .verify(&buffer, &self.signature)
             .is_ok()
     }
 
@@ -302,7 +280,7 @@ impl TelemetryAck {
     {
         if let Some(data) = &self.0 {
             data.signature.serialize_writer(writer)?;
-            data.serialize_without_signature_writer(writer)?;
+            data.serialize_without_signature(writer)?;
         }
         Ok(())
     }
@@ -311,15 +289,6 @@ impl TelemetryAck {
 impl Display for TelemetryAck {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "telemetry_ack")
-    }
-}
-
-impl Serialize for TelemetryAck {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        if let Some(data) = &self.0 {
-            data.signature.serialize(writer);
-            data.serialize_without_signature(writer);
-        }
     }
 }
 

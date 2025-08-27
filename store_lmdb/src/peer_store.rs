@@ -99,7 +99,7 @@ impl<'txn> Iterator for PeerIterator<'txn> {
     }
 }
 
-pub struct EndpointBytes([u8; 18]);
+struct EndpointBytes([u8; 18]);
 
 impl Deref for EndpointBytes {
     type Target = [u8];

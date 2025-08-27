@@ -1,15 +1,18 @@
-use super::MessageVariant;
-use crate::Cookie;
+use std::fmt::{Display, Write};
+
 use anyhow::Result;
 use bitvec::prelude::BitArray;
 use rand::Rng;
+use serde::ser::SerializeStruct;
+
 use rsnano_types::{
     Account, BlockHash, NodeId, PrivateKey, PublicKey, Signature,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream},
+    stream::{Deserialize, FixedSizeSerialize, Stream},
     write_hex_bytes,
 };
-use serde::ser::SerializeStruct;
-use std::fmt::{Display, Write};
+
+use super::MessageVariant;
+use crate::Cookie;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct NodeIdHandshakeQuery {
@@ -77,16 +80,18 @@ impl NodeIdHandshakeResponse {
     }
 
     fn data_to_sign(&self, cookie: &Cookie) -> Vec<u8> {
-        let mut stream = MemoryStream::new();
+        let mut buffer = Vec::new();
         match &self.v2 {
             Some(v2) => {
-                stream.write_bytes_safe(cookie);
-                stream.write_bytes_safe(&v2.salt);
-                v2.genesis.serialize(&mut stream);
+                buffer.extend_from_slice(cookie);
+                buffer.extend_from_slice(&v2.salt);
+                v2.genesis
+                    .serialize_writer(&mut buffer)
+                    .expect("Should serialize genesis block");
             }
-            None => stream.write_bytes_safe(cookie),
+            None => buffer.extend_from_slice(cookie),
         }
-        stream.to_vec()
+        buffer
     }
 
     pub fn deserialize(stream: &mut dyn Stream, extensions: BitArray<u16>) -> Result<Self> {
