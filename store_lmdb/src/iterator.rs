@@ -111,20 +111,14 @@ where
     }
 }
 
-pub struct LmdbIterator<'txn, K, V>
-where
-    K: Serialize,
-{
+pub struct LmdbIterator<'txn, K, V> {
     cursor: RoCursor<'txn>,
     operation: MDB_cursor_op,
     next_op: MDB_cursor_op,
     convert: fn(&[u8], &[u8]) -> (K, V),
 }
 
-impl<'txn, K, V> LmdbIterator<'txn, K, V>
-where
-    K: Serialize,
-{
+impl<'txn, K, V> LmdbIterator<'txn, K, V> {
     pub fn new(cursor: RoCursor<'txn>, convert: fn(&[u8], &[u8]) -> (K, V)) -> Self {
         Self {
             cursor,
@@ -144,10 +138,7 @@ where
     }
 }
 
-impl<'txn, K, V> Iterator for LmdbIterator<'txn, K, V>
-where
-    K: Serialize,
-{
+impl<'txn, K, V> Iterator for LmdbIterator<'txn, K, V> {
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
