@@ -92,7 +92,11 @@ impl LmdbConfirmationHeightStore {
         range: impl RangeBounds<Account> + 'static,
     ) -> impl Iterator<Item = (Account, ConfirmationHeightInfo)> + 'txn {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-        LmdbRangeIterator::new(cursor, range)
+        LmdbRangeIterator::new(
+            cursor,
+            range.start_bound().cloned(),
+            range.end_bound().cloned(),
+        )
     }
 
     pub fn for_each_par(

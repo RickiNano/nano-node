@@ -411,7 +411,11 @@ impl LmdbWalletStore {
         R: RangeBounds<PublicKey> + 'static,
     {
         let cursor = tx.open_ro_cursor(self.db_handle()).unwrap();
-        LmdbRangeIterator::new(cursor, range)
+        LmdbRangeIterator::new(
+            cursor,
+            range.start_bound().cloned(),
+            range.end_bound().cloned(),
+        )
     }
 
     pub fn find<'txn>(

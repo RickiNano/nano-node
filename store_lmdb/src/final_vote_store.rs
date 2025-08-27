@@ -68,7 +68,11 @@ impl LmdbFinalVoteStore {
         range: impl RangeBounds<QualifiedRoot> + 'static,
     ) -> impl Iterator<Item = (QualifiedRoot, BlockHash)> + 'tx {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-        LmdbRangeIterator::new(cursor, range)
+        LmdbRangeIterator::new(
+            cursor,
+            range.start_bound().cloned(),
+            range.end_bound().cloned(),
+        )
     }
 
     pub fn get(&self, tx: &dyn Transaction, root: &QualifiedRoot) -> Option<BlockHash> {

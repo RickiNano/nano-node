@@ -1,4 +1,4 @@
-use std::ops::{RangeBounds, RangeFrom};
+use std::ops::{Bound, RangeBounds};
 
 use rsnano_nullable_lmdb::{ReadTransaction, Transaction};
 use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore};
@@ -568,7 +568,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
 
 pub struct AnyReceivableIterator<'a> {
     returned_account: Option<Account>,
-    inner: LmdbRangeIterator<'a, PendingKey, PendingInfo, RangeFrom<PendingKey>>,
+    inner: LmdbRangeIterator<'a, PendingKey, PendingInfo>,
     is_first: bool,
 }
 
@@ -587,9 +587,9 @@ impl<'a> AnyReceivableIterator<'a> {
         let inner = match next_hash {
             Some(hash) => {
                 let start = PendingKey::new(requested_account, hash);
-                LmdbRangeIterator::new(cursor, start..)
+                LmdbRangeIterator::new(cursor, Bound::Included(start), Bound::Unbounded)
             }
-            None => LmdbRangeIterator::empty(PendingKey::default()..),
+            None => LmdbRangeIterator::empty(),
         };
 
         Self {

@@ -94,7 +94,11 @@ impl LmdbAccountStore {
         range: impl RangeBounds<Account> + 'static,
     ) -> Box<dyn Iterator<Item = (Account, AccountInfo)> + 'txn> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-        Box::new(LmdbRangeIterator::new(cursor, range))
+        Box::new(LmdbRangeIterator::new(
+            cursor,
+            range.start_bound().cloned(),
+            range.end_bound().cloned(),
+        ))
     }
 
     pub fn for_each_par(

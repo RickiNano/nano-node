@@ -1,8 +1,4 @@
-use std::{
-    cmp::Ordering,
-    marker::PhantomData,
-    ops::{Bound, RangeBounds},
-};
+use std::{cmp::Ordering, marker::PhantomData, ops::Bound};
 
 use rsnano_nullable_lmdb::{
     EMPTY_DATABASE, Error, Result, RoCursor,
@@ -10,34 +6,36 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_types::stream::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
 
-pub struct LmdbRangeIterator<'txn, K, V, R> {
+pub struct LmdbRangeIterator<'txn, K, V> {
     cursor: RoCursor<'txn>,
-    range: R,
+    start: Bound<K>,
+    end: Bound<K>,
     initialized: bool,
     empty: bool,
     phantom: PhantomData<(K, V)>,
 }
 
-impl<'txn, K, V, R> LmdbRangeIterator<'txn, K, V, R>
+impl<'txn, K, V> LmdbRangeIterator<'txn, K, V>
 where
     K: Deserialize<Target = K> + Serialize + Ord,
     V: Deserialize<Target = V>,
-    R: RangeBounds<K>,
 {
-    pub fn new(cursor: RoCursor<'txn>, range: R) -> Self {
+    pub fn new(cursor: RoCursor<'txn>, start: Bound<K>, end: Bound<K>) -> Self {
         Self {
             cursor,
-            range,
+            start,
+            end,
             initialized: false,
             empty: false,
             phantom: Default::default(),
         }
     }
 
-    pub fn empty(range: R) -> Self {
+    pub fn empty() -> Self {
         Self {
             cursor: RoCursor::new_null_with(&EMPTY_DATABASE),
-            range,
+            start: Bound::Unbounded,
+            end: Bound::Unbounded,
             initialized: false,
             empty: true,
             phantom: Default::default(),
@@ -56,7 +54,7 @@ where
     }
 
     fn get_first_result(&self) -> Result<(Option<&'txn [u8]>, &'txn [u8])> {
-        match self.range.start_bound() {
+        match &self.start {
             Bound::Included(start) => {
                 let mut key_bytes = [0u8; 64];
                 let mut stream = MutStreamAdapter::new(&mut key_bytes);
@@ -77,7 +75,7 @@ where
     }
 
     fn should_include(&self, key: &K) -> bool {
-        match self.range.end_bound() {
+        match &self.end {
             Bound::Included(end) => {
                 matches!(key.cmp(end), Ordering::Less | Ordering::Equal)
             }
@@ -87,11 +85,10 @@ where
     }
 }
 
-impl<'txn, K, V, R> Iterator for LmdbRangeIterator<'txn, K, V, R>
+impl<'txn, K, V> Iterator for LmdbRangeIterator<'txn, K, V>
 where
     K: Deserialize<Target = K> + Serialize + Ord,
     V: Deserialize<Target = V>,
-    R: RangeBounds<K>,
 {
     type Item = (K, V);
 

@@ -95,7 +95,11 @@ impl LmdbPendingStore {
         range: impl RangeBounds<PendingKey> + 'static,
     ) -> impl Iterator<Item = (PendingKey, PendingInfo)> + 'tx {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
-        LmdbRangeIterator::new(cursor, range)
+        LmdbRangeIterator::new(
+            cursor,
+            range.start_bound().cloned(),
+            range.end_bound().cloned(),
+        )
     }
 
     pub fn exists(&self, txn: &dyn Transaction, key: &PendingKey) -> bool {

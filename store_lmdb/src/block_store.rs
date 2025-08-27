@@ -150,7 +150,12 @@ impl LmdbBlockStore {
             .open_ro_cursor(self.index_db)
             .expect("Could not open cursor for block table");
 
-        LmdbRangeIterator::<BlockHash, u64, R>::new(cursor, range).map(move |(_, id)| {
+        LmdbRangeIterator::<BlockHash, u64>::new(
+            cursor,
+            range.start_bound().cloned(),
+            range.end_bound().cloned(),
+        )
+        .map(move |(_, id)| {
             let data = tx
                 .get(self.block_db, &id.to_be_bytes())
                 .expect("Block data missing (id: {id})");
