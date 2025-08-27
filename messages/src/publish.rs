@@ -48,6 +48,13 @@ impl Publish {
         }
     }
 
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.block.serialize_without_block_type_writer(writer)
+    }
+
     pub fn deserialize(
         stream: &mut impl Stream,
         extensions: BitArray<u16>,

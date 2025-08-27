@@ -61,6 +61,13 @@ macro_rules! u256_struct {
                     s,
                 )?))
             }
+
+            pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+            where
+                T: std::io::Write,
+            {
+                writer.write_all(&self.0)
+            }
         }
 
         impl $crate::stream::Serialize for $name {

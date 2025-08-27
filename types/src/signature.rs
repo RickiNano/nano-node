@@ -48,6 +48,13 @@ impl Signature {
         hex::decode_to_slice(s.as_ref(), &mut bytes)?;
         Ok(Signature::from_bytes(bytes))
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&self.bytes)
+    }
 }
 
 impl Default for Signature {

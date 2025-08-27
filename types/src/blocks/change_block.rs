@@ -58,6 +58,15 @@ impl ChangeBlock {
     pub fn dependent_blocks(&self) -> DependentBlocks {
         DependentBlocks::new(self.previous(), BlockHash::zero())
     }
+    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.hashables.previous.serialize_writer(writer)?;
+        self.hashables.representative.serialize_writer(writer)?;
+        self.signature.serialize_writer(writer)?;
+        writer.write_all(&self.work.0.to_le_bytes())
+    }
 }
 
 pub fn valid_change_block_predecessor(predecessor: BlockType) -> bool {

@@ -81,6 +81,19 @@ impl StateBlock {
             hash,
         })
     }
+
+    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.hashables.account.serialize_writer(writer)?;
+        self.hashables.previous.serialize_writer(writer)?;
+        self.hashables.representative.serialize_writer(writer)?;
+        self.hashables.balance.serialize_writer(writer)?;
+        self.hashables.link.serialize_writer(writer)?;
+        self.signature.serialize_writer(writer)?;
+        writer.write_all(&self.work.0.to_be_bytes())
+    }
 }
 
 impl PartialEq for StateBlock {

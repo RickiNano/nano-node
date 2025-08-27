@@ -81,6 +81,15 @@ impl SendBlock {
     pub fn dependent_blocks(&self) -> DependentBlocks {
         DependentBlocks::new(self.previous(), BlockHash::zero())
     }
+
+    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.hashables.serialize_writer(writer)?;
+        self.signature.serialize_writer(writer)?;
+        writer.write_all(&self.work.0.to_le_bytes())
+    }
 }
 
 pub fn valid_send_block_predecessor(block_type: BlockType) -> bool {
@@ -210,6 +219,15 @@ struct SendHashables {
 impl SendHashables {
     pub fn serialized_size() -> usize {
         BlockHash::serialized_size() + Account::serialized_size() + Amount::serialized_size()
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.previous.serialize_writer(writer)?;
+        self.destination.serialize_writer(writer)?;
+        self.balance.serialize_writer(writer)
     }
 
     pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {

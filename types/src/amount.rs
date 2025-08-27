@@ -119,6 +119,13 @@ impl Amount {
     pub fn wrapping_sub(&self, other: Amount) -> Amount {
         self.raw.wrapping_sub(other.raw).into()
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&self.raw.to_be_bytes())
+    }
 }
 
 impl From<u128> for Amount {

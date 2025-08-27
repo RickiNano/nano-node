@@ -237,6 +237,19 @@ impl Block {
         self.serialize_without_block_type(stream);
     }
 
+    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match self {
+            Block::LegacySend(b) => b.serialize_without_block_type_writer(writer),
+            Block::LegacyReceive(b) => b.serialize_without_block_type_writer(writer),
+            Block::LegacyOpen(b) => b.serialize_without_block_type_writer(writer),
+            Block::LegacyChange(b) => b.serialize_without_block_type_writer(writer),
+            Block::State(b) => b.serialize_without_block_type_writer(writer),
+        }
+    }
+
     pub fn deserialize_block_type(
         block_type: BlockType,
         stream: &mut dyn Stream,
