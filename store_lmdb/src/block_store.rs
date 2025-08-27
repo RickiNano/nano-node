@@ -154,6 +154,8 @@ impl LmdbBlockStore {
             cursor,
             range.start_bound().cloned(),
             range.end_bound().cloned(),
+            range.start_bound().map(|b| b.as_bytes().to_vec()),
+            range.end_bound().map(|b| b.as_bytes().to_vec()),
         )
         .map(move |(_, id)| {
             let data = tx

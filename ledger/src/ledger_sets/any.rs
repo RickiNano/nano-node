@@ -587,7 +587,15 @@ impl<'a> AnyReceivableIterator<'a> {
         let inner = match next_hash {
             Some(hash) => {
                 let start = PendingKey::new(requested_account, hash);
-                LmdbRangeIterator::new(cursor, Bound::Included(start), Bound::Unbounded)
+                let start_bytes = start.to_bytes().to_vec();
+
+                LmdbRangeIterator::new(
+                    cursor,
+                    Bound::Included(start),
+                    Bound::Unbounded,
+                    Bound::Included(start_bytes),
+                    Bound::Unbounded,
+                )
             }
             None => LmdbRangeIterator::empty(),
         };

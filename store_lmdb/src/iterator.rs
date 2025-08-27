@@ -10,6 +10,8 @@ pub struct LmdbRangeIterator<'txn, K, V> {
     cursor: RoCursor<'txn>,
     start: Bound<K>,
     end: Bound<K>,
+    start2: Bound<Vec<u8>>,
+    end2: Bound<Vec<u8>>,
     initialized: bool,
     empty: bool,
     phantom: PhantomData<(K, V)>,
@@ -20,11 +22,19 @@ where
     K: Deserialize<Target = K> + Serialize + Ord,
     V: Deserialize<Target = V>,
 {
-    pub fn new(cursor: RoCursor<'txn>, start: Bound<K>, end: Bound<K>) -> Self {
+    pub fn new(
+        cursor: RoCursor<'txn>,
+        start: Bound<K>,
+        end: Bound<K>,
+        start2: Bound<Vec<u8>>,
+        end2: Bound<Vec<u8>>,
+    ) -> Self {
         Self {
             cursor,
             start,
             end,
+            start2,
+            end2,
             initialized: false,
             empty: false,
             phantom: Default::default(),
@@ -36,6 +46,8 @@ where
             cursor: RoCursor::new_null_with(&EMPTY_DATABASE),
             start: Bound::Unbounded,
             end: Bound::Unbounded,
+            start2: Bound::Unbounded,
+            end2: Bound::Unbounded,
             initialized: false,
             empty: true,
             phantom: Default::default(),

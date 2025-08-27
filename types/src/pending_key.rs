@@ -20,6 +20,10 @@ impl PendingKey {
         }
     }
 
+    pub fn new_test_instance() -> Self {
+        Self::new(Account::from(1), BlockHash::from(2))
+    }
+
     pub fn to_bytes(&self) -> [u8; 64] {
         let mut result = [0; 64];
         result[..32].copy_from_slice(self.receiving_account.as_bytes());
@@ -36,10 +40,6 @@ impl PendingKey {
             block.account_field().unwrap(),
             block.link_field().unwrap_or_default().into(),
         )
-    }
-
-    pub fn new_test_instance() -> Self {
-        Self::new(Account::from(1), BlockHash::from(2))
     }
 }
 

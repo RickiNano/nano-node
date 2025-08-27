@@ -1,4 +1,7 @@
-use std::{ops::RangeBounds, sync::Arc};
+use std::{
+    ops::{Bound, RangeBounds},
+    sync::Arc,
+};
 
 use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
@@ -94,10 +97,15 @@ impl LmdbAccountStore {
         range: impl RangeBounds<Account> + 'static,
     ) -> Box<dyn Iterator<Item = (Account, AccountInfo)> + 'txn> {
         let cursor = tx.open_ro_cursor(self.database).unwrap();
+        let start = range.start_bound().map(|b| b.as_bytes().to_vec());
+        let end = range.end_bound().map(|b| b.as_bytes().to_vec());
+
         Box::new(LmdbRangeIterator::new(
             cursor,
             range.start_bound().cloned(),
             range.end_bound().cloned(),
+            start,
+            end,
         ))
     }
 
