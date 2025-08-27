@@ -11,7 +11,6 @@ use rsnano_nullable_lmdb::{
     WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::stream::{BufferWriter, Serialize};
 
 use crate::{PEERS_TEST_DATABASE, iterator::LmdbIterator};
 
@@ -106,12 +105,6 @@ impl Deref for EndpointBytes {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-impl Serialize for EndpointBytes {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        stream.write_bytes_safe(&self.0)
     }
 }
 

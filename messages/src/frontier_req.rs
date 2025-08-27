@@ -2,7 +2,7 @@ use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use rsnano_types::{
     Account,
-    stream::{Deserialize, FixedSizeSerialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use serde_derive::Serialize;
 use std::{fmt::Display, mem::size_of};
@@ -25,8 +25,8 @@ impl FrontierReq {
         }
     }
 
-    pub fn serialized_size() -> usize {
-        Account::serialized_size()
+    pub const fn serialized_size() -> usize {
+        Account::SERIALIZED_SIZE
         + size_of::<u32>() // age
         + size_of::<u32>() //count
     }

@@ -8,7 +8,7 @@ use anyhow::Result;
 use bitvec::prelude::BitArray;
 use serde_derive::Serialize;
 
-use rsnano_types::stream::{Deserialize, FixedSizeSerialize, Stream, StreamExt};
+use rsnano_types::stream::{Deserialize, Stream, StreamExt};
 use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
 
 use super::MessageVariant;
@@ -85,9 +85,9 @@ impl TelemetryData {
     }
 
     /// Size does not include unknown_data
-    pub fn serialized_size_of_known_data() -> usize {
-        Signature::serialized_size()
-        + Account::serialized_size() // node id
+    pub const fn serialized_size_of_known_data() -> usize {
+        Signature::SERIALIZED_SIZE
+        + Account::SERIALIZED_SIZE // node id
         + size_of::<u64>() //block_count
           + size_of::<u64>()// cemented_count 
           + size_of::<u64>() // unchecked_count 
@@ -96,7 +96,7 @@ impl TelemetryData {
           + size_of::<u32>() // peer_count
           + size_of::<u8>() // protocol_version
           + size_of::<u64>() // uptime 
-          + BlockHash::serialized_size()
+          + BlockHash::SERIALIZED_SIZE
           + size_of::<u8>() // major_version 
           + size_of::<u8>() // minor_version 
           + size_of::<u8>() // patch_version 

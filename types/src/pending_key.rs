@@ -1,6 +1,6 @@
 use crate::{
     Account, Block, BlockHash,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, Serialize, Stream},
 };
 use primitive_types::U512;
 
@@ -13,6 +13,8 @@ pub struct PendingKey {
 }
 
 impl PendingKey {
+    pub const SERIALIZED_SIZE: usize = Account::SERIALIZED_SIZE + BlockHash::SERIALIZED_SIZE;
+
     pub fn new(receiving_account: Account, send_block_hash: BlockHash) -> Self {
         Self {
             receiving_account,
@@ -47,12 +49,6 @@ impl Serialize for PendingKey {
     fn serialize(&self, writer: &mut dyn BufferWriter) {
         self.receiving_account.serialize(writer);
         self.send_block_hash.serialize(writer);
-    }
-}
-
-impl FixedSizeSerialize for PendingKey {
-    fn serialized_size() -> usize {
-        Account::serialized_size() + BlockHash::serialized_size()
     }
 }
 

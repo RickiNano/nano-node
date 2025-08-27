@@ -7,7 +7,7 @@ use serde::ser::SerializeStruct;
 
 use rsnano_types::{
     Account, BlockHash, NodeId, PrivateKey, PublicKey, Signature,
-    stream::{Deserialize, FixedSizeSerialize, Stream},
+    stream::{Deserialize, Stream},
     write_hex_bytes,
 };
 
@@ -119,12 +119,12 @@ impl NodeIdHandshakeResponse {
 
     pub fn serialized_size(extensions: BitArray<u16>) -> usize {
         if NodeIdHandshake::has_v2_flag(extensions) {
-            Account::serialized_size()
+            Account::SERIALIZED_SIZE
                 + 32 // salt
-                + BlockHash::serialized_size()
-                + Signature::serialized_size()
+                + BlockHash::SERIALIZED_SIZE
+                + Signature::SERIALIZED_SIZE
         } else {
-            Account::serialized_size() + Signature::serialized_size()
+            Account::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE
         }
     }
 

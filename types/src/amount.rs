@@ -1,4 +1,4 @@
-use crate::stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream};
+use crate::stream::{BufferWriter, Deserialize, Serialize, Stream};
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
 use std::{fmt::Debug, iter::Sum, ops::Deref};
@@ -10,6 +10,7 @@ pub struct Amount {
 
 impl Amount {
     pub const MAX: Amount = Amount::raw(u128::MAX);
+    pub const SERIALIZED_SIZE: usize = 16;
 
     pub const fn raw(value: u128) -> Self {
         Self { raw: value }
@@ -137,12 +138,6 @@ impl From<u128> for Amount {
 impl Serialize for Amount {
     fn serialize(&self, stream: &mut dyn BufferWriter) {
         stream.write_bytes_safe(&self.raw.to_be_bytes());
-    }
-}
-
-impl FixedSizeSerialize for Amount {
-    fn serialized_size() -> usize {
-        std::mem::size_of::<u128>()
     }
 }
 

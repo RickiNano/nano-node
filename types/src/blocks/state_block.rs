@@ -3,7 +3,7 @@ use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, JsonBlock, Link, PrivateKey, PublicKey, Root,
     Signature, WorkNonce,
     private_key::TEST_KEY,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, Serialize, Stream},
 };
 use anyhow::Result;
 
@@ -46,13 +46,13 @@ impl StateBlock {
         Account::zero()
     }
 
-    pub fn serialized_size() -> usize {
-        Account::serialized_size() // Account
-            + BlockHash::serialized_size() // Previous
-            + Account::serialized_size() // Representative
-            + Amount::serialized_size() // Balance
-            + Link::serialized_size() // Link
-            + Signature::serialized_size()
+    pub const fn serialized_size() -> usize {
+        Account::SERIALIZED_SIZE // Account
+            + BlockHash::SERIALIZED_SIZE // Previous
+            + Account::SERIALIZED_SIZE // Representative
+            + Amount::SERIALIZED_SIZE // Balance
+            + Link::SERIALIZED_SIZE // Link
+            + Signature::SERIALIZED_SIZE
             + std::mem::size_of::<u64>() // Work
     }
 

@@ -2,7 +2,7 @@ use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PrivateKey,
     PublicKey, Root, Signature, WorkNonce,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, Serialize, Stream},
 };
 use anyhow::Result;
 
@@ -174,8 +174,8 @@ struct ReceiveHashables {
 }
 
 impl ReceiveHashables {
-    fn serialized_size() -> usize {
-        BlockHash::serialized_size() + BlockHash::serialized_size()
+    const fn serialized_size() -> usize {
+        BlockHash::SERIALIZED_SIZE + BlockHash::SERIALIZED_SIZE
     }
 
     fn hash(&self) -> BlockHash {

@@ -2,7 +2,7 @@ use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PendingKey,
     PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    stream::{BufferWriter, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Serialize, Stream},
 };
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
@@ -217,8 +217,8 @@ struct SendHashables {
 }
 
 impl SendHashables {
-    pub fn serialized_size() -> usize {
-        BlockHash::serialized_size() + Account::serialized_size() + Amount::serialized_size()
+    pub const fn serialized_size() -> usize {
+        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>

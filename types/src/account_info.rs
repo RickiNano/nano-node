@@ -3,8 +3,8 @@ use num_traits::FromPrimitive;
 
 use super::{BlockHash, Epoch};
 use crate::{
-    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
     Amount, PublicKey, UnixTimestamp,
+    stream::{Deserialize, Stream, StreamExt},
 };
 
 /// Latest information about an account
@@ -51,18 +51,6 @@ impl AccountInfo {
         writer.write_all(&self.modified.as_u64().to_ne_bytes())?;
         writer.write_all(&self.block_count.to_ne_bytes())?;
         writer.write_all(&[self.epoch as u8])
-    }
-}
-
-impl Serialize for AccountInfo {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        self.head.serialize(stream);
-        self.representative.serialize(stream);
-        self.open_block.serialize(stream);
-        self.balance.serialize(stream);
-        stream.write_u64_ne_safe(self.modified.as_u64());
-        stream.write_u64_ne_safe(self.block_count);
-        stream.write_u8_safe(self.epoch as u8)
     }
 }
 

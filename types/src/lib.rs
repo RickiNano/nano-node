@@ -239,12 +239,6 @@ impl From<&BlockHash> for Root {
 #[derive(PartialEq, Eq, Debug, Copy, Clone, PartialOrd, Ord)]
 pub struct NoValue {}
 
-impl stream::FixedSizeSerialize for NoValue {
-    fn serialized_size() -> usize {
-        0
-    }
-}
-
 impl stream::Serialize for NoValue {
     fn serialize(&self, _writer: &mut dyn BufferWriter) {}
 }

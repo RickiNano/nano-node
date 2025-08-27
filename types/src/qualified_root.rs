@@ -1,6 +1,6 @@
 use crate::{
     BlockHash, Root,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, Serialize, Stream},
 };
 use primitive_types::U512;
 use serde::de::Unexpected;
@@ -14,6 +14,7 @@ pub struct QualifiedRoot {
 
 impl QualifiedRoot {
     pub const ZERO: Self = QualifiedRoot::new(Root::zero(), BlockHash::zero());
+    pub const SERIALIZED_SIZE: usize = Root::SERIALIZED_SIZE + BlockHash::SERIALIZED_SIZE;
 
     pub const fn new(root: Root, previous: BlockHash) -> Self {
         Self { root, previous }
@@ -51,12 +52,6 @@ impl Serialize for QualifiedRoot {
     fn serialize(&self, writer: &mut dyn BufferWriter) {
         self.root.serialize(writer);
         self.previous.serialize(writer);
-    }
-}
-
-impl FixedSizeSerialize for QualifiedRoot {
-    fn serialized_size() -> usize {
-        Root::serialized_size() + BlockHash::serialized_size()
     }
 }
 

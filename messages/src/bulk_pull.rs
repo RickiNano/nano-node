@@ -5,7 +5,7 @@ use serde_derive::Serialize;
 
 use rsnano_types::{
     BlockHash, HashOrAccount,
-    stream::{Deserialize, FixedSizeSerialize, Stream},
+    stream::{Deserialize, Stream},
 };
 
 use super::MessageVariant;
@@ -34,8 +34,8 @@ impl BulkPull {
     }
 
     pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        HashOrAccount::serialized_size()
-            + BlockHash::serialized_size()
+        HashOrAccount::SERIALIZED_SIZE
+            + BlockHash::SERIALIZED_SIZE
             + (if extensions[BulkPull::COUNT_PRESENT_FLAG] {
                 BulkPull::EXTENDED_PARAMETERS_SIZE
             } else {

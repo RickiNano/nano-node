@@ -77,12 +77,6 @@ macro_rules! u256_struct {
             }
         }
 
-        impl $crate::stream::FixedSizeSerialize for $name {
-            fn serialized_size() -> usize {
-                32
-            }
-        }
-
         impl $crate::stream::Deserialize for $name {
             type Target = Self;
             fn deserialize(stream: &mut dyn $crate::stream::Stream) -> anyhow::Result<Self> {

@@ -1,6 +1,6 @@
 use crate::{
     Account, Amount, BlockDetails, BlockType, Epoch, UnixMillisTimestamp,
-    stream::{Deserialize, FixedSizeSerialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use num::FromPrimitive;
 
@@ -33,7 +33,7 @@ impl BlockSideband {
         let mut size = 0;
 
         if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
-            size += Account::serialized_size(); // account
+            size += Account::SERIALIZED_SIZE; // account
         }
 
         if block_type != BlockType::LegacyOpen {
@@ -44,7 +44,7 @@ impl BlockSideband {
             || block_type == BlockType::LegacyChange
             || block_type == BlockType::LegacyOpen
         {
-            size += Amount::serialized_size(); // balance
+            size += Amount::SERIALIZED_SIZE; // balance
         }
 
         size += std::mem::size_of::<u64>(); // timestamp

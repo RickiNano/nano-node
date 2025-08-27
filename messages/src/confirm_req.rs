@@ -4,7 +4,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use rsnano_types::{
     BlockHash, BlockType, Root, serialized_block_size,
-    stream::{Deserialize, FixedSizeSerialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use serde::ser::{SerializeSeq, SerializeStruct};
 use std::fmt::{Debug, Display, Write};
@@ -110,7 +110,7 @@ impl ConfirmReq {
         if block_type != BlockType::Invalid && block_type != BlockType::NotABlock {
             result = serialized_block_size(block_type);
         } else if block_type == BlockType::NotABlock {
-            result = count as usize * (BlockHash::serialized_size() + Root::serialized_size());
+            result = count as usize * (BlockHash::SERIALIZED_SIZE + Root::SERIALIZED_SIZE);
         }
         result
     }

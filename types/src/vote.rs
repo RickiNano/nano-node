@@ -4,7 +4,7 @@ use std::time::Duration;
 use super::{
     Account, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature, UnixMillisTimestamp,
     VoteTimestamp,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, Serialize, Stream},
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, EnumCount, EnumIter)]
@@ -162,11 +162,11 @@ impl Vote {
         self.voter.verify(self.hash().as_bytes(), &self.signature)
     }
 
-    pub fn serialized_size(count: usize) -> usize {
-        Account::serialized_size()
-        + Signature::serialized_size()
+    pub const fn serialized_size(count: usize) -> usize {
+        Account::SERIALIZED_SIZE
+        + Signature::SERIALIZED_SIZE
         + std::mem::size_of::<u64>() // timestamp
-        + (BlockHash::serialized_size() * count)
+        + (BlockHash::SERIALIZED_SIZE * count)
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>

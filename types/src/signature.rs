@@ -8,6 +8,8 @@ pub struct Signature {
 }
 
 impl Signature {
+    pub const SERIALIZED_SIZE: usize = 64;
+
     pub fn new() -> Self {
         Self { bytes: [0u8; 64] }
     }

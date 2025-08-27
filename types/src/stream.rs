@@ -123,10 +123,6 @@ pub trait Serialize {
     fn serialize(&self, stream: &mut dyn BufferWriter);
 }
 
-pub trait FixedSizeSerialize: Serialize {
-    fn serialized_size() -> usize;
-}
-
 pub trait Deserialize {
     type Target;
     fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self::Target>;
@@ -135,12 +131,6 @@ pub trait Deserialize {
 impl Serialize for u64 {
     fn serialize(&self, stream: &mut dyn BufferWriter) {
         stream.write_u64_be_safe(*self)
-    }
-}
-
-impl FixedSizeSerialize for u64 {
-    fn serialized_size() -> usize {
-        std::mem::size_of::<u64>()
     }
 }
 
@@ -154,12 +144,6 @@ impl Deserialize for u64 {
 impl Serialize for [u8; 64] {
     fn serialize(&self, stream: &mut dyn BufferWriter) {
         stream.write_bytes_safe(self)
-    }
-}
-
-impl FixedSizeSerialize for [u8; 64] {
-    fn serialized_size() -> usize {
-        64
     }
 }
 

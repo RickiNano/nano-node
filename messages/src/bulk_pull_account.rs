@@ -6,7 +6,7 @@ use serde_derive::Serialize;
 
 use rsnano_types::{
     Account, Amount,
-    stream::{Deserialize, FixedSizeSerialize, Stream},
+    stream::{Deserialize, Stream},
 };
 
 use super::MessageVariant;
@@ -28,6 +28,14 @@ pub struct BulkPullAccount {
 }
 
 impl BulkPullAccount {
+    pub fn new_test_instance() -> BulkPullAccount {
+        Self {
+            account: 1.into(),
+            minimum_amount: 42.into(),
+            flags: BulkPullAccountFlags::PendingHashAndAmount,
+        }
+    }
+
     pub fn deserialize(stream: &mut impl Stream) -> Option<Self> {
         let payload = Self {
             account: Account::deserialize(stream).ok()?,
@@ -37,16 +45,8 @@ impl BulkPullAccount {
         Some(payload)
     }
 
-    pub fn serialized_size() -> usize {
-        Account::serialized_size() + Amount::serialized_size() + size_of::<BulkPullAccountFlags>()
-    }
-
-    pub fn new_test_instance() -> BulkPullAccount {
-        Self {
-            account: 1.into(),
-            minimum_amount: 42.into(),
-            flags: BulkPullAccountFlags::PendingHashAndAmount,
-        }
+    pub const fn serialized_size() -> usize {
+        Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE + size_of::<BulkPullAccountFlags>()
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>

@@ -2,7 +2,7 @@ use super::{Block, BlockBase};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, BlockType, DependentBlocks, JsonBlock, Link,
     PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, Serialize, Stream},
 };
 use anyhow::Result;
 
@@ -175,7 +175,7 @@ struct ChangeHashables {
 
 impl ChangeHashables {
     fn serialized_size() -> usize {
-        BlockHash::serialized_size() + Account::serialized_size()
+        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE
     }
 
     fn hash(&self) -> BlockHash {
