@@ -1,6 +1,6 @@
 use crate::{
     BlockHash,
-    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
+    stream::{Deserialize, Stream, StreamExt},
 };
 use std::io::Write;
 
@@ -35,13 +35,6 @@ impl ConfirmationHeightInfo {
     {
         writer.write_all(&self.height.to_ne_bytes())?;
         writer.write_all(self.frontier.as_bytes())
-    }
-}
-
-impl Serialize for ConfirmationHeightInfo {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        writer.write_u64_ne_safe(self.height);
-        self.frontier.serialize(writer);
     }
 }
 

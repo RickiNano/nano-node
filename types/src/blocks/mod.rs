@@ -32,7 +32,7 @@ pub use builders::*;
 use crate::{
     Account, Amount, BlockHash, Epoch, Epochs, Link, PrivateKey, PublicKey, QualifiedRoot, Root,
     Signature, UnixMillisTimestamp, WorkNonce,
-    stream::{BufferWriter, Deserialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use num::FromPrimitive;
 use std::{
@@ -108,7 +108,6 @@ pub trait BlockBase {
     fn work(&self) -> WorkNonce;
     fn set_work(&mut self, work: WorkNonce);
     fn previous(&self) -> BlockHash;
-    fn serialize_without_block_type(&self, writer: &mut dyn BufferWriter);
     fn to_json(&self) -> anyhow::Result<String> {
         Ok(serde_json::to_string(&self.json_representation())?)
     }
@@ -128,11 +127,11 @@ pub trait BlockBase {
 pub fn serialized_block_size(block_type: BlockType) -> usize {
     match block_type {
         BlockType::Invalid | BlockType::NotABlock => 0,
-        BlockType::LegacySend => SendBlock::serialized_size(),
+        BlockType::LegacySend => SendBlock::SERIALIZED_SIZE,
         BlockType::LegacyReceive => ReceiveBlock::serialized_size(),
         BlockType::LegacyOpen => OpenBlock::serialized_size(),
         BlockType::LegacyChange => ChangeBlock::serialized_size(),
-        BlockType::State => StateBlock::serialized_size(),
+        BlockType::State => StateBlock::SERIALIZED_SIZE,
     }
 }
 
@@ -229,12 +228,6 @@ impl Block {
     pub fn destination_or_link(&self) -> Account {
         self.destination_field()
             .unwrap_or_else(|| self.link_field().unwrap_or_default().into())
-    }
-
-    pub fn serialize(&self, stream: &mut dyn BufferWriter) {
-        let block_type = self.block_type() as u8;
-        stream.write_u8_safe(block_type);
-        self.serialize_without_block_type(stream);
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>

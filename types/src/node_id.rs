@@ -81,12 +81,6 @@ impl FromStr for NodeId {
     }
 }
 
-impl crate::stream::Serialize for NodeId {
-    fn serialize(&self, writer: &mut dyn crate::stream::BufferWriter) {
-        writer.write_bytes_safe(&self.0)
-    }
-}
-
 impl crate::stream::Deserialize for NodeId {
     type Target = Self;
     fn deserialize(stream: &mut dyn crate::stream::Stream) -> anyhow::Result<Self> {

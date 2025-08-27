@@ -1,4 +1,4 @@
-use crate::stream::{BufferWriter, Serialize, Stream};
+use crate::stream::Stream;
 use serde::de::{Unexpected, Visitor};
 use std::fmt::{Debug, Write};
 
@@ -71,12 +71,6 @@ impl Debug for Signature {
             write!(f, "{:02X}", byte)?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for Signature {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        writer.write_bytes_safe(&self.bytes)
     }
 }
 

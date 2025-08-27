@@ -1,6 +1,6 @@
 use crate::{
     BlockHash, Root,
-    stream::{BufferWriter, Deserialize, Serialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use primitive_types::U512;
 use serde::de::Unexpected;
@@ -45,13 +45,6 @@ impl QualifiedRoot {
         let root = Root::from_bytes(bytes[0..32].try_into().unwrap());
         let previous = BlockHash::from_bytes(bytes[32..].try_into().unwrap());
         Ok(Self { root, previous })
-    }
-}
-
-impl Serialize for QualifiedRoot {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.root.serialize(writer);
-        self.previous.serialize(writer);
     }
 }
 

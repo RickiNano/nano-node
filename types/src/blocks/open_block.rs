@@ -2,7 +2,7 @@ use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PrivateKey,
     PublicKey, Root, Signature, WorkNonce,
-    stream::{BufferWriter, Deserialize, Serialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use anyhow::Result;
 
@@ -126,14 +126,6 @@ impl BlockBase for OpenBlock {
 
     fn previous(&self) -> BlockHash {
         BlockHash::zero()
-    }
-
-    fn serialize_without_block_type(&self, writer: &mut dyn BufferWriter) {
-        self.hashables.source.serialize(writer);
-        self.hashables.representative.serialize(writer);
-        self.hashables.account.serialize(writer);
-        self.signature.serialize(writer);
-        writer.write_bytes_safe(&self.work.0.to_le_bytes());
     }
 
     fn root(&self) -> Root {

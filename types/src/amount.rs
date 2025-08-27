@@ -1,4 +1,4 @@
-use crate::stream::{BufferWriter, Deserialize, Serialize, Stream};
+use crate::stream::{Deserialize, Stream};
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
 use std::{fmt::Debug, iter::Sum, ops::Deref};
@@ -132,12 +132,6 @@ impl Amount {
 impl From<u128> for Amount {
     fn from(value: u128) -> Self {
         Amount::raw(value)
-    }
-}
-
-impl Serialize for Amount {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        stream.write_bytes_safe(&self.raw.to_be_bytes());
     }
 }
 

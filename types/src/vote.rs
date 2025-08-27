@@ -4,7 +4,7 @@ use std::time::Duration;
 use super::{
     Account, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature, UnixMillisTimestamp,
     VoteTimestamp,
-    stream::{BufferWriter, Deserialize, Serialize, Stream},
+    stream::{Deserialize, Stream},
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, EnumCount, EnumIter)]
@@ -180,17 +180,6 @@ impl Vote {
             hash.serialize_writer(writer)?;
         }
         Ok(())
-    }
-}
-
-impl Serialize for Vote {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.voter.serialize(writer);
-        self.signature.serialize(writer);
-        writer.write_bytes_safe(&self.timestamp.to_le_bytes());
-        for hash in &self.hashes {
-            hash.serialize(writer);
-        }
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     Account, Block, BlockHash,
-    stream::{BufferWriter, Deserialize, Serialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use primitive_types::U512;
 
@@ -42,13 +42,6 @@ impl PendingKey {
             block.account_field().unwrap(),
             block.link_field().unwrap_or_default().into(),
         )
-    }
-}
-
-impl Serialize for PendingKey {
-    fn serialize(&self, writer: &mut dyn BufferWriter) {
-        self.receiving_account.serialize(writer);
-        self.send_block_hash.serialize(writer);
     }
 }
 

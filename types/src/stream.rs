@@ -119,31 +119,15 @@ impl<'a> Stream for BufferReader<'a> {
     }
 }
 
-pub trait Serialize {
-    fn serialize(&self, stream: &mut dyn BufferWriter);
-}
-
 pub trait Deserialize {
     type Target;
     fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self::Target>;
-}
-
-impl Serialize for u64 {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        stream.write_u64_be_safe(*self)
-    }
 }
 
 impl Deserialize for u64 {
     type Target = Self;
     fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<u64> {
         stream.read_u64_be()
-    }
-}
-
-impl Serialize for [u8; 64] {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        stream.write_bytes_safe(self)
     }
 }
 

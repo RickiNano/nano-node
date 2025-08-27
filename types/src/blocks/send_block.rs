@@ -1,8 +1,7 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PendingKey,
-    PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    stream::{BufferWriter, Serialize, Stream},
+    PrivateKey, PublicKey, Root, Signature, WorkNonce, stream::Stream,
 };
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
@@ -16,6 +15,9 @@ pub struct SendBlock {
 }
 
 impl SendBlock {
+    pub const SERIALIZED_SIZE: usize =
+        SendHashables::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE + std::mem::size_of::<u64>();
+
     pub fn new_test_instance() -> Self {
         let key = PrivateKey::from(42);
         SendBlockArgs {
@@ -42,10 +44,6 @@ impl SendBlock {
             work,
             hash,
         })
-    }
-
-    pub fn serialized_size() -> usize {
-        SendHashables::serialized_size() + Signature::serialized_size() + std::mem::size_of::<u64>()
     }
 
     pub fn zero(&mut self) {
@@ -149,12 +147,6 @@ impl BlockBase for SendBlock {
         self.hashables.previous
     }
 
-    fn serialize_without_block_type(&self, writer: &mut dyn BufferWriter) {
-        self.hashables.serialize(writer);
-        self.signature.serialize(writer);
-        writer.write_bytes_safe(&self.work.0.to_le_bytes());
-    }
-
     fn root(&self) -> Root {
         self.previous().into()
     }
@@ -217,9 +209,8 @@ struct SendHashables {
 }
 
 impl SendHashables {
-    pub const fn serialized_size() -> usize {
-        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE
-    }
+    pub const SERIALIZED_SIZE: usize =
+        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE;
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
@@ -262,14 +253,6 @@ impl SendHashables {
             .update(self.destination.as_bytes())
             .update(self.balance.to_be_bytes())
             .build()
-    }
-}
-
-impl crate::stream::Serialize for SendHashables {
-    fn serialize(&self, stream: &mut dyn BufferWriter) {
-        self.previous.serialize(stream);
-        self.destination.serialize(stream);
-        self.balance.serialize(stream);
     }
 }
 
@@ -437,7 +420,7 @@ mod tests {
         block1
             .serialize_without_block_type_writer(&mut buffer)
             .unwrap();
-        assert_eq!(SendBlock::serialized_size(), buffer.len());
+        assert_eq!(SendBlock::SERIALIZED_SIZE, buffer.len());
 
         let mut stream = BufferReader::new(&buffer);
         let block2 = SendBlock::deserialize(&mut stream).unwrap();

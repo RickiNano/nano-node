@@ -3,7 +3,7 @@ use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, JsonBlock, Link, PrivateKey, PublicKey, Root,
     Signature, WorkNonce,
     private_key::TEST_KEY,
-    stream::{BufferWriter, Deserialize, Serialize, Stream},
+    stream::{Deserialize, Stream},
 };
 use anyhow::Result;
 
@@ -16,6 +16,16 @@ pub struct StateBlock {
 }
 
 impl StateBlock {
+    pub const SERIALIZED_SIZE: usize =
+        Account::SERIALIZED_SIZE // Account
+            + BlockHash::SERIALIZED_SIZE // Previous
+            + Account::SERIALIZED_SIZE // Representative
+            + Amount::SERIALIZED_SIZE // Balance
+            + Link::SERIALIZED_SIZE // Link
+            + Signature::SERIALIZED_SIZE
+            + std::mem::size_of::<u64>() // Work
+    ;
+
     pub fn verify_signature(&self) -> anyhow::Result<()> {
         self.account()
             .as_key()
@@ -44,16 +54,6 @@ impl StateBlock {
 
     pub fn destination(&self) -> Account {
         Account::zero()
-    }
-
-    pub const fn serialized_size() -> usize {
-        Account::SERIALIZED_SIZE // Account
-            + BlockHash::SERIALIZED_SIZE // Previous
-            + Account::SERIALIZED_SIZE // Representative
-            + Amount::SERIALIZED_SIZE // Balance
-            + Link::SERIALIZED_SIZE // Link
-            + Signature::SERIALIZED_SIZE
-            + std::mem::size_of::<u64>() // Work
     }
 
     pub fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
@@ -141,16 +141,6 @@ impl BlockBase for StateBlock {
 
     fn previous(&self) -> BlockHash {
         self.hashables.previous
-    }
-
-    fn serialize_without_block_type(&self, writer: &mut dyn BufferWriter) {
-        self.hashables.account.serialize(writer);
-        self.hashables.previous.serialize(writer);
-        self.hashables.representative.serialize(writer);
-        self.hashables.balance.serialize(writer);
-        self.hashables.link.serialize(writer);
-        self.signature.serialize(writer);
-        writer.write_bytes_safe(&self.work.0.to_be_bytes());
     }
 
     fn root(&self) -> Root {
@@ -363,7 +353,7 @@ mod tests {
         block1
             .serialize_without_block_type_writer(&mut buffer)
             .unwrap();
-        assert_eq!(StateBlock::serialized_size(), buffer.len());
+        assert_eq!(StateBlock::SERIALIZED_SIZE, buffer.len());
         assert_eq!(buffer[215], 0x5); // Ensure work is serialized big-endian
 
         let mut stream = BufferReader::new(&buffer);

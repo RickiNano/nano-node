@@ -35,16 +35,16 @@ impl PendingInfo {
         }
     }
 
+    pub fn new_test_instance() -> Self {
+        Self::new(Account::from(3), Amount::raw(4), Epoch::Epoch2)
+    }
+
     pub fn to_bytes(&self) -> [u8; 49] {
         let mut bytes = [0; 49];
         bytes[..32].copy_from_slice(self.source.as_bytes());
         bytes[32..48].copy_from_slice(&self.amount.to_be_bytes());
         bytes[48] = self.epoch as u8;
         bytes
-    }
-
-    pub fn new_test_instance() -> Self {
-        Self::new(Account::from(3), Amount::raw(4), Epoch::Epoch2)
     }
 }
 
