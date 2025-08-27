@@ -7,7 +7,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{
     Account, BlockHash, PendingInfo, PendingKey,
-    utils::{BufferReader, Deserialize},
+    stream::{BufferReader, Deserialize},
 };
 
 use crate::{LmdbIterator, PENDING_TEST_DATABASE, iterator::LmdbRangeIterator};

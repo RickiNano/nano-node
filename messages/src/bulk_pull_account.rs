@@ -1,7 +1,7 @@
 use num_traits::FromPrimitive;
 use rsnano_types::{
     Account, Amount,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;

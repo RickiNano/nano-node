@@ -31,9 +31,9 @@ mod public_key;
 mod qualified_root;
 mod raw_key;
 mod signature;
+pub mod stream;
 mod timestamp;
 mod u256_struct;
-pub mod utils;
 mod vote;
 mod vote_timestamp;
 
@@ -67,8 +67,8 @@ pub use qualified_root::QualifiedRoot;
 pub use raw_key::RawKey;
 use serde::de::{Unexpected, Visitor};
 pub use signature::Signature;
+use stream::{BufferWriter, Deserialize, Serialize, Stream};
 pub use timestamp::{UnixMillisTimestamp, UnixTimestamp, milliseconds_since_epoch};
-use utils::{BufferWriter, Deserialize, Serialize, Stream};
 pub use vote::{TestVoteBuilder, Vote, VoteError, VoteSource};
 pub use vote_timestamp::VoteTimestamp;
 
@@ -239,19 +239,19 @@ impl From<&BlockHash> for Root {
 #[derive(PartialEq, Eq, Debug, Copy, Clone, PartialOrd, Ord)]
 pub struct NoValue {}
 
-impl utils::FixedSizeSerialize for NoValue {
+impl stream::FixedSizeSerialize for NoValue {
     fn serialized_size() -> usize {
         0
     }
 }
 
-impl utils::Serialize for NoValue {
+impl stream::Serialize for NoValue {
     fn serialize(&self, _writer: &mut dyn BufferWriter) {}
 }
 
-impl utils::Deserialize for NoValue {
+impl stream::Deserialize for NoValue {
     type Target = Self;
-    fn deserialize(_stream: &mut dyn utils::Stream) -> anyhow::Result<NoValue> {
+    fn deserialize(_stream: &mut dyn stream::Stream) -> anyhow::Result<NoValue> {
         Ok(NoValue {})
     }
 }

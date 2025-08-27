@@ -2,7 +2,7 @@ use super::{Block, BlockBase};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, BlockType, DependentBlocks, JsonBlock, Link,
     PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use anyhow::Result;
 
@@ -238,7 +238,7 @@ impl From<JsonChangeBlock> for ChangeBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, utils::MemoryStream};
+    use crate::{Block, PrivateKey, stream::MemoryStream};
 
     #[test]
     fn create_block() {

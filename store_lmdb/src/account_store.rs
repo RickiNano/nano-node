@@ -7,7 +7,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{
     Account, AccountInfo,
-    utils::{BufferReader, Deserialize},
+    stream::{BufferReader, Deserialize},
 };
 
 use crate::{

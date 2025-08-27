@@ -6,7 +6,7 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_types::{
     Account, ConfirmationHeightInfo,
-    utils::{BufferReader, Deserialize},
+    stream::{BufferReader, Deserialize},
 };
 
 use crate::{

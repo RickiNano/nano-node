@@ -8,7 +8,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{
     Amount, PublicKey,
-    utils::{BufferReader, Deserialize},
+    stream::{BufferReader, Deserialize},
 };
 
 use crate::REP_WEIGHT_TEST_DATABASE;

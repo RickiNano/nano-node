@@ -1,6 +1,6 @@
 use crate::{
     BlockHash,
-    utils::{BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt},
+    stream::{BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt},
 };
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]

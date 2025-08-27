@@ -1,6 +1,6 @@
 use crate::{
     Epoch,
-    utils::{BufferWriter, Serialize, Stream},
+    stream::{BufferWriter, Serialize, Stream},
 };
 use anyhow::Result;
 use num::FromPrimitive;
@@ -89,7 +89,7 @@ impl Serialize for BlockDetails {
 
 #[cfg(test)]
 mod test {
-    use crate::utils::MemoryStream;
+    use crate::stream::MemoryStream;
 
     use super::*;
 

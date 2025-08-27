@@ -14,7 +14,7 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_types::{
     Account, KeyDerivationFunction, PublicKey, RawKey, WorkNonce, deterministic_key,
-    utils::{
+    stream::{
         BufferReader, BufferWriter, Deserialize, MutStreamAdapter, Serialize, Stream, StreamExt,
     },
 };

@@ -2,7 +2,7 @@ use super::{ConfirmReq, MessageVariant};
 use bitvec::prelude::BitArray;
 use rsnano_types::{
     Vote,
-    utils::{BufferWriter, Serialize, Stream},
+    stream::{BufferWriter, Serialize, Stream},
 };
 use std::fmt::{Debug, Display};
 /*
@@ -120,7 +120,7 @@ impl Display for ConfirmAck {
 mod tests {
     use super::*;
     use crate::{Message, assert_deserializable};
-    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp, utils::MemoryStream};
+    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp, stream::MemoryStream};
 
     #[test]
     fn serialize_v1() {

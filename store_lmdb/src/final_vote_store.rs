@@ -5,7 +5,7 @@ use rsnano_nullable_lmdb::{
 };
 use rsnano_types::{
     BlockHash, QualifiedRoot,
-    utils::{BufferReader, Deserialize},
+    stream::{BufferReader, Deserialize},
 };
 
 use crate::{LmdbIterator, LmdbRangeIterator};

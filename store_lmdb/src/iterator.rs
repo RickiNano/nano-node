@@ -8,7 +8,7 @@ use rsnano_nullable_lmdb::{
     EMPTY_DATABASE, Error, Result, RoCursor,
     sys::{MDB_FIRST, MDB_LAST, MDB_NEXT, MDB_PREV, MDB_SET_RANGE, MDB_cursor_op},
 };
-use rsnano_types::utils::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
+use rsnano_types::stream::{BufferReader, Deserialize, MutStreamAdapter, Serialize};
 
 pub struct LmdbRangeIterator<'txn, K, V, R> {
     cursor: RoCursor<'txn>,

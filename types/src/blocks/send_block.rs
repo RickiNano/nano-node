@@ -2,7 +2,7 @@ use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, JsonBlock, Link, PendingKey,
     PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    utils::{BufferWriter, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, FixedSizeSerialize, Serialize, Stream},
 };
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
@@ -247,7 +247,7 @@ impl SendHashables {
     }
 }
 
-impl crate::utils::Serialize for SendHashables {
+impl crate::stream::Serialize for SendHashables {
     fn serialize(&self, stream: &mut dyn BufferWriter) {
         self.previous.serialize(stream);
         self.destination.serialize(stream);
@@ -366,7 +366,7 @@ impl Visitor<'_> for AmountHexVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, utils::MemoryStream};
+    use crate::{Block, PrivateKey, stream::MemoryStream};
 
     #[test]
     fn create_send_block() {

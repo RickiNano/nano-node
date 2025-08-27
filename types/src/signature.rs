@@ -1,4 +1,4 @@
-use crate::utils::{BufferWriter, Serialize, Stream};
+use crate::stream::{BufferWriter, Serialize, Stream};
 use serde::de::{Unexpected, Visitor};
 use std::fmt::{Debug, Write};
 

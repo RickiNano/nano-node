@@ -285,7 +285,7 @@ mod tests {
     use super::*;
     use rsnano_types::{
         Block, BlockHash, BlockSideband,
-        utils::{MemoryStream, Serialize, Stream, StreamExt},
+        stream::{MemoryStream, Serialize, Stream, StreamExt},
     };
 
     #[test]

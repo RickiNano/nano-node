@@ -2,10 +2,10 @@ use anyhow::Result;
 use std::time::Duration;
 
 use super::{
-    Account, Blake2HashBuilder, BlockHash, PrivateKey, Signature,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Stream},
+    Account, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature, UnixMillisTimestamp,
+    VoteTimestamp,
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
-use crate::{PublicKey, UnixMillisTimestamp, VoteTimestamp, utils::Serialize};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, EnumCount, EnumIter)]
 pub enum VoteSource {

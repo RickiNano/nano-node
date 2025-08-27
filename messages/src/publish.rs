@@ -3,7 +3,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use rsnano_types::{
     Block, BlockType, serialized_block_size,
-    utils::{BufferWriter, Serialize, Stream},
+    stream::{BufferWriter, Serialize, Stream},
 };
 use serde_derive::Serialize;
 use std::fmt::{Debug, Display};
@@ -108,7 +108,7 @@ impl Display for Publish {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{TestBlockBuilder, utils::MemoryStream};
+    use rsnano_types::{TestBlockBuilder, stream::MemoryStream};
 
     #[test]
     fn create_from_originator() {

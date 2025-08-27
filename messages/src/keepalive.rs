@@ -1,4 +1,4 @@
-use rsnano_types::utils::{BufferWriter, Serialize, Stream};
+use rsnano_types::stream::{BufferWriter, Serialize, Stream};
 use serde_derive::Serialize;
 use std::{
     fmt::Display,

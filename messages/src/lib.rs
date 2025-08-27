@@ -49,7 +49,7 @@ mod bulk_pull_account;
 pub use bulk_pull_account::*;
 
 mod telemetry_ack;
-use rsnano_types::utils::BufferReader;
+use rsnano_types::stream::BufferReader;
 pub use telemetry_ack::*;
 
 mod asc_pull_req;

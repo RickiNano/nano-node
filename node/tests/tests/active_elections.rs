@@ -12,7 +12,7 @@ use rsnano_node::{
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_types::{
     Account, Amount, DEV_GENESIS_KEY, PrivateKey, UnixMillisTimestamp, Vote, VoteError, VoteSource,
-    utils::MemoryStream,
+    stream::MemoryStream,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{

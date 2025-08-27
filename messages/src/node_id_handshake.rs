@@ -5,7 +5,7 @@ use bitvec::prelude::BitArray;
 use rand::Rng;
 use rsnano_types::{
     Account, BlockHash, NodeId, PrivateKey, PublicKey, Signature,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream},
     write_hex_bytes,
 };
 use serde::ser::SerializeStruct;

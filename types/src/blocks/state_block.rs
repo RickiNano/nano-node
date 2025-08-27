@@ -3,7 +3,7 @@ use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, JsonBlock, Link, PrivateKey, PublicKey, Root,
     Signature, WorkNonce,
     private_key::TEST_KEY,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use anyhow::Result;
 
@@ -332,7 +332,7 @@ pub struct JsonStateBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, TestBlockBuilder, TestStateBlockBuilder, utils::MemoryStream};
+    use crate::{Block, TestBlockBuilder, TestStateBlockBuilder, stream::MemoryStream};
 
     #[test]
     fn send() {

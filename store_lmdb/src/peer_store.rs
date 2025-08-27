@@ -11,7 +11,7 @@ use rsnano_nullable_lmdb::{
     WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::utils::{BufferWriter, Serialize};
+use rsnano_types::stream::{BufferWriter, Serialize};
 
 use crate::{PEERS_TEST_DATABASE, iterator::LmdbIterator};
 

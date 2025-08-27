@@ -1,6 +1,6 @@
 use crate::{
     BlockHash, Root,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, MutStreamAdapter, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, MutStreamAdapter, Serialize, Stream},
 };
 use primitive_types::U512;
 use serde::de::Unexpected;

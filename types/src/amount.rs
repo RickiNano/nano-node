@@ -1,4 +1,4 @@
-use crate::utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream};
+use crate::stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream};
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
 use std::{fmt::Debug, iter::Sum, ops::Deref};

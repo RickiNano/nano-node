@@ -2,7 +2,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use rsnano_types::{
     Account, Block, BlockHash, BlockType, Frontier,
-    utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
+    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
 };
 use rsnano_utils::stats::DetailType;
 use serde::ser::SerializeStruct;

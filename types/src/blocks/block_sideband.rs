@@ -1,6 +1,6 @@
 use crate::{
     Account, Amount, BlockDetails, BlockType, Epoch, UnixMillisTimestamp,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use num::FromPrimitive;
 
@@ -150,7 +150,7 @@ impl BlockSideband {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::MemoryStream;
+    use crate::stream::MemoryStream;
 
     #[test]
     fn serialize() {

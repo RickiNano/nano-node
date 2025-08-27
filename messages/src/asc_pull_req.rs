@@ -1,13 +1,16 @@
-use super::MessageVariant;
+use std::{fmt::Display, mem::size_of};
+
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
+use serde_derive::Serialize;
+
 use rsnano_types::{
     Account, BlockHash, HashOrAccount,
-    utils::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
+    stream::{BufferWriter, Deserialize, Serialize, Stream, StreamExt},
 };
 use rsnano_utils::stats::DetailType;
-use serde_derive::Serialize;
-use std::{fmt::Display, mem::size_of};
+
+use super::MessageVariant;
 
 /**
  * Type of requested asc pull data

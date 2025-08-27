@@ -2,7 +2,7 @@ use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use rsnano_types::{
     Account,
-    utils::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
+    stream::{BufferWriter, Deserialize, FixedSizeSerialize, Serialize, Stream},
 };
 use serde_derive::Serialize;
 use std::{fmt::Display, mem::size_of};

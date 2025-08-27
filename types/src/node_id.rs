@@ -70,15 +70,15 @@ impl FromStr for NodeId {
     }
 }
 
-impl crate::utils::Serialize for NodeId {
-    fn serialize(&self, writer: &mut dyn crate::utils::BufferWriter) {
+impl crate::stream::Serialize for NodeId {
+    fn serialize(&self, writer: &mut dyn crate::stream::BufferWriter) {
         writer.write_bytes_safe(&self.0)
     }
 }
 
-impl crate::utils::Deserialize for NodeId {
+impl crate::stream::Deserialize for NodeId {
     type Target = Self;
-    fn deserialize(stream: &mut dyn crate::utils::Stream) -> anyhow::Result<Self> {
+    fn deserialize(stream: &mut dyn crate::stream::Stream) -> anyhow::Result<Self> {
         let mut result = Self::ZERO;
         stream.read_bytes(&mut result.0, 32)?;
         Ok(result)

@@ -1,7 +1,7 @@
 use super::MessageVariant;
 use anyhow::Result;
 use bitvec::prelude::BitArray;
-use rsnano_types::utils::{
+use rsnano_types::stream::{
     BufferWriter, Deserialize, FixedSizeSerialize, MemoryStream, Serialize, Stream, StreamExt,
 };
 use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};

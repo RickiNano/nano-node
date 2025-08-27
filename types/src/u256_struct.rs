@@ -63,21 +63,21 @@ macro_rules! u256_struct {
             }
         }
 
-        impl $crate::utils::Serialize for $name {
-            fn serialize(&self, writer: &mut dyn $crate::utils::BufferWriter) {
+        impl $crate::stream::Serialize for $name {
+            fn serialize(&self, writer: &mut dyn $crate::stream::BufferWriter) {
                 writer.write_bytes_safe(&self.0)
             }
         }
 
-        impl $crate::utils::FixedSizeSerialize for $name {
+        impl $crate::stream::FixedSizeSerialize for $name {
             fn serialized_size() -> usize {
                 32
             }
         }
 
-        impl $crate::utils::Deserialize for $name {
+        impl $crate::stream::Deserialize for $name {
             type Target = Self;
-            fn deserialize(stream: &mut dyn $crate::utils::Stream) -> anyhow::Result<Self> {
+            fn deserialize(stream: &mut dyn $crate::stream::Stream) -> anyhow::Result<Self> {
                 let mut result = Self::zero();
                 stream.read_bytes(&mut result.0, 32)?;
                 Ok(result)

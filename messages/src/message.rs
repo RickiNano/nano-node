@@ -3,7 +3,7 @@ use std::fmt::Display;
 use bitvec::prelude::BitArray;
 use rsnano_types::{
     ProtocolInfo,
-    utils::{BufferReader, BufferWriter, Serialize},
+    stream::{BufferReader, BufferWriter, Serialize},
 };
 use rsnano_utils::stats::DetailType;
 
