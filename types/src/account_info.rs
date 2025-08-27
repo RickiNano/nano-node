@@ -38,6 +38,19 @@ impl AccountInfo {
             epoch: Epoch::Epoch2,
         }
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.head.serialize_writer(writer)?;
+        self.representative.serialize_writer(writer)?;
+        self.open_block.serialize_writer(writer)?;
+        self.balance.serialize_writer(writer)?;
+        writer.write_all(&self.modified.as_u64().to_be_bytes())?;
+        writer.write_all(&self.block_count.to_ne_bytes())?;
+        writer.write_all(&[self.epoch as u8])
+    }
 }
 
 impl Serialize for AccountInfo {

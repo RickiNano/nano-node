@@ -161,6 +161,17 @@ impl ConfirmReq {
         let right = (bits.data & Self::COUNT_LOW_MASK) >> Self::COUNT_LOW_SHIFT;
         ((left << 4) | right) as u8
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        for (hash, root) in &self.roots_hashes {
+            writer.write_all(hash.as_bytes())?;
+            writer.write_all(root.as_bytes())?;
+        }
+        Ok(())
+    }
 }
 
 impl Serialize for ConfirmReq {

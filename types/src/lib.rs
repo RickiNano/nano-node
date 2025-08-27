@@ -351,6 +351,14 @@ impl Frontier {
     pub fn new_test_instance() -> Self {
         Self::new(Account::from(1), BlockHash::from(2))
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.account.serialize_writer(writer)?;
+        self.hash.serialize_writer(writer)
+    }
 }
 
 impl Frontier {

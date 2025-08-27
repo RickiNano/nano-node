@@ -168,6 +168,19 @@ impl Vote {
         + std::mem::size_of::<u64>() // timestamp
         + (BlockHash::serialized_size() * count)
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.voter.serialize_writer(writer)?;
+        self.signature.serialize_writer(writer)?;
+        writer.write_all(&self.timestamp.to_le_bytes())?;
+        for hash in &self.hashes {
+            hash.serialize_writer(writer)?;
+        }
+        Ok(())
+    }
 }
 
 impl Serialize for Vote {

@@ -122,6 +122,24 @@ impl NodeIdHandshakeResponse {
             Account::serialized_size() + Signature::serialized_size()
         }
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match &self.v2 {
+            Some(v2) => {
+                writer.write_all(self.node_id.as_bytes())?;
+                writer.write_all(&v2.salt)?;
+                v2.genesis.serialize_writer(writer)?;
+                self.signature.serialize_writer(writer)
+            }
+            None => {
+                writer.write_all(self.node_id.as_bytes())?;
+                self.signature.serialize_writer(writer)
+            }
+        }
+    }
 }
 
 impl Serialize for NodeIdHandshakeResponse {
@@ -255,6 +273,19 @@ impl NodeIdHandshake {
             response: Some(response),
             is_v2: true,
         }
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        if let Some(query) = &self.query {
+            writer.write_all(&query.cookie)?;
+        }
+        if let Some(response) = &self.response {
+            response.serialize_writer(writer)?;
+        }
+        Ok(())
     }
 }
 

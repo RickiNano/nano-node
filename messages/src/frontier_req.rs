@@ -49,6 +49,15 @@ impl FrontierReq {
             only_confirmed,
         })
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.start.serialize_writer(writer)?;
+        writer.write_all(&self.age.to_le_bytes())?;
+        writer.write_all(&self.count.to_le_bytes())
+    }
 }
 
 impl Serialize for FrontierReq {

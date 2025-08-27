@@ -79,6 +79,23 @@ impl AscPullAck {
         }
     }
 
+    fn serialize_pull_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match &self.pull_type {
+            AscPullAckType::Blocks(blocks) => blocks.serialize_writer(writer),
+            AscPullAckType::AccountInfo(account_info) => account_info.serialize_writer(writer),
+            AscPullAckType::Frontiers(frontiers) => {
+                debug_assert!(frontiers.len() <= Self::MAX_FRONTIERS);
+                for frontier in frontiers {
+                    frontier.serialize_writer(writer)?;
+                }
+                Frontier::default().serialize_writer(writer)
+            }
+        }
+    }
+
     fn serialize_pull_type(&self, writer: &mut dyn BufferWriter) {
         match &self.pull_type {
             AscPullAckType::Blocks(blocks) => blocks.serialize(writer),
@@ -99,6 +116,15 @@ impl AscPullAck {
         size_of::<u8>() // type code 
         + size_of::<u64>() // id
         + payload_length
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&[self.payload_type() as u8])?;
+        writer.write_all(&self.id.to_be_bytes())?;
+        self.serialize_pull_type_writer(writer)
     }
 }
 
@@ -251,6 +277,18 @@ impl AccountInfoAckPayload {
             account_conf_frontier: BlockHash::from(5),
             account_conf_height: 3,
         }
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.account.serialize_writer(writer)?;
+        self.account_open.serialize_writer(writer)?;
+        self.account_head.serialize_writer(writer)?;
+        writer.write_all(&self.account_block_count.to_be_bytes())?;
+        self.account_conf_frontier.serialize_writer(writer)?;
+        writer.write_all(&self.account_conf_height.to_be_bytes())
     }
 }
 

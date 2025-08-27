@@ -41,6 +41,17 @@ impl AscPullReqType {
             target_type: HashType::Block,
         })
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match self {
+            AscPullReqType::Blocks(i) => i.serialize_writer(writer),
+            AscPullReqType::AccountInfo(i) => i.serialize_writer(writer),
+            AscPullReqType::Frontiers(i) => i.serialize_writer(writer),
+        }
+    }
 }
 
 impl Serialize for AscPullReqType {
@@ -89,6 +100,14 @@ impl BlocksReqPayload {
         self.start_type = HashType::deserialize(stream)?;
         Ok(())
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(self.start.as_bytes())?;
+        writer.write_all(&[self.count, self.start_type as u8])
+    }
 }
 
 impl Serialize for BlocksReqPayload {
@@ -119,6 +138,14 @@ impl AccountInfoReqPayload {
             target_type: HashType::Account,
         }
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(self.target.as_bytes())?;
+        writer.write_all(&[self.target_type as u8])
+    }
 }
 
 impl Serialize for AccountInfoReqPayload {
@@ -146,6 +173,15 @@ impl FrontiersReqPayload {
         stream.read_bytes(&mut count_bytes, 2)?;
         self.count = u16::from_be_bytes(count_bytes);
         Ok(())
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.start.serialize_writer(writer)?;
+        let count_bytes = self.count.to_be_bytes();
+        writer.write_all(&count_bytes)
     }
 }
 
@@ -243,6 +279,15 @@ impl AscPullReq {
         size_of::<u8>() // pull type
         + size_of::<u64>() // id
         + payload_len
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&[self.payload_type() as u8])?;
+        writer.write_all(&self.id.to_be_bytes())?;
+        self.req_type.serialize_writer(writer)
     }
 }
 

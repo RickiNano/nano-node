@@ -46,6 +46,15 @@ impl BulkPullAccount {
             flags: BulkPullAccountFlags::PendingHashAndAmount,
         }
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.account.serialize_writer(writer)?;
+        self.minimum_amount.serialize_writer(writer)?;
+        writer.write_all(&[self.flags as u8])
+    }
 }
 
 impl MessageVariant for BulkPullAccount {}

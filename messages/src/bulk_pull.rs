@@ -72,6 +72,23 @@ impl BulkPull {
             ascending,
         })
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.start.serialize_writer(writer)?;
+        self.end.serialize_writer(writer)?;
+
+        if self.count > 0 {
+            let mut count_buffer = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];
+            const_assert!(size_of::<u32>() < (BulkPull::EXTENDED_PARAMETERS_SIZE - 1)); // count must fit within buffer
+
+            count_buffer[1..5].copy_from_slice(&self.count.to_le_bytes());
+            writer.write_all(&count_buffer)?;
+        }
+        Ok(())
+    }
 }
 
 impl Serialize for BulkPull {

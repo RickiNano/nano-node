@@ -50,6 +50,10 @@ impl ConfirmAck {
         }
     }
 
+    pub fn new_test_instance() -> Self {
+        Self::new_with_own_vote(Vote::new_test_instance())
+    }
+
     pub fn vote(&self) -> &Vote {
         &self.vote
     }
@@ -82,8 +86,11 @@ impl ConfirmAck {
         Some(ack)
     }
 
-    pub fn new_test_instance() -> Self {
-        Self::new_with_own_vote(Vote::new_test_instance())
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.vote.serialize_writer(writer)
     }
 }
 

@@ -15,6 +15,17 @@ impl NodeId {
     pub const fn as_key(&self) -> PublicKey {
         PublicKey::from_bytes(self.0)
     }
+
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(self.as_bytes())
+    }
 }
 
 impl From<i32> for NodeId {

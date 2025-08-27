@@ -28,6 +28,21 @@ impl Keepalive {
             ],
         }
     }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        for peer in &self.peers {
+            let ip_bytes = peer.ip().octets();
+            writer.write_all(&ip_bytes)?;
+
+            let port_bytes = peer.port().to_le_bytes();
+            writer.write_all(&port_bytes)?;
+        }
+        Ok(())
+    }
+
     pub fn deserialize(stream: &mut impl Stream) -> Option<Self> {
         let mut peers = empty_peers();
 

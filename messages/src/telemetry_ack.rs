@@ -103,6 +103,40 @@ impl TelemetryData {
           + size_of::<u64>() //active_difficulty)
     }
 
+    pub fn serialize_without_signature_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        // All values should be serialized in big endian
+        self.node_id.serialize_writer(writer)?;
+        writer.write_all(&self.block_count.to_be_bytes())?;
+        writer.write_all(&self.cemented_count.to_be_bytes())?;
+        writer.write_all(&self.unchecked_count.to_be_bytes())?;
+        writer.write_all(&self.account_count.to_be_bytes())?;
+        writer.write_all(&self.bandwidth_cap.to_be_bytes())?;
+        writer.write_all(&self.peer_count.to_be_bytes())?;
+        writer.write_all(&[self.protocol_version])?;
+        writer.write_all(&self.uptime.to_be_bytes())?;
+        self.genesis_block.serialize_writer(writer)?;
+        writer.write_all(&[
+            self.major_version,
+            self.minor_version,
+            self.patch_version,
+            self.pre_release_version,
+            self.maker,
+        ])?;
+        writer.write_all(
+            &(self
+                .timestamp
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64)
+                .to_be_bytes(),
+        )?;
+        writer.write_all(&self.active_difficulty.to_be_bytes())?;
+        writer.write_all(&self.unknown_data)
+    }
+
     pub fn serialize_without_signature(&self, writer: &mut dyn BufferWriter) {
         // All values should be serialized in big endian
         self.node_id.serialize(writer);
@@ -260,6 +294,17 @@ impl TelemetryAck {
         let result = TelemetryData::deserialize(stream, payload_length).ok()?;
 
         Some(Self(Some(result)))
+    }
+
+    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        if let Some(data) = &self.0 {
+            data.signature.serialize_writer(writer)?;
+            data.serialize_without_signature_writer(writer)?;
+        }
+        Ok(())
     }
 }
 
