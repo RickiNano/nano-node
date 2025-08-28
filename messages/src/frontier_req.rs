@@ -1,11 +1,8 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
-use rsnano_types::{
-    Account,
-    stream::{Deserialize, Stream},
-};
+use rsnano_types::{Account, DeserializationError};
 use serde_derive::Serialize;
-use std::{fmt::Display, mem::size_of};
+use std::{fmt::Display, io::Read, mem::size_of};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FrontierReq {
@@ -33,16 +30,19 @@ impl FrontierReq {
 
     pub const ONLY_CONFIRMED: usize = 1;
 
-    pub fn deserialize(stream: &mut impl Stream, extensions: BitArray<u16>) -> Option<Self> {
-        let start = Account::deserialize(stream).ok()?;
+    pub fn deserialize(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
+        let start = Account::deserialize_reader(&mut bytes)?;
         let mut buffer = [0u8; 4];
-        stream.read_bytes(&mut buffer, 4).ok()?;
+        bytes.read_exact(&mut buffer)?;
         let age = u32::from_le_bytes(buffer);
-        stream.read_bytes(&mut buffer, 4).ok()?;
+        bytes.read_exact(&mut buffer)?;
         let count = u32::from_le_bytes(buffer);
         let only_confirmed = extensions[FrontierReq::ONLY_CONFIRMED];
 
-        Some(FrontierReq {
+        Ok(FrontierReq {
             start,
             age,
             count,

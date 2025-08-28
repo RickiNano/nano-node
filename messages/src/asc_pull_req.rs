@@ -225,25 +225,22 @@ impl AscPullReq {
         }
     }
 
-    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
-    where
-        T: Read,
-    {
-        let pull_type =
-            AscPullPayloadId::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
-        let id = read_u64_be(reader)?;
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let pull_type = AscPullPayloadId::from_u8(read_u8(&mut bytes)?)
+            .ok_or(DeserializationError::InvalidData)?;
+        let id = read_u64_be(&mut bytes)?;
 
         let req_type = match pull_type {
             AscPullPayloadId::Blocks => {
-                let payload = BlocksReqPayload::deserialize(reader)?;
+                let payload = BlocksReqPayload::deserialize(&mut bytes)?;
                 AscPullReqType::Blocks(payload)
             }
             AscPullPayloadId::AccountInfo => {
-                let payload = AccountInfoReqPayload::deserialize(reader)?;
+                let payload = AccountInfoReqPayload::deserialize(&mut bytes)?;
                 AscPullReqType::AccountInfo(payload)
             }
             AscPullPayloadId::Frontiers => {
-                let payload = FrontiersReqPayload::deserialize(reader)?;
+                let payload = FrontiersReqPayload::deserialize(&mut bytes)?;
                 AscPullReqType::Frontiers(payload)
             }
         };

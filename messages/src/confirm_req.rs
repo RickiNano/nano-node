@@ -2,10 +2,7 @@ use super::MessageVariant;
 use anyhow::Result;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{
-    BlockHash, BlockType, Root, serialized_block_size,
-    stream::{Deserialize, Stream},
-};
+use rsnano_types::{BlockHash, BlockType, DeserializationError, Root, serialized_block_size};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use std::fmt::{Debug, Display, Write};
 
@@ -70,29 +67,33 @@ impl ConfirmReq {
         }
     }
 
-    pub fn deserialize(stream: &mut impl Stream, extensions: BitArray<u16>) -> Option<Self> {
-        Some(Self::new(Self::deserialize_roots(stream, extensions).ok()?))
+    pub fn deserialize(
+        bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
+        let roots = Self::deserialize_roots(bytes, extensions)?;
+        Ok(Self::new(roots))
     }
 
     fn deserialize_roots(
-        stream: &mut impl Stream,
+        mut bytes: &[u8],
         extensions: BitArray<u16>,
-    ) -> Result<Vec<(BlockHash, Root)>> {
+    ) -> Result<Vec<(BlockHash, Root)>, DeserializationError> {
         let count = Self::count(extensions) as usize;
         let mut roots_hashes = Vec::with_capacity(count);
         for _ in 0..count {
-            let block_hash = BlockHash::deserialize(stream)?;
-            let root = Root::deserialize(stream)?;
+            let block_hash = BlockHash::deserialize_reader(&mut bytes)?;
+            let root = Root::deserialize_reader(&mut bytes)?;
             if !block_hash.is_zero() || !root.is_zero() {
                 roots_hashes.push((block_hash, root));
             }
         }
 
         if roots_hashes.is_empty() || roots_hashes.len() != count {
-            bail!("roots hashes empty or incorrect count");
+            Err(DeserializationError::InvalidData)
+        } else {
+            Ok(roots_hashes)
         }
-
-        Ok(roots_hashes)
     }
 
     pub fn roots_string(&self) -> String {

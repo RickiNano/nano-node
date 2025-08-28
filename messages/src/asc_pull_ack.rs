@@ -45,26 +45,23 @@ impl AscPullAck {
         }
     }
 
-    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
-    where
-        T: Read,
-    {
-        let pull_type_code =
-            AscPullPayloadId::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
-        let id = read_u64_be(reader)?;
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let pull_type_code = AscPullPayloadId::from_u8(read_u8(&mut bytes)?)
+            .ok_or(DeserializationError::InvalidData)?;
+        let id = read_u64_be(&mut bytes)?;
         let pull_type = match pull_type_code {
             AscPullPayloadId::Blocks => {
-                let payload = BlocksAckPayload::deserialize_reader(reader)?;
+                let payload = BlocksAckPayload::deserialize_reader(&mut bytes)?;
                 AscPullAckType::Blocks(payload)
             }
             AscPullPayloadId::AccountInfo => {
-                let payload = AccountInfoAckPayload::deserialize_reader(reader)?;
+                let payload = AccountInfoAckPayload::deserialize_reader(&mut bytes)?;
                 AscPullAckType::AccountInfo(payload)
             }
             AscPullPayloadId::Frontiers => {
                 let mut frontiers = Vec::new();
                 while frontiers.len() < Self::MAX_FRONTIERS {
-                    let current = Frontier::deserialize_reader(reader)?;
+                    let current = Frontier::deserialize_reader(&mut bytes)?;
                     if current == Default::default() {
                         break;
                     }

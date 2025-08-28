@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use bitvec::prelude::BitArray;
-use rsnano_types::{ProtocolInfo, stream::BufferReader};
+use rsnano_types::{DeserializationError, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
 
 use super::*;
@@ -179,54 +179,46 @@ impl Message {
     }
 
     pub fn deserialize(
-        mut payload_bytes: &[u8],
+        payload: &[u8],
         header: &MessageHeader,
         digest: u128,
-    ) -> Option<Self> {
-        let mut stream = BufferReader::new(payload_bytes);
+    ) -> Result<Self, DeserializationError> {
         let msg = match header.message_type {
-            MessageType::Keepalive => {
-                Message::Keepalive(Keepalive::deserialize(&mut payload_bytes).ok()?)
+            MessageType::Keepalive => Message::Keepalive(Keepalive::deserialize(payload)?),
+            MessageType::Publish => {
+                Message::Publish(Publish::deserialize(payload, header.extensions, digest)?)
             }
-            MessageType::Publish => Message::Publish(
-                Publish::deserialize(&mut payload_bytes, header.extensions, digest).ok()?,
-            ),
-            MessageType::AscPullAck => {
-                Message::AscPullAck(AscPullAck::deserialize(&mut payload_bytes).ok()?)
-            }
-            MessageType::AscPullReq => {
-                Message::AscPullReq(AscPullReq::deserialize(&mut payload_bytes).ok()?)
-            }
+            MessageType::AscPullAck => Message::AscPullAck(AscPullAck::deserialize(payload)?),
+            MessageType::AscPullReq => Message::AscPullReq(AscPullReq::deserialize(payload)?),
             MessageType::BulkPull => {
-                Message::BulkPull(BulkPull::deserialize(&mut stream, header.extensions)?)
+                Message::BulkPull(BulkPull::deserialize(payload, header.extensions)?)
             }
             MessageType::BulkPullAccount => {
-                Message::BulkPullAccount(BulkPullAccount::deserialize(&mut stream)?)
+                Message::BulkPullAccount(BulkPullAccount::deserialize(payload)?)
             }
             MessageType::BulkPush => Message::BulkPush,
-            MessageType::ConfirmAck => Message::ConfirmAck(ConfirmAck::deserialize(
-                &mut stream,
-                header.extensions,
-                digest,
-            )?),
+            MessageType::ConfirmAck => {
+                Message::ConfirmAck(ConfirmAck::deserialize(payload, header.extensions, digest)?)
+            }
             MessageType::ConfirmReq => {
-                Message::ConfirmReq(ConfirmReq::deserialize(&mut stream, header.extensions)?)
+                Message::ConfirmReq(ConfirmReq::deserialize(payload, header.extensions)?)
             }
             MessageType::FrontierReq => {
-                Message::FrontierReq(FrontierReq::deserialize(&mut stream, header.extensions)?)
+                Message::FrontierReq(FrontierReq::deserialize(payload, header.extensions)?)
             }
-            MessageType::NodeIdHandshake => Message::NodeIdHandshake(NodeIdHandshake::deserialize(
-                &mut stream,
-                header.extensions,
-            )?),
-            MessageType::TelemetryAck => Message::TelemetryAck(
-                TelemetryAck::deserialize(&mut payload_bytes, header.extensions).ok()?,
-            ),
+            MessageType::NodeIdHandshake => {
+                Message::NodeIdHandshake(NodeIdHandshake::deserialize(payload, header.extensions)?)
+            }
+            MessageType::TelemetryAck => {
+                Message::TelemetryAck(TelemetryAck::deserialize(payload, header.extensions)?)
+            }
             MessageType::TelemetryReq => Message::TelemetryReq,
-            MessageType::Invalid | MessageType::NotAType => return None,
+            MessageType::Invalid | MessageType::NotAType => {
+                return Err(DeserializationError::InvalidData);
+            }
         };
 
-        Some(msg)
+        Ok(msg)
     }
 }
 

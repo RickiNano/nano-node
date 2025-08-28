@@ -4,10 +4,7 @@ use num_traits::FromPrimitive;
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 
-use rsnano_types::{
-    Account, Amount,
-    stream::{Deserialize, Stream},
-};
+use rsnano_types::{Account, Amount, DeserializationError, read_u8};
 
 use super::MessageVariant;
 
@@ -36,13 +33,17 @@ impl BulkPullAccount {
         }
     }
 
-    pub fn deserialize(stream: &mut impl Stream) -> Option<Self> {
-        let payload = Self {
-            account: Account::deserialize(stream).ok()?,
-            minimum_amount: Amount::deserialize(stream).ok()?,
-            flags: BulkPullAccountFlags::from_u8(stream.read_u8().ok()?)?,
-        };
-        Some(payload)
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let account = Account::deserialize_reader(&mut bytes)?;
+        let minimum_amount = Amount::deserialize_reader(&mut bytes)?;
+        let flags = BulkPullAccountFlags::from_u8(read_u8(&mut bytes)?)
+            .ok_or(DeserializationError::InvalidData)?;
+
+        Ok(Self {
+            account,
+            minimum_amount,
+            flags,
+        })
     }
 
     pub const fn serialized_size() -> usize {

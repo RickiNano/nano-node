@@ -3,10 +3,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use rsnano_types::{Block, BlockType, DeserializationError, serialized_block_size};
 use serde_derive::Serialize;
-use std::{
-    fmt::{Debug, Display},
-    io::Read,
-};
+use std::fmt::{Debug, Display};
 
 #[derive(Clone, Eq, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -55,16 +52,13 @@ impl Publish {
         self.block.serialize_without_block_type_writer(writer)
     }
 
-    pub fn deserialize<T>(
-        reader: &mut T,
+    pub fn deserialize(
+        mut bytes: &[u8],
         extensions: BitArray<u16>,
         digest: u128,
-    ) -> Result<Self, DeserializationError>
-    where
-        T: Read,
-    {
+    ) -> Result<Self, DeserializationError> {
         let payload = Publish {
-            block: Block::deserialize_block_type_reader(Self::block_type(extensions), reader)?,
+            block: Block::deserialize_block_type_reader(Self::block_type(extensions), &mut bytes)?,
             digest,
             is_originator: extensions.data & Self::ORIGINATOR_FLAG > 0,
         };

@@ -1,11 +1,11 @@
-use anyhow::Result;
-use std::time::Duration;
+use std::{io::Read, time::Duration};
 
 use super::{
     Account, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature, UnixMillisTimestamp,
     VoteTimestamp,
     stream::{Deserialize, Stream},
 };
+use crate::DeserializationError;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, EnumCount, EnumIter)]
 pub enum VoteSource {
@@ -145,7 +145,25 @@ impl Vote {
         builder.update(self.timestamp.to_ne_bytes()).build()
     }
 
-    pub fn deserialize(&mut self, stream: &mut impl Stream) -> Result<()> {
+    pub fn deserialize_reader(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let voter = PublicKey::deserialize_reader(&mut bytes)?;
+        let signature = Signature::deserialize_reader(&mut bytes)?;
+        let mut buffer = [0; 8];
+        bytes.read_exact(&mut buffer)?;
+        let timestamp = VoteTimestamp::from_le_bytes(buffer);
+        let mut hashes = Vec::new();
+        while bytes.len() > 0 && hashes.len() < Self::MAX_HASHES {
+            hashes.push(BlockHash::deserialize_reader(&mut bytes)?);
+        }
+        Ok(Self {
+            timestamp,
+            voter,
+            signature,
+            hashes,
+        })
+    }
+
+    pub fn deserialize(&mut self, stream: &mut impl Stream) -> anyhow::Result<()> {
         self.voter = PublicKey::deserialize(stream)?;
         self.signature = Signature::deserialize(stream)?;
         let mut buffer = [0; 8];
@@ -158,7 +176,7 @@ impl Vote {
         Ok(())
     }
 
-    pub fn validate(&self) -> Result<()> {
+    pub fn validate(&self) -> anyhow::Result<()> {
         self.voter.verify(self.hash().as_bytes(), &self.signature)
     }
 

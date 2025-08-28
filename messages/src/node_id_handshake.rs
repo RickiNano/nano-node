@@ -1,12 +1,14 @@
-use std::fmt::{Display, Write};
+use std::{
+    fmt::{Display, Write},
+    io::Read,
+};
 
-use anyhow::Result;
 use bitvec::prelude::BitArray;
 use rand::Rng;
 use serde::ser::SerializeStruct;
 
 use rsnano_types::{
-    Account, BlockHash, NodeId, PrivateKey, PublicKey, Signature,
+    Account, BlockHash, DeserializationError, NodeId, PrivateKey, PublicKey, Signature,
     stream::{Deserialize, Stream},
     write_hex_bytes,
 };
@@ -20,7 +22,7 @@ pub struct NodeIdHandshakeQuery {
 }
 
 impl serde::Serialize for NodeIdHandshakeQuery {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
@@ -94,7 +96,33 @@ impl NodeIdHandshakeResponse {
         buffer
     }
 
-    pub fn deserialize(stream: &mut dyn Stream, extensions: BitArray<u16>) -> Result<Self> {
+    pub fn deserialize2(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
+        if NodeIdHandshake::has_v2_flag(extensions) {
+            let node_id = NodeId::deserialize_reader(&mut bytes)?;
+            let mut salt = [0u8; 32];
+            bytes.read_exact(&mut salt)?;
+            let genesis = BlockHash::deserialize_reader(&mut bytes)?;
+            let signature = Signature::deserialize_reader(&mut bytes)?;
+            Ok(Self {
+                node_id,
+                signature,
+                v2: Some(V2Payload { salt, genesis }),
+            })
+        } else {
+            let node_id = NodeId::deserialize_reader(&mut bytes)?;
+            let signature = Signature::deserialize_reader(&mut bytes)?;
+            Ok(Self {
+                node_id,
+                signature,
+                v2: None,
+            })
+        }
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream, extensions: BitArray<u16>) -> anyhow::Result<Self> {
         if NodeIdHandshake::has_v2_flag(extensions) {
             let node_id = NodeId::deserialize(stream)?;
             let mut salt = [0u8; 32];
@@ -154,7 +182,7 @@ pub struct V2Payload {
 }
 
 impl serde::Serialize for V2Payload {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
@@ -205,20 +233,23 @@ impl NodeIdHandshake {
         size
     }
 
-    pub fn deserialize(stream: &mut dyn Stream, extensions: BitArray<u16>) -> Option<Self> {
+    pub fn deserialize(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
         let query = if NodeIdHandshake::is_query(extensions) {
             let mut cookie = [0u8; 32];
-            stream.read_bytes(&mut cookie, 32).ok()?;
+            bytes.read_exact(&mut cookie)?;
             Some(NodeIdHandshakeQuery { cookie })
         } else {
             None
         };
         let response = if NodeIdHandshake::is_response(extensions) {
-            Some(NodeIdHandshakeResponse::deserialize(stream, extensions).ok()?)
+            Some(NodeIdHandshakeResponse::deserialize2(bytes, extensions)?)
         } else {
             None
         };
-        Some(Self {
+        Ok(Self {
             query,
             response,
             is_v2: Self::has_v2_flag(extensions),

@@ -97,7 +97,7 @@ impl MessageDeserializer {
 
         let digest = self.filter_duplicate_messages(header.message_type, &payload_buffer)?;
 
-        let Some(message) = Message::deserialize(&payload_buffer, &header, digest) else {
+        let Ok(message) = Message::deserialize(&payload_buffer, &header, digest) else {
             return Err(ParseMessageError::InvalidMessage(header.message_type));
         };
 

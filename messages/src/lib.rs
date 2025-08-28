@@ -67,8 +67,7 @@ pub type Cookie = [u8; 32];
 pub fn deserialize_message(buffer: &[u8]) -> anyhow::Result<(MessageHeader, Message)> {
     let (header_bytes, payload_bytes) = buffer.split_at(MessageHeader::SERIALIZED_SIZE);
     let header = MessageHeader::deserialize_slice(header_bytes)?;
-    let message = Message::deserialize(payload_bytes, &header, 0)
-        .ok_or_else(|| anyhow!("invalid message payload"))?;
+    let message = Message::deserialize(payload_bytes, &header, 0)?;
     Ok((header, message))
 }
 

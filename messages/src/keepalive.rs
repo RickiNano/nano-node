@@ -44,17 +44,14 @@ impl Keepalive {
         Ok(())
     }
 
-    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
-    where
-        T: Read,
-    {
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let mut peers = empty_peers();
 
         for i in 0..8 {
             let mut addr_buffer = [0u8; 16];
             let mut port_buffer = [0u8; 2];
-            reader.read_exact(&mut addr_buffer)?;
-            reader.read_exact(&mut port_buffer)?;
+            bytes.read_exact(&mut addr_buffer)?;
+            bytes.read_exact(&mut port_buffer)?;
 
             let port = u16::from_le_bytes(port_buffer);
             let ip_addr = Ipv6Addr::from(addr_buffer);

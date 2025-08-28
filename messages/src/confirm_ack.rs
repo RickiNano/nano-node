@@ -1,6 +1,6 @@
 use super::{ConfirmReq, MessageVariant};
 use bitvec::prelude::BitArray;
-use rsnano_types::{Vote, stream::Stream};
+use rsnano_types::{DeserializationError, Vote};
 use std::fmt::{Debug, Display};
 /*
  * Binary Format:
@@ -65,12 +65,11 @@ impl ConfirmAck {
     }
 
     pub fn deserialize(
-        stream: &mut impl Stream,
+        bytes: &[u8],
         extensions: BitArray<u16>,
         digest: u128,
-    ) -> Option<Self> {
-        let mut vote = Vote::null();
-        vote.deserialize(stream).ok()?;
+    ) -> Result<Self, DeserializationError> {
+        let vote = Vote::deserialize_reader(bytes)?;
 
         let is_rebroadcasted = extensions[Self::REBROADCASTED_FLAG];
         let mut ack = if is_rebroadcasted {
@@ -80,7 +79,7 @@ impl ConfirmAck {
         };
         ack.digest = digest;
 
-        Some(ack)
+        Ok(ack)
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -118,7 +117,7 @@ impl Display for ConfirmAck {
 mod tests {
     use super::*;
     use crate::{Message, assert_deserializable};
-    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp, stream::BufferReader};
+    use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp};
 
     #[test]
     fn serialize_v1() {
@@ -181,9 +180,7 @@ mod tests {
         let mut extensions = BitArray::<u16>::new(0);
         extensions.set(ConfirmAck::REBROADCASTED_FLAG, true);
 
-        let mut stream = BufferReader::new(&bytes);
-        let ack = ConfirmAck::deserialize(&mut stream, extensions, 0).unwrap();
-
+        let ack = ConfirmAck::deserialize(&bytes, extensions, 0).unwrap();
         assert_eq!(ack.is_rebroadcasted(), true);
     }
 
@@ -196,8 +193,7 @@ mod tests {
         let mut extensions = BitArray::<u16>::new(0);
         extensions.set(ConfirmAck::REBROADCASTED_FLAG, false);
 
-        let mut stream = BufferReader::new(&bytes);
-        let ack = ConfirmAck::deserialize(&mut stream, extensions, 0).unwrap();
+        let ack = ConfirmAck::deserialize(&bytes, extensions, 0).unwrap();
 
         assert_eq!(ack.is_rebroadcasted(), false);
     }

@@ -5,12 +5,11 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::Result;
 use bitvec::prelude::BitArray;
 use serde_derive::Serialize;
 
 use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
-use rsnano_types::{read_u8, read_u32_be, read_u64_be};
+use rsnano_types::{DeserializationError, read_u8, read_u32_be, read_u64_be};
 
 use super::MessageVariant;
 
@@ -197,7 +196,7 @@ impl TelemetryData {
         Ok(data)
     }
 
-    pub fn sign(&mut self, key: &PrivateKey) -> Result<()> {
+    pub fn sign(&mut self, key: &PrivateKey) -> anyhow::Result<()> {
         debug_assert!(key.public_key() == self.node_id.into());
         let mut buffer = Vec::new();
         self.serialize_without_signature(&mut buffer)
@@ -279,16 +278,16 @@ impl TelemetryAck {
         Ok(())
     }
 
-    pub fn deserialize<T>(reader: &mut T, extensions: BitArray<u16>) -> std::io::Result<Self>
-    where
-        T: Read,
-    {
+    pub fn deserialize(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
         let payload_length = Self::serialized_size(extensions);
         if payload_length == 0 {
             return Ok(Self(None));
         }
 
-        let result = TelemetryData::deserialize(reader, payload_length)?;
+        let result = TelemetryData::deserialize(&mut bytes, payload_length)?;
         Ok(Self(Some(result)))
     }
 }
@@ -360,31 +359,28 @@ mod tests {
         assert_eq!(TelemetryData::serialized_size_of_known_data(), 202);
     }
 
-    // original test: telemetry.signatures
     #[test]
-    fn sign_telemetry_data() -> Result<()> {
+    fn sign_telemetry_data() {
         let keys = PrivateKey::new();
         let mut data = test_data(&keys);
-        data.sign(&keys)?;
+        data.sign(&keys).unwrap();
         assert_eq!(data.validate_signature(), true);
 
         let old_signature = data.signature.clone();
         // Check that the signature is different if changing a piece of data
         data.maker = 2;
-        data.sign(&keys)?;
+        data.sign(&keys).unwrap();
         assert_ne!(old_signature, data.signature);
-        Ok(())
     }
 
     //original test: telemetry.unknown_data
     #[test]
-    fn sign_with_unknown_data() -> Result<()> {
+    fn sign_with_unknown_data() {
         let keys = PrivateKey::new();
         let mut data = test_data(&keys);
         data.unknown_data = vec![1];
-        data.sign(&keys)?;
+        data.sign(&keys).unwrap();
         assert_eq!(data.validate_signature(), true);
-        Ok(())
     }
 
     #[test]

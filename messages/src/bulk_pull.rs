@@ -1,12 +1,9 @@
-use std::{fmt::Display, mem::size_of};
+use std::{fmt::Display, io::Read, mem::size_of};
 
 use bitvec::prelude::BitArray;
 use serde_derive::Serialize;
 
-use rsnano_types::{
-    BlockHash, HashOrAccount,
-    stream::{Deserialize, Stream},
-};
+use rsnano_types::{BlockHash, DeserializationError, HashOrAccount};
 
 use super::MessageVariant;
 
@@ -43,22 +40,20 @@ impl BulkPull {
             })
     }
 
-    pub fn deserialize(stream: &mut impl Stream, extensions: BitArray<u16>) -> Option<Self> {
-        let start = HashOrAccount::deserialize(stream).ok()?;
-        let end = BlockHash::deserialize(stream).ok()?;
+    pub fn deserialize(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
+        let start = HashOrAccount::deserialize_reader(&mut bytes)?;
+        let end = BlockHash::deserialize_reader(&mut bytes)?;
 
         let count = if extensions[BulkPull::COUNT_PRESENT_FLAG] {
             let mut extended_parameters_buffers = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];
             const_assert!(size_of::<u32>() < (BulkPull::EXTENDED_PARAMETERS_SIZE - 1)); // "count must fit within buffer")
 
-            stream
-                .read_bytes(
-                    &mut extended_parameters_buffers,
-                    BulkPull::EXTENDED_PARAMETERS_SIZE,
-                )
-                .ok()?;
+            bytes.read_exact(&mut extended_parameters_buffers)?;
             if extended_parameters_buffers[0] != 0 {
-                return None;
+                return Err(DeserializationError::InvalidData);
             } else {
                 u32::from_le_bytes(extended_parameters_buffers[1..5].try_into().unwrap())
             }
@@ -68,7 +63,7 @@ impl BulkPull {
 
         let ascending = extensions[BulkPull::ASCENDING_FLAG];
 
-        Some(BulkPull {
+        Ok(BulkPull {
             start,
             end,
             count,
