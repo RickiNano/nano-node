@@ -1,8 +1,9 @@
 use crate::{
-    Account, Block, BlockHash,
+    Account, Block, BlockHash, DeserializationError,
     stream::{Deserialize, Stream},
 };
 use primitive_types::U512;
+use std::io::Read;
 
 /// This struct represents the data written into the pending (receivable) database table key
 /// the receiving account and hash of the send block identify a pending db table entry
@@ -42,6 +43,18 @@ impl PendingKey {
             block.account_field().unwrap(),
             block.link_field().unwrap_or_default().into(),
         )
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let account = Account::deserialize_reader(reader)?;
+        let hash = BlockHash::deserialize_reader(reader)?;
+        Ok(Self {
+            receiving_account: account,
+            send_block_hash: hash,
+        })
     }
 }
 

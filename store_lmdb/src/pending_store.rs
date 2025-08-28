@@ -5,10 +5,7 @@ use rsnano_nullable_lmdb::{
     WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::{
-    Account, BlockHash, PendingInfo, PendingKey,
-    stream::{BufferReader, Deserialize},
-};
+use rsnano_types::{Account, BlockHash, PendingInfo, PendingKey};
 
 use crate::{LmdbIterator, PENDING_TEST_DATABASE, iterator::LmdbRangeIterator};
 
@@ -63,10 +60,9 @@ impl LmdbPendingStore {
     pub fn get(&self, txn: &dyn Transaction, key: &PendingKey) -> Option<PendingInfo> {
         let key_bytes = key.to_bytes();
         match txn.get(self.database, &key_bytes) {
-            Ok(bytes) => {
-                let mut stream = BufferReader::new(bytes);
-                PendingInfo::deserialize(&mut stream).ok()
-            }
+            Ok(mut bytes) => Some(
+                PendingInfo::deserialize_reader(&mut bytes).expect("Should be valid pending info"),
+            ),
             Err(Error::NotFound) => None,
             Err(e) => {
                 panic!("Could not load pending info: {:?}", e);
@@ -141,11 +137,9 @@ impl ConfiguredPendingDatabaseBuilder {
     }
 }
 
-pub fn read_pending_record(key: &[u8], value: &[u8]) -> (PendingKey, PendingInfo) {
-    let mut stream = BufferReader::new(key);
-    let key = PendingKey::deserialize(&mut stream).unwrap();
-    let mut stream = BufferReader::new(value);
-    let info = PendingInfo::deserialize(&mut stream).unwrap();
+pub fn read_pending_record(mut key: &[u8], mut value: &[u8]) -> (PendingKey, PendingInfo) {
+    let key = PendingKey::deserialize_reader(&mut key).unwrap();
+    let info = PendingInfo::deserialize_reader(&mut value).unwrap();
     (key, info)
 }
 

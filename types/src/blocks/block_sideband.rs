@@ -1,11 +1,12 @@
-use crate::{
-    Account, Amount, BlockDetails, BlockType, Epoch, UnixMillisTimestamp,
-    stream::{Deserialize, Stream},
-};
 use num::FromPrimitive;
+use std::io::{Read, Write};
 
 use super::Block;
-use std::io::Write;
+use crate::{
+    Account, Amount, BlockDetails, BlockType, DeserializationError, Epoch, UnixMillisTimestamp,
+    read_u8,
+    stream::{Deserialize, Stream},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlockSideband {
@@ -18,6 +19,22 @@ pub struct BlockSideband {
 }
 
 impl BlockSideband {
+    pub fn new_test_instance() -> Self {
+        Self {
+            height: 42,
+            timestamp: UnixMillisTimestamp::new(1000),
+            account: Account::from(1),
+            balance: Amount::raw(42),
+            details: BlockDetails {
+                epoch: Epoch::Epoch2,
+                is_send: true,
+                is_receive: false,
+                is_epoch: false,
+            },
+            source_epoch: Epoch::Epoch2,
+        }
+    }
+
     pub fn new_test_instance_for(block: &Block) -> Self {
         BlockSideband {
             height: 2,
@@ -98,6 +115,59 @@ impl BlockSideband {
         Ok(result)
     }
 
+    pub fn deserialize_reader<T>(
+        reader: &mut T,
+        block_type: BlockType,
+    ) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let account = if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
+            Account::deserialize_reader(reader)?
+        } else {
+            Account::zero()
+        };
+
+        let mut buffer = [0u8; 8];
+        let height = if block_type != BlockType::LegacyOpen {
+            reader.read_exact(&mut buffer)?;
+            u64::from_be_bytes(buffer)
+        } else {
+            1
+        };
+
+        let balance = if block_type == BlockType::LegacyReceive
+            || block_type == BlockType::LegacyChange
+            || block_type == BlockType::LegacyOpen
+        {
+            Amount::deserialize_reader(reader)?
+        } else {
+            Amount::zero()
+        };
+
+        reader.read_exact(&mut buffer)?;
+        let timestamp = UnixMillisTimestamp::from_be_bytes(buffer);
+
+        let (details, source_epoch) = if block_type == BlockType::State {
+            let details = BlockDetails::deserialize_reader(reader)?;
+            let source_epoch = FromPrimitive::from_u8(read_u8(reader)?)
+                .ok_or(DeserializationError::InvalidData)?;
+            (details, source_epoch)
+        } else {
+            let details = BlockDetails::new(Epoch::Epoch0, false, false, false);
+            (details, Epoch::Epoch0)
+        };
+
+        Ok(Self {
+            height,
+            timestamp,
+            account,
+            balance,
+            details,
+            source_epoch,
+        })
+    }
+
     pub fn deserialize(
         &mut self,
         stream: &mut dyn Stream,
@@ -132,22 +202,6 @@ impl BlockSideband {
         }
 
         Ok(())
-    }
-
-    pub fn new_test_instance() -> Self {
-        Self {
-            height: 42,
-            timestamp: UnixMillisTimestamp::new(1000),
-            account: Account::from(1),
-            balance: Amount::raw(42),
-            details: BlockDetails {
-                epoch: Epoch::Epoch2,
-                is_send: true,
-                is_receive: false,
-                is_epoch: false,
-            },
-            source_epoch: Epoch::Epoch2,
-        }
     }
 }
 

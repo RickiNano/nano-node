@@ -1,8 +1,8 @@
-use anyhow::Result;
 use num::FromPrimitive;
 
 use super::BlockSubType;
-use crate::{Epoch, stream::Stream};
+use crate::{DeserializationError, Epoch, read_u8, stream::Stream};
+use std::io::Read;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BlockDetails {
@@ -26,7 +26,14 @@ impl BlockDetails {
         1
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> Result<BlockDetails> {
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<BlockDetails, DeserializationError>
+    where
+        T: Read,
+    {
+        BlockDetails::unpack(read_u8(reader)?).map_err(|_| DeserializationError::InvalidData)
+    }
+
+    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<BlockDetails> {
         BlockDetails::unpack(stream.read_u8()?)
     }
 
@@ -45,7 +52,7 @@ impl BlockDetails {
         result
     }
 
-    pub fn unpack(value: u8) -> Result<Self> {
+    pub fn unpack(value: u8) -> anyhow::Result<Self> {
         let epoch_mask = 0b0001_1111u8;
         let epoch_value = value & epoch_mask;
         let epoch = match FromPrimitive::from_u8(epoch_value) {

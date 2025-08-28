@@ -31,7 +31,7 @@ pub use builders::*;
 
 use crate::{
     Account, Amount, BlockHash, DeserializationError, Epoch, Epochs, Link, PrivateKey, PublicKey,
-    QualifiedRoot, Root, Signature, UnixMillisTimestamp, WorkNonce,
+    QualifiedRoot, Root, Signature, UnixMillisTimestamp, WorkNonce, read_u8,
     stream::{Deserialize, Stream},
 };
 use num::FromPrimitive;
@@ -295,6 +295,16 @@ impl Block {
             BlockType::from_u8(stream.read_u8()?).ok_or_else(|| anyhow!("invalid block type"))?;
         Self::deserialize_block_type(block_type, stream)
     }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Block, DeserializationError>
+    where
+        T: Read,
+    {
+        let block_type =
+            BlockType::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+
+        Self::deserialize_block_type_reader(block_type, reader)
+    }
 }
 
 impl From<Block> for serde_json::Value {
@@ -549,6 +559,37 @@ impl SavedBlock {
             .serialize(self.block.block_type(), &mut buffer)
             .expect("Should serialize sideband");
         buffer
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let block = Block::deserialize_reader(reader)?;
+        let mut sideband = BlockSideband::deserialize_reader(reader, block.block_type())?;
+        // BlockSideband does not serialize all data depending on the block type.
+        // That's why we fill in the missing data here:
+        match &block {
+            Block::LegacySend(i) => {
+                sideband.balance = i.balance();
+                sideband.details = BlockDetails::new(Epoch::Epoch0, true, false, false)
+            }
+            Block::LegacyOpen(open) => {
+                sideband.account = open.account();
+                sideband.details = BlockDetails::new(Epoch::Epoch0, false, true, false)
+            }
+            Block::LegacyReceive(_) => {
+                sideband.details = BlockDetails::new(Epoch::Epoch0, false, true, false)
+            }
+            Block::LegacyChange(_) => {
+                sideband.details = BlockDetails::new(Epoch::Epoch0, false, false, false)
+            }
+            Block::State(state) => {
+                sideband.account = state.account();
+                sideband.balance = state.balance();
+            }
+        }
+        Ok(SavedBlock { block, sideband })
     }
 
     pub fn balance(&self) -> Amount {

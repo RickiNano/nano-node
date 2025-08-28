@@ -3,9 +3,10 @@ use num_traits::FromPrimitive;
 
 use super::{BlockHash, Epoch};
 use crate::{
-    Amount, PublicKey, UnixTimestamp,
+    Amount, DeserializationError, PublicKey, UnixTimestamp, read_u8, read_u64_ne,
     stream::{Deserialize, Stream, StreamExt},
 };
+use std::io::Read;
 
 /// Latest information about an account
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
@@ -51,6 +52,28 @@ impl AccountInfo {
         writer.write_all(&self.modified.as_u64().to_ne_bytes())?;
         writer.write_all(&self.block_count.to_ne_bytes())?;
         writer.write_all(&[self.epoch as u8])
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let head = BlockHash::deserialize_reader(reader)?;
+        let representative = PublicKey::deserialize_reader(reader)?;
+        let open_block = BlockHash::deserialize_reader(reader)?;
+        let balance = Amount::deserialize_reader(reader)?;
+        let modified = read_u64_ne(reader)?.into();
+        let block_count = read_u64_ne(reader)?;
+        let epoch = Epoch::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+        Ok(Self {
+            head,
+            representative,
+            open_block,
+            balance,
+            modified,
+            block_count,
+            epoch,
+        })
     }
 }
 

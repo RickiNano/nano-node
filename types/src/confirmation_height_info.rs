@@ -1,8 +1,8 @@
 use crate::{
-    BlockHash,
+    BlockHash, DeserializationError, read_u64_ne,
     stream::{Deserialize, Stream, StreamExt},
 };
-use std::io::Write;
+use std::io::{Read, Write};
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct ConfirmationHeightInfo {
@@ -35,6 +35,15 @@ impl ConfirmationHeightInfo {
     {
         writer.write_all(&self.height.to_ne_bytes())?;
         writer.write_all(self.frontier.as_bytes())
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let height = read_u64_ne(reader)?;
+        let frontier = BlockHash::deserialize_reader(reader)?;
+        Ok(Self { height, frontier })
     }
 }
 

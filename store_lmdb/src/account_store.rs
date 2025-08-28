@@ -5,10 +5,7 @@ use rsnano_nullable_lmdb::{
     WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::{
-    Account, AccountInfo,
-    stream::{BufferReader, Deserialize},
-};
+use rsnano_types::{Account, AccountInfo};
 
 use crate::{
     ACCOUNT_TEST_DATABASE,
@@ -58,10 +55,7 @@ impl LmdbAccountStore {
         let result = transaction.get(self.database, account.as_bytes());
         match result {
             Err(Error::NotFound) => None,
-            Ok(bytes) => {
-                let mut stream = BufferReader::new(bytes);
-                AccountInfo::deserialize(&mut stream).ok()
-            }
+            Ok(mut bytes) => AccountInfo::deserialize_reader(&mut bytes).ok(),
             Err(e) => panic!("Could not load account info {:?}", e),
         }
     }
@@ -154,10 +148,9 @@ impl ConfiguredAccountDatabaseBuilder {
     }
 }
 
-fn read_account_info_record(key: &[u8], value: &[u8]) -> (Account, AccountInfo) {
+fn read_account_info_record(key: &[u8], mut value: &[u8]) -> (Account, AccountInfo) {
     let account = Account::from_bytes(key.try_into().unwrap());
-    let mut stream = BufferReader::new(value);
-    let info = AccountInfo::deserialize(&mut stream).unwrap();
+    let info = AccountInfo::deserialize_reader(&mut value).unwrap();
     (account, info)
 }
 

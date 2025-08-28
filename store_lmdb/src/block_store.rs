@@ -11,10 +11,7 @@ use rsnano_nullable_lmdb::{
     WriteFlags, WriteTransaction, sys::MDB_LAST,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::{
-    BlockHash, SavedBlock,
-    stream::{BufferReader, Deserialize},
-};
+use rsnano_types::{BlockHash, SavedBlock};
 
 use crate::{BLOCK_DATA_DATABASE, BLOCK_INDEX_DATABASE, LmdbIterator, LmdbRangeIterator};
 
@@ -96,9 +93,8 @@ impl LmdbBlockStore {
     }
 
     pub fn get(&self, txn: &dyn Transaction, hash: &BlockHash) -> Option<SavedBlock> {
-        self.block_raw_get(txn, hash).map(|block_bytes| {
-            let mut stream = BufferReader::new(block_bytes);
-            SavedBlock::deserialize(&mut stream)
+        self.block_raw_get(txn, hash).map(|mut block_bytes| {
+            SavedBlock::deserialize_reader(&mut block_bytes)
                 .unwrap_or_else(|_| panic!("Could not deserialize block {}!", hash))
         })
     }
@@ -129,12 +125,11 @@ impl LmdbBlockStore {
             .expect("Could not open cursor for block index table");
 
         LmdbIterator::new(cursor, read_block_index_record).map(move |(_, id)| {
-            let data = tx
+            let mut data = tx
                 .get(self.block_db, &id.to_be_bytes())
-                .expect("Block data missing (id: {id})");
+                .expect("Block data should exist");
 
-            let mut stream = BufferReader::new(data);
-            SavedBlock::deserialize(&mut stream).expect("Invalid block data (id: {id})")
+            SavedBlock::deserialize_reader(&mut data).expect("Block data should be valid")
         })
     }
 
@@ -157,12 +152,12 @@ impl LmdbBlockStore {
             read_block_index_record,
         )
         .map(move |(_, id)| {
-            let data = tx
+            let mut data = tx
                 .get(self.block_db, &id.to_be_bytes())
-                .expect("Block data missing (id: {id})");
-            let mut stream = BufferReader::new(data);
+                .expect("Block data should exist");
+
             let block =
-                SavedBlock::deserialize(&mut stream).expect("Invalid block data (id: {id})");
+                SavedBlock::deserialize_reader(&mut data).expect("Block data should be valid");
             block
         })
     }

@@ -1,10 +1,13 @@
 use crate::{
-    BlockHash, Root,
+    BlockHash, DeserializationError, Root,
     stream::{Deserialize, Stream},
 };
 use primitive_types::U512;
 use serde::de::Unexpected;
-use std::{hash::Hash, io::Write};
+use std::{
+    hash::Hash,
+    io::{Read, Write},
+};
 
 #[derive(Default, Clone, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub struct QualifiedRoot {
@@ -33,6 +36,15 @@ impl QualifiedRoot {
     {
         writer.write_all(self.root.as_bytes())?;
         writer.write_all(self.previous.as_bytes())
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<QualifiedRoot, DeserializationError>
+    where
+        T: Read,
+    {
+        let root = Root::deserialize_reader(reader)?;
+        let previous = BlockHash::deserialize_reader(reader)?;
+        Ok(QualifiedRoot { root, previous })
     }
 
     pub fn new_test_instance() -> Self {

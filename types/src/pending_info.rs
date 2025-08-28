@@ -1,8 +1,9 @@
 use crate::{
-    Account, Amount, Epoch,
+    Account, Amount, DeserializationError, Epoch, read_u8,
     stream::{Deserialize, Stream},
 };
 use num::FromPrimitive;
+use std::io::Read;
 
 /// Information on an uncollected send
 /// This struct captures the data stored in a pending table entry
@@ -45,6 +46,21 @@ impl PendingInfo {
         bytes[32..48].copy_from_slice(&self.amount.to_be_bytes());
         bytes[48] = self.epoch as u8;
         bytes
+    }
+
+    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let source = Account::deserialize_reader(reader)?;
+        let amount = Amount::deserialize_reader(reader)?;
+        let epoch =
+            FromPrimitive::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+        Ok(Self {
+            source,
+            amount,
+            epoch,
+        })
     }
 }
 

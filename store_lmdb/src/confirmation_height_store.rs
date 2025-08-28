@@ -4,10 +4,7 @@ use rsnano_nullable_lmdb::{
     ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
     WriteFlags, WriteTransaction,
 };
-use rsnano_types::{
-    Account, ConfirmationHeightInfo,
-    stream::{BufferReader, Deserialize},
-};
+use rsnano_types::{Account, ConfirmationHeightInfo};
 
 use crate::{
     CONFIRMATION_HEIGHT_TEST_DATABASE, LmdbIterator, LmdbRangeIterator, parallel_traversal,
@@ -46,10 +43,10 @@ impl LmdbConfirmationHeightStore {
     pub fn get(&self, txn: &dyn Transaction, account: &Account) -> Option<ConfirmationHeightInfo> {
         match txn.get(self.database, account.as_bytes()) {
             Err(Error::NotFound) => None,
-            Ok(bytes) => {
-                let mut stream = BufferReader::new(bytes);
-                ConfirmationHeightInfo::deserialize(&mut stream).ok()
-            }
+            Ok(mut bytes) => Some(
+                ConfirmationHeightInfo::deserialize_reader(&mut bytes)
+                    .expect("Should be valid conf height data"),
+            ),
             Err(e) => {
                 panic!("Could not load confirmation height info: {:?}", e);
             }
@@ -148,10 +145,9 @@ impl ConfiguredConfirmationHeightDatabaseBuilder {
     }
 }
 
-fn read_conf_height_record(key: &[u8], value: &[u8]) -> (Account, ConfirmationHeightInfo) {
+fn read_conf_height_record(key: &[u8], mut value: &[u8]) -> (Account, ConfirmationHeightInfo) {
     let account = Account::from_bytes(key.try_into().unwrap());
-    let mut stream = BufferReader::new(value);
-    let info = ConfirmationHeightInfo::deserialize(&mut stream).unwrap();
+    let info = ConfirmationHeightInfo::deserialize_reader(&mut value).unwrap();
     (account, info)
 }
 

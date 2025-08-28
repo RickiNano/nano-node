@@ -3,10 +3,7 @@ use std::ops::RangeBounds;
 use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
-use rsnano_types::{
-    BlockHash, QualifiedRoot,
-    stream::{BufferReader, Deserialize},
-};
+use rsnano_types::{BlockHash, QualifiedRoot};
 
 use crate::{LmdbIterator, LmdbRangeIterator};
 
@@ -74,10 +71,9 @@ impl LmdbFinalVoteStore {
         let result = tx.get(self.database, &root.to_bytes());
         match result {
             Err(Error::NotFound) => None,
-            Ok(bytes) => {
-                let mut stream = BufferReader::new(bytes);
-                BlockHash::deserialize(&mut stream).ok()
-            }
+            Ok(mut bytes) => Some(
+                BlockHash::deserialize_reader(&mut bytes).expect("Should be valid block hash data"),
+            ),
             Err(e) => panic!("Could not load final vote info {:?}", e),
         }
     }
@@ -96,10 +92,9 @@ impl LmdbFinalVoteStore {
     }
 }
 
-fn read_final_vote_record(key: &[u8], value: &[u8]) -> (QualifiedRoot, BlockHash) {
-    let mut stream = BufferReader::new(key);
-    let root = QualifiedRoot::deserialize(&mut stream).unwrap();
-    let hash = BlockHash::from_slice(value).unwrap();
+fn read_final_vote_record(mut key: &[u8], mut value: &[u8]) -> (QualifiedRoot, BlockHash) {
+    let root = QualifiedRoot::deserialize_reader(&mut key).unwrap();
+    let hash = BlockHash::deserialize_reader(&mut value).unwrap();
     (root, hash)
 }
 

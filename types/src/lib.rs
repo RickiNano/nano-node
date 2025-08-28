@@ -600,6 +600,15 @@ where
     Ok(u64::from_be_bytes(buffer))
 }
 
+pub fn read_u64_ne<T>(reader: &mut T) -> std::io::Result<u64>
+where
+    T: Read,
+{
+    let mut buffer = [0; 8];
+    reader.read_exact(&mut buffer)?;
+    Ok(u64::from_ne_bytes(buffer))
+}
+
 pub fn read_u32_be<T>(reader: &mut T) -> std::io::Result<u32>
 where
     T: Read,
