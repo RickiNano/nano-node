@@ -1,13 +1,10 @@
-use std::{fmt::Display, mem::size_of};
+use std::{fmt::Display, io::Read, mem::size_of};
 
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use serde_derive::Serialize;
 
-use rsnano_types::{
-    Account, BlockHash, HashOrAccount,
-    stream::{Deserialize, Stream, StreamExt},
-};
+use rsnano_types::{Account, BlockHash, DeserializationError, HashOrAccount, read_u8, read_u64_be};
 use rsnano_utils::stats::DetailType;
 
 use super::MessageVariant;
@@ -63,8 +60,11 @@ pub enum HashType {
 }
 
 impl HashType {
-    fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        FromPrimitive::from_u8(stream.read_u8()?).ok_or_else(|| anyhow!("target_type missing"))
+    fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        FromPrimitive::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)
     }
 }
 
@@ -84,11 +84,18 @@ impl BlocksReqPayload {
         }
     }
 
-    fn deserialize(&mut self, stream: &mut dyn Stream) -> anyhow::Result<()> {
-        self.start = HashOrAccount::deserialize(stream)?;
-        self.count = stream.read_u8()?;
-        self.start_type = HashType::deserialize(stream)?;
-        Ok(())
+    fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let start = HashOrAccount::deserialize_reader(reader)?;
+        let count = read_u8(reader)?;
+        let start_type = HashType::deserialize(reader)?;
+        Ok(Self {
+            start_type,
+            start,
+            count,
+        })
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -108,17 +115,23 @@ pub struct AccountInfoReqPayload {
 }
 
 impl AccountInfoReqPayload {
-    fn deserialize(&mut self, stream: &mut dyn Stream) -> anyhow::Result<()> {
-        self.target = HashOrAccount::deserialize(stream)?;
-        self.target_type = HashType::deserialize(stream)?;
-        Ok(())
-    }
-
     pub fn new_test_instance() -> Self {
         Self {
             target: HashOrAccount::from(42),
             target_type: HashType::Account,
         }
+    }
+
+    fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let target = HashOrAccount::deserialize_reader(reader)?;
+        let target_type = HashType::deserialize(reader)?;
+        Ok(Self {
+            target,
+            target_type,
+        })
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -142,12 +155,15 @@ impl FrontiersReqPayload {
     /// but we need some space for null frontier terminator
     pub const MAX_FRONTIERS: u16 = 1000;
 
-    fn deserialize(&mut self, stream: &mut dyn Stream) -> anyhow::Result<()> {
-        self.start = Account::deserialize(stream)?;
+    fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let start = Account::deserialize_reader(reader)?;
         let mut count_bytes = [0u8; 2];
-        stream.read_bytes(&mut count_bytes, 2)?;
-        self.count = u16::from_be_bytes(count_bytes);
-        Ok(())
+        reader.read_exact(&mut count_bytes)?;
+        let count = u16::from_be_bytes(count_bytes);
+        Ok(Self { start, count })
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -209,28 +225,29 @@ impl AscPullReq {
         }
     }
 
-    pub fn deserialize(stream: &mut impl Stream) -> Option<Self> {
-        let pull_type = AscPullPayloadId::from_u8(stream.read_u8().ok()?)?;
-        let id = stream.read_u64_be().ok()?;
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
+        let pull_type =
+            AscPullPayloadId::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+        let id = read_u64_be(reader)?;
 
         let req_type = match pull_type {
             AscPullPayloadId::Blocks => {
-                let mut payload = BlocksReqPayload::default();
-                payload.deserialize(stream).ok()?;
+                let payload = BlocksReqPayload::deserialize(reader)?;
                 AscPullReqType::Blocks(payload)
             }
             AscPullPayloadId::AccountInfo => {
-                let mut payload = AccountInfoReqPayload::default();
-                payload.deserialize(stream).ok()?;
+                let payload = AccountInfoReqPayload::deserialize(reader)?;
                 AscPullReqType::AccountInfo(payload)
             }
             AscPullPayloadId::Frontiers => {
-                let mut payload = FrontiersReqPayload::default();
-                payload.deserialize(stream).ok()?;
+                let payload = FrontiersReqPayload::deserialize(reader)?;
                 AscPullReqType::Frontiers(payload)
             }
         };
-        Some(Self { id, req_type })
+        Ok(Self { id, req_type })
     }
 
     pub fn payload_type(&self) -> AscPullPayloadId {

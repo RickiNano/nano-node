@@ -1,9 +1,12 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{Block, BlockType, serialized_block_size, stream::Stream};
+use rsnano_types::{Block, BlockType, DeserializationError, serialized_block_size};
 use serde_derive::Serialize;
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    io::Read,
+};
 
 #[derive(Clone, Eq, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -52,18 +55,21 @@ impl Publish {
         self.block.serialize_without_block_type_writer(writer)
     }
 
-    pub fn deserialize(
-        stream: &mut impl Stream,
+    pub fn deserialize<T>(
+        reader: &mut T,
         extensions: BitArray<u16>,
         digest: u128,
-    ) -> Option<Self> {
+    ) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
         let payload = Publish {
-            block: Block::deserialize_block_type(Self::block_type(extensions), stream).ok()?,
+            block: Block::deserialize_block_type_reader(Self::block_type(extensions), reader)?,
             digest,
             is_originator: extensions.data & Self::ORIGINATOR_FLAG > 0,
         };
 
-        Some(payload)
+        Ok(payload)
     }
 
     pub fn serialized_size(extensions: BitArray<u16>) -> usize {
@@ -106,7 +112,7 @@ impl Display for Publish {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rsnano_types::{TestBlockBuilder, stream::BufferReader};
+    use rsnano_types::TestBlockBuilder;
 
     #[test]
     fn create_from_originator() {
@@ -144,8 +150,7 @@ mod tests {
         publish1.serialize_writer(&mut buffer).unwrap();
 
         let extensions = publish1.header_extensions(0);
-        let mut stream = BufferReader::new(&buffer);
-        let publish2 = Publish::deserialize(&mut stream, extensions, 123).unwrap();
+        let publish2 = Publish::deserialize(&mut buffer.as_slice(), extensions, 123).unwrap();
         assert_eq!(publish1, publish2);
     }
 }

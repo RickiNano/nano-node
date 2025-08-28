@@ -185,14 +185,18 @@ impl Message {
     ) -> Option<Self> {
         let mut stream = BufferReader::new(payload_bytes);
         let msg = match header.message_type {
-            MessageType::Keepalive => Message::Keepalive(Keepalive::deserialize(&mut stream)?),
-            MessageType::Publish => Message::Publish(Publish::deserialize(
-                &mut stream,
-                header.extensions,
-                digest,
-            )?),
-            MessageType::AscPullAck => Message::AscPullAck(AscPullAck::deserialize(&mut stream)?),
-            MessageType::AscPullReq => Message::AscPullReq(AscPullReq::deserialize(&mut stream)?),
+            MessageType::Keepalive => {
+                Message::Keepalive(Keepalive::deserialize(&mut payload_bytes).ok()?)
+            }
+            MessageType::Publish => Message::Publish(
+                Publish::deserialize(&mut payload_bytes, header.extensions, digest).ok()?,
+            ),
+            MessageType::AscPullAck => {
+                Message::AscPullAck(AscPullAck::deserialize(&mut payload_bytes).ok()?)
+            }
+            MessageType::AscPullReq => {
+                Message::AscPullReq(AscPullReq::deserialize(&mut payload_bytes).ok()?)
+            }
             MessageType::BulkPull => {
                 Message::BulkPull(BulkPull::deserialize(&mut stream, header.extensions)?)
             }

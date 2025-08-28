@@ -7,7 +7,7 @@ use serde_derive::Serialize;
 
 use rsnano_types::{
     Account, Block, BlockHash, BlockType, DeserializationError, Frontier, read_u8, read_u64_be,
-    stream::{Deserialize, Stream, StreamExt},
+    stream::Stream,
 };
 use rsnano_utils::stats::DetailType;
 
@@ -45,7 +45,7 @@ impl AscPullAck {
         }
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
@@ -76,34 +76,6 @@ impl AscPullAck {
         };
 
         Ok(AscPullAck { id, pull_type })
-    }
-
-    pub fn deserialize(stream: &mut impl Stream) -> Option<Self> {
-        let pull_type_code = AscPullPayloadId::from_u8(stream.read_u8().ok()?)?;
-        let id = stream.read_u64_be().ok()?;
-        let pull_type = match pull_type_code {
-            AscPullPayloadId::Blocks => {
-                let mut payload = BlocksAckPayload::default();
-                payload.deserialize(stream).ok()?;
-                AscPullAckType::Blocks(payload)
-            }
-            AscPullPayloadId::AccountInfo => {
-                let mut payload = AccountInfoAckPayload::default();
-                payload.deserialize(stream).ok()?;
-                AscPullAckType::AccountInfo(payload)
-            }
-            AscPullPayloadId::Frontiers => {
-                let mut frontiers = Vec::new();
-                let mut current = Frontier::deserialize(stream).ok()?;
-                while current != Frontier::default() && frontiers.len() < Self::MAX_FRONTIERS {
-                    frontiers.push(current);
-                    current = Frontier::deserialize(stream).ok()?;
-                }
-                AscPullAckType::Frontiers(frontiers)
-            }
-        };
-
-        Some(AscPullAck { id, pull_type })
     }
 
     pub fn payload_type(&self) -> AscPullPayloadId {
@@ -316,16 +288,6 @@ impl AccountInfoAckPayload {
             account_conf_frontier,
             account_conf_height,
         })
-    }
-
-    pub fn deserialize(&mut self, stream: &mut dyn Stream) -> anyhow::Result<()> {
-        self.account = Account::deserialize(stream)?;
-        self.account_open = BlockHash::deserialize(stream)?;
-        self.account_head = BlockHash::deserialize(stream)?;
-        self.account_block_count = stream.read_u64_be()?;
-        self.account_conf_frontier = BlockHash::deserialize(stream)?;
-        self.account_conf_height = stream.read_u64_be()?;
-        Ok(())
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>

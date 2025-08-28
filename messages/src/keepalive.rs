@@ -1,7 +1,8 @@
-use rsnano_types::stream::Stream;
+use rsnano_types::DeserializationError;
 use serde_derive::Serialize;
 use std::{
     fmt::Display,
+    io::Read,
     net::{Ipv6Addr, SocketAddrV6},
 };
 
@@ -43,14 +44,17 @@ impl Keepalive {
         Ok(())
     }
 
-    pub fn deserialize(stream: &mut impl Stream) -> Option<Self> {
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
         let mut peers = empty_peers();
 
         for i in 0..8 {
             let mut addr_buffer = [0u8; 16];
             let mut port_buffer = [0u8; 2];
-            stream.read_bytes(&mut addr_buffer, 16).ok()?;
-            stream.read_bytes(&mut port_buffer, 2).ok()?;
+            reader.read_exact(&mut addr_buffer)?;
+            reader.read_exact(&mut port_buffer)?;
 
             let port = u16::from_le_bytes(port_buffer);
             let ip_addr = Ipv6Addr::from(addr_buffer);
@@ -58,7 +62,7 @@ impl Keepalive {
             peers[i] = SocketAddrV6::new(ip_addr, port, 0, 0);
         }
 
-        Some(Self { peers })
+        Ok(Self { peers })
     }
 
     pub fn serialized_size() -> usize {
