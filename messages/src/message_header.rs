@@ -1,13 +1,13 @@
 use std::{
     fmt::{Debug, Display},
+    io::Read,
     mem::size_of,
 };
 
-use anyhow::Result;
 use bitvec::prelude::*;
 use num_traits::FromPrimitive;
 
-use rsnano_types::{Networks, ProtocolInfo, stream::Stream};
+use rsnano_types::{DeserializationError, Networks, ProtocolInfo, read_u8};
 use rsnano_utils::stats::DetailType;
 
 use super::*;
@@ -106,26 +106,24 @@ impl MessageHeader {
         }
     }
 
-    pub fn deserialize_slice(bytes: &[u8]) -> Result<MessageHeader> {
-        let mut reader = BufferReader::new(bytes);
-        Self::deserialize(&mut reader)
-    }
-
-    pub fn deserialize(stream: &mut impl Stream) -> Result<MessageHeader> {
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    where
+        T: Read,
+    {
         let mut header = Self::default();
         let mut buffer = [0; 2];
 
-        stream.read_bytes(&mut buffer, 2)?;
+        reader.read_exact(&mut buffer)?;
         header.protocol.network = Networks::from_u16(u16::from_be_bytes(buffer))
-            .ok_or_else(|| anyhow!("invalid network"))?;
+            .ok_or(DeserializationError::InvalidData)?;
 
-        header.protocol.version_max = stream.read_u8()?;
-        header.protocol.version_using = stream.read_u8()?;
-        header.protocol.version_min = stream.read_u8()?;
-        header.message_type = MessageType::from_u8(stream.read_u8()?)
-            .ok_or_else(|| anyhow!("invalid message type"))?;
+        header.protocol.version_max = read_u8(reader)?;
+        header.protocol.version_using = read_u8(reader)?;
+        header.protocol.version_min = read_u8(reader)?;
+        header.message_type =
+            MessageType::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
 
-        stream.read_bytes(&mut buffer, 2)?;
+        reader.read_exact(&mut buffer)?;
         header.extensions.data = u16::from_le_bytes(buffer);
         Ok(header)
     }
@@ -265,8 +263,7 @@ mod tests {
         let mut buffer = Vec::new();
         original.serialize_writer(&mut buffer).unwrap();
 
-        let mut stream = BufferReader::new(&buffer);
-        let deserialized = MessageHeader::deserialize(&mut stream).unwrap();
+        let deserialized = MessageHeader::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(original, deserialized);
     }
 

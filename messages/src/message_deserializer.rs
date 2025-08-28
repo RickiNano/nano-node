@@ -51,7 +51,7 @@ impl MessageDeserializer {
     ) -> Option<Result<DeserializedMessage, ParseMessageError>> {
         let header_bytes = self.read_header_bytes()?;
 
-        let Ok(header) = MessageHeader::deserialize_slice(&header_bytes) else {
+        let Ok(header) = MessageHeader::deserialize(&mut header_bytes.as_slice()) else {
             return Some(Err(ParseMessageError::InvalidHeader));
         };
 
