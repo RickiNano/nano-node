@@ -10,7 +10,7 @@ fn wallet_work_get() {
 
     let wallet = WalletId::random();
     let private_key = RawKey::ZERO;
-    let public_key = PublicKey::try_from(&private_key).unwrap().into();
+    let public_key = PublicKey::from(private_key);
 
     node.wallets.create(wallet);
 

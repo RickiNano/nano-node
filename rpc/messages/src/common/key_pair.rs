@@ -9,11 +9,12 @@ pub struct KeyPairDto {
 }
 
 impl KeyPairDto {
-    pub fn new(private: RawKey, public: PublicKey, account: Account) -> Self {
+    pub fn new(private: RawKey) -> Self {
+        let public = PublicKey::from(private);
         Self {
             private,
             public,
-            account,
+            account: public.as_account(),
         }
     }
 }
@@ -21,11 +22,11 @@ impl KeyPairDto {
 #[cfg(test)]
 mod tests {
     use crate::common::KeyPairDto;
-    use rsnano_types::{Account, PublicKey, RawKey};
+    use rsnano_types::RawKey;
 
     #[test]
     fn serialize_keypair_dto() {
-        let keypair = KeyPairDto::new(RawKey::ZERO, PublicKey::ZERO, Account::ZERO);
+        let keypair = KeyPairDto::new(RawKey::ZERO);
 
         let serialized = serde_json::to_string_pretty(&keypair).unwrap();
 
@@ -47,7 +48,7 @@ mod tests {
 
         let deserialized: KeyPairDto = serde_json::from_str(json_str).unwrap();
 
-        let expected = KeyPairDto::new(RawKey::ZERO, PublicKey::ZERO, Account::ZERO);
+        let expected = KeyPairDto::new(RawKey::ZERO);
 
         assert_eq!(deserialized, expected);
     }

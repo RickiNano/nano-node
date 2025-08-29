@@ -21,13 +21,11 @@ impl PublicKey {
         Ok(())
     }
 }
-
-impl TryFrom<&RawKey> for PublicKey {
-    type Error = anyhow::Error;
-    fn try_from(prv: &RawKey) -> Result<Self, Self::Error> {
-        let secret = ed25519_dalek::SecretKey::from(*prv.as_bytes());
+impl From<RawKey> for PublicKey {
+    fn from(value: RawKey) -> Self {
+        let secret = ed25519_dalek::SecretKey::from(*value.as_bytes());
         let signing_key = ed25519_dalek::SigningKey::from(&secret);
         let public = ed25519_dalek::VerifyingKey::from(&signing_key);
-        Ok(PublicKey::from_bytes(public.to_bytes()))
+        Self::from_bytes(public.to_bytes())
     }
 }

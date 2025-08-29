@@ -14,7 +14,7 @@ fn account_create_index_none() {
     node.wallets.create(wallet_id);
 
     let private_key = RawKey::random();
-    let public_key: PublicKey = (&private_key).try_into().unwrap();
+    let public_key: PublicKey = private_key.into();
 
     node.runtime.block_on(async {
         server

@@ -482,11 +482,11 @@ impl LmdbWalletStore {
     pub fn deterministic_insert(&self, txn: &mut WriteTransaction) -> PublicKey {
         let mut index = self.deterministic_index_get(txn);
         let mut prv = self.deterministic_key(txn, index);
-        let mut result = PublicKey::try_from(&prv).unwrap();
+        let mut result = PublicKey::from(prv);
         while self.exists(txn, &result) {
             index += 1;
             prv = self.deterministic_key(txn, index);
-            result = PublicKey::try_from(&prv).unwrap();
+            result = PublicKey::from(prv);
         }
 
         let mut marker = 1u64;
@@ -500,7 +500,7 @@ impl LmdbWalletStore {
 
     pub fn deterministic_insert_at(&self, txn: &mut WriteTransaction, index: u32) -> PublicKey {
         let prv = self.deterministic_key(txn, index);
-        let result = PublicKey::try_from(&prv).unwrap();
+        let result = PublicKey::from(prv);
         let mut marker = 1u64;
         marker <<= 32;
         marker |= index as u64;
@@ -552,7 +552,7 @@ impl LmdbWalletStore {
 
     pub fn insert_adhoc(&self, txn: &mut WriteTransaction, prv: &RawKey) -> PublicKey {
         debug_assert!(self.valid_password(txn));
-        let pub_key = PublicKey::try_from(prv).unwrap();
+        let pub_key = PublicKey::from(*prv);
         let password = self.wallet_key(txn);
         let ciphertext = prv.encrypt(&password, &pub_key.initialization_vector());
         self.entry_put_raw(txn, &pub_key, &WalletValue::new(ciphertext, 0.into()));
@@ -597,7 +597,7 @@ impl LmdbWalletStore {
             _ => bail!("invalid key type"),
         };
 
-        let compare = PublicKey::try_from(&prv)?;
+        let compare = PublicKey::from(prv);
         if compare != *pub_key {
             bail!("expected pub key does not match");
         }

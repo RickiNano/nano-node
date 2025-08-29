@@ -1141,7 +1141,7 @@ fn change_seed() {
     let seed1 = RawKey::from(1);
     let index = 4;
     let prv = deterministic_key(&seed1, index);
-    let pub_key = PublicKey::try_from(&prv).unwrap();
+    let pub_key = PublicKey::from(prv);
     node1
         .wallets
         .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)

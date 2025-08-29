@@ -44,7 +44,7 @@ fn wallet_balances_threshold_some() {
 
     let wallet: WalletId = 1.into();
     let private_key = RawKey::ZERO;
-    let public_key: PublicKey = (&private_key).try_into().unwrap();
+    let public_key: PublicKey = private_key.into();
 
     node.wallets.create(wallet);
 
