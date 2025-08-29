@@ -1,7 +1,7 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{Block, BlockType, DeserializationError, serialized_block_size};
+use rsnano_types::{Block, BlockType, BlockTypeId, DeserializationError, serialized_block_size};
 use serde_derive::Serialize;
 use std::fmt::{Debug, Display};
 
@@ -46,7 +46,11 @@ impl Publish {
     }
 
     pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        serialized_block_size(Self::block_type(extensions))
+        let type_id = Self::block_type_id(extensions);
+        match BlockType::try_from(type_id) {
+            Ok(block_type) => serialized_block_size(block_type),
+            Err(_) => 0,
+        }
     }
 
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -61,8 +65,12 @@ impl Publish {
         extensions: BitArray<u16>,
         digest: u128,
     ) -> Result<Self, DeserializationError> {
+        let type_id = Self::block_type_id(extensions);
+        let block_type =
+            BlockType::try_from(type_id).map_err(|_| DeserializationError::InvalidData)?;
+
         let payload = Publish {
-            block: Block::deserialize_block_type(Self::block_type(extensions), &mut bytes)?,
+            block: Block::deserialize_block_type(block_type, &mut bytes)?,
             digest,
             is_originator: extensions.data & Self::ORIGINATOR_FLAG > 0,
         };
@@ -70,10 +78,10 @@ impl Publish {
         Ok(payload)
     }
 
-    fn block_type(extensions: BitArray<u16>) -> BlockType {
+    fn block_type_id(extensions: BitArray<u16>) -> BlockTypeId {
         let mut value = extensions & BitArray::new(Self::BLOCK_TYPE_MASK);
         value.shift_left(8);
-        FromPrimitive::from_u16(value.data).unwrap_or(BlockType::Invalid)
+        FromPrimitive::from_u16(value.data).unwrap_or(BlockTypeId::Invalid)
     }
 }
 
@@ -85,7 +93,7 @@ impl PartialEq for Publish {
 
 impl MessageVariant for Publish {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
-        let mut flags = (self.block.block_type() as u16) << 8;
+        let mut flags = (self.block.block_type_id() as u16) << 8;
         if self.is_originator {
             flags |= Self::ORIGINATOR_FLAG;
         }

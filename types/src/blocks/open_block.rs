@@ -1,4 +1,4 @@
-use super::{Block, BlockBase, BlockType};
+use super::{Block, BlockBase, BlockType, BlockTypeId};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
     JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
@@ -144,7 +144,7 @@ impl BlockBase for OpenBlock {
         Some(self.hashables.representative)
     }
 
-    fn valid_predecessor(&self, _block_type: BlockType) -> bool {
+    fn valid_predecessor(&self, _block_type: BlockTypeId) -> bool {
         false
     }
 

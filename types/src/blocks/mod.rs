@@ -42,7 +42,7 @@ use std::{
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, FromPrimitive)]
-pub enum BlockType {
+pub enum BlockTypeId {
     Invalid = 0,
     NotABlock = 1,
     LegacySend = 2,
@@ -52,24 +52,60 @@ pub enum BlockType {
     State = 6,
 }
 
-impl TryFrom<BlockType> for BlockSubType {
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+pub enum BlockType {
+    LegacySend,
+    LegacyReceive,
+    LegacyOpen,
+    LegacyChange,
+    State,
+}
+
+impl From<BlockType> for BlockTypeId {
+    fn from(value: BlockType) -> Self {
+        match value {
+            BlockType::LegacySend => BlockTypeId::LegacySend,
+            BlockType::LegacyReceive => BlockTypeId::LegacyReceive,
+            BlockType::LegacyOpen => BlockTypeId::LegacyOpen,
+            BlockType::LegacyChange => BlockTypeId::LegacyChange,
+            BlockType::State => BlockTypeId::State,
+        }
+    }
+}
+
+impl TryFrom<BlockTypeId> for BlockType {
+    type Error = ();
+
+    fn try_from(value: BlockTypeId) -> Result<Self, Self::Error> {
+        match value {
+            BlockTypeId::LegacySend => Ok(BlockType::LegacySend),
+            BlockTypeId::LegacyReceive => Ok(BlockType::LegacyReceive),
+            BlockTypeId::LegacyOpen => Ok(BlockType::LegacyOpen),
+            BlockTypeId::LegacyChange => Ok(BlockType::LegacyChange),
+            BlockTypeId::State => Ok(BlockType::State),
+            BlockTypeId::Invalid | BlockTypeId::NotABlock => Err(()),
+        }
+    }
+}
+
+impl TryFrom<BlockTypeId> for BlockSubType {
     type Error = anyhow::Error;
 
-    fn try_from(value: BlockType) -> Result<Self, Self::Error> {
+    fn try_from(value: BlockTypeId) -> Result<Self, Self::Error> {
         match value {
-            BlockType::LegacySend => Ok(BlockSubType::Send),
-            BlockType::LegacyReceive => Ok(BlockSubType::Receive),
-            BlockType::LegacyOpen => Ok(BlockSubType::Open),
-            BlockType::LegacyChange => Ok(BlockSubType::Change),
-            BlockType::State => Ok(BlockSubType::Send),
-            BlockType::Invalid | BlockType::NotABlock => {
+            BlockTypeId::LegacySend => Ok(BlockSubType::Send),
+            BlockTypeId::LegacyReceive => Ok(BlockSubType::Receive),
+            BlockTypeId::LegacyOpen => Ok(BlockSubType::Open),
+            BlockTypeId::LegacyChange => Ok(BlockSubType::Change),
+            BlockTypeId::State => Ok(BlockSubType::Send),
+            BlockTypeId::Invalid | BlockTypeId::NotABlock => {
                 Err(anyhow!("Invalid block type for conversion to subtype"))
             }
         }
     }
 }
 
-impl TryFrom<u8> for BlockType {
+impl TryFrom<u8> for BlockTypeId {
     type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
@@ -121,12 +157,11 @@ pub trait BlockBase {
     fn qualified_root(&self) -> QualifiedRoot {
         QualifiedRoot::new(self.root(), self.previous())
     }
-    fn valid_predecessor(&self, block_type: BlockType) -> bool;
+    fn valid_predecessor(&self, block_type: BlockTypeId) -> bool;
 }
 
 pub fn serialized_block_size(block_type: BlockType) -> usize {
     match block_type {
-        BlockType::Invalid | BlockType::NotABlock => 0,
         BlockType::LegacySend => SendBlock::SERIALIZED_SIZE,
         BlockType::LegacyReceive => ReceiveBlock::serialized_size(),
         BlockType::LegacyOpen => OpenBlock::serialized_size(),
@@ -174,6 +209,10 @@ impl Block {
             work: 69420.into(),
         }
         .into()
+    }
+
+    pub fn block_type_id(&self) -> BlockTypeId {
+        self.as_block().block_type().into()
     }
 
     pub fn block_type(&self) -> BlockType {
@@ -234,7 +273,7 @@ impl Block {
     where
         T: std::io::Write,
     {
-        let block_type = self.block_type() as u8;
+        let block_type = self.block_type_id() as u8;
         writer.write_all(&[block_type])?;
         self.serialize_without_block_type(writer)
     }
@@ -265,9 +304,6 @@ impl Block {
             BlockType::LegacyChange => Self::LegacyChange(ChangeBlock::deserialize(reader)?),
             BlockType::State => Self::State(StateBlock::deserialize(reader)?),
             BlockType::LegacySend => Self::LegacySend(SendBlock::deserialize(reader)?),
-            BlockType::Invalid | BlockType::NotABlock => {
-                return Err(DeserializationError::InvalidData);
-            }
         };
         Ok(block)
     }
@@ -276,8 +312,11 @@ impl Block {
     where
         T: Read,
     {
+        let block_type_id =
+            BlockTypeId::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+
         let block_type =
-            BlockType::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+            BlockType::try_from(block_type_id).map_err(|_| DeserializationError::InvalidData)?;
 
         Self::deserialize_block_type(block_type, reader)
     }
@@ -532,7 +571,7 @@ impl SavedBlock {
             .serialize(&mut buffer)
             .expect("Should serialize block");
         self.sideband
-            .serialize(self.block.block_type(), &mut buffer)
+            .serialize(self.block.block_type_id(), &mut buffer)
             .expect("Should serialize sideband");
         buffer
     }
@@ -542,7 +581,7 @@ impl SavedBlock {
         T: Read,
     {
         let block = Block::deserialize(reader)?;
-        let mut sideband = BlockSideband::deserialize(reader, block.block_type())?;
+        let mut sideband = BlockSideband::deserialize(reader, block.block_type_id())?;
         // BlockSideband does not serialize all data depending on the block type.
         // That's why we fill in the missing data here:
         match &block {

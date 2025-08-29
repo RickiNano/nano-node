@@ -1,6 +1,6 @@
 use rsnano_ledger::{AnySet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH};
 use rsnano_rpc_messages::{BlockCreateArgs, BlockTypeDto};
-use rsnano_types::{Amount, Block, BlockType, DEV_GENESIS_KEY, PrivateKey, WalletId};
+use rsnano_types::{Amount, Block, BlockTypeId, DEV_GENESIS_KEY, PrivateKey, WalletId};
 use test_helpers::{System, setup_rpc_client_and_server};
 
 #[test]
@@ -44,7 +44,7 @@ fn block_create_state() {
     let block_hash = result.hash;
     let block: Block = result.block.into();
 
-    assert_eq!(block.block_type(), BlockType::State);
+    assert_eq!(block.block_type_id(), BlockTypeId::State);
     assert_eq!(block.hash(), block_hash);
 
     node.process(block.clone());

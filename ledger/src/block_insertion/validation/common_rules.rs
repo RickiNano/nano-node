@@ -74,7 +74,7 @@ impl<'a> BlockValidator<'a> {
             .as_ref()
             .ok_or(BlockError::GapPrevious)?;
 
-        if !self.block.valid_predecessor(previous.block_type()) {
+        if !self.block.valid_predecessor(previous.block_type_id()) {
             Err(BlockError::BlockPosition)
         } else {
             Ok(())

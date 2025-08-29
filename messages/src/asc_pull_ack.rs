@@ -6,7 +6,8 @@ use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 
 use rsnano_types::{
-    Account, Block, BlockHash, BlockType, DeserializationError, Frontier, read_u8, read_u64_be,
+    Account, Block, BlockHash, BlockType, BlockTypeId, DeserializationError, Frontier, read_u8,
+    read_u64_be,
 };
 use rsnano_utils::stats::DetailType;
 
@@ -193,19 +194,22 @@ impl BlocksAckPayload {
             block.serialize(writer)?;
         }
         // For convenience, end with null block terminator
-        writer.write_all(&[BlockType::NotABlock as u8])
+        writer.write_all(&[BlockTypeId::NotABlock as u8])
     }
 
     pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let mut blocks = VecDeque::new();
 
         while bytes.len() > 0 {
-            let block_type = BlockType::from_u8(read_u8(&mut bytes)?)
+            let type_id = BlockTypeId::from_u8(read_u8(&mut bytes)?)
                 .ok_or(DeserializationError::InvalidData)?;
 
-            if block_type == BlockType::NotABlock {
+            if type_id == BlockTypeId::NotABlock {
                 break;
             }
+
+            let block_type =
+                BlockType::try_from(type_id).map_err(|_| DeserializationError::InvalidData)?;
 
             let block = Block::deserialize_block_type(block_type, &mut bytes)?;
             blocks.push_back(block);

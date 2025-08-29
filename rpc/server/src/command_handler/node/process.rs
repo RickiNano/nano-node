@@ -4,7 +4,7 @@ use rsnano_ledger::{BlockError, LedgerSet};
 use rsnano_network::ChannelId;
 use rsnano_node::block_processing::{BlockContext, BlockSource};
 use rsnano_rpc_messages::{BlockSubTypeDto, HashRpcMessage, ProcessArgs, StartedResponse};
-use rsnano_types::{Block, BlockBase, BlockType};
+use rsnano_types::{Block, BlockBase, BlockTypeId};
 
 use crate::command_handler::RpcCommandHandler;
 
@@ -107,7 +107,7 @@ impl RpcCommandHandler {
                 Err(BlockError::InsufficientWork) => Err(anyhow!("Block work is insufficient")),
                 Err(BlockError::Conflict) => Err(anyhow!("Conflict while processing block")),
             }
-        } else if block.block_type() == BlockType::State {
+        } else if block.block_type_id() == BlockTypeId::State {
             self.node.block_processor_queue.push(BlockContext::new(
                 block,
                 BlockSource::Local,

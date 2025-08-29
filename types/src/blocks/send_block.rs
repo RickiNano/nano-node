@@ -1,4 +1,4 @@
-use super::{Block, BlockBase, BlockType};
+use super::{Block, BlockBase, BlockType, BlockTypeId};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
     JsonBlock, Link, PendingKey, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
@@ -91,13 +91,13 @@ impl SendBlock {
     }
 }
 
-pub fn valid_send_block_predecessor(block_type: BlockType) -> bool {
+pub fn valid_send_block_predecessor(block_type: BlockTypeId) -> bool {
     match block_type {
-        BlockType::LegacySend
-        | BlockType::LegacyReceive
-        | BlockType::LegacyOpen
-        | BlockType::LegacyChange => true,
-        BlockType::NotABlock | BlockType::State | BlockType::Invalid => false,
+        BlockTypeId::LegacySend
+        | BlockTypeId::LegacyReceive
+        | BlockTypeId::LegacyOpen
+        | BlockTypeId::LegacyChange => true,
+        BlockTypeId::NotABlock | BlockTypeId::State | BlockTypeId::Invalid => false,
     }
 }
 
@@ -164,7 +164,7 @@ impl BlockBase for SendBlock {
         None
     }
 
-    fn valid_predecessor(&self, block_type: BlockType) -> bool {
+    fn valid_predecessor(&self, block_type: BlockTypeId) -> bool {
         valid_send_block_predecessor(block_type)
     }
 

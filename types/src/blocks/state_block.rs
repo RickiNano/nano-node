@@ -1,4 +1,4 @@
-use super::{Block, BlockBase, BlockType};
+use super::{Block, BlockBase, BlockType, BlockTypeId};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DeserializationError, JsonBlock, Link,
     PrivateKey, PublicKey, Root, Signature, WorkNonce, private_key::TEST_KEY, read_u64_be,
@@ -162,7 +162,7 @@ impl BlockBase for StateBlock {
         Some(self.hashables.representative)
     }
 
-    fn valid_predecessor(&self, _block_type: BlockType) -> bool {
+    fn valid_predecessor(&self, _block_type: BlockTypeId) -> bool {
         true
     }
 
@@ -209,7 +209,7 @@ struct StateHashables {
 impl StateHashables {
     fn hash(&self) -> BlockHash {
         let mut preamble = [0u8; 32];
-        preamble[31] = BlockType::State as u8;
+        preamble[31] = BlockTypeId::State as u8;
         Blake2HashBuilder::new()
             .update(preamble)
             .update(self.account.as_bytes())

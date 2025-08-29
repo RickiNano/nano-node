@@ -2,7 +2,9 @@ use super::MessageVariant;
 use anyhow::Result;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{BlockHash, BlockType, DeserializationError, Root, serialized_block_size};
+use rsnano_types::{
+    BlockHash, BlockType, BlockTypeId, DeserializationError, Root, serialized_block_size,
+};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use std::fmt::{Debug, Display, Write};
 
@@ -54,9 +56,9 @@ impl ConfirmReq {
         &self.roots_hashes
     }
 
-    fn block_type(extensions: BitArray<u16>) -> BlockType {
-        let value = (extensions.data & Self::BLOCK_TYPE_MASK) >> Self::BLOCK_TYPE_SHIFT;
-        FromPrimitive::from_u16(value).unwrap_or(BlockType::Invalid)
+    fn block_type(extensions: BitArray<u16>) -> BlockTypeId {
+        let block_type_id = (extensions.data & Self::BLOCK_TYPE_MASK) >> Self::BLOCK_TYPE_SHIFT;
+        FromPrimitive::from_u16(block_type_id).unwrap_or(BlockTypeId::Invalid)
     }
 
     pub fn count(extensions: BitArray<u16>) -> u8 {
@@ -123,15 +125,19 @@ impl ConfirmReq {
     }
 
     pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        let count = Self::count(extensions);
-        let mut result = 0;
-        let block_type = Self::block_type(extensions);
-        if block_type != BlockType::Invalid && block_type != BlockType::NotABlock {
-            result = serialized_block_size(block_type);
-        } else if block_type == BlockType::NotABlock {
-            result = count as usize * (BlockHash::SERIALIZED_SIZE + Root::SERIALIZED_SIZE);
+        let block_type_id = Self::block_type(extensions);
+
+        match BlockType::try_from(block_type_id) {
+            Ok(block_type) => serialized_block_size(block_type),
+            Err(_) => {
+                let count = Self::count(extensions);
+                if block_type_id == BlockTypeId::NotABlock {
+                    count as usize * (BlockHash::SERIALIZED_SIZE + Root::SERIALIZED_SIZE)
+                } else {
+                    0
+                }
+            }
         }
-        result
     }
 
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -222,7 +228,7 @@ impl MessageVariant for ConfirmReq {
         extensions |= Self::count_bits(self.roots_hashes.len() as u8);
         // Set NotABlock (1) block type for hashes + roots request
         // This is needed to keep compatibility with previous protocol versions (<= V25.1)
-        extensions |= BitArray::new((BlockType::NotABlock as u16) << Self::BLOCK_TYPE_SHIFT);
+        extensions |= BitArray::new((BlockTypeId::NotABlock as u16) << Self::BLOCK_TYPE_SHIFT);
         extensions
     }
 }
@@ -260,11 +266,11 @@ mod tests {
     #[test]
     fn get_block_type_from_header() {
         let extensions = Default::default();
-        assert_eq!(ConfirmReq::block_type(extensions), BlockType::Invalid);
+        assert_eq!(ConfirmReq::block_type(extensions), BlockTypeId::Invalid);
 
         let confirm_req = ConfirmReq::new_test_instance();
         let extensions = confirm_req.header_extensions(0);
-        assert_eq!(ConfirmReq::block_type(extensions), BlockType::NotABlock);
+        assert_eq!(ConfirmReq::block_type(extensions), BlockTypeId::NotABlock);
     }
 
     #[test]

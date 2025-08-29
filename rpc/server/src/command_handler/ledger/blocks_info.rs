@@ -6,7 +6,7 @@ use rsnano_ledger::{AnySet, LedgerSet};
 use rsnano_rpc_messages::{
     BlockInfoResponse, BlocksInfoArgs, BlocksInfoResponse, unwrap_bool_or_false,
 };
-use rsnano_types::{BlockHash, BlockType, PendingKey, UnixTimestamp};
+use rsnano_types::{BlockHash, BlockTypeId, PendingKey, UnixTimestamp};
 
 use crate::command_handler::RpcCommandHandler;
 
@@ -33,7 +33,7 @@ impl RpcCommandHandler {
                 let confirmed = any.confirmed().block_exists(&hash);
                 let contents = block.json_representation();
 
-                let subtype = if block.block_type() == BlockType::State {
+                let subtype = if block.block_type_id() == BlockTypeId::State {
                     Some(block.subtype().into())
                 } else {
                     None

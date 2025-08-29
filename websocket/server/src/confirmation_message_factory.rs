@@ -1,6 +1,6 @@
 use rsnano_ledger::{AnySet, Ledger};
 use rsnano_node::consensus::election::ConfirmedElection;
-use rsnano_types::{Amount, BlockType, SavedBlock};
+use rsnano_types::{Amount, BlockTypeId, SavedBlock};
 use rsnano_websocket_messages::{
     BlockConfirmed, ElectionInfo, JsonSideband, MessageEnvelope, Topic,
 };
@@ -37,7 +37,7 @@ impl ConfirmationMessageFactory<'_> {
     }
 
     fn subtype(&self) -> String {
-        if self.block.block_type() == BlockType::State {
+        if self.block.block_type_id() == BlockTypeId::State {
             self.block.subtype().as_str().to_string()
         } else {
             String::new()

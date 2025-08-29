@@ -1,6 +1,6 @@
-use super::{Block, BlockBase};
+use super::{Block, BlockBase, BlockType};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, BlockType, DependentBlocks,
+    Account, Amount, Blake2HashBuilder, BlockHash, BlockTypeId, DependentBlocks,
     DeserializationError, JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce,
     read_u64_le,
 };
@@ -71,13 +71,13 @@ impl ChangeBlock {
     }
 }
 
-pub fn valid_change_block_predecessor(predecessor: BlockType) -> bool {
+pub fn valid_change_block_predecessor(predecessor: BlockTypeId) -> bool {
     matches!(
         predecessor,
-        BlockType::LegacySend
-            | BlockType::LegacyReceive
-            | BlockType::LegacyOpen
-            | BlockType::LegacyChange
+        BlockTypeId::LegacySend
+            | BlockTypeId::LegacyReceive
+            | BlockTypeId::LegacyOpen
+            | BlockTypeId::LegacyChange
     )
 }
 
@@ -144,7 +144,7 @@ impl BlockBase for ChangeBlock {
         Some(self.hashables.representative)
     }
 
-    fn valid_predecessor(&self, block_type: BlockType) -> bool {
+    fn valid_predecessor(&self, block_type: BlockTypeId) -> bool {
         valid_change_block_predecessor(block_type)
     }
 

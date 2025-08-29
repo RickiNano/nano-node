@@ -48,7 +48,7 @@ pub use success::*;
 pub use valid::*;
 pub use wallet::*;
 
-use rsnano_types::{BlockSubType, BlockType};
+use rsnano_types::{BlockSubType, BlockTypeId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -68,28 +68,28 @@ pub enum BlockTypeDto {
     Unknown,
 }
 
-impl From<BlockType> for BlockTypeDto {
-    fn from(value: BlockType) -> Self {
+impl From<BlockTypeId> for BlockTypeDto {
+    fn from(value: BlockTypeId) -> Self {
         match value {
-            BlockType::LegacySend => BlockTypeDto::Send,
-            BlockType::LegacyReceive => BlockTypeDto::Receive,
-            BlockType::LegacyOpen => BlockTypeDto::Open,
-            BlockType::LegacyChange => BlockTypeDto::Change,
-            BlockType::State => BlockTypeDto::State,
-            BlockType::Invalid | BlockType::NotABlock => BlockTypeDto::Unknown,
+            BlockTypeId::LegacySend => BlockTypeDto::Send,
+            BlockTypeId::LegacyReceive => BlockTypeDto::Receive,
+            BlockTypeId::LegacyOpen => BlockTypeDto::Open,
+            BlockTypeId::LegacyChange => BlockTypeDto::Change,
+            BlockTypeId::State => BlockTypeDto::State,
+            BlockTypeId::Invalid | BlockTypeId::NotABlock => BlockTypeDto::Unknown,
         }
     }
 }
 
-impl From<BlockTypeDto> for BlockType {
+impl From<BlockTypeDto> for BlockTypeId {
     fn from(value: BlockTypeDto) -> Self {
         match value {
-            BlockTypeDto::Send => BlockType::LegacySend,
-            BlockTypeDto::Receive => BlockType::LegacyReceive,
-            BlockTypeDto::Open => BlockType::LegacyOpen,
-            BlockTypeDto::Change => BlockType::LegacyChange,
-            BlockTypeDto::State => BlockType::State,
-            BlockTypeDto::Unknown => BlockType::Invalid,
+            BlockTypeDto::Send => BlockTypeId::LegacySend,
+            BlockTypeDto::Receive => BlockTypeId::LegacyReceive,
+            BlockTypeDto::Open => BlockTypeId::LegacyOpen,
+            BlockTypeDto::Change => BlockTypeId::LegacyChange,
+            BlockTypeDto::State => BlockTypeId::State,
+            BlockTypeDto::Unknown => BlockTypeId::Invalid,
         }
     }
 }
