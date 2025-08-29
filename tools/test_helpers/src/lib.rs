@@ -47,7 +47,7 @@ impl System {
         let network_params = NetworkParams::new(Networks::NanoDevNetwork);
         let port = get_available_port();
         let mut config = NodeConfig::new(Some(port), &network_params, 1);
-        config.representative_vote_weight_minimum = Amount::zero();
+        config.representative_vote_weight_minimum = Amount::ZERO;
         config.io_threads = 1;
         config.lmdb_config.sync = SyncStrategy::NosyncUnsafeWriteMap;
         // process blocks sequentially
@@ -469,7 +469,7 @@ pub fn setup_chains(
 
         let open: Block = StateBlockArgs {
             key: &key,
-            previous: BlockHash::zero(),
+            previous: BlockHash::ZERO,
             representative: key.public_key(),
             balance: amount_sent,
             link: send.hash().into(),
@@ -520,7 +520,7 @@ pub fn setup_independent_blocks(node: &Node, count: usize, source: &PrivateKey) 
 
         let open: Block = StateBlockArgs {
             key: &key,
-            previous: BlockHash::zero(),
+            previous: BlockHash::ZERO,
             representative: key.public_key(),
             balance: Amount::raw(1),
             link: send.hash().into(),
@@ -662,13 +662,13 @@ pub fn process_open_block(node: Arc<Node>, keys: PrivateKey) -> Block {
     let account = keys.account();
 
     let (key, info) = any
-        .account_receivable_upper_bound(account, BlockHash::zero())
+        .account_receivable_upper_bound(account, BlockHash::ZERO)
         .next()
         .unwrap();
 
     let open: Block = StateBlockArgs {
         key: &keys,
-        previous: BlockHash::zero(),
+        previous: BlockHash::ZERO,
         representative: keys.public_key(),
         balance: info.amount,
         link: key.send_block_hash.into(),
@@ -733,7 +733,7 @@ pub fn setup_new_account(
 
     let open: Block = StateBlockArgs {
         key: dest,
-        previous: BlockHash::zero(),
+        previous: BlockHash::ZERO,
         representative: dest_rep,
         balance: amount,
         link: send.hash().into(),

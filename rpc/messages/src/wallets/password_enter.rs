@@ -17,7 +17,7 @@ mod tests {
     fn serialize_password_enter_command() {
         assert_eq!(
             to_string_pretty(&RpcCommand::password_enter(
-                WalletId::zero(),
+                WalletId::ZERO,
                 "password".to_string()
             ))
             .unwrap(),
@@ -31,7 +31,7 @@ mod tests {
 
     #[test]
     fn deserialize_password_enter_command() {
-        let cmd = RpcCommand::password_enter(WalletId::zero(), "password".to_string());
+        let cmd = RpcCommand::password_enter(WalletId::ZERO, "password".to_string());
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

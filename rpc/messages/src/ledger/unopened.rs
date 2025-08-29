@@ -34,7 +34,7 @@ mod tests {
     #[test]
     fn serialize_unopened_args_threshold_none() {
         let args = UnopenedArgs {
-            account: Some(Account::zero()),
+            account: Some(Account::ZERO),
             count: Some(1.into()),
             ..Default::default()
         };
@@ -52,9 +52,9 @@ mod tests {
     #[test]
     fn serialize_unopened_args_threshold_some() {
         let args = UnopenedArgs {
-            account: Some(Account::zero()),
+            account: Some(Account::ZERO),
             count: Some(1.into()),
-            threshold: Some(Amount::zero()),
+            threshold: Some(Amount::ZERO),
         };
         let json = to_value(args).unwrap();
 
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn serialize_unopened_command_threshold_none() {
         let command = RpcCommand::Unopened(UnopenedArgs {
-            account: Some(Account::zero()),
+            account: Some(Account::ZERO),
             ..Default::default()
         });
         let json = to_value(command).unwrap();
@@ -97,7 +97,7 @@ mod tests {
         assert_eq!(
             args,
             UnopenedArgs {
-                account: Some(Account::zero()),
+                account: Some(Account::ZERO),
                 count: Some(1.into()),
                 ..Default::default()
             }
@@ -118,9 +118,9 @@ mod tests {
         assert_eq!(
             command,
             RpcCommand::Unopened(UnopenedArgs {
-                account: Some(Account::zero()),
+                account: Some(Account::ZERO),
                 count: Some(1.into()),
-                threshold: Some(Amount::zero())
+                threshold: Some(Amount::ZERO)
             })
         );
     }

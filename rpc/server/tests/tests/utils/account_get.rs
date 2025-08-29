@@ -14,7 +14,7 @@ fn account_get() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.account_get(PublicKey::zero()).await.unwrap() });
+        .block_on(async { server.client.account_get(PublicKey::ZERO).await.unwrap() });
 
-    assert_eq!(result.account, PublicKey::zero().into());
+    assert_eq!(result.account, PublicKey::ZERO.into());
 }

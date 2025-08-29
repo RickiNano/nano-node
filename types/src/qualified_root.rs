@@ -13,7 +13,7 @@ pub struct QualifiedRoot {
 }
 
 impl QualifiedRoot {
-    pub const ZERO: Self = QualifiedRoot::new(Root::zero(), BlockHash::zero());
+    pub const ZERO: Self = QualifiedRoot::new(Root::ZERO, BlockHash::ZERO);
     pub const SERIALIZED_SIZE: usize = Root::SERIALIZED_SIZE + BlockHash::SERIALIZED_SIZE;
 
     pub const fn new(root: Root, previous: BlockHash) -> Self {

@@ -135,11 +135,11 @@ impl TestStateBlockBuilder {
     }
 
     pub fn zero(mut self) -> Self {
-        self.account = Some(Account::zero());
-        self.previous = BlockHash::zero();
-        self.representative = PublicKey::zero();
-        self.balance = Amount::zero();
-        self.link = Link::zero();
+        self.account = Some(Account::ZERO);
+        self.previous = BlockHash::ZERO;
+        self.representative = PublicKey::ZERO;
+        self.balance = Amount::ZERO;
+        self.link = Link::ZERO;
         self.signature = None;
         self.work = Some(0.into());
         self

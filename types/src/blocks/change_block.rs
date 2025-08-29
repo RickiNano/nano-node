@@ -57,7 +57,7 @@ impl ChangeBlock {
     }
 
     pub fn dependent_blocks(&self) -> DependentBlocks {
-        DependentBlocks::new(self.previous(), BlockHash::zero())
+        DependentBlocks::new(self.previous(), BlockHash::ZERO)
     }
 
     pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>

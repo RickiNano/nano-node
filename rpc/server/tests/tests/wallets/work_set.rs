@@ -17,7 +17,7 @@ mod tests {
         node.runtime.block_on(async {
             server
                 .client
-                .work_set(wallet_id, Account::zero(), 1.into())
+                .work_set(wallet_id, Account::ZERO, 1.into())
                 .await
                 .unwrap()
         });
@@ -25,7 +25,7 @@ mod tests {
         assert_timely(Duration::from_secs(5), || {
             !node
                 .wallets
-                .work_get2(&wallet_id, &Account::zero().into())
+                .work_get2(&wallet_id, &Account::ZERO.into())
                 .unwrap()
                 .is_zero()
         });
@@ -41,7 +41,7 @@ mod tests {
         let result = node.runtime.block_on(async {
             server
                 .client
-                .work_set(WalletId::random(), Account::zero(), 1.into())
+                .work_set(WalletId::random(), Account::ZERO, 1.into())
                 .await
         });
 
@@ -61,7 +61,7 @@ mod tests {
         let result = node.runtime.block_on(async {
             server
                 .client
-                .work_set(WalletId::random(), Account::zero(), 1.into())
+                .work_set(WalletId::random(), Account::ZERO, 1.into())
                 .await
         });
 

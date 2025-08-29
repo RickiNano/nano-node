@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn serialize_wallet_representative_set_args_update_existing_accounts_none() {
         let wallet_representative_set_args =
-            WalletRepresentativeSetArgs::new(WalletId::zero(), Account::zero());
+            WalletRepresentativeSetArgs::new(WalletId::ZERO, Account::ZERO);
 
         let serialized = to_string(&wallet_representative_set_args).unwrap();
 
@@ -85,7 +85,7 @@ mod tests {
     #[test]
     fn serialize_wallet_representative_set_args_update_existing_accounts_some() {
         let wallet_representative_set_args =
-            WalletRepresentativeSetArgs::builder(WalletId::zero(), Account::zero())
+            WalletRepresentativeSetArgs::builder(WalletId::ZERO, Account::ZERO)
                 .update_existing_accounts()
                 .build();
 
@@ -110,7 +110,7 @@ mod tests {
 
         let deserialized: WalletRepresentativeSetArgs = from_str(json_str).unwrap();
 
-        let expected = WalletRepresentativeSetArgs::new(WalletId::zero(), Account::zero());
+        let expected = WalletRepresentativeSetArgs::new(WalletId::ZERO, Account::ZERO);
 
         assert_eq!(deserialized, expected);
     }
@@ -125,7 +125,7 @@ mod tests {
 
         let deserialized: WalletRepresentativeSetArgs = from_str(json_str).unwrap();
 
-        let expected = WalletRepresentativeSetArgs::builder(WalletId::zero(), Account::zero())
+        let expected = WalletRepresentativeSetArgs::builder(WalletId::ZERO, Account::ZERO)
             .update_existing_accounts()
             .build();
 

@@ -58,7 +58,7 @@ impl QueryFactory {
         if let Some(conf_info) = any.confirmed().get_conf_info(account) {
             (head, conf_info.frontier)
         } else {
-            (head, BlockHash::zero())
+            (head, BlockHash::ZERO)
         }
     }
 
@@ -128,7 +128,7 @@ impl PullStart {
         Self {
             start: account.into(),
             start_type: HashType::Account,
-            hash: BlockHash::zero(),
+            hash: BlockHash::ZERO,
         }
     }
 
@@ -178,7 +178,7 @@ mod tests {
                 AscPullQuerySpec {
                     channel: test_channel(),
                     account,
-                    hash: BlockHash::zero(),
+                    hash: BlockHash::ZERO,
                     cooldown_account: true,
                     req_type: AscPullReqType::Blocks(BlocksReqPayload {
                         start_type: HashType::Account,
@@ -238,7 +238,7 @@ mod tests {
                 AscPullQuerySpec {
                     channel: test_channel(),
                     account,
-                    hash: BlockHash::zero(),
+                    hash: BlockHash::ZERO,
                     cooldown_account: true,
                     req_type: AscPullReqType::Blocks(BlocksReqPayload {
                         start_type: HashType::Account,
@@ -295,7 +295,7 @@ mod tests {
                 AscPullQuerySpec {
                     channel: test_channel(),
                     account,
-                    hash: BlockHash::zero(),
+                    hash: BlockHash::ZERO,
                     cooldown_account: true,
                     req_type: AscPullReqType::Blocks(BlocksReqPayload {
                         start_type: HashType::Account,

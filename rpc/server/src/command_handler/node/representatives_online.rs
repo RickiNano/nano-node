@@ -120,7 +120,7 @@ mod tests {
             let response =
                 ResponseBuilder::new(Default::default()).create_response([OnlineRepInfo {
                     rep_key: 1.into(),
-                    weight: Amount::zero(),
+                    weight: Amount::ZERO,
                 }]);
             assert_eq!(simple_response(response), [Account::from(1)]);
         }
@@ -133,7 +133,7 @@ mod tests {
             })
             .create_response([OnlineRepInfo {
                 rep_key: 1.into(),
-                weight: Amount::zero(),
+                weight: Amount::ZERO,
             }]);
             assert_eq!(simple_response(response), []);
         }
@@ -147,19 +147,19 @@ mod tests {
             .create_response([
                 OnlineRepInfo {
                     rep_key: 1.into(),
-                    weight: Amount::zero(),
+                    weight: Amount::ZERO,
                 },
                 OnlineRepInfo {
                     rep_key: 2.into(),
-                    weight: Amount::zero(),
+                    weight: Amount::ZERO,
                 },
                 OnlineRepInfo {
                     rep_key: 3.into(),
-                    weight: Amount::zero(),
+                    weight: Amount::ZERO,
                 },
                 OnlineRepInfo {
                     rep_key: 4.into(),
-                    weight: Amount::zero(),
+                    weight: Amount::ZERO,
                 },
             ]);
             assert_eq!(simple_response(response), [2.into(), 3.into()]);

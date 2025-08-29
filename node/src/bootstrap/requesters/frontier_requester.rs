@@ -48,8 +48,8 @@ impl FrontierRequester {
         AscPullQuerySpec {
             channel: channel.clone(),
             req_type: request,
-            account: Account::zero(),
-            hash: BlockHash::zero(),
+            account: Account::ZERO,
+            hash: BlockHash::ZERO,
             cooldown_account: false,
         }
     }

@@ -137,7 +137,7 @@ impl<'a> OwningAnySet<'a> {
                 Some(block) => result.push(block),
                 None => {
                     // Wrap around when reaching the end
-                    it = self.store.block.iter_range(&self.txn, BlockHash::zero()..);
+                    it = self.store.block.iter_range(&self.txn, BlockHash::ZERO..);
                 }
             }
         }
@@ -293,7 +293,7 @@ impl<'a> AnySet for OwningAnySet<'a> {
                 &self.store.pending,
                 account,
                 None,
-                Some(BlockHash::zero()),
+                Some(BlockHash::ZERO),
             ),
         }
     }
@@ -304,7 +304,7 @@ impl<'a> AnySet for OwningAnySet<'a> {
             &self.store.pending,
             account,
             None,
-            Some(BlockHash::zero()),
+            Some(BlockHash::ZERO),
         )
     }
 
@@ -349,9 +349,9 @@ impl<'a> LedgerSet for BorrowingAnySet<'a> {
     }
 
     fn account_receivable(&self, account: &Account) -> Amount {
-        let mut result = Amount::zero();
+        let mut result = Amount::ZERO;
 
-        for (_, info) in self.account_receivable_upper_bound(*account, BlockHash::zero()) {
+        for (_, info) in self.account_receivable_upper_bound(*account, BlockHash::ZERO) {
             result += info.amount;
         }
 
@@ -360,7 +360,7 @@ impl<'a> LedgerSet for BorrowingAnySet<'a> {
 
     fn account_balance(&self, account: &Account) -> Amount {
         let Some(head) = self.account_head(account) else {
-            return Amount::zero();
+            return Amount::ZERO;
         };
 
         self.get_block(&head)
@@ -382,7 +382,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
     }
 
     fn receivable_exists(&self, account: Account) -> bool {
-        self.account_receivable_upper_bound(account, BlockHash::zero())
+        self.account_receivable_upper_bound(account, BlockHash::ZERO)
             .next()
             .is_some()
     }
@@ -532,7 +532,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
                 &self.store.pending,
                 account,
                 None,
-                Some(BlockHash::zero()),
+                Some(BlockHash::ZERO),
             ),
         }
     }
@@ -543,7 +543,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
             &self.store.pending,
             account,
             None,
-            Some(BlockHash::zero()),
+            Some(BlockHash::ZERO),
         )
     }
 

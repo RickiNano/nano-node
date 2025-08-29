@@ -65,7 +65,7 @@ impl OpenBlock {
         if self.account() == *genesis_account {
             DependentBlocks::none()
         } else {
-            DependentBlocks::new(self.source(), BlockHash::zero())
+            DependentBlocks::new(self.source(), BlockHash::ZERO)
         }
     }
 
@@ -125,7 +125,7 @@ impl BlockBase for OpenBlock {
     }
 
     fn previous(&self) -> BlockHash {
-        BlockHash::zero()
+        BlockHash::ZERO
     }
 
     fn root(&self) -> Root {

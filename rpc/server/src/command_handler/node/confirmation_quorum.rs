@@ -55,7 +55,7 @@ mod tests {
     fn confirmation_quorum_command() {
         let result: ConfirmationQuorumResponse =
             test_rpc_command(RpcCommand::confirmation_quorum());
-        assert!(result.quorum_delta > Amount::zero());
+        assert!(result.quorum_delta > Amount::ZERO);
     }
 
     #[test]

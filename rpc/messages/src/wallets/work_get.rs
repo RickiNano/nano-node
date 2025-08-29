@@ -28,7 +28,7 @@ mod tests {
     #[test]
     fn serialize_work_get_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::work_get(WalletId::zero(), Account::zero())).unwrap(),
+            to_string_pretty(&RpcCommand::work_get(WalletId::ZERO, Account::ZERO)).unwrap(),
             r#"{
   "action": "work_get",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -39,7 +39,7 @@ mod tests {
 
     #[test]
     fn deserialize_work_get_command() {
-        let cmd = RpcCommand::work_get(WalletId::zero(), Account::zero());
+        let cmd = RpcCommand::work_get(WalletId::ZERO, Account::ZERO);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

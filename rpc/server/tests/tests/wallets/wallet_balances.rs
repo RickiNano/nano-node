@@ -43,20 +43,20 @@ fn wallet_balances_threshold_some() {
     let server = setup_rpc_client_and_server(node.clone(), false);
 
     let wallet: WalletId = 1.into();
-    let private_key = RawKey::zero();
+    let private_key = RawKey::ZERO;
     let public_key: PublicKey = (&private_key).try_into().unwrap();
 
     node.wallets.create(wallet);
 
     node.wallets
-        .insert_adhoc2(&wallet, &RawKey::zero(), false)
+        .insert_adhoc2(&wallet, &RawKey::ZERO, false)
         .unwrap();
 
     send_block(node.clone(), public_key.into());
 
     let result = node.runtime.block_on(async {
         let args = WalletBalancesArgs::build(wallet)
-            .with_minimum_balance(Amount::zero())
+            .with_minimum_balance(Amount::ZERO)
             .finish();
         server.client.wallet_balances(args).await.unwrap()
     });
@@ -65,7 +65,7 @@ fn wallet_balances_threshold_some() {
     expected_balances.insert(
         public_key.into(),
         AccountBalanceResponse {
-            balance: Amount::zero(),
+            balance: Amount::ZERO,
             pending: Amount::raw(1),
             receivable: Amount::raw(1),
         },

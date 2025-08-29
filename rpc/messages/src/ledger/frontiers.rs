@@ -32,7 +32,7 @@ mod tests {
     #[test]
     fn serialize_frontiers_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::frontiers(Account::zero(), 1)).unwrap(),
+            to_string_pretty(&RpcCommand::frontiers(Account::ZERO, 1)).unwrap(),
             r#"{
   "action": "frontiers",
   "account": "nano_1111111111111111111111111111111111111111111111111111hifc8npp",
@@ -49,7 +49,7 @@ mod tests {
   "count": "1"
     }"#;
         let deserialized: RpcCommand = serde_json::from_str(json_str).unwrap();
-        let expected_command = RpcCommand::frontiers(Account::zero(), 1);
+        let expected_command = RpcCommand::frontiers(Account::ZERO, 1);
         assert_eq!(deserialized, expected_command);
     }
 }

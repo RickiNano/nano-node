@@ -145,7 +145,7 @@ mod tests {
             uptime: 3600,
             peer_count: 10,
             protocol_version: 18,
-            genesis_block: BlockHash::zero(),
+            genesis_block: BlockHash::ZERO,
             major_version: 23,
             minor_version: 3,
             patch_version: 0,

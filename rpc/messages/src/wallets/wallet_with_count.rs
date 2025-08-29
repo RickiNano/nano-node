@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn serialize_wallet_with_count_args() {
-        let wallet_rpc_message = WalletWithCountArgs::new(WalletId::zero(), 1);
+        let wallet_rpc_message = WalletWithCountArgs::new(WalletId::ZERO, 1);
 
         let serialized = to_string(&wallet_rpc_message).unwrap();
 
@@ -46,7 +46,7 @@ mod tests {
 
         let deserialized: WalletWithCountArgs = from_str(json_str).unwrap();
 
-        let expected = WalletWithCountArgs::new(WalletId::zero(), 1);
+        let expected = WalletWithCountArgs::new(WalletId::ZERO, 1);
 
         assert_eq!(deserialized, expected);
     }

@@ -31,7 +31,7 @@ impl RpcCommandHandler {
             let mut block_default = Vec::new();
 
             for (key, info) in any
-                .account_receivable_upper_bound(account, BlockHash::zero())
+                .account_receivable_upper_bound(account, BlockHash::ZERO)
                 .take(count as usize)
             {
                 if include_only_confirmed && !any.confirmed().block_exists(&key.send_block_hash) {

@@ -226,7 +226,7 @@ mod tests {
 
     #[test]
     fn serialize_account_info_args() {
-        let args = AccountInfoArgs::build(Account::zero())
+        let args = AccountInfoArgs::build(Account::ZERO)
             .include_representative()
             .include_weight()
             .include_receivable()
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn serialize_account_info_command_with_some_args() {
-        let args = AccountInfoArgs::build(Account::zero())
+        let args = AccountInfoArgs::build(Account::ZERO)
             .include_representative()
             .include_weight()
             .include_receivable()
@@ -265,16 +265,16 @@ mod tests {
     #[test]
     fn serialize_account_info_dto_with_none_values() {
         let account_info = AccountInfoResponse {
-            frontier: BlockHash::zero(),
-            open_block: BlockHash::zero(),
-            representative_block: BlockHash::zero(),
+            frontier: BlockHash::ZERO,
+            open_block: BlockHash::ZERO,
+            representative_block: BlockHash::ZERO,
             balance: Amount::raw(1000),
             modified_timestamp: 1234567890.into(),
             block_count: 100.into(),
             account_version: 1.into(),
             confirmed_height: Some(99.into()),
-            confirmation_height_frontier: Some(BlockHash::zero()),
-            representative: Some(Account::zero()),
+            confirmation_height_frontier: Some(BlockHash::ZERO),
+            representative: Some(Account::ZERO),
             weight: Some(Amount::raw(2000)),
             pending: Some(Amount::raw(300)),
             receivable: Some(Amount::raw(400)),
@@ -295,9 +295,9 @@ mod tests {
     #[test]
     fn deserialize_account_info_dto_with_none_values() {
         let account_info = AccountInfoResponse {
-            frontier: BlockHash::zero(),
-            open_block: BlockHash::zero(),
-            representative_block: BlockHash::zero(),
+            frontier: BlockHash::ZERO,
+            open_block: BlockHash::ZERO,
+            representative_block: BlockHash::ZERO,
             balance: Amount::raw(1000),
             modified_timestamp: 1234567890.into(),
             block_count: 100.into(),
@@ -331,23 +331,23 @@ mod tests {
 
     fn create_account_info_dto_with_some_values() -> AccountInfoResponse {
         AccountInfoResponse {
-            frontier: BlockHash::zero(),
-            open_block: BlockHash::zero(),
-            representative_block: BlockHash::zero(),
+            frontier: BlockHash::ZERO,
+            open_block: BlockHash::ZERO,
+            representative_block: BlockHash::ZERO,
             balance: Amount::from(1000),
             modified_timestamp: 1234567890.into(),
             block_count: 100.into(),
             account_version: 1.into(),
             confirmed_height: Some(99.into()),
-            confirmation_height_frontier: Some(BlockHash::zero()),
-            representative: Some(Account::zero()),
+            confirmation_height_frontier: Some(BlockHash::ZERO),
+            representative: Some(Account::ZERO),
             weight: Some(Amount::from(2000)),
             pending: Some(Amount::from(300)),
             receivable: Some(Amount::from(400)),
             confirmed_balance: Some(Amount::from(950)),
             confirmed_pending: Some(Amount::from(250)),
             confirmed_receivable: Some(Amount::from(350)),
-            confirmed_representative: Some(Account::zero()),
+            confirmed_representative: Some(Account::ZERO),
             confirmed_frontier: None,
             confirmation_height: None,
         }

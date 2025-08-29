@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn serialize_wallet_frontiers_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::wallet_frontiers(WalletId::zero())).unwrap(),
+            to_string_pretty(&RpcCommand::wallet_frontiers(WalletId::ZERO)).unwrap(),
             r#"{
   "action": "wallet_frontiers",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -31,7 +31,7 @@ mod tests {
     "wallet": "0000000000000000000000000000000000000000000000000000000000000000"
     }"#;
         let deserialized: RpcCommand = serde_json::from_str(json_str).unwrap();
-        let expected_command = RpcCommand::wallet_frontiers(WalletId::zero());
+        let expected_command = RpcCommand::wallet_frontiers(WalletId::ZERO);
         assert_eq!(deserialized, expected_command);
     }
 }

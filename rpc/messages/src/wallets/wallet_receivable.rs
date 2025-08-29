@@ -29,7 +29,7 @@ mod tests {
     fn serialize_wallet_receivable_command_options_none() {
         assert_eq!(
             to_string_pretty(&RpcCommand::WalletReceivable(WalletReceivableArgs {
-                wallet: WalletId::zero(),
+                wallet: WalletId::ZERO,
                 count: Some(1.into()),
                 ..Default::default()
             }))
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn deserialize_wallet_receivable_command_options_none() {
         let cmd = RpcCommand::WalletReceivable(WalletReceivableArgs {
-            wallet: WalletId::zero(),
+            wallet: WalletId::ZERO,
             count: Some(1.into()),
             ..Default::default()
         });
@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn serialize_wallet_receivable_command_options_some() {
         let args: WalletReceivableArgs = WalletReceivableArgs {
-            wallet: WalletId::zero(),
+            wallet: WalletId::ZERO,
             count: Some(5.into()),
             threshold: Some(Amount::raw(1000)),
             include_only_confirmed: Some(false.into()),

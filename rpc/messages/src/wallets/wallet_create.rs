@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn serialize_wallet_create_command_seed_some() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::wallet_create(Some(RawKey::zero()))).unwrap(),
+            to_string_pretty(&RpcCommand::wallet_create(Some(RawKey::ZERO))).unwrap(),
             r#"{
   "action": "wallet_create",
   "seed": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn deserialize_wallet_create_command_seed_some() {
-        let cmd = RpcCommand::wallet_create(Some(RawKey::zero()));
+        let cmd = RpcCommand::wallet_create(Some(RawKey::ZERO));
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn serialize_wallet_rpc_message() {
         let wallet_rpc_message = WalletCreateResponse {
-            wallet: WalletId::zero(),
+            wallet: WalletId::ZERO,
             restored_count: None,
             last_restored_account: None,
         };
@@ -99,7 +99,7 @@ mod tests {
         let deserialized: WalletCreateResponse = from_str(json_str).unwrap();
 
         let expected = WalletCreateResponse {
-            wallet: WalletId::zero(),
+            wallet: WalletId::ZERO,
             last_restored_account: None,
             restored_count: None,
         };

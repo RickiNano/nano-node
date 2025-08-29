@@ -29,7 +29,7 @@ fn account_block_count_fails_with_account_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.account_block_count(Account::zero()).await });
+        .block_on(async { server.client.account_block_count(Account::ZERO).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

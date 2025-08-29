@@ -92,7 +92,7 @@ impl<'a> RollbackPlannerFactory<'a> {
         let rep_block_hash = if !previous.is_zero() {
             self.any.representative_block_hash(&previous)
         } else {
-            BlockHash::zero()
+            BlockHash::ZERO
         };
 
         let previous_rep = if !rep_block_hash.is_zero() {

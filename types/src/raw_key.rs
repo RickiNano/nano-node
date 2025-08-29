@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn key_encryption() {
         let keypair = PrivateKey::new();
-        let secret_key = RawKey::zero();
+        let secret_key = RawKey::ZERO;
         let iv = keypair.public_key().initialization_vector();
         let encrypted = keypair.raw_key().encrypt(&secret_key, &iv);
         let decrypted = encrypted.decrypt(&secret_key, &iv);
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn encrypt_produces_same_result_every_time() {
-        let secret = RawKey::zero();
+        let secret = RawKey::ZERO;
         let number = RawKey::from(1);
         let iv = [1; 16];
         let encrypted1 = number.encrypt(&secret, &iv);

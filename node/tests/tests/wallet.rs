@@ -280,7 +280,7 @@ fn spend_all_one() {
     assert_ne!(info2.head, *DEV_GENESIS_HASH);
     let block = any.get_block(&info2.head).unwrap();
     assert_eq!(block.previous(), *DEV_GENESIS_HASH);
-    assert_eq!(block.balance(), Amount::zero());
+    assert_eq!(block.balance(), Amount::ZERO);
 }
 
 #[test]
@@ -317,9 +317,9 @@ fn spend() {
         node.wallets
             .send(
                 wallet_id,
-                Account::zero(),
+                Account::ZERO,
                 key2.account(),
-                Amount::zero(),
+                Amount::ZERO,
                 0.into(),
                 true,
                 None
@@ -340,7 +340,7 @@ fn spend() {
         )
         .wait()
         .unwrap();
-    assert_eq!(node.balance(&DEV_GENESIS_ACCOUNT), Amount::zero());
+    assert_eq!(node.balance(&DEV_GENESIS_ACCOUNT), Amount::ZERO);
 }
 
 #[test]
@@ -1399,9 +1399,9 @@ fn epoch_2_receive_unopened() {
         let epoch2_unopened: Block = EpochBlockArgs {
             epoch_signer: &DEV_GENESIS_KEY,
             account: key.account(),
-            previous: BlockHash::zero(),
-            representative: PublicKey::zero(),
-            balance: Amount::zero(),
+            previous: BlockHash::ZERO,
+            representative: PublicKey::ZERO,
+            balance: Amount::ZERO,
             link: *node
                 .network_params
                 .ledger

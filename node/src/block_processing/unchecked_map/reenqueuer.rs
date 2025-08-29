@@ -49,7 +49,7 @@ impl UncheckedBlockReenqueuer {
             satisfied_blocks: Vec::new(),
             candidates: Vec::new(),
             batch_size: 1000,
-            next_search_start: BlockHash::zero(),
+            next_search_start: BlockHash::ZERO,
         }
     }
 
@@ -101,7 +101,7 @@ impl UncheckedBlockReenqueuer {
             .candidates
             .last()
             .and_then(|i| i.inc())
-            .unwrap_or(BlockHash::zero())
+            .unwrap_or(BlockHash::ZERO)
     }
 
     fn filter_satisfied_candidates(&mut self) {

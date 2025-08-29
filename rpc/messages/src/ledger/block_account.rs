@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn serialize_account_block_count_command() {
         assert_eq!(
-            serde_json::to_string_pretty(&RpcCommand::block_account(BlockHash::zero())).unwrap(),
+            serde_json::to_string_pretty(&RpcCommand::block_account(BlockHash::ZERO)).unwrap(),
             r#"{
   "action": "block_account",
   "hash": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn derialize_block_account_command() {
-        let cmd = RpcCommand::block_account(BlockHash::zero());
+        let cmd = RpcCommand::block_account(BlockHash::ZERO);
         let serialized = to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

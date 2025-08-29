@@ -68,15 +68,15 @@ impl Election {
             state: ElectionState::Passive,
             tallies: BlockTallies::new(),
             final_tallies: BlockTallies::new(),
-            winner_tally: Amount::zero(),
-            winner_final_tally: Amount::zero(),
+            winner_tally: Amount::ZERO,
+            winner_final_tally: Amount::ZERO,
             behavior,
             has_quorum: false,
             start: now,
             base_latency,
             account: block.account(),
             winner: MaybeSavedBlock::Saved(block),
-            last_voted_winner: BlockHash::zero(),
+            last_voted_winner: BlockHash::ZERO,
             last_non_final_vote: None,
             last_final_vote: None,
         }
@@ -306,7 +306,7 @@ impl Election {
             return None;
         }
 
-        let mut block_to_remove = BlockHash::zero();
+        let mut block_to_remove = BlockHash::ZERO;
         let winner_hash = self.winner.hash();
 
         // Replace if lowest tally is below inactive cache new block weight
@@ -482,7 +482,7 @@ impl VoteSummary {
             vote_received,
             vote_created,
             hash,
-            weight: Amount::zero(),
+            weight: Amount::ZERO,
         }
     }
 

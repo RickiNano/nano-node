@@ -24,12 +24,12 @@ impl RpcCommandHandler {
                 }
 
                 hash = if successors {
-                    any.block_successor(&hash).unwrap_or_else(BlockHash::zero)
+                    any.block_successor(&hash).unwrap_or(BlockHash::ZERO)
                 } else {
                     block.previous()
                 };
             } else {
-                hash = BlockHash::zero();
+                hash = BlockHash::ZERO;
             }
         }
 

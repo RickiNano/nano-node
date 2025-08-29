@@ -7,8 +7,8 @@ use rsnano_types::{Account, Amount, BlockType, UnixTimestamp};
 #[test]
 fn account_balance_is_none_for_unknown_account() {
     let ledger = Ledger::new_null();
-    let balance = ledger.any().account_balance(&Account::zero());
-    assert_eq!(balance, Amount::zero());
+    let balance = ledger.any().account_balance(&Account::ZERO);
+    assert_eq!(balance, Amount::ZERO);
 }
 
 #[test]

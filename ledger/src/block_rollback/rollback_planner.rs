@@ -177,7 +177,7 @@ impl<'a> RollbackPlanner<'a> {
     fn previous_balance(&self) -> Amount {
         match &self.previous {
             Some(previous) => previous.balance(),
-            None => Amount::zero(),
+            None => Amount::ZERO,
         }
     }
 }

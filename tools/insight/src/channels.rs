@@ -67,7 +67,7 @@ impl Channels {
                             remote_addr: info.peer_addr(),
                             direction: info.direction(),
                             telemetry: None,
-                            rep_weight: Amount::zero(),
+                            rep_weight: Amount::ZERO,
                             rep_state: RepState::NoRep,
                         },
                     );
@@ -94,7 +94,7 @@ impl Channels {
                 channel.rep_weight = rep.weight;
                 channel.rep_state = if channel.rep_weight > min_rep_weight {
                     RepState::PrincipalRep
-                } else if channel.rep_weight > Amount::zero() {
+                } else if channel.rep_weight > Amount::ZERO {
                     RepState::Rep
                 } else {
                     RepState::NoRep
@@ -165,7 +165,7 @@ mod tests {
             vec![Arc::new(Channel::new_test_instance())],
             HashMap::new(),
             Vec::new(),
-            Amount::zero(),
+            Amount::ZERO,
         );
         channels.select_index(0);
         let guard = messages.read().unwrap();
@@ -183,7 +183,7 @@ mod tests {
             vec![Arc::new(Channel::new_test_instance())],
             HashMap::new(),
             Vec::new(),
-            Amount::zero(),
+            Amount::ZERO,
         );
         channels.select_index(0);
         channels.select_index(0);

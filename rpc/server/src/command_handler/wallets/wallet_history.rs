@@ -32,8 +32,8 @@ impl RpcCommandHandler {
                             requested_account: Some(account),
                             output_raw: false,
                             count: u64::MAX,
-                            current_block_hash: BlockHash::zero(),
-                            account: Account::zero(),
+                            current_block_hash: BlockHash::ZERO,
+                            account: Account::ZERO,
                             include_linked_account: false,
                         };
 
@@ -46,7 +46,7 @@ impl RpcCommandHandler {
 
                         hash = block.previous();
                     } else {
-                        hash = BlockHash::zero()
+                        hash = BlockHash::ZERO
                     }
                 }
             }

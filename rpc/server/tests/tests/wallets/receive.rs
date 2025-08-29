@@ -85,7 +85,7 @@ fn receive() {
         Some("node returned error: \"Block is not receivable\"".to_string())
     );
 
-    let args = ReceiveArgs::builder(wallet, key1.public_key().into(), BlockHash::zero()).build();
+    let args = ReceiveArgs::builder(wallet, key1.public_key().into(), BlockHash::ZERO).build();
 
     let error_result = node
         .runtime

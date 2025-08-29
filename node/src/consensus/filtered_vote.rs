@@ -59,6 +59,6 @@ impl Deref for FilteredVote {
 
 impl From<ReceivedVote> for FilteredVote {
     fn from(value: ReceivedVote) -> Self {
-        Self::new(value, BlockHash::zero())
+        Self::new(value, BlockHash::ZERO)
     }
 }

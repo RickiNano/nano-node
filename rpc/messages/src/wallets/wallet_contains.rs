@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn serialize_account_balance_command_include_only_confirmed_none() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::wallet_contains(1.into(), Account::zero())).unwrap(),
+            to_string_pretty(&RpcCommand::wallet_contains(1.into(), Account::ZERO)).unwrap(),
             r#"{
   "action": "wallet_contains",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000001",
@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn deserialize_wallet_contains_command() {
-        let cmd = RpcCommand::wallet_contains(1.into(), Account::zero());
+        let cmd = RpcCommand::wallet_contains(1.into(), Account::ZERO);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

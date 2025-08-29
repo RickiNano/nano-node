@@ -136,7 +136,7 @@ impl NullLedgerBuilder {
             pending: ConfiguredPendingDatabaseBuilder::new(),
             peers: ConfiguredPeersDatabaseBuilder::new(),
             confirmation_height: ConfiguredConfirmationHeightDatabaseBuilder::new(),
-            min_rep_weight: Amount::zero(),
+            min_rep_weight: Amount::ZERO,
         }
     }
 
@@ -202,7 +202,7 @@ impl Ledger {
         Self::new(
             LmdbEnvironment::new_null(),
             LedgerConstants::unit_test(),
-            Amount::zero(),
+            Amount::ZERO,
             Arc::new(RepWeightCache::new()),
             Arc::new(Stats::default()),
             1,

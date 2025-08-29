@@ -30,7 +30,7 @@ mod tests {
         let serialized = to_string_pretty(&RpcCommand::account_move(
             1.into(),
             2.into(),
-            vec![Account::zero()],
+            vec![Account::ZERO],
         ))
         .unwrap();
 

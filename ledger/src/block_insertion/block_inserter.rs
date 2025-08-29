@@ -113,7 +113,7 @@ impl<'a> BlockInserter<'a> {
             self.ledger.rep_weights_updater.representation_add_dual(
                 self.txn,
                 self.instructions.old_account_info.representative,
-                Amount::zero().wrapping_sub(self.instructions.old_account_info.balance),
+                Amount::ZERO.wrapping_sub(self.instructions.old_account_info.balance),
                 self.instructions.set_account_info.representative,
                 self.instructions.set_account_info.balance,
             );
@@ -317,9 +317,7 @@ mod tests {
     }
 
     fn open_state_block_instructions() -> (Block, BlockInsertInstructions) {
-        let block = TestBlockBuilder::state()
-            .previous(BlockHash::zero())
-            .build();
+        let block = TestBlockBuilder::state().previous(BlockHash::ZERO).build();
         let sideband = BlockSideband::new_test_instance();
         let account_info = AccountInfo {
             head: block.hash(),

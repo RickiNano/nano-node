@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn serialize_receivable_exists_command_basic() {
-        let hash = BlockHash::zero();
+        let hash = BlockHash::ZERO;
         assert_eq!(
             to_string_pretty(&RpcCommand::receivable_exists(hash)).unwrap(),
             r#"{
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn serialize_receivable_exists_command_with_options() {
-        let hash = BlockHash::zero();
+        let hash = BlockHash::ZERO;
         let args = ReceivableExistsArgs::build(hash)
             .include_active()
             .include_unconfirmed_blocks()
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn deserialize_receivable_exists_command_basic() {
-        let hash = BlockHash::zero();
+        let hash = BlockHash::ZERO;
         let cmd = RpcCommand::receivable_exists(hash);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
@@ -102,7 +102,7 @@ mod tests {
 
     #[test]
     fn deserialize_receivable_exists_command_with_options() {
-        let hash = BlockHash::zero();
+        let hash = BlockHash::ZERO;
         let args = ReceivableExistsArgs::build(hash)
             .include_active()
             .include_unconfirmed_blocks()

@@ -101,7 +101,7 @@ impl UncheckedMap {
 
     pub fn blocks_dependend_on(&self, dependency_hash: BlockHash) -> impl Iterator<Item = &Block> {
         self.by_key
-            .range(UncheckedKey::new(dependency_hash, BlockHash::zero())..)
+            .range(UncheckedKey::new(dependency_hash, BlockHash::ZERO)..)
             .take_while(move |(k, _)| k.dependency_hash == dependency_hash)
             .map(|(_, id)| &self.by_id.get(id).unwrap().block)
     }
@@ -117,7 +117,7 @@ impl UncheckedMap {
         start_dependency: BlockHash,
     ) -> impl Iterator<Item = (&BlockHash, &Block)> {
         self.by_key
-            .range(UncheckedKey::new(start_dependency, BlockHash::zero())..)
+            .range(UncheckedKey::new(start_dependency, BlockHash::ZERO)..)
             .map(|(key, id)| (&key.dependency_hash, &self.by_id.get(id).unwrap().block))
     }
 

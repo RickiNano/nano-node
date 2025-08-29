@@ -181,7 +181,7 @@ impl<'a> LedgerBlockInserter<'a> {
             previous: info.head,
             representative: new_rep.into(),
             balance: info.balance,
-            link: Link::zero(),
+            link: Link::ZERO,
             work: WorkNonce::new(u64::MAX),
         }
         .into();

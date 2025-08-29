@@ -9,7 +9,7 @@ fn wallet_work_get() {
     let server = setup_rpc_client_and_server(node.clone(), true);
 
     let wallet = WalletId::random();
-    let private_key = RawKey::zero();
+    let private_key = RawKey::ZERO;
     let public_key = PublicKey::try_from(&private_key).unwrap().into();
 
     node.wallets.create(wallet);

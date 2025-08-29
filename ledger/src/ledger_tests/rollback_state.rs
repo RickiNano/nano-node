@@ -77,7 +77,7 @@ fn rollback_received_send() {
     assert_eq!(any.block_exists(&open.hash()), false);
     assert_eq!(any.account_balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
     assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::MAX);
-    assert_eq!(any.account_balance(&destination.account()), Amount::zero());
+    assert_eq!(any.account_balance(&destination.account()), Amount::ZERO);
 }
 
 #[test]
@@ -94,7 +94,7 @@ fn rollback_rep_change() {
     assert_eq!(any.block_exists(&change.hash()), false);
     assert_eq!(any.account_balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
     assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::MAX);
-    assert_eq!(ledger.weight(&representative), Amount::zero());
+    assert_eq!(ledger.weight(&representative), Amount::ZERO);
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn rollback_open() {
     let any = ledger.any();
 
     assert_eq!(any.block_exists(&open.hash()), false);
-    assert_eq!(any.account_balance(&destination.account()), Amount::zero());
+    assert_eq!(any.account_balance(&destination.account()), Amount::ZERO);
     assert_eq!(
         ledger.weight(&DEV_GENESIS_PUB_KEY),
         Amount::MAX - amount_sent
@@ -143,7 +143,7 @@ fn rollback_send_with_rep_change() {
     assert_eq!(any.block_exists(&send.hash()), false);
     assert_eq!(any.account_balance(&DEV_GENESIS_ACCOUNT), Amount::MAX);
     assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::MAX);
-    assert_eq!(ledger.weight(&representative), Amount::zero());
+    assert_eq!(ledger.weight(&representative), Amount::ZERO);
 }
 
 #[test]
@@ -163,5 +163,5 @@ fn rollback_receive_with_rep_change() {
     assert_eq!(any.block_exists(&receive.hash()), false);
     assert_eq!(any.account_balance(&DEV_GENESIS_ACCOUNT), send.balance());
     assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), send.balance());
-    assert_eq!(ledger.weight(&representative), Amount::zero());
+    assert_eq!(ledger.weight(&representative), Amount::ZERO);
 }

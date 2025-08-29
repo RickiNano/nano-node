@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn serialize_password_valid_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::password_valid(WalletId::zero(),)).unwrap(),
+            to_string_pretty(&RpcCommand::password_valid(WalletId::ZERO,)).unwrap(),
             r#"{
   "action": "password_valid",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn deserialize_password_valid_command() {
-        let cmd = RpcCommand::password_valid(WalletId::zero());
+        let cmd = RpcCommand::password_valid(WalletId::ZERO);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

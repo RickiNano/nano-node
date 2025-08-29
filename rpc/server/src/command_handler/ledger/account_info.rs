@@ -42,7 +42,7 @@ impl RpcCommandHandler {
         if include_confirmed {
             let confirmed_balance = if info.block_count != conf_info.height {
                 any.block_balance(&conf_info.frontier)
-                    .unwrap_or(Amount::zero())
+                    .unwrap_or(Amount::ZERO)
             } else {
                 // block_height and confirmed height are the same, so can just reuse balance
                 info.balance

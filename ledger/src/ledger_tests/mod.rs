@@ -99,19 +99,19 @@ fn send_open_receive_rollback() {
     ledger.roll_back(&receive.hash()).unwrap();
 
     assert_eq!(ledger.weight(&receiver.public_key()), Amount::raw(50));
-    assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::zero());
+    assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::ZERO);
     assert_eq!(ledger.weight(&rep_account), Amount::MAX - Amount::raw(100));
 
     ledger.roll_back(&open.hash()).unwrap();
 
-    assert_eq!(ledger.weight(&receiver.public_key()), Amount::zero());
-    assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::zero());
+    assert_eq!(ledger.weight(&receiver.public_key()), Amount::ZERO);
+    assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::ZERO);
     assert_eq!(ledger.weight(&rep_account), Amount::MAX - Amount::raw(100));
 
     ledger.roll_back(&change.hash()).unwrap();
 
-    assert_eq!(ledger.weight(&receiver.public_key()), Amount::zero());
-    assert_eq!(ledger.weight(&rep_account), Amount::zero());
+    assert_eq!(ledger.weight(&receiver.public_key()), Amount::ZERO);
+    assert_eq!(ledger.weight(&rep_account), Amount::ZERO);
     assert_eq!(
         ledger.weight(&DEV_GENESIS_PUB_KEY),
         Amount::MAX - Amount::raw(100)
@@ -119,8 +119,8 @@ fn send_open_receive_rollback() {
 
     ledger.roll_back(&send2.hash()).unwrap();
 
-    assert_eq!(ledger.weight(&receiver.public_key()), Amount::zero());
-    assert_eq!(ledger.weight(&rep_account), Amount::zero());
+    assert_eq!(ledger.weight(&receiver.public_key()), Amount::ZERO);
+    assert_eq!(ledger.weight(&rep_account), Amount::ZERO);
     assert_eq!(
         ledger.weight(&DEV_GENESIS_PUB_KEY),
         Amount::MAX - Amount::raw(50)
@@ -128,8 +128,8 @@ fn send_open_receive_rollback() {
 
     ledger.roll_back(&send1.hash()).unwrap();
 
-    assert_eq!(ledger.weight(&receiver.public_key()), Amount::zero());
-    assert_eq!(ledger.weight(&rep_account), Amount::zero());
+    assert_eq!(ledger.weight(&receiver.public_key()), Amount::ZERO);
+    assert_eq!(ledger.weight(&rep_account), Amount::ZERO);
     assert_eq!(ledger.weight(&DEV_GENESIS_PUB_KEY), Amount::MAX);
 }
 
@@ -323,7 +323,7 @@ fn ledger_cache() {
     let ledger = Ledger::new(
         env,
         LedgerConstants::live(),
-        Amount::zero(),
+        Amount::ZERO,
         RepWeightCache::new().into(),
         Arc::new(Stats::default()),
         1,

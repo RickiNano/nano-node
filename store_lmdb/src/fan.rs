@@ -22,7 +22,7 @@ impl Fan {
     }
 
     pub fn value(&self) -> RawKey {
-        let mut key = RawKey::zero();
+        let mut key = RawKey::ZERO;
         for i in self.values.iter() {
             key ^= i.as_ref().clone();
         }

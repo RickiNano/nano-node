@@ -78,7 +78,7 @@ impl Vote {
     pub fn null() -> Self {
         Self {
             timestamp: 0.into(),
-            voter: PublicKey::zero(),
+            voter: PublicKey::ZERO,
             signature: Signature::new(),
             hashes: Vec::new(),
         }

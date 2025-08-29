@@ -65,12 +65,9 @@ fn account_remove_fails_wallet_locked() {
 
     node.wallets.lock(&wallet_id).unwrap();
 
-    let result = node.runtime.block_on(async {
-        server
-            .client
-            .account_remove(wallet_id, Account::zero())
-            .await
-    });
+    let result = node
+        .runtime
+        .block_on(async { server.client.account_remove(wallet_id, Account::ZERO).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),
@@ -88,7 +85,7 @@ fn account_remove_fails_wallet_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_remove(WalletId::random(), Account::zero())
+            .account_remove(WalletId::random(), Account::ZERO)
             .await
     });
 

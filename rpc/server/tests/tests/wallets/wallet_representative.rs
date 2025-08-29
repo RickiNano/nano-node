@@ -11,7 +11,7 @@ fn wallet_representative() {
     let wallet = WalletId::random();
     node.wallets.create(wallet);
     node.wallets
-        .set_representative(wallet, PublicKey::zero(), false)
+        .set_representative(wallet, PublicKey::ZERO, false)
         .wait()
         .unwrap();
 
@@ -19,7 +19,7 @@ fn wallet_representative() {
         .runtime
         .block_on(async { server.client.wallet_representative(wallet).await.unwrap() });
 
-    assert_eq!(result.representative, PublicKey::zero().into());
+    assert_eq!(result.representative, PublicKey::ZERO.into());
 }
 
 #[test]

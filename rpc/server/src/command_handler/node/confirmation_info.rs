@@ -22,7 +22,7 @@ impl RpcCommandHandler {
         let voters = election.votes().len();
         let last_winner = election.winner().hash();
         let final_tally = election.winner_final_tally();
-        let mut total_tally = Amount::zero();
+        let mut total_tally = Amount::ZERO;
         let mut blocks = IndexMap::new();
 
         for block in election.candidate_blocks().values() {

@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn encode_zero() {
-        let account = Account::zero();
+        let account = Account::ZERO;
         let encoded = account.encode_account();
         assert_eq!(
             encoded,
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn decode_fail() {
-        let account = Account::zero();
+        let account = Account::ZERO;
         let mut encoded = account.encode_account();
         encoded.replace_range(16..17, "x");
         assert!(Account::parse(&encoded).is_none());

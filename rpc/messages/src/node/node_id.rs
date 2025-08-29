@@ -41,8 +41,8 @@ mod tests {
     #[test]
     fn serialize_node_id_dto() {
         let node_id_dto = NodeIdResponse {
-            public: PublicKey::zero(),
-            as_account: Account::zero(),
+            public: PublicKey::ZERO,
+            as_account: Account::ZERO,
             node_id: NodeId::ZERO,
         };
 
@@ -67,8 +67,8 @@ mod tests {
         let deserialized: NodeIdResponse = serde_json::from_str(json_str).unwrap();
 
         let node_id_dto = NodeIdResponse {
-            public: PublicKey::zero(),
-            as_account: Account::zero(),
+            public: PublicKey::ZERO,
+            as_account: Account::ZERO,
             node_id: NodeId::ZERO,
         };
 

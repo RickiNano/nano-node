@@ -93,7 +93,7 @@ fn can_open_account_with_epoch1_block() {
             head: epoch1_open.hash(),
             representative: epoch1_open.representative_field().unwrap(),
             open_block: epoch1_open.hash(),
-            balance: Amount::zero(),
+            balance: Amount::ZERO,
             modified: test.now.into(),
             block_count: 1,
             epoch: Epoch::Epoch1

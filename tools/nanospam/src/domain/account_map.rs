@@ -86,9 +86,9 @@ impl AccountMap {
             account,
             AccountState {
                 key,
-                confirmed_frontier: BlockHash::zero(),
-                unconfirmed_frontier: BlockHash::zero(),
-                balance: Amount::zero(),
+                confirmed_frontier: BlockHash::ZERO,
+                unconfirmed_frontier: BlockHash::ZERO,
+                balance: Amount::ZERO,
             },
         );
         self.confirmed_accounts.insert(account);
@@ -275,7 +275,7 @@ mod tests {
             Some((dest_account, send_hash, amount))
         );
         assert!(map.random_account_that_can_send().is_none());
-        assert_eq!(map.state(&dest_account).unwrap().balance, Amount::zero());
+        assert_eq!(map.state(&dest_account).unwrap().balance, Amount::ZERO);
     }
 
     #[test]

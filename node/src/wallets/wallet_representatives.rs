@@ -42,7 +42,7 @@ impl WalletRepresentatives {
     pub fn new_null() -> Self {
         Self::new(
             false,
-            Amount::zero(),
+            Amount::ZERO,
             Arc::new(RepWeightCache::new()),
             Arc::new(Wallets::new_null()),
             Arc::new(Mutex::new(OnlineReps::new_test_instance())),

@@ -35,7 +35,7 @@ impl<'a> LedgerBuilder<'a> {
             env_factory: None,
             bootstrap_weights: None,
             stats: None,
-            min_rep_weight: Amount::zero(),
+            min_rep_weight: Amount::ZERO,
             ledger_constants: None,
             thread_count: 0,
         }

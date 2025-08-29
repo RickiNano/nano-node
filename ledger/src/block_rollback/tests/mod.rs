@@ -42,12 +42,12 @@ fn new_test_rollback_planner<'a>(chain: &'a SavedAccountChain) -> RollbackPlanne
         current_account_info: chain.account_info(),
         previous_representative: chain.representative_at_height(chain.height() - 1),
         previous: chain.try_get_block(chain.height() - 1).cloned(),
-        linked_account: Account::zero(),
+        linked_account: Account::ZERO,
         pending_receive: None,
         latest_block_for_destination: None,
         confirmation_height: ConfirmationHeightInfo {
             height: 0,
-            frontier: BlockHash::zero(),
+            frontier: BlockHash::ZERO,
         },
         now: RollbackTest::TEST_NOW,
     }

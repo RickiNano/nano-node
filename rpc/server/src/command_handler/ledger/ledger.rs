@@ -12,7 +12,7 @@ use crate::command_handler::RpcCommandHandler;
 impl RpcCommandHandler {
     pub(crate) fn ledger(&self, args: LedgerArgs) -> LedgerResponse {
         let count = unwrap_u64_or_max(args.count);
-        let threshold = args.threshold.unwrap_or(Amount::zero());
+        let threshold = args.threshold.unwrap_or(Amount::ZERO);
         let start = args.account.unwrap_or_default();
         let modified_since: UnixTimestamp = unwrap_u64_or_zero(args.modified_since).into();
         let sorting = unwrap_bool_or_false(args.sorting);

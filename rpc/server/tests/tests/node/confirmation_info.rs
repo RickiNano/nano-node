@@ -9,7 +9,7 @@ fn confirmation_info() {
     let node = system.build_node().finish();
 
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let send = lattice.genesis().send(Account::zero(), 100);
+    let send = lattice.genesis().send(Account::ZERO, 100);
     node.process_active(send.clone());
 
     assert_timely2(|| node.is_active_root(&send.qualified_root()));
@@ -38,14 +38,14 @@ fn confirmation_info() {
     let representatives = block.representatives.clone().unwrap();
     assert_eq!(representatives.len(), 0);
 
-    assert_eq!(result.total_tally, Amount::zero());
+    assert_eq!(result.total_tally, Amount::ZERO);
 
     let contents: &JsonBlock = block.contents.as_ref().unwrap();
 
     match contents {
         JsonBlock::Send(contents) => {
             assert_eq!(contents.previous, *DEV_GENESIS_HASH);
-            assert_eq!(contents.destination, Account::zero());
+            assert_eq!(contents.destination, Account::ZERO);
             assert_eq!(
                 Amount::from(contents.balance),
                 Amount::MAX - Amount::raw(100)

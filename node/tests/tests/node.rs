@@ -1436,13 +1436,13 @@ fn online_reps_rep_crawler() {
     .into();
 
     assert_eq!(
-        Amount::zero(),
+        Amount::ZERO,
         node.online_reps.lock().unwrap().online_weight()
     );
 
     let _ = node.vote_processor.vote_blocking(&vote);
     assert_eq!(
-        Amount::zero(),
+        Amount::ZERO,
         node.online_reps.lock().unwrap().online_weight()
     );
 
@@ -1484,7 +1484,7 @@ fn online_reps_election() {
         vec![send1.hash()],
     ));
     assert_eq!(
-        Amount::zero(),
+        Amount::ZERO,
         node.online_reps.lock().unwrap().online_weight()
     );
 

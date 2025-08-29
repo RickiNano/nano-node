@@ -172,7 +172,7 @@ mod tests {
 
         let expected: Block = StateBlockArgs {
             key: &key1,
-            previous: BlockHash::zero(),
+            previous: BlockHash::ZERO,
             representative: key1.public_key(),
             balance: Amount::raw(1),
             link: send.hash().into(),

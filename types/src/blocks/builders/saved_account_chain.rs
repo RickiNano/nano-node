@@ -25,7 +25,7 @@ impl SavedAccountChain {
         result.balance = Amount::MAX;
         result.add_block(
             TestBlockBuilder::legacy_open()
-                .source(BlockHash::zero())
+                .source(BlockHash::ZERO)
                 .sign(&result.priv_key)
                 .build(),
             Epoch::Epoch0,
@@ -54,9 +54,9 @@ impl SavedAccountChain {
     pub fn with_priv_key(key: PrivateKey) -> Self {
         Self {
             account: key.account(),
-            balance: Amount::zero(),
+            balance: Amount::ZERO,
             blocks: Vec::new(),
-            representative: PublicKey::zero(),
+            representative: PublicKey::ZERO,
             priv_key: key,
             epoch: Epoch::Epoch0,
         }
@@ -120,7 +120,7 @@ impl SavedAccountChain {
         let send_block = sender_chain.block(height);
         let amount = sender_chain.amount_of_block(height);
         assert_eq!(self.height(), 0);
-        assert!(amount > Amount::zero());
+        assert!(amount > Amount::ZERO);
         assert_eq!(send_block.destination_or_link(), self.account);
         self.balance = amount;
         let open_block = TestBlockBuilder::legacy_open()
@@ -161,7 +161,7 @@ impl SavedAccountChain {
         amount: Amount,
         source_epoch: Epoch,
     ) -> &SavedBlock {
-        assert!(amount > Amount::zero());
+        assert!(amount > Amount::ZERO);
         let block_builder = TestBlockBuilder::legacy_receive()
             .previous(self.frontier())
             .source(source)
@@ -312,7 +312,7 @@ impl SavedAccountChain {
 
     fn balance_on_height(&self, height: u64) -> Amount {
         if height == 0 {
-            Amount::zero()
+            Amount::ZERO
         } else {
             self.blocks[height as usize - 1].balance()
         }

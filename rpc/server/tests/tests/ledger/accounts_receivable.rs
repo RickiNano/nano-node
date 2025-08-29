@@ -41,7 +41,7 @@ fn accounts_receivable_include_only_confirmed() {
 
     let wallet = WalletId::random();
     node.wallets.create(wallet);
-    let private_key = RawKey::zero();
+    let private_key = RawKey::ZERO;
     let public_key: PublicKey = (&private_key).try_into().unwrap();
     node.wallets
         .insert_adhoc2(&wallet, &private_key, false)
@@ -89,7 +89,7 @@ fn accounts_receivable_options_none() {
 
     let wallet = WalletId::random();
     node.wallets.create(wallet);
-    let private_key = RawKey::zero();
+    let private_key = RawKey::ZERO;
     let public_key: PublicKey = (&private_key).try_into().unwrap();
     node.wallets
         .insert_adhoc2(&wallet, &private_key, false)
@@ -126,7 +126,7 @@ fn accounts_receivable_threshold_some() {
 
     let wallet = WalletId::random();
     node.wallets.create(wallet);
-    let private_key = RawKey::zero();
+    let private_key = RawKey::ZERO;
     let public_key: PublicKey = (&private_key).try_into().unwrap();
     node.wallets
         .insert_adhoc2(&wallet, &private_key, false)
@@ -170,7 +170,7 @@ fn accounts_receivable_sorted() {
 
     let wallet = WalletId::random();
     node.wallets.create(wallet);
-    let private_key = RawKey::zero();
+    let private_key = RawKey::ZERO;
     let public_key: PublicKey = (&private_key).try_into().unwrap();
     node.wallets
         .insert_adhoc2(&wallet, &private_key, false)

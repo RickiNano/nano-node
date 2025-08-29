@@ -36,8 +36,8 @@ fn accounts_balances_only_confirmed_none() {
         account.balance,
         Amount::raw(340282366920938463463374607431768211455)
     );
-    assert_eq!(account.pending, Amount::zero());
-    assert_eq!(account.receivable, Amount::zero());
+    assert_eq!(account.pending, Amount::ZERO);
+    assert_eq!(account.receivable, Amount::ZERO);
 }
 
 #[test]
@@ -64,8 +64,8 @@ fn account_balance_only_confirmed_true() {
         Amount::raw(340282366920938463463374607431768211455)
     );
 
-    assert_eq!(account.pending, Amount::zero());
-    assert_eq!(account.receivable, Amount::zero());
+    assert_eq!(account.pending, Amount::ZERO);
+    assert_eq!(account.receivable, Amount::ZERO);
 }
 
 #[test]

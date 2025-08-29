@@ -56,7 +56,7 @@ pub struct BlockPriority {
 }
 
 impl BlockPriority {
-    pub const MIN: BlockPriority = BlockPriority::new(Amount::zero(), TimePriority::MIN);
+    pub const MIN: BlockPriority = BlockPriority::new(Amount::ZERO, TimePriority::MIN);
 
     pub const fn new(balance: Amount, time: TimePriority) -> Self {
         Self { balance, time }

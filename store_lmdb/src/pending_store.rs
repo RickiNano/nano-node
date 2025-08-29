@@ -100,7 +100,7 @@ impl LmdbPendingStore {
     }
 
     pub fn any(&self, tx: &dyn Transaction, account: &Account) -> bool {
-        let key = PendingKey::new(*account, BlockHash::zero());
+        let key = PendingKey::new(*account, BlockHash::ZERO);
         self.iter_range(tx, key..)
             .next()
             .map(|(k, _)| k.receiving_account == *account)

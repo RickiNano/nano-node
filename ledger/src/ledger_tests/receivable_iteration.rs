@@ -6,12 +6,12 @@ fn empty() {
     let ledger = Ledger::new_null();
     let any = ledger.any();
 
-    let mut iterator = any.account_receivable_upper_bound(Account::zero(), BlockHash::zero());
+    let mut iterator = any.account_receivable_upper_bound(Account::ZERO, BlockHash::ZERO);
 
     assert_eq!(iterator.next(), None);
 
     let any = ledger.any();
-    let mut iterator = any.receivable_upper_bound(Account::zero());
+    let mut iterator = any.receivable_upper_bound(Account::ZERO);
     assert_eq!(iterator.next(), None);
 }
 

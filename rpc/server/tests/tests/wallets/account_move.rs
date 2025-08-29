@@ -93,7 +93,7 @@ fn account_move_fails_source_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_move(wallet, source, vec![Account::zero()])
+            .account_move(wallet, source, vec![Account::ZERO])
             .await
     });
 
@@ -118,7 +118,7 @@ fn account_move_fails_target_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_move(wallet, source, vec![Account::zero()])
+            .account_move(wallet, source, vec![Account::ZERO])
             .await
     });
 
@@ -146,7 +146,7 @@ fn account_move_fails_source_locked() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_move(wallet, source, vec![Account::zero()])
+            .account_move(wallet, source, vec![Account::ZERO])
             .await
     });
 
@@ -174,7 +174,7 @@ fn account_move_fails_target_locked() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_move(wallet, source, vec![Account::zero()])
+            .account_move(wallet, source, vec![Account::ZERO])
             .await
     });
 
@@ -200,7 +200,7 @@ fn account_move_fails_account_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .account_move(wallet, source, vec![Account::zero()])
+            .account_move(wallet, source, vec![Account::ZERO])
             .await
     });
 

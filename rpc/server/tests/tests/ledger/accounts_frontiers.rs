@@ -37,13 +37,13 @@ fn accounts_frontiers_account_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .accounts_frontiers(vec![Account::zero()])
+            .accounts_frontiers(vec![Account::ZERO])
             .await
             .unwrap()
     });
 
     assert_eq!(
-        result.errors.unwrap().get(&Account::zero()).unwrap(),
+        result.errors.unwrap().get(&Account::ZERO).unwrap(),
         "Account not found"
     );
 }
@@ -58,7 +58,7 @@ fn accounts_frontiers_found_and_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .accounts_frontiers(vec![*DEV_GENESIS_ACCOUNT, Account::zero()])
+            .accounts_frontiers(vec![*DEV_GENESIS_ACCOUNT, Account::ZERO])
             .await
             .unwrap()
     });
@@ -74,12 +74,7 @@ fn accounts_frontiers_found_and_not_found() {
     );
 
     assert_eq!(
-        result
-            .errors
-            .as_ref()
-            .unwrap()
-            .get(&Account::zero())
-            .unwrap(),
+        result.errors.as_ref().unwrap().get(&Account::ZERO).unwrap(),
         "Account not found"
     );
 

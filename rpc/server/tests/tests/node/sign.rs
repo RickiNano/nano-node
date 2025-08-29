@@ -55,7 +55,7 @@ fn sign_without_key() {
     let mut lattice = UnsavedBlockLatticeBuilder::new();
     let send = lattice
         .genesis()
-        .send(Account::zero(), Amount::raw(1_000_000));
+        .send(Account::ZERO, Amount::raw(1_000_000));
 
     let result = node
         .runtime

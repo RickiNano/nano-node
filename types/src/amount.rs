@@ -1,5 +1,4 @@
 use crate::DeserializationError;
-use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
 use std::{fmt::Debug, io::Read, iter::Sum, ops::Deref};
 
@@ -11,6 +10,7 @@ pub struct Amount {
 impl Amount {
     pub const MAX: Amount = Amount::raw(u128::MAX);
     pub const SERIALIZED_SIZE: usize = 16;
+    pub const ZERO: Self = Self::raw(0);
 
     pub const fn raw(value: u128) -> Self {
         Self { raw: value }
@@ -37,12 +37,8 @@ impl Amount {
         }
     }
 
-    pub const fn zero() -> Self {
-        Self::raw(0)
-    }
-
     pub fn is_zero(&self) -> bool {
-        *self == Self::zero()
+        *self == Self::ZERO
     }
 
     pub fn from_be_bytes(bytes: [u8; 16]) -> Self {
@@ -69,12 +65,12 @@ impl Amount {
         format!("{:032X}", self.raw)
     }
 
-    pub fn decode_hex(s: impl AsRef<str>) -> Result<Self> {
+    pub fn decode_hex(s: impl AsRef<str>) -> anyhow::Result<Self> {
         let value = u128::from_str_radix(s.as_ref(), 16)?;
         Ok(Amount::raw(value))
     }
 
-    pub fn decode_dec(s: impl AsRef<str>) -> Result<Self> {
+    pub fn decode_dec(s: impl AsRef<str>) -> anyhow::Result<Self> {
         Ok(Self::raw(s.as_ref().parse::<u128>()?))
     }
 
@@ -214,7 +210,7 @@ impl std::cmp::Ord for Amount {
 
 impl Sum for Amount {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut sum = Amount::zero();
+        let mut sum = Amount::ZERO;
         for i in iter {
             sum += i;
         }
@@ -311,7 +307,7 @@ mod tests {
 
     #[test]
     fn decode_dec_happy_path() {
-        assert_eq!(Amount::decode_dec("0").unwrap(), Amount::zero());
+        assert_eq!(Amount::decode_dec("0").unwrap(), Amount::ZERO);
         assert_eq!(Amount::decode_dec("01").unwrap(), Amount::raw(1));
         let amount = Amount::decode_dec("1230000000000000000000000000000").unwrap();
         assert_eq!(amount, Amount::raw(1230000000000000000000000000000));

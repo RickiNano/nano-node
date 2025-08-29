@@ -79,7 +79,7 @@ fn rollback_legacy_open() {
         .assert_rollback_succeeds();
 
     assert_eq!(instructions.block_sub_type, BlockSubType::Open);
-    assert_eq!(instructions.new_balance, Amount::zero());
+    assert_eq!(instructions.new_balance, Amount::ZERO);
     assert_eq!(instructions.new_representative, None);
     assert_eq!(instructions.old_account_info, chain.account_info());
     assert_eq!(instructions.set_account_info, Default::default());

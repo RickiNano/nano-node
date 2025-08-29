@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn serialize_account_create_command_options_none() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::AccountCreate(WalletId::zero().into())).unwrap(),
+            to_string_pretty(&RpcCommand::AccountCreate(WalletId::ZERO.into())).unwrap(),
             r#"{
   "action": "account_create",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000000"

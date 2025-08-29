@@ -61,8 +61,8 @@ impl OnlineReps {
             rep_weights,
             online_reps: OnlineContainer::new(),
             peered_reps: PeeredContainer::new(),
-            trended_weight: Amount::zero(),
-            online_weight: Amount::zero(),
+            trended_weight: Amount::ZERO,
+            online_weight: Amount::ZERO,
             weight_interval,
             online_weight_minimum,
             representative_weight_minimum,
@@ -129,7 +129,7 @@ impl OnlineReps {
 
     /// Get total available weight from peered representatives
     pub fn peered_weight(&self) -> Amount {
-        let mut result = Amount::zero();
+        let mut result = Amount::ZERO;
         let weights = self.rep_weights.read();
         for account in self.peered_reps.accounts() {
             result += weights.get(account).cloned().unwrap_or_default();
@@ -187,7 +187,7 @@ impl OnlineReps {
 
     /// Request a list of the top \p count known representatives in descending order of weight, with at least \p weight_a voting weight, and optionally with a minimum version \p minimum_protocol_version
     pub fn peered_reps(&self) -> Vec<PeeredRepInfo> {
-        self.representatives_filter(Amount::zero())
+        self.representatives_filter(Amount::ZERO)
     }
 
     /// Request a list of the top \p count known principal representatives in descending order of weight, optionally with a minimum version \p minimum_protocol_version
@@ -258,7 +258,7 @@ impl OnlineReps {
     }
 
     pub fn calculate_online_weight(&mut self) {
-        let mut current = Amount::zero();
+        let mut current = Amount::ZERO;
         let rep_weights = self.rep_weights.read();
         for account in self.online_reps.iter() {
             current += rep_weights.get(account).cloned().unwrap_or_default();
@@ -377,14 +377,14 @@ mod tests {
             online_reps.online_weight_minimum(),
             Amount::nano(60_000_000)
         );
-        assert_eq!(online_reps.trended_weight(), Amount::zero(), "trended");
+        assert_eq!(online_reps.trended_weight(), Amount::ZERO, "trended");
         assert_eq!(
             online_reps.trended_or_minimum_weight(),
             Amount::nano(60_000_000),
             "trended"
         );
-        assert_eq!(online_reps.online_weight(), Amount::zero(), "online");
-        assert_eq!(online_reps.peered_weight(), Amount::zero(), "peered");
+        assert_eq!(online_reps.online_weight(), Amount::ZERO, "online");
+        assert_eq!(online_reps.peered_weight(), Amount::ZERO, "peered");
         assert_eq!(online_reps.peered_reps_count(), 0, "peered count");
         assert_eq!(online_reps.quorum_percent(), 67, "quorum percent");
         assert_eq!(
@@ -408,7 +408,7 @@ mod tests {
         online_reps.vote_observed(account, clock.now());
 
         assert_eq!(online_reps.online_weight(), weight, "online");
-        assert_eq!(online_reps.peered_weight(), Amount::zero(), "peered");
+        assert_eq!(online_reps.peered_weight(), Amount::ZERO, "peered");
     }
 
     #[test]
@@ -521,19 +521,19 @@ mod tests {
     #[test]
     fn test_instance() {
         let online_reps = OnlineReps::new_test_instance();
-        assert_ne!(online_reps.quorum_delta(), Amount::zero(), "quorum delta");
+        assert_ne!(online_reps.quorum_delta(), Amount::ZERO, "quorum delta");
         assert_ne!(online_reps.quorum_percent(), 0, "quorum percent");
         assert_ne!(
             online_reps.online_weight_minimum(),
-            Amount::zero(),
+            Amount::ZERO,
             "online minimum"
         );
-        assert_ne!(online_reps.online_weight(), Amount::zero(), "online weight");
+        assert_ne!(online_reps.online_weight(), Amount::ZERO, "online weight");
         assert_ne!(
             online_reps.trended_or_minimum_weight(),
-            Amount::zero(),
+            Amount::ZERO,
             "trended or minimum"
         );
-        assert_ne!(online_reps.peered_weight(), Amount::zero(), "peered");
+        assert_ne!(online_reps.peered_weight(), Amount::ZERO, "peered");
     }
 }

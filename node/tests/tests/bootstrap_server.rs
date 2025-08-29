@@ -347,10 +347,10 @@ fn serve_account_info_missing() {
     };
 
     assert_eq!(response_payload.account, Account::from(42));
-    assert_eq!(response_payload.account_open, BlockHash::zero());
-    assert_eq!(response_payload.account_head, BlockHash::zero());
+    assert_eq!(response_payload.account_open, BlockHash::ZERO);
+    assert_eq!(response_payload.account_head, BlockHash::ZERO);
     assert_eq!(response_payload.account_block_count, 0);
-    assert_eq!(response_payload.account_conf_frontier, BlockHash::zero());
+    assert_eq!(response_payload.account_conf_frontier, BlockHash::ZERO);
     assert_eq!(response_payload.account_conf_height, 0);
 
     // Ensure we don't get any unexpected responses
@@ -371,7 +371,7 @@ fn serve_frontiers() {
     let request = Message::AscPullReq(AscPullReq {
         id: 7,
         req_type: AscPullReqType::Frontiers(FrontiersReqPayload {
-            start: Account::zero(),
+            start: Account::ZERO,
             count: BootstrapServer::MAX_FRONTIERS as u16,
         }),
     });
@@ -419,7 +419,7 @@ fn serve_frontiers_invalid_count() {
         let request = Message::AscPullReq(AscPullReq {
             id: 7,
             req_type: AscPullReqType::Frontiers(FrontiersReqPayload {
-                start: Account::zero(),
+                start: Account::ZERO,
                 count: 0,
             }),
         });
@@ -445,7 +445,7 @@ fn serve_frontiers_invalid_count() {
         let request = Message::AscPullReq(AscPullReq {
             id: 7,
             req_type: AscPullReqType::Frontiers(FrontiersReqPayload {
-                start: Account::zero(),
+                start: Account::ZERO,
                 count: BootstrapServer::MAX_FRONTIERS as u16 + 1,
             }),
         });
@@ -471,7 +471,7 @@ fn serve_frontiers_invalid_count() {
         let request = Message::AscPullReq(AscPullReq {
             id: 7,
             req_type: AscPullReqType::Frontiers(FrontiersReqPayload {
-                start: Account::zero(),
+                start: Account::ZERO,
                 count: u16::MAX,
             }),
         });

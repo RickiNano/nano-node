@@ -67,10 +67,10 @@ impl<'a> BlockValidator<'a> {
                 if previous < state.balance() {
                     state.balance() - previous
                 } else {
-                    Amount::zero()
+                    Amount::ZERO
                 }
             }
-            _ => Amount::zero(),
+            _ => Amount::ZERO,
         }
     }
 
@@ -94,7 +94,7 @@ impl<'a> BlockValidator<'a> {
                 }
             }
         }
-        Amount::zero()
+        Amount::ZERO
     }
 
     pub(crate) fn new_balance(&self) -> Amount {

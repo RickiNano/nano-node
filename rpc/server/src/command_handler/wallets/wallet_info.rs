@@ -7,8 +7,8 @@ use rsnano_types::Amount;
 impl RpcCommandHandler {
     pub(crate) fn wallet_info(&self, args: WalletRpcMessage) -> anyhow::Result<WalletInfoResponse> {
         let accounts = self.node.wallets.decrypt(args.wallet)?;
-        let mut balance = Amount::zero();
-        let mut receivable = Amount::zero();
+        let mut balance = Amount::ZERO;
+        let mut receivable = Amount::ZERO;
         let mut accounts_count = 0u64;
         let mut block_count = 0u64;
         let mut cemented_count = 0u64;

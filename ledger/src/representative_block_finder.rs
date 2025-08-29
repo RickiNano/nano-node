@@ -15,17 +15,17 @@ impl<'a> RepresentativeBlockFinder<'a> {
 
     pub fn find_rep_block(&self, hash: BlockHash) -> BlockHash {
         let mut current = hash;
-        let mut result = BlockHash::zero();
+        let mut result = BlockHash::ZERO;
         while result.is_zero() {
             let Some(block) = self.store.block.get(self.txn, &current) else {
-                return BlockHash::zero();
+                return BlockHash::ZERO;
             };
             (current, result) = match &*block {
-                Block::LegacySend(_) => (block.previous(), BlockHash::zero()),
-                Block::LegacyReceive(_) => (block.previous(), BlockHash::zero()),
-                Block::LegacyOpen(_) => (BlockHash::zero(), block.hash()),
-                Block::LegacyChange(_) => (BlockHash::zero(), block.hash()),
-                Block::State(_) => (BlockHash::zero(), block.hash()),
+                Block::LegacySend(_) => (block.previous(), BlockHash::ZERO),
+                Block::LegacyReceive(_) => (block.previous(), BlockHash::ZERO),
+                Block::LegacyOpen(_) => (BlockHash::ZERO, block.hash()),
+                Block::LegacyChange(_) => (BlockHash::ZERO, block.hash()),
+                Block::State(_) => (BlockHash::ZERO, block.hash()),
             };
         }
 

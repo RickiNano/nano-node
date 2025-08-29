@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn serialize_delegators_command() {
-        let command = RpcCommand::Delegators(Account::zero().into());
+        let command = RpcCommand::Delegators(Account::ZERO.into());
         let serialized = serde_json::to_value(command).unwrap();
         let expected = json!({"action": "delegators", "account": "nano_1111111111111111111111111111111111111111111111111111hifc8npp"});
         assert_eq!(serialized, expected);
@@ -93,7 +93,7 @@ mod tests {
     fn deserialize_delegators_command() {
         let json = r#"{"action": "delegators","account": "nano_1111111111111111111111111111111111111111111111111111hifc8npp"}"#;
         let deserialized: RpcCommand = serde_json::from_str(json).unwrap();
-        let expected = RpcCommand::Delegators(Account::zero().into());
+        let expected = RpcCommand::Delegators(Account::ZERO.into());
         assert_eq!(deserialized, expected);
     }
 
@@ -106,7 +106,7 @@ mod tests {
             .unwrap(),
             threshold: Some(Amount::raw(1)),
             count: Some(0.into()),
-            start: Some(Account::zero()),
+            start: Some(Account::ZERO),
         };
         let serialized = serde_json::to_value(args).unwrap();
         let expected = json!({
@@ -134,18 +134,18 @@ mod tests {
         );
         assert_eq!(deserialized.threshold, Some(Amount::raw(1)));
         assert_eq!(deserialized.count, Some(0.into()));
-        assert_eq!(deserialized.start, Some(Account::zero()));
+        assert_eq!(deserialized.start, Some(Account::ZERO));
     }
 
     #[test]
     fn test_delegators_args_builder() {
-        let args = DelegatorsArgs::builder(Account::zero())
+        let args = DelegatorsArgs::builder(Account::ZERO)
             .with_minimum_balance(Amount::raw(1000))
             .count(50)
             .start_from(Account::from(123))
             .build();
 
-        assert_eq!(args.account, Account::zero());
+        assert_eq!(args.account, Account::ZERO);
         assert_eq!(args.threshold, Some(Amount::raw(1000)));
         assert_eq!(args.count, Some(50.into()));
         assert_eq!(args.start, Some(Account::from(123)));
@@ -153,9 +153,9 @@ mod tests {
 
     #[test]
     fn test_delegators_args_builder_partial() {
-        let args = DelegatorsArgs::builder(Account::zero()).count(30).build();
+        let args = DelegatorsArgs::builder(Account::ZERO).count(30).build();
 
-        assert_eq!(args.account, Account::zero());
+        assert_eq!(args.account, Account::ZERO);
         assert_eq!(args.threshold, None);
         assert_eq!(args.count, Some(30.into()));
         assert_eq!(args.start, None);

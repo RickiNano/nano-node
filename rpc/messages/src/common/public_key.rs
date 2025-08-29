@@ -31,7 +31,7 @@ mod tests {
     #[test]
     fn serialize_key_rpc_message() {
         let dto = KeyArg {
-            key: PublicKey::zero(),
+            key: PublicKey::ZERO,
         };
 
         let serialized = serde_json::to_string(&dto).unwrap();
@@ -50,7 +50,7 @@ mod tests {
         assert_eq!(
             deserialized,
             KeyArg {
-                key: PublicKey::zero(),
+                key: PublicKey::ZERO,
             }
         );
     }

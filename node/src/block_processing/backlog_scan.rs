@@ -202,7 +202,7 @@ impl BacklogScanLoop {
     ) -> MutexGuard<'a, BacklogScanFlags> {
         self.stats.looped.fetch_add(1, Ordering::Relaxed);
         flags.triggered = false;
-        let mut next = Account::zero();
+        let mut next = Account::ZERO;
         let mut done = false;
 
         while !flags.stopped && !done {

@@ -24,8 +24,8 @@ fn account_balance_default_include_only_confirmed_blocks() {
         Amount::raw(340282366920938463463374607431768211455)
     );
 
-    assert_eq!(result.pending, Amount::zero());
-    assert_eq!(result.receivable, Amount::zero());
+    assert_eq!(result.pending, Amount::ZERO);
+    assert_eq!(result.receivable, Amount::ZERO);
 }
 
 #[test]

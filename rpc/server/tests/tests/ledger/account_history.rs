@@ -88,7 +88,7 @@ fn account_history() {
         .change(
             &wallet_id,
             *DEV_GENESIS_ACCOUNT,
-            PublicKey::zero(),
+            PublicKey::ZERO,
             node.work_generate_dev(ureceive.hash()),
             false,
         )

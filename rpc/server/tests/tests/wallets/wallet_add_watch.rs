@@ -38,7 +38,7 @@ fn wallet_add_watch_without_enable_control() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .wallet_add_watch(wallet_id, vec![Account::zero()])
+            .wallet_add_watch(wallet_id, vec![Account::ZERO])
             .await
     });
 

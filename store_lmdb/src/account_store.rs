@@ -336,7 +336,7 @@ mod tests {
             (account3.clone(), info3.clone()),
         ]);
 
-        let balance_sum = Mutex::new(Amount::zero());
+        let balance_sum = Mutex::new(Amount::ZERO);
         fixture.store.for_each_par(&fixture.env, 3, |iter| {
             for (_, info) in iter {
                 *balance_sum.lock().unwrap() += info.balance;

@@ -176,7 +176,7 @@ impl CandidateAccounts {
             self.blocking.insert(BlockingEntry {
                 account,
                 dependency,
-                dependency_account: Account::zero(),
+                dependency_account: Account::ZERO,
                 added: now,
             });
 
@@ -286,7 +286,7 @@ impl CandidateAccounts {
 
     pub fn next_blocking(&self, filter: impl Fn(&BlockHash) -> bool) -> BlockHash {
         if self.blocking.len() == 0 {
-            return BlockHash::zero();
+            return BlockHash::ZERO;
         }
 
         self.blocking.next(filter).unwrap_or_default()
@@ -389,7 +389,7 @@ impl CandidateAccounts {
 
     pub fn container_info(&self) -> ContainerInfo {
         // Count blocking entries with their dependency account unknown
-        let blocking_unknown = self.blocking.count_by_dependency_account(&Account::zero());
+        let blocking_unknown = self.blocking.count_by_dependency_account(&Account::ZERO);
         [
             (
                 "priorities",
@@ -471,7 +471,7 @@ mod tests {
     #[test]
     fn unblock_zero_account() {
         let mut candidates = CandidateAccounts::default();
-        assert!(!candidates.unblock(Account::zero(), None));
+        assert!(!candidates.unblock(Account::ZERO, None));
     }
 
     #[test]
@@ -604,7 +604,7 @@ mod tests {
     #[test]
     fn priority_up_for_zero_account_fails() {
         let mut candidates = CandidateAccounts::default();
-        let result = candidates.priority_up(&Account::zero());
+        let result = candidates.priority_up(&Account::ZERO);
         assert_eq!(result, PriorityUpResult::InvalidAccount);
         assert_eq!(candidates.blocked_len(), 0);
         assert_eq!(candidates.priority_len(), 0);
@@ -624,7 +624,7 @@ mod tests {
     #[test]
     fn priority_down_for_zero_account_fails() {
         let mut candidates = CandidateAccounts::default();
-        let result = candidates.priority_down(&Account::zero());
+        let result = candidates.priority_down(&Account::ZERO);
         assert_eq!(result, PriorityDownResult::InvalidAccount);
         assert_eq!(candidates.blocked_len(), 0);
         assert_eq!(candidates.priority_len(), 0);
@@ -633,7 +633,7 @@ mod tests {
     #[test]
     fn priority_set_for_zero_account_fails() {
         let mut candidates = CandidateAccounts::default();
-        let success = candidates.priority_set_initial(&Account::zero());
+        let success = candidates.priority_set_initial(&Account::ZERO);
         assert_eq!(success, false);
         assert_eq!(candidates.blocked_len(), 0);
         assert_eq!(candidates.priority_len(), 0);
@@ -668,7 +668,7 @@ mod tests {
     #[test]
     fn priority_erase_zero_account() {
         let mut candidates = CandidateAccounts::default();
-        assert!(!candidates.priority_erase(&Account::zero()));
+        assert!(!candidates.priority_erase(&Account::ZERO));
     }
 
     #[test]
@@ -823,7 +823,7 @@ mod tests {
     #[test]
     fn next_blocking_empty() {
         let candidates = CandidateAccounts::default();
-        assert_eq!(candidates.next_blocking(|_| true), BlockHash::zero());
+        assert_eq!(candidates.next_blocking(|_| true), BlockHash::ZERO);
     }
 
     #[test]

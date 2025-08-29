@@ -27,8 +27,8 @@ pub struct Fans {
 impl Fans {
     pub fn new(fanout: usize) -> Self {
         Self {
-            password: Fan::new(RawKey::zero(), fanout),
-            wallet_key_mem: Fan::new(RawKey::zero(), fanout),
+            password: Fan::new(RawKey::ZERO, fanout),
+            wallet_key_mem: Fan::new(RawKey::ZERO, fanout),
         }
     }
 }
@@ -111,10 +111,10 @@ impl LmdbWalletStore {
             );
             // Wallet key is a fixed random key that encrypts all entries
             let wallet_key = RawKey::random();
-            let password = RawKey::zero();
+            let password = RawKey::ZERO;
             let mut guard = store.fans.lock().unwrap();
             guard.password.value_set(password);
-            let zero = RawKey::zero();
+            let zero = RawKey::ZERO;
             // Wallet key is encrypted by the user's password
             let encrypted = wallet_key.encrypt(&zero, &salt.initialization_vector_low());
             store.entry_put_raw(
@@ -142,7 +142,7 @@ impl LmdbWalletStore {
             store.entry_put_raw(
                 &mut txn,
                 &Self::deterministic_index_special(),
-                &WalletValue::new(RawKey::zero(), 0.into()),
+                &WalletValue::new(RawKey::ZERO, 0.into()),
             );
         }
         {
@@ -196,7 +196,7 @@ impl LmdbWalletStore {
         store.ensure_key_exists(&txn, &Self::check_special())?;
         store.ensure_key_exists(&txn, &Self::representative_special())?;
         let mut guard = store.fans.lock().unwrap();
-        guard.password.value_set(RawKey::zero());
+        guard.password.value_set(RawKey::ZERO);
         let key = store.entry_get_raw(&txn, &Self::wallet_key_special()).key;
         guard.wallet_key_mem.value_set(key);
         txn.commit();
@@ -272,7 +272,7 @@ impl LmdbWalletStore {
             Ok(mut bytes) => {
                 WalletValue::deserialize(&mut bytes).expect("Should be a valid wallet value")
             }
-            _ => WalletValue::new(RawKey::zero(), 0.into()),
+            _ => WalletValue::new(RawKey::ZERO, 0.into()),
         }
     }
 
@@ -362,7 +362,7 @@ impl LmdbWalletStore {
     }
 
     fn check_wallet_key(&self, txn: &dyn Transaction, wallet_key: &RawKey) -> bool {
-        let zero = RawKey::zero();
+        let zero = RawKey::ZERO;
         let iv = self.salt(txn).initialization_vector_low();
         let check = zero.encrypt(wallet_key, &iv);
         self.check(txn) == check
@@ -455,7 +455,7 @@ impl LmdbWalletStore {
 
     pub fn deterministic_clear(&self, txn: &mut WriteTransaction) {
         {
-            let mut it = self.iter_range(txn, PublicKey::zero()..);
+            let mut it = self.iter_range(txn, PublicKey::ZERO..);
             while let Some((account, value)) = it.next() {
                 match Self::key_type(&value) {
                     KeyType::Deterministic => {
@@ -529,7 +529,7 @@ impl LmdbWalletStore {
     }
 
     pub fn lock(&self) {
-        self.fans.lock().unwrap().password.value_set(RawKey::zero());
+        self.fans.lock().unwrap().password.value_set(RawKey::ZERO);
     }
 
     pub fn accounts(&self, txn: &dyn Transaction) -> Vec<Account> {
@@ -568,7 +568,7 @@ impl LmdbWalletStore {
             bail!("invalid public key");
         }
 
-        self.entry_put_raw(txn, pub_key, &WalletValue::new(RawKey::zero(), 0.into()));
+        self.entry_put_raw(txn, pub_key, &WalletValue::new(RawKey::ZERO, 0.into()));
         Ok(())
     }
 
@@ -608,7 +608,7 @@ impl LmdbWalletStore {
         let mut map = serde_json::Map::new();
 
         // include special keys...
-        for (k, v) in self.iter_range(tx, PublicKey::zero()..) {
+        for (k, v) in self.iter_range(tx, PublicKey::ZERO..) {
             map.insert(
                 k.encode_hex(),
                 serde_json::Value::String(v.key.encode_hex()),

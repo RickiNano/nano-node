@@ -78,7 +78,7 @@ impl SendBlock {
     }
 
     pub fn dependent_blocks(&self) -> DependentBlocks {
-        DependentBlocks::new(self.previous(), BlockHash::zero())
+        DependentBlocks::new(self.previous(), BlockHash::ZERO)
     }
 
     pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -238,8 +238,8 @@ impl SendHashables {
     }
 
     fn clear(&mut self) {
-        self.previous = BlockHash::zero();
-        self.destination = Account::zero();
+        self.previous = BlockHash::ZERO;
+        self.destination = Account::ZERO;
         self.balance = Amount::raw(0);
     }
 

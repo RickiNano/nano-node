@@ -61,7 +61,7 @@ fn create_rep_file(reps: &RepresentativesResponse, confirmed: u64) -> RepsFile {
 
     let mut content = String::new();
     writeln!(&mut content, "{}", block_height).unwrap();
-    let mut total = Amount::zero();
+    let mut total = Amount::ZERO;
     let mut rep_count = 0;
     for (account, amount) in &reps.representatives {
         writeln!(

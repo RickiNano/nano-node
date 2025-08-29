@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn serialize_wallet_work_get_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::wallet_work_get(WalletId::zero(),)).unwrap(),
+            to_string_pretty(&RpcCommand::wallet_work_get(WalletId::ZERO,)).unwrap(),
             r#"{
   "action": "wallet_work_get",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -40,7 +40,7 @@ mod tests {
 
     #[test]
     fn deserialize_wallet_work_get_command() {
-        let cmd = RpcCommand::wallet_work_get(WalletId::zero());
+        let cmd = RpcCommand::wallet_work_get(WalletId::ZERO);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)
@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn serialize_wallet_work_get_dto() {
         let mut works_map = HashMap::new();
-        works_map.insert(Account::zero(), WorkNonce::from(1));
+        works_map.insert(Account::ZERO, WorkNonce::from(1));
 
         let works = AccountsWithWorkResponse::new(works_map);
 
@@ -65,7 +65,7 @@ mod tests {
         let works: AccountsWithWorkResponse = serde_json::from_str(json_data).unwrap();
 
         let mut expected_works_map = HashMap::new();
-        expected_works_map.insert(Account::zero(), WorkNonce::from(1));
+        expected_works_map.insert(Account::ZERO, WorkNonce::from(1));
 
         let expected_works = AccountsWithWorkResponse {
             works: expected_works_map,

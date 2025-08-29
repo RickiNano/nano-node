@@ -44,8 +44,8 @@ impl<'a> AccountHistoryHelper<'a> {
             requested_account: args.account,
             output_raw: unwrap_bool_or_false(args.raw),
             count: args.count.into(),
-            current_block_hash: BlockHash::zero(),
-            account: Account::zero(),
+            current_block_hash: BlockHash::ZERO,
+            account: Account::ZERO,
             include_linked_account: unwrap_bool_or_false(args.include_linked_account),
         }
     }
@@ -306,7 +306,7 @@ fn empty_entry() -> HistoryEntry {
         block_account: None,
         local_timestamp: 0.into(),
         height: 0.into(),
-        hash: BlockHash::zero(),
+        hash: BlockHash::ZERO,
         confirmed: false.into(),
         work: None,
         signature: None,

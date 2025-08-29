@@ -64,7 +64,7 @@ impl ForkProcessor {
 
     fn get_cached_tally(&self, hash: &BlockHash) -> Amount {
         let votes = self.vote_cache.lock().unwrap().find(hash);
-        let mut tally = Amount::zero();
+        let mut tally = Amount::ZERO;
         let weights = self.rep_weights.read();
         for vote in votes {
             tally += weights.weight(&vote.voter);

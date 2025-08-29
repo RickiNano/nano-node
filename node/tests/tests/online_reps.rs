@@ -8,7 +8,7 @@ fn observe() {
     let mut system = System::new();
     let node = system.make_node();
     assert_eq!(
-        Amount::zero(),
+        Amount::ZERO,
         node.online_reps.lock().unwrap().online_weight()
     );
 

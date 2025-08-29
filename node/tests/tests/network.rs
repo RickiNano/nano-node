@@ -137,7 +137,7 @@ fn receivable_processor_confirm_insufficient_pos() {
     let node1 = system.make_node();
 
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let send1 = lattice.genesis().send(Account::zero(), 1);
+    let send1 = lattice.genesis().send(Account::ZERO, 1);
     node1.process(send1.clone());
 
     start_election(&node1, &send1.hash());
@@ -180,7 +180,7 @@ fn receivable_processor_confirm_sufficient_pos() {
     let node1 = system.make_node();
 
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let send1 = lattice.genesis().send(Account::zero(), 1);
+    let send1 = lattice.genesis().send(Account::ZERO, 1);
     node1.process(send1.clone());
 
     start_election(&node1, &send1.hash());

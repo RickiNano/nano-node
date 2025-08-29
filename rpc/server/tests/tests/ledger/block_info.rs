@@ -20,7 +20,7 @@ fn block_info() {
     assert_eq!(result.confirmed, true.into());
     assert_eq!(result.height, 1.into());
     assert_eq!(result.subtype, None);
-    assert_eq!(result.successor, BlockHash::zero());
+    assert_eq!(result.successor, BlockHash::ZERO);
     assert_eq!(result.contents, DEV_GENESIS_BLOCK.json_representation());
 
     let current_unix_timestamp = SystemTime::now()

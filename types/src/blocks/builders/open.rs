@@ -90,7 +90,7 @@ mod tests {
         };
         assert_eq!(open.source(), BlockHash::from(1));
         assert_eq!(open.representative(), PublicKey::from(2));
-        assert_ne!(open.account(), Account::zero());
+        assert_ne!(open.account(), Account::ZERO);
         assert_eq!(open.work(), WorkNonce::new(42));
         assert_ne!(*open.signature(), Signature::new());
 

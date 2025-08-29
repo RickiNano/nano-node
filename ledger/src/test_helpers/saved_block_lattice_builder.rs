@@ -86,9 +86,9 @@ impl SavedBlockLatticeBuilder {
         let receive: Block = EpochBlockArgs {
             epoch_signer: dev_epoch1_signer(),
             account,
-            previous: BlockHash::zero(),
-            representative: PublicKey::zero(),
-            balance: Amount::zero(),
+            previous: BlockHash::ZERO,
+            representative: PublicKey::ZERO,
+            balance: Amount::ZERO,
             link: epoch_v1_link(),
             work: self.create_pow(account),
         }
@@ -96,8 +96,8 @@ impl SavedBlockLatticeBuilder {
 
         let new_frontier = Frontier {
             hash: receive.hash(),
-            representative: PublicKey::zero(),
-            balance: Amount::zero(),
+            representative: PublicKey::ZERO,
+            balance: Amount::ZERO,
             height: 1,
         };
 
@@ -441,7 +441,7 @@ impl<'a> SavedAccountChainBuilder<'a> {
             previous: old_frontier.hash,
             representative: new_representative,
             balance: old_frontier.balance,
-            link: Link::zero(),
+            link: Link::ZERO,
             work: self.create_pow(old_frontier.hash),
         }
         .into();
@@ -507,9 +507,9 @@ impl<'a> SavedAccountChainBuilder<'a> {
             .get(&self.key.account())
             .cloned()
             .unwrap_or_else(|| Frontier {
-                hash: BlockHash::zero(),
+                hash: BlockHash::ZERO,
                 representative: self.key.public_key(),
-                balance: Amount::zero(),
+                balance: Amount::ZERO,
                 height: 0,
             })
     }

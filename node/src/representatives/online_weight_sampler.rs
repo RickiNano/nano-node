@@ -62,7 +62,7 @@ impl OnlineWeightSampler {
 
     fn medium_weight(&self, mut items: Vec<Amount>) -> Amount {
         if items.is_empty() {
-            Amount::zero()
+            Amount::ZERO
         } else {
             let median_idx = items.len() / 2;
             items.sort();

@@ -53,7 +53,7 @@ impl BootstrapState {
         AscPullQuerySpec {
             channel,
             req_type: AscPullReqType::account_info_by_hash(next),
-            account: Account::zero(),
+            account: Account::ZERO,
             hash: next,
             cooldown_account: false,
         }

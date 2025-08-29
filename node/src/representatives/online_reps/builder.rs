@@ -17,7 +17,7 @@ impl OnlineRepsBuilder {
             rep_weights: None,
             weight_interval: OnlineReps::default_interval_for(Networks::NanoLiveNetwork),
             online_weight_minimum: OnlineReps::DEFAULT_ONLINE_WEIGHT_MINIMUM,
-            representative_weight_minimum: Amount::zero(),
+            representative_weight_minimum: Amount::ZERO,
             trended: None,
         }
     }

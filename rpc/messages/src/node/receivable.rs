@@ -152,7 +152,7 @@ mod tests {
     fn serialize_receivable_command() {
         assert_eq!(
             to_string_pretty(&RpcCommand::Receivable(ReceivableArgs {
-                account: Account::zero(),
+                account: Account::ZERO,
                 count: Some(1.into()),
                 ..Default::default()
             }))
@@ -168,7 +168,7 @@ mod tests {
     #[test]
     fn deserialize_receivable_command() {
         let cmd = RpcCommand::Receivable(ReceivableArgs {
-            account: Account::zero(),
+            account: Account::ZERO,
             count: Some(1.into()),
             ..Default::default()
         });
@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn serialize_wallet_receivable_dto_blocks() {
         let mut blocks = IndexMap::new();
-        blocks.insert(Account::zero(), vec![BlockHash::zero()]);
+        blocks.insert(Account::ZERO, vec![BlockHash::ZERO]);
         let works = AccountsReceivableResponse::Simple(AccountsReceivableSimple { blocks });
         let expected_json = r#"{"blocks":{"nano_1111111111111111111111111111111111111111111111111111hifc8npp":["0000000000000000000000000000000000000000000000000000000000000000"]}}"#;
 
@@ -195,7 +195,7 @@ mod tests {
         let works: AccountsReceivableResponse = serde_json::from_str(json_data).unwrap();
 
         let mut expected_blocks = IndexMap::new();
-        expected_blocks.insert(Account::zero(), vec![BlockHash::zero()]);
+        expected_blocks.insert(Account::ZERO, vec![BlockHash::ZERO]);
 
         let expected_works = AccountsReceivableResponse::Simple(AccountsReceivableSimple {
             blocks: expected_blocks,
@@ -208,8 +208,8 @@ mod tests {
     fn serialize_wallet_receivable_dto_threshold() {
         let mut blocks = IndexMap::new();
         let mut inner_map = IndexMap::new();
-        inner_map.insert(BlockHash::zero(), Amount::from(1000));
-        blocks.insert(Account::zero(), inner_map);
+        inner_map.insert(BlockHash::ZERO, Amount::from(1000));
+        blocks.insert(Account::ZERO, inner_map);
 
         let works = AccountsReceivableResponse::Threshold(AccountsReceivableThreshold { blocks });
 
@@ -226,8 +226,8 @@ mod tests {
 
         let mut expected_blocks = IndexMap::new();
         let mut inner_map = IndexMap::new();
-        inner_map.insert(BlockHash::zero(), Amount::from(1000));
-        expected_blocks.insert(Account::zero(), inner_map);
+        inner_map.insert(BlockHash::ZERO, Amount::from(1000));
+        expected_blocks.insert(Account::ZERO, inner_map);
 
         let expected_works = AccountsReceivableResponse::Threshold(AccountsReceivableThreshold {
             blocks: expected_blocks,
@@ -241,14 +241,14 @@ mod tests {
         let mut blocks = IndexMap::new();
         let mut inner_map = IndexMap::new();
         inner_map.insert(
-            BlockHash::zero(),
+            BlockHash::ZERO,
             SourceInfo {
                 amount: Amount::from(1000),
-                source: Some(Account::zero()),
+                source: Some(Account::ZERO),
                 min_version: None,
             },
         );
-        blocks.insert(Account::zero(), inner_map);
+        blocks.insert(Account::ZERO, inner_map);
 
         let works = AccountsReceivableResponse::Source(AccountsReceivableSource { blocks });
 
@@ -266,14 +266,14 @@ mod tests {
         let mut expected_blocks = IndexMap::new();
         let mut inner_map = IndexMap::new();
         inner_map.insert(
-            BlockHash::zero(),
+            BlockHash::ZERO,
             SourceInfo {
                 amount: Amount::from(1000),
-                source: Some(Account::zero()),
+                source: Some(Account::ZERO),
                 min_version: None,
             },
         );
-        expected_blocks.insert(Account::zero(), inner_map);
+        expected_blocks.insert(Account::ZERO, inner_map);
 
         let expected_works = AccountsReceivableResponse::Source(AccountsReceivableSource {
             blocks: expected_blocks,

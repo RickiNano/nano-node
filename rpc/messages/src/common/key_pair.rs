@@ -25,7 +25,7 @@ mod tests {
 
     #[test]
     fn serialize_keypair_dto() {
-        let keypair = KeyPairDto::new(RawKey::zero(), PublicKey::zero(), Account::zero());
+        let keypair = KeyPairDto::new(RawKey::ZERO, PublicKey::ZERO, Account::ZERO);
 
         let serialized = serde_json::to_string_pretty(&keypair).unwrap();
 
@@ -47,7 +47,7 @@ mod tests {
 
         let deserialized: KeyPairDto = serde_json::from_str(json_str).unwrap();
 
-        let expected = KeyPairDto::new(RawKey::zero(), PublicKey::zero(), Account::zero());
+        let expected = KeyPairDto::new(RawKey::ZERO, PublicKey::ZERO, Account::ZERO);
 
         assert_eq!(deserialized, expected);
     }

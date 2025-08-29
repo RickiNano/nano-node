@@ -111,7 +111,7 @@ impl BlockSideband {
         let account = if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
             Account::deserialize(reader)?
         } else {
-            Account::zero()
+            Account::ZERO
         };
 
         let mut buffer = [0u8; 8];
@@ -128,7 +128,7 @@ impl BlockSideband {
         {
             Amount::deserialize(reader)?
         } else {
-            Amount::zero()
+            Amount::ZERO
         };
 
         reader.read_exact(&mut buffer)?;

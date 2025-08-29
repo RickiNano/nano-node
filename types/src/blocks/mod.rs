@@ -154,7 +154,7 @@ impl Block {
         let key = PrivateKey::from(42);
         StateBlockArgs {
             key: &key,
-            previous: BlockHash::zero(),
+            previous: BlockHash::ZERO,
             representative: 789.into(),
             balance: 420.into(),
             link: 111.into(),
@@ -596,7 +596,7 @@ impl SavedBlock {
                 let linked_block = if link_refers_to_block {
                     state.link().into()
                 } else {
-                    BlockHash::zero()
+                    BlockHash::ZERO
                 };
                 DependentBlocks::new(self.previous(), linked_block)
             }
@@ -682,7 +682,7 @@ impl DependentBlocks {
     }
 
     pub fn none() -> Self {
-        Self::new(BlockHash::zero(), BlockHash::zero())
+        Self::new(BlockHash::ZERO, BlockHash::ZERO)
     }
 
     pub fn previous(&self) -> Option<BlockHash> {

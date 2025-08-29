@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn serialize_account_get_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::account_get(PublicKey::zero())).unwrap(),
+            to_string_pretty(&RpcCommand::account_get(PublicKey::ZERO)).unwrap(),
             r#"{
   "action": "account_get",
   "key": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn deserialize_account_get_command() {
-        let cmd = RpcCommand::account_get(PublicKey::zero());
+        let cmd = RpcCommand::account_get(PublicKey::ZERO);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

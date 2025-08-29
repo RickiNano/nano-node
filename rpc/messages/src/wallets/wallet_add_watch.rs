@@ -32,11 +32,7 @@ mod tests {
     #[test]
     fn serialize_wallet_add_watch_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::wallet_add_watch(
-                1.into(),
-                vec![Account::zero()]
-            ))
-            .unwrap(),
+            to_string_pretty(&RpcCommand::wallet_add_watch(1.into(), vec![Account::ZERO])).unwrap(),
             r#"{
   "action": "wallet_add_watch",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000001",
@@ -49,7 +45,7 @@ mod tests {
 
     #[test]
     fn deserialize_wallet_add_watch_command() {
-        let cmd = RpcCommand::wallet_add_watch(1.into(), vec![Account::zero()]);
+        let cmd = RpcCommand::wallet_add_watch(1.into(), vec![Account::ZERO]);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

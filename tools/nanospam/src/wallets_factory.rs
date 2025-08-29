@@ -21,7 +21,7 @@ pub(crate) async fn create_wallets(
     genesis_rpc: &NanoRpcClient,
     account_map: &mut AccountMap,
 ) -> WalletId {
-    let mut genesis_wallet = WalletId::zero();
+    let mut genesis_wallet = WalletId::ZERO;
     let genesis_key = genesis_key();
     for i in 0..args.prs {
         let rpc_client = &rpc_clients[i];
@@ -113,7 +113,7 @@ pub(crate) async fn create_wallets(
     info!("Receiving initial spam amount...");
     let genesis_receive: Block = StateBlockArgs {
         key: &initial_key,
-        previous: BlockHash::zero(),
+        previous: BlockHash::ZERO,
         representative: initial_key.public_key(),
         balance: INITIAL_AMOUNT,
         link: genesis_send.into(),

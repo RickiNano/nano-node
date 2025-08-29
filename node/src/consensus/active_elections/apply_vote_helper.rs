@@ -301,7 +301,7 @@ mod tests {
 
         let mut fixture = FixtureForElection::with_block(block.clone());
         fixture.rep_weights.insert(key.public_key(), Amount::MAX);
-        fixture.election.try_add_fork(&fork, Amount::zero());
+        fixture.election.try_add_fork(&fork, Amount::ZERO);
 
         let vote = ReceivedVote::new(
             Vote::new(&key, UnixMillisTimestamp::new(1000), 0, vec![fork.hash()]).into(),

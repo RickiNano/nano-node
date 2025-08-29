@@ -13,7 +13,7 @@ pub fn block_priority(block: &SavedBlock, previous_block: Option<&SavedBlock>) -
         if block.is_send() {
             previous_balance
         } else {
-            Amount::zero()
+            Amount::ZERO
         },
     );
 
@@ -81,7 +81,7 @@ mod tests {
         let prev_balance = Amount::nano(100);
 
         let prio = test_block_priority(
-            Amount::zero(),
+            Amount::ZERO,
             prev_timestamp + Duration::from_secs(1),
             Some((prev_balance, prev_timestamp)),
         );

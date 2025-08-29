@@ -21,7 +21,7 @@ mod tests {
     #[test]
     fn serialize_wallet_with_password_args() {
         let wallet_rpc_message =
-            WalletWithPasswordArgs::new(WalletId::zero(), "password".to_string());
+            WalletWithPasswordArgs::new(WalletId::ZERO, "password".to_string());
 
         let serialized = to_string(&wallet_rpc_message).unwrap();
 
@@ -43,7 +43,7 @@ mod tests {
 
         let deserialized: WalletWithPasswordArgs = from_str(json_str).unwrap();
 
-        let expected = WalletWithPasswordArgs::new(WalletId::zero(), "password".to_string());
+        let expected = WalletWithPasswordArgs::new(WalletId::ZERO, "password".to_string());
 
         assert_eq!(deserialized, expected);
     }

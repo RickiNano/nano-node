@@ -50,7 +50,7 @@ impl FrontierScan {
                 return (head.next, head.start);
             }
         }
-        (Account::zero(), Account::zero())
+        (Account::ZERO, Account::ZERO)
     }
 
     fn request_sent(&mut self, head_start: Account, now: Timestamp) {

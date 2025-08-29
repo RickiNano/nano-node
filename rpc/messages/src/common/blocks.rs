@@ -19,7 +19,7 @@ mod tests {
 
     #[test]
     fn serialize_blocks_dto() {
-        let dto = BlockHashesResponse::new(vec![BlockHash::zero()]);
+        let dto = BlockHashesResponse::new(vec![BlockHash::ZERO]);
 
         let serialized = to_string(&dto).unwrap();
 
@@ -39,7 +39,7 @@ mod tests {
 
         let deserialized: BlockHashesResponse = from_str(json_str).unwrap();
 
-        let expected = BlockHashesResponse::new(vec![BlockHash::zero()]);
+        let expected = BlockHashesResponse::new(vec![BlockHash::ZERO]);
 
         assert_eq!(deserialized, expected);
     }

@@ -39,7 +39,7 @@ impl<'a> HighPrioCheck<'a> {
             rpc_client,
             delayed_blocks,
             accounts: prio_account_keys()
-                .map(|k| (k.account(), (k, BlockHash::zero(), 0)))
+                .map(|k| (k.account(), (k, BlockHash::ZERO, 0)))
                 .collect(),
             tracker,
         }
@@ -77,7 +77,7 @@ impl<'a> HighPrioCheck<'a> {
 
             let receive_block: Block = StateBlockArgs {
                 key: &key,
-                previous: BlockHash::zero(),
+                previous: BlockHash::ZERO,
                 representative: key.public_key(),
                 balance: INITIAL_ACCOUNT_BALANCE,
                 link: send_block.block.into(),
@@ -141,7 +141,7 @@ impl<'a> HighPrioCheck<'a> {
                 previous: *frontier,
                 representative: PublicKey::from(*height),
                 balance: INITIAL_ACCOUNT_BALANCE,
-                link: Link::zero(),
+                link: Link::ZERO,
                 work: 0.into(),
             }
             .into();

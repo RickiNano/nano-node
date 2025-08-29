@@ -13,7 +13,7 @@ fn account_base() {
     let mut system = System::new();
     let node0 = system.make_node();
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let send1 = lattice.genesis().send(Account::zero(), 1);
+    let send1 = lattice.genesis().send(Account::ZERO, 1);
     node0.process(send1.clone());
     let node1 = system.make_node();
     assert_timely(Duration::from_secs(5), || node1.block_exists(&send1.hash()));
@@ -27,8 +27,8 @@ fn account_inductive() {
     let mut system = System::new();
     let node0 = system.make_node();
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let send1 = lattice.genesis().send(Account::zero(), 1);
-    let send2 = lattice.genesis().send(Account::zero(), 1);
+    let send1 = lattice.genesis().send(Account::ZERO, 1);
+    let send2 = lattice.genesis().send(Account::ZERO, 1);
     node0.process(send1);
     node0.process(send2.clone());
     let node1 = system.make_node();

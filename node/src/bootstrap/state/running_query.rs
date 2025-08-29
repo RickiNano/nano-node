@@ -146,7 +146,7 @@ impl RunningQuery {
     }
 
     fn are_accounts_in_ascending_order(frontiers: &[Frontier]) -> bool {
-        let mut previous = &Account::zero();
+        let mut previous = &Account::ZERO;
         for f in frontiers {
             if f.account.number() <= previous.number() {
                 return false;

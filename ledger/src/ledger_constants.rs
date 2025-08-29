@@ -161,7 +161,7 @@ impl LedgerConstants {
             genesis_block,
             genesis_account,
             genesis_amount: Amount::raw(u128::MAX),
-            burn_account: Account::zero(),
+            burn_account: Account::ZERO,
             epochs,
         }
     }

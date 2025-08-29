@@ -13,10 +13,10 @@ fn unchecked_clear() {
 
     let send1: Block = StateBlockArgs {
         key: &key,
-        previous: BlockHash::zero(),
+        previous: BlockHash::ZERO,
         representative: *DEV_GENESIS_PUB_KEY,
         balance: Amount::MAX - Amount::raw(1),
-        link: Account::zero().into(),
+        link: Account::ZERO.into(),
         work: node.work_generate_dev(*DEV_GENESIS_HASH),
     }
     .into();

@@ -72,7 +72,7 @@ fn rollback_dependent_blocks_too() {
 
     assert_eq!(
         ledger.any().account_balance(&destination.account()),
-        Amount::zero()
+        Amount::ZERO
     );
 
     assert!(ledger.any().get_account(&destination.account()).is_none());

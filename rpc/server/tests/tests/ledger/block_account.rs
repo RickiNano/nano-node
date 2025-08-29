@@ -29,7 +29,7 @@ fn block_account_fails_with_block_not_found() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.block_account(BlockHash::zero()).await });
+        .block_on(async { server.client.block_account(BlockHash::ZERO).await });
 
     assert_eq!(
         result.err().map(|e| e.to_string()),

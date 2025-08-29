@@ -233,7 +233,7 @@ impl VoterEntry {
         if self.vote.is_final() {
             self.weight
         } else {
-            Amount::zero()
+            Amount::ZERO
         }
     }
 }
@@ -245,14 +245,14 @@ impl CacheEntry {
             hash,
             voters: OrderedVoters::default(),
             last_vote: Instant::now(),
-            tally: Amount::zero(),
-            final_tally: Amount::zero(),
+            tally: Amount::ZERO,
+            final_tally: Amount::ZERO,
         }
     }
 
     fn calculate_tally(&mut self) -> (Amount, Amount) {
-        let mut tally = Amount::zero();
-        let mut final_tally = Amount::zero();
+        let mut tally = Amount::ZERO;
+        let mut final_tally = Amount::ZERO;
         for voter in self.voters.iter_unordered() {
             tally = tally.wrapping_add(voter.weight);
             if voter.vote.is_final() {
@@ -880,7 +880,7 @@ mod tests {
             vec![TopEntry {
                 hash,
                 tally: Amount::raw(1),
-                final_tally: Amount::zero()
+                final_tally: Amount::ZERO
             }]
         );
     }

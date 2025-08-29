@@ -27,9 +27,7 @@ mod tests {
 
     #[test]
     fn serialize_key_expand_args() {
-        let args = KeyExpandArgs {
-            key: RawKey::zero(),
-        };
+        let args = KeyExpandArgs { key: RawKey::ZERO };
 
         let serialized = serde_json::to_string(&args).unwrap();
 
@@ -44,18 +42,13 @@ mod tests {
         let json_str =
             r#"{"key": "0000000000000000000000000000000000000000000000000000000000000000"}"#;
         let deserialized: KeyExpandArgs = from_str(json_str).unwrap();
-        assert_eq!(
-            deserialized,
-            KeyExpandArgs {
-                key: RawKey::zero(),
-            }
-        );
+        assert_eq!(deserialized, KeyExpandArgs { key: RawKey::ZERO });
     }
 
     #[test]
     fn serialize_deterministic_key_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::KeyExpand(KeyExpandArgs::new(RawKey::zero(),))).unwrap(),
+            to_string_pretty(&RpcCommand::KeyExpand(KeyExpandArgs::new(RawKey::ZERO,))).unwrap(),
             r#"{
   "action": "key_expand",
   "key": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -65,7 +58,7 @@ mod tests {
 
     #[test]
     fn deserialize_deterministic_key_command() {
-        let cmd = RpcCommand::KeyExpand(KeyExpandArgs::new(RawKey::zero()));
+        let cmd = RpcCommand::KeyExpand(KeyExpandArgs::new(RawKey::ZERO));
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

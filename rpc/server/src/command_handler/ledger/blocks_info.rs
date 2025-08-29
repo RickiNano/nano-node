@@ -70,7 +70,7 @@ impl RpcCommandHandler {
                             block_info.receivable = Some(0.into());
                         }
                         if receive_hash {
-                            block_info.receive_hash = Some(BlockHash::zero());
+                            block_info.receive_hash = Some(BlockHash::ZERO);
                         }
                     } else if any
                         .get_pending(&PendingKey::new(block.destination_or_link(), hash))
@@ -80,7 +80,7 @@ impl RpcCommandHandler {
                             block_info.receivable = Some(1.into())
                         }
                         if receive_hash {
-                            block_info.receive_hash = Some(BlockHash::zero());
+                            block_info.receive_hash = Some(BlockHash::ZERO);
                         }
                     } else {
                         if receivable {
@@ -94,7 +94,7 @@ impl RpcCommandHandler {
 
                             block_info.receive_hash = Some(match receive_block {
                                 Some(b) => b.hash(),
-                                None => BlockHash::zero(),
+                                None => BlockHash::ZERO,
                             });
                         }
                     }

@@ -99,8 +99,8 @@ mod tests {
 
     #[test]
     fn serialize_wallet_change_seed_command() {
-        let wallet = WalletId::zero();
-        let seed = RawKey::zero();
+        let wallet = WalletId::ZERO;
+        let seed = RawKey::ZERO;
         let count = 10;
 
         let args = WalletChangeSeedArgsBuilder::new(wallet, seed)
@@ -183,8 +183,8 @@ mod tests {
 
     #[test]
     fn wallet_change_seed_args_builder() {
-        let wallet = WalletId::zero();
-        let seed = RawKey::zero();
+        let wallet = WalletId::ZERO;
+        let seed = RawKey::ZERO;
         let count = 10;
 
         let args = WalletChangeSeedArgs::builder(wallet, seed)
@@ -198,8 +198,8 @@ mod tests {
 
     #[test]
     fn wallet_change_seed_args_builder_without_count() {
-        let wallet = WalletId::zero();
-        let seed = RawKey::zero();
+        let wallet = WalletId::ZERO;
+        let seed = RawKey::ZERO;
 
         let args = WalletChangeSeedArgs::builder(wallet, seed).build();
 
@@ -210,8 +210,8 @@ mod tests {
 
     #[test]
     fn wallet_change_seed_args_from_wallet_with_seed() {
-        let wallet = WalletId::zero();
-        let seed = RawKey::zero();
+        let wallet = WalletId::ZERO;
+        let seed = RawKey::ZERO;
         let wallet_with_seed = WalletWithSeedArgs::new(wallet, seed);
 
         let args: WalletChangeSeedArgs = wallet_with_seed.into();

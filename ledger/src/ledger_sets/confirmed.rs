@@ -62,7 +62,7 @@ impl<'a> OwningConfirmedSet<'a> {
             set: self,
             requested_account: account,
             actual_account: None,
-            next_hash: Some(BlockHash::zero()),
+            next_hash: Some(BlockHash::ZERO),
         }
     }
 }
@@ -137,9 +137,9 @@ impl<'a> LedgerSet for BorrowingConfirmedSet<'a> {
     }
 
     fn account_receivable(&self, account: &Account) -> Amount {
-        let mut result = Amount::zero();
+        let mut result = Amount::ZERO;
 
-        for (key, info) in self.account_receivable_upper_bound(*account, BlockHash::zero()) {
+        for (key, info) in self.account_receivable_upper_bound(*account, BlockHash::ZERO) {
             if self.block_exists(&key.send_block_hash) {
                 result += info.amount;
             }
@@ -150,7 +150,7 @@ impl<'a> LedgerSet for BorrowingConfirmedSet<'a> {
 
     fn account_balance(&self, account: &Account) -> Amount {
         let Some(head) = self.account_head(account) else {
-            return Amount::zero();
+            return Amount::ZERO;
         };
 
         self.get_block(&head)
@@ -238,15 +238,15 @@ mod tests {
             .blocks([&block1, &block2, &block3])
             .confirmation_height(
                 &block1.account(),
-                &ConfirmationHeightInfo::new(9999, BlockHash::zero()),
+                &ConfirmationHeightInfo::new(9999, BlockHash::ZERO),
             )
             .confirmation_height(
                 &block2.account(),
-                &ConfirmationHeightInfo::new(0, BlockHash::zero()),
+                &ConfirmationHeightInfo::new(0, BlockHash::ZERO),
             )
             .confirmation_height(
                 &block3.account(),
-                &ConfirmationHeightInfo::new(9999, BlockHash::zero()),
+                &ConfirmationHeightInfo::new(9999, BlockHash::ZERO),
             )
             .pending(
                 &PendingKey::new(account, block1.hash()),
@@ -264,7 +264,7 @@ mod tests {
 
         let confirmed = ledger.confirmed();
         let receivable: Vec<_> = confirmed
-            .receivable_lower_bound(Account::zero())
+            .receivable_lower_bound(Account::ZERO)
             .map(|i| i.0)
             .collect();
 

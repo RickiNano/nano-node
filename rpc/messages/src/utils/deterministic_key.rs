@@ -33,7 +33,7 @@ mod tests {
     fn serialize_deterministic_key_command() {
         assert_eq!(
             to_string_pretty(&RpcCommand::DeterministicKey(DeterministicKeyArgs::new(
-                RawKey::zero(),
+                RawKey::ZERO,
                 0
             )))
             .unwrap(),
@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn deserialize_deterministic_key_command() {
-        let cmd = RpcCommand::DeterministicKey(DeterministicKeyArgs::new(RawKey::zero(), 0));
+        let cmd = RpcCommand::DeterministicKey(DeterministicKeyArgs::new(RawKey::ZERO, 0));
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

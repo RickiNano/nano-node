@@ -85,7 +85,7 @@ impl<'a> RollbackInstructionsExecutor<'a> {
         self.ledger.rep_weights_updater.representation_add_dual(
             self.txn,
             self.instructions.old_account_info.representative,
-            Amount::zero().wrapping_sub(self.instructions.old_account_info.balance),
+            Amount::ZERO.wrapping_sub(self.instructions.old_account_info.balance),
             *previous_representative,
             self.instructions.new_balance,
         );
@@ -95,7 +95,7 @@ impl<'a> RollbackInstructionsExecutor<'a> {
         self.ledger.rep_weights_updater.representation_add(
             self.txn,
             self.instructions.old_account_info.representative,
-            Amount::zero().wrapping_sub(self.instructions.old_account_info.balance),
+            Amount::ZERO.wrapping_sub(self.instructions.old_account_info.balance),
         );
     }
 }

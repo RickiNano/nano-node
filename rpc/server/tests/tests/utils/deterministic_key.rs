@@ -11,7 +11,7 @@ fn deterministic_key() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .deterministic_key(RawKey::zero(), 0)
+            .deterministic_key(RawKey::ZERO, 0)
             .await
             .unwrap()
     });

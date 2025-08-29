@@ -41,14 +41,14 @@ fn allow_changing_representative_to_zero() {
         .block_to_validate(|chain| {
             chain
                 .new_legacy_change_block()
-                .representative(PublicKey::zero())
+                .representative(PublicKey::ZERO)
                 .build()
         })
         .assert_is_valid();
 
     assert_eq!(
         instructions.set_account_info.representative,
-        PublicKey::zero()
+        PublicKey::ZERO
     );
 }
 
@@ -56,7 +56,7 @@ fn allow_changing_representative_to_zero() {
 fn allow_changing_from_zero_rep_to_real_rep() {
     let instructions = BlockValidationTest::for_epoch0_account()
         .setup_account(|chain| {
-            chain.add_legacy_change(Account::zero());
+            chain.add_legacy_change(Account::ZERO);
         })
         .block_to_validate(|chain| {
             chain

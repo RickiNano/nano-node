@@ -36,7 +36,7 @@ fn wallet_change_seed_fails_without_enable_control() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .wallet_change_seed(WalletWithSeedArgs::new(WalletId::random(), RawKey::zero()))
+            .wallet_change_seed(WalletWithSeedArgs::new(WalletId::random(), RawKey::ZERO))
             .await
     });
 

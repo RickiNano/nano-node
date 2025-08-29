@@ -362,7 +362,7 @@ impl BoundedBacklogImpl {
     fn run_scan(&self) {
         let mut guard = self.mutex.lock().unwrap();
         while !guard.stopped {
-            let mut last = BlockHash::zero();
+            let mut last = BlockHash::ZERO;
             while !guard.stopped {
                 //	wait
                 while !guard

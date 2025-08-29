@@ -32,7 +32,7 @@ mod tests {
     #[test]
     fn serialize_wallet_info() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::wallet_info(WalletId::zero())).unwrap(),
+            to_string_pretty(&RpcCommand::wallet_info(WalletId::ZERO)).unwrap(),
             r#"{
   "action": "wallet_info",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn deserialize_wallet_info() {
-        let cmd = RpcCommand::wallet_info(WalletId::zero());
+        let cmd = RpcCommand::wallet_info(WalletId::ZERO);
         let serialized = serde_json::to_string_pretty(&cmd).unwrap();
         let deserialized: RpcCommand = serde_json::from_str(&serialized).unwrap();
         assert_eq!(cmd, deserialized)

@@ -115,7 +115,7 @@ impl<'a> CrawlSource<'a> for PendingCrawlSource<'a> {
     type Value = PendingInfo;
 
     fn iter(&self, start: Account) -> Box<dyn Iterator<Item = (Account, PendingInfo)> + 'a> {
-        let start_key = PendingKey::new(start, BlockHash::zero());
+        let start_key = PendingKey::new(start, BlockHash::ZERO);
         Box::new(
             self.any
                 .iter_pending_range(start_key..)

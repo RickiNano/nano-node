@@ -16,7 +16,7 @@ mod tests {
     #[test]
     fn serialize_account_remove_command() {
         assert_eq!(
-            to_string_pretty(&RpcCommand::account_remove(1.into(), Account::zero())).unwrap(),
+            to_string_pretty(&RpcCommand::account_remove(1.into(), Account::ZERO)).unwrap(),
             r#"{
   "action": "account_remove",
   "wallet": "0000000000000000000000000000000000000000000000000000000000000001",

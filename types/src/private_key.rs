@@ -240,7 +240,7 @@ mod tests {
         fn nullable() {
             let mut key_pair_factory = PrivateKeyFactory::new_null();
             let key_pair = key_pair_factory.create_key();
-            assert_ne!(key_pair.raw_key(), RawKey::zero());
+            assert_ne!(key_pair.raw_key(), RawKey::ZERO);
         }
 
         #[test]

@@ -90,7 +90,7 @@ mod tests {
 
         let query = RunningQuery::new_test_instance();
         let response = AccountInfoAckPayload {
-            account: Account::zero(),
+            account: Account::ZERO,
             ..AccountInfoAckPayload::new_test_instance()
         };
 

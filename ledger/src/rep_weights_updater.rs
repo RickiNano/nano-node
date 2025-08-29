@@ -122,8 +122,8 @@ mod tests {
         let store = Arc::new(LmdbRepWeightStore::new(&env).unwrap());
         let account = PublicKey::from(1);
         let rep_weights = RepWeightCache::new();
-        let rep_weights_updater = RepWeightsUpdater::new(store, Amount::zero(), &rep_weights);
-        assert_eq!(rep_weights.weight(&account), Amount::zero());
+        let rep_weights_updater = RepWeightsUpdater::new(store, Amount::ZERO, &rep_weights);
+        assert_eq!(rep_weights.weight(&account), Amount::ZERO);
 
         rep_weights_updater.representation_put(account, Amount::from(1));
         assert_eq!(rep_weights.weight(&account), Amount::from(1));
@@ -148,7 +148,7 @@ mod tests {
         let store = Arc::new(LmdbRepWeightStore::new(&env).unwrap());
         let delete_tracker = store.track_deletions();
         let rep_weights = RepWeightCache::new();
-        let rep_weights_updater = RepWeightsUpdater::new(store, Amount::zero(), &rep_weights);
+        let rep_weights_updater = RepWeightsUpdater::new(store, Amount::ZERO, &rep_weights);
         rep_weights_updater.representation_put(representative, weight);
         let mut txn = env.begin_write();
 
@@ -156,7 +156,7 @@ mod tests {
         rep_weights_updater.representation_add(
             &mut txn,
             representative,
-            Amount::zero().wrapping_sub(weight),
+            Amount::ZERO.wrapping_sub(weight),
         );
         txn.commit();
 
@@ -181,7 +181,7 @@ mod tests {
         let store = Arc::new(LmdbRepWeightStore::new(&env).unwrap());
         let delete_tracker = store.track_deletions();
         let rep_weights = RepWeightCache::new();
-        let rep_weights_updater = RepWeightsUpdater::new(store, Amount::zero(), &rep_weights);
+        let rep_weights_updater = RepWeightsUpdater::new(store, Amount::ZERO, &rep_weights);
         rep_weights_updater.representation_put(rep1, weight);
         rep_weights_updater.representation_put(rep2, weight);
         let mut txn = env.begin_write();
@@ -190,9 +190,9 @@ mod tests {
         rep_weights_updater.representation_add_dual(
             &mut txn,
             rep1,
-            Amount::zero().wrapping_sub(weight),
+            Amount::ZERO.wrapping_sub(weight),
             rep2,
-            Amount::zero().wrapping_sub(weight),
+            Amount::ZERO.wrapping_sub(weight),
         );
         txn.commit();
 
@@ -241,7 +241,7 @@ mod tests {
         rep_weights_updater.representation_add(
             &mut txn,
             representative,
-            Amount::zero().wrapping_sub(Amount::from(2)),
+            Amount::ZERO.wrapping_sub(Amount::from(2)),
         );
         txn.commit();
 

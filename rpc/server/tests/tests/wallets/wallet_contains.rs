@@ -45,7 +45,7 @@ fn wallet_contains_false() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .wallet_contains(wallet, Account::zero())
+            .wallet_contains(wallet, Account::ZERO)
             .await
             .unwrap()
     });
@@ -63,7 +63,7 @@ fn wallet_contains_fails_with_wallet_not_found() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .wallet_contains(WalletId::random(), Account::zero())
+            .wallet_contains(WalletId::random(), Account::ZERO)
             .await
     });
 

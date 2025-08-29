@@ -54,7 +54,7 @@ impl BlockingContainer {
 
     pub(crate) fn unique_blocking_accounts(&self) -> usize {
         let mut known = self.by_dependency_account.len();
-        if self.by_dependency_account.contains_key(&Account::zero()) {
+        if self.by_dependency_account.contains_key(&Account::ZERO) {
             known -= 1;
         }
         known
@@ -116,7 +116,7 @@ impl BlockingContainer {
 
     pub fn next(&self, filter: impl Fn(&BlockHash) -> bool) -> Option<BlockHash> {
         // Scan all entries with unknown dependency account
-        let accounts = self.by_dependency_account.get(&Account::zero())?;
+        let accounts = self.by_dependency_account.get(&Account::ZERO)?;
         accounts
             .iter()
             .map(|a| self.by_account.get(a).unwrap())
@@ -314,7 +314,7 @@ mod tests {
         let mut blocking = BlockingContainer::default();
 
         let entry = BlockingEntry {
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         };
         blocking.insert(entry);
@@ -342,21 +342,21 @@ mod tests {
         blocking.insert(BlockingEntry {
             account: Account::from(1000),
             dependency: BlockHash::from(100),
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
         blocking.insert(BlockingEntry {
             account: Account::from(2000),
             dependency: BlockHash::from(200),
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
         blocking.insert(BlockingEntry {
             account: Account::from(3000),
             dependency: BlockHash::from(300),
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
@@ -373,14 +373,14 @@ mod tests {
         blocking.insert(BlockingEntry {
             account: Account::from(1000),
             dependency: BlockHash::from(100),
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
         blocking.insert(BlockingEntry {
             account: Account::from(2000),
             dependency: BlockHash::from(200),
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
@@ -397,7 +397,7 @@ mod tests {
         blocking.insert(BlockingEntry {
             account: Account::from(1000),
             dependency,
-            dependency_account: Account::zero(),
+            dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 

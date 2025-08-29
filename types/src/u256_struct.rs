@@ -10,10 +10,7 @@ macro_rules! u256_struct {
         impl $name {
             pub const MAX: Self = Self([0xFF; 32]);
             pub const SERIALIZED_SIZE: usize = 32;
-
-            pub const fn zero() -> Self {
-                Self([0; 32])
-            }
+            pub const ZERO: Self = Self([0; 32]);
 
             pub fn is_zero(&self) -> bool {
                 self.0 == [0; 32]
@@ -74,7 +71,7 @@ macro_rules! u256_struct {
             where
                 T: std::io::Read,
             {
-                let mut result = Self::zero();
+                let mut result = Self::ZERO;
                 reader.read_exact(&mut result.0)?;
                 Ok(result)
             }
@@ -201,7 +198,7 @@ mod tests {
 
     #[test]
     fn constructor() {
-        let x = U256Test::zero();
+        let x = U256Test::ZERO;
         assert_eq!(x.0, [0; 32]);
         assert!(x.is_zero());
     }
@@ -209,7 +206,7 @@ mod tests {
     #[test]
     fn decode_hex() {
         // Happy path
-        assert_eq!(U256Test::decode_hex("0").unwrap(), U256Test::zero());
+        assert_eq!(U256Test::decode_hex("0").unwrap(), U256Test::ZERO);
         assert_eq!(U256Test::decode_hex("1").unwrap(), U256Test::from(1));
         assert_eq!(U256Test::decode_hex("01").unwrap(), U256Test::from(1));
         assert_eq!(U256Test::decode_hex("A").unwrap(), U256Test::from(0xa));
@@ -235,7 +232,7 @@ mod tests {
     #[test]
     fn encode_hex() {
         assert_eq!(
-            U256Test::zero().encode_hex(),
+            U256Test::ZERO.encode_hex(),
             "0000000000000000000000000000000000000000000000000000000000000000"
         );
         assert_eq!(

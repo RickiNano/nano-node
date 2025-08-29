@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn serialize_account_history_command() {
-        let account_history_args = AccountHistoryArgs::build_for_head(BlockHash::zero(), 10)
+        let account_history_args = AccountHistoryArgs::build_for_head(BlockHash::ZERO, 10)
             .raw()
             .offset(5)
             .reverse()
@@ -196,13 +196,13 @@ mod tests {
 
         if let RpcCommand::AccountHistory(args) = deserialized {
             assert_eq!(args.account, Some(Account::from(123)));
-            assert_eq!(args.head, Some(BlockHash::zero()));
+            assert_eq!(args.head, Some(BlockHash::ZERO));
             assert_eq!(args.count, 5.into());
             assert_eq!(args.raw, Some(true.into()));
-            assert_eq!(args.head, Some(BlockHash::zero()));
+            assert_eq!(args.head, Some(BlockHash::ZERO));
             assert_eq!(args.offset, Some(10.into()));
             assert_eq!(args.reverse, Some(false.into()));
-            assert_eq!(args.account_filter, Some(vec![Account::zero()]));
+            assert_eq!(args.account_filter, Some(vec![Account::ZERO]));
         } else {
             panic!("Deserialized to wrong RpcCommand variant");
         }

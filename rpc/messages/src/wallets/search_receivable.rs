@@ -14,7 +14,7 @@ mod tests {
 
     #[test]
     fn serialize_search_receivable() {
-        let command = RpcCommand::search_receivable(WalletId::zero());
+        let command = RpcCommand::search_receivable(WalletId::ZERO);
         let serialized = serde_json::to_value(&command).unwrap();
 
         let expected = json!({
@@ -35,7 +35,7 @@ mod tests {
         "#;
 
         let deserialized: RpcCommand = serde_json::from_str(json_str).unwrap();
-        let expected = RpcCommand::search_receivable(WalletId::zero());
+        let expected = RpcCommand::search_receivable(WalletId::ZERO);
 
         assert_eq!(deserialized, expected);
     }

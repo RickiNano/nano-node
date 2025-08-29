@@ -168,7 +168,7 @@ mod tests {
         assert_eq!(index.contains(&BlockHash::from(1)), false);
 
         assert!(index.top(0, 100, |_| unreachable!()).is_empty());
-        assert!(index.next(&BlockHash::zero(), 100).is_empty());
+        assert!(index.next(&BlockHash::ZERO, 100).is_empty());
 
         assert_eq!(index.erase_hash(&BlockHash::from(1)), false);
         assert_eq!(index.erase_account(&Account::from(1)), false);

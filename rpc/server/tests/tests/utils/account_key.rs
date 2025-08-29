@@ -14,7 +14,7 @@ fn account_key() {
 
     let result = node
         .runtime
-        .block_on(async { server.client.account_key(Account::zero()).await.unwrap() });
+        .block_on(async { server.client.account_key(Account::ZERO).await.unwrap() });
 
-    assert_eq!(result.key, Account::zero().into());
+    assert_eq!(result.key, Account::ZERO.into());
 }

@@ -55,7 +55,7 @@ impl BlockFactory {
                 previous: state.confirmed_frontier,
                 representative: PublicKey::from_bytes(rand::rng().random()),
                 balance: state.balance,
-                link: Link::zero(),
+                link: Link::ZERO,
                 work: WorkNonce::new(0),
             }
             .into();

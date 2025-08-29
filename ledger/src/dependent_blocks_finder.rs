@@ -34,7 +34,7 @@ where
                 let linked_block = if self.is_receive_or_change(state) {
                     state.link().into()
                 } else {
-                    BlockHash::zero()
+                    BlockHash::ZERO
                 };
                 DependentBlocks::new(block.previous(), linked_block)
             }

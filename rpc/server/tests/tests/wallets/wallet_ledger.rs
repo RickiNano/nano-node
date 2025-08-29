@@ -54,8 +54,8 @@ fn wallet_ledger() {
     assert!(info.modified_timestamp.inner() > 0);
     assert_eq!(info.block_count, 1.into());
     assert_eq!(info.weight, Some(send_amount));
-    assert_eq!(info.pending, Some(Amount::zero()));
-    assert_eq!(info.receivable, Some(Amount::zero()));
+    assert_eq!(info.pending, Some(Amount::ZERO));
+    assert_eq!(info.receivable, Some(Amount::ZERO));
     assert_eq!(info.representative, Some(keys.account()));
 
     let result_without_optional = node

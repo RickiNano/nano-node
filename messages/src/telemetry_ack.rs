@@ -60,7 +60,7 @@ impl TelemetryData {
             uptime: 0,
             peer_count: 0,
             protocol_version: 0,
-            genesis_block: BlockHash::zero(),
+            genesis_block: BlockHash::ZERO,
             major_version: 0,
             minor_version: 0,
             patch_version: 0,

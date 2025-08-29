@@ -11,7 +11,7 @@ fn unchecked_get() {
 
     let open: Block = StateBlockArgs {
         key: &key,
-        previous: BlockHash::zero(),
+        previous: BlockHash::ZERO,
         representative: key.public_key(),
         balance: Amount::raw(1),
         link: key.account().into(),
@@ -39,7 +39,7 @@ fn unchecked_get() {
 
     if let JsonBlock::State(state_block) = json_block {
         assert_eq!(state_block.account, key.account());
-        assert_eq!(state_block.previous, BlockHash::zero());
+        assert_eq!(state_block.previous, BlockHash::ZERO);
         assert_eq!(state_block.representative, key.account());
         assert_eq!(state_block.balance, Amount::raw(1));
         assert_eq!(state_block.link, key.account().into());

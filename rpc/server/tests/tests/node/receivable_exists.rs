@@ -58,7 +58,7 @@ fn test_receivable_exists_non_existent() {
 
     let server = setup_rpc_client_and_server(node.clone(), false);
 
-    let non_existent_hash = BlockHash::zero();
+    let non_existent_hash = BlockHash::ZERO;
     let result = node
         .runtime
         .block_on(async { server.client.receivable_exists(non_existent_hash).await })

@@ -31,8 +31,8 @@ impl RpcCommandHandler {
         let amount = args.balance.unwrap_or_default();
         let work: WorkNonce = args.work.unwrap_or(0.into());
 
-        let mut previous = args.previous.unwrap_or(BlockHash::zero());
-        let mut balance = args.balance.unwrap_or(Amount::zero());
+        let mut previous = args.previous.unwrap_or(BlockHash::ZERO);
+        let mut balance = args.balance.unwrap_or(Amount::ZERO);
         let mut prv_key = PrivateKey::zero();
 
         if work.is_zero() && !self.node.work_factory.work_generation_enabled() {

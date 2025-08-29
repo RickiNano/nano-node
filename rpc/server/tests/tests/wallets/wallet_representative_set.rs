@@ -15,14 +15,14 @@ fn wallet_representative_set() {
     node.runtime.block_on(async {
         server
             .client
-            .wallet_representative_set(WalletRepresentativeSetArgs::new(wallet, Account::zero()))
+            .wallet_representative_set(WalletRepresentativeSetArgs::new(wallet, Account::ZERO))
             .await
             .unwrap()
     });
 
     assert_eq!(
         node.wallets.get_representative(wallet).unwrap(),
-        PublicKey::zero()
+        PublicKey::ZERO
     );
 }
 
@@ -38,7 +38,7 @@ fn wallet_representative_set_fails_without_enable_control() {
             .client
             .wallet_representative_set(WalletRepresentativeSetArgs::new(
                 WalletId::random(),
-                Account::zero(),
+                Account::ZERO,
             ))
             .await
     });

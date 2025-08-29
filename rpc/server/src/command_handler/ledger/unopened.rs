@@ -13,10 +13,10 @@ impl RpcCommandHandler {
 
         let any = self.node.ledger.any();
 
-        let mut iterator = any.iter_pending_range(PendingKey::new(start, BlockHash::zero())..);
+        let mut iterator = any.iter_pending_range(PendingKey::new(start, BlockHash::ZERO)..);
 
         let mut current_account = start;
-        let mut current_account_sum = Amount::zero();
+        let mut current_account_sum = Amount::ZERO;
 
         let mut current = iterator.next();
         while let Some(cur) = current {
@@ -32,9 +32,8 @@ impl RpcCommandHandler {
                     break;
                 }
                 // Skip existing accounts
-                iterator = any.iter_pending_range(
-                    PendingKey::new(account.inc().unwrap(), BlockHash::zero())..,
-                );
+                iterator = any
+                    .iter_pending_range(PendingKey::new(account.inc().unwrap(), BlockHash::ZERO)..);
                 current = iterator.next();
             } else {
                 if account != current_account {
@@ -42,7 +41,7 @@ impl RpcCommandHandler {
                         if current_account_sum >= threshold {
                             accounts.insert(current_account, current_account_sum);
                         }
-                        current_account_sum = Amount::zero();
+                        current_account_sum = Amount::ZERO;
                     }
                     current_account = account;
                 }

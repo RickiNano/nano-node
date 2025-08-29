@@ -208,7 +208,7 @@ impl Wallets {
             let key = if k.len() == 64 {
                 WalletId::decode_hex(std::str::from_utf8(k).unwrap()).unwrap()
             } else {
-                WalletId::zero()
+                WalletId::ZERO
             };
             (key, ())
         })
@@ -915,7 +915,7 @@ impl Wallets {
         generate_work: bool,
     ) -> PublicKey {
         if !wallet.store.valid_password(tx) {
-            return PublicKey::zero();
+            return PublicKey::ZERO;
         }
         let key = wallet.store.deterministic_insert(tx);
 
@@ -974,7 +974,7 @@ impl Wallets {
     ) -> PublicKey {
         let mut tx = self.env.begin_write();
         if !wallet.store.valid_password(&tx) {
-            return PublicKey::zero();
+            return PublicKey::ZERO;
         }
         let key = wallet.store.insert_adhoc(&mut tx, key);
         if generate_work {
@@ -1154,7 +1154,7 @@ impl Wallets {
                     previous: info.head,
                     representative,
                     balance: info.balance,
-                    link: Link::zero(),
+                    link: Link::ZERO,
                     work,
                 }
                 .into();
@@ -1245,7 +1245,7 @@ impl Wallets {
                         block = Some(
                             StateBlockArgs {
                                 key: &priv_key,
-                                previous: BlockHash::zero(),
+                                previous: BlockHash::ZERO,
                                 representative,
                                 balance: pending_info.amount,
                                 link: send_hash.into(),
@@ -1424,7 +1424,7 @@ impl Wallets {
             // Don't search pending for watch-only accounts
             if !wallet_value.key.is_zero() {
                 for (key, info) in
-                    any.account_receivable_upper_bound(account.into(), BlockHash::zero())
+                    any.account_receivable_upper_bound(account.into(), BlockHash::ZERO)
                 {
                     let hash = key.send_block_hash;
                     let amount = info.amount;

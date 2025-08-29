@@ -7,7 +7,7 @@ use test_helpers::{System, assert_timely2, setup_rpc_client_and_server};
 
 fn send_block(node: Arc<Node>) {
     let mut lattice = UnsavedBlockLatticeBuilder::new();
-    let send = lattice.genesis().send(Account::zero(), 1);
+    let send = lattice.genesis().send(Account::ZERO, 1);
 
     node.process_active(send.clone());
     assert_timely2(|| node.is_active_root(&send.qualified_root()));
@@ -26,7 +26,7 @@ fn unopened() {
         server
             .client
             .unopened(UnopenedArgs {
-                account: Some(Account::zero()),
+                account: Some(Account::ZERO),
                 ..Default::default()
             })
             .await
@@ -34,7 +34,7 @@ fn unopened() {
     });
 
     assert_eq!(
-        result.accounts.get(&Account::zero()).unwrap(),
+        result.accounts.get(&Account::ZERO).unwrap(),
         &Amount::raw(1)
     );
 }
@@ -49,7 +49,7 @@ fn unopened_with_threshold() {
     let server = setup_rpc_client_and_server(node.clone(), true);
 
     let args = UnopenedArgs {
-        account: Some(Account::zero()),
+        account: Some(Account::ZERO),
         threshold: Some(Amount::nano(1)),
         ..Default::default()
     };
@@ -69,7 +69,7 @@ fn unopened_fails_without_enable_control() {
     let server = setup_rpc_client_and_server(node.clone(), false);
 
     let args = UnopenedArgs {
-        account: Some(Account::zero()),
+        account: Some(Account::ZERO),
         ..Default::default()
     };
 

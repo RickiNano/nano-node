@@ -44,7 +44,7 @@ impl StateBlock {
     }
 
     pub fn source(&self) -> BlockHash {
-        BlockHash::zero()
+        BlockHash::ZERO
     }
 
     pub fn representative(&self) -> PublicKey {
@@ -52,7 +52,7 @@ impl StateBlock {
     }
 
     pub fn destination(&self) -> Account {
-        Account::zero()
+        Account::ZERO
     }
 
     pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>

@@ -15,7 +15,7 @@ impl RpcCommandHandler {
         args: AccountsReceivableArgs,
     ) -> AccountsReceivableResponse {
         let count = unwrap_u64_or_max(args.count);
-        let threshold = args.threshold.unwrap_or(Amount::zero());
+        let threshold = args.threshold.unwrap_or(Amount::ZERO);
         let source = unwrap_bool_or_false(args.source);
         let include_only_confirmed = unwrap_bool_or_true(args.include_only_confirmed);
         let sorting = unwrap_bool_or_false(args.sorting);
@@ -31,7 +31,7 @@ impl RpcCommandHandler {
         };
 
         for account in args.accounts {
-            for (key, info) in any.account_receivable_upper_bound(account, BlockHash::zero()) {
+            for (key, info) in any.account_receivable_upper_bound(account, BlockHash::ZERO) {
                 if response_builder.len() as u64 >= count {
                     break;
                 }

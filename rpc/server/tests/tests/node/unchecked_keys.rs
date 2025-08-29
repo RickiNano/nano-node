@@ -11,7 +11,7 @@ fn test_unchecked_keys() {
 
     let open = StateBlockArgs {
         key: &key,
-        previous: BlockHash::zero(),
+        previous: BlockHash::ZERO,
         representative: key.public_key(),
         balance: Amount::raw(1),
         link: key.account().into(),

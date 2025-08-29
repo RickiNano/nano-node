@@ -11,7 +11,7 @@ fn validate_account_number() {
     let result = node.runtime.block_on(async {
         server
             .client
-            .validate_account_number(Account::zero().encode_account())
+            .validate_account_number(Account::ZERO.encode_account())
             .await
             .unwrap()
     });
