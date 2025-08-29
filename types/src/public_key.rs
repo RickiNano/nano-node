@@ -14,13 +14,10 @@ impl PublicKey {
         self.into()
     }
 
-    pub fn verify(&self, message: &[u8], signature: &Signature) -> anyhow::Result<()> {
-        let public = ed25519_dalek::VerifyingKey::from_bytes(&self.0)
-            .map_err(|_| anyhow!("could not extract public key"))?;
+    pub fn verify(&self, message: &[u8], signature: &Signature) -> Result<(), ()> {
+        let public = ed25519_dalek::VerifyingKey::from_bytes(&self.0).map_err(|_| ())?;
         let sig = ed25519_dalek::Signature::from_bytes(signature.as_bytes());
-        public
-            .verify(message, &sig)
-            .map_err(|_| anyhow!("could not verify message"))?;
+        public.verify(message, &sig).map_err(|e| ())?;
         Ok(())
     }
 }

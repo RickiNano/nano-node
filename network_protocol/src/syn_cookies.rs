@@ -5,7 +5,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::Result;
 use rand::Rng;
 
 use rsnano_messages::Cookie;
@@ -63,11 +62,14 @@ impl SynCookies {
         endpoint: &SocketAddrV6,
         node_id: &Account,
         signature: &Signature,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         let ip_addr = endpoint.ip();
         let mut lock = self.data.lock().unwrap();
         if let Some(info) = lock.cookies.get(endpoint) {
-            node_id.as_key().verify(&info.cookie, signature)?;
+            node_id
+                .as_key()
+                .verify(&info.cookie, signature)
+                .map_err(|_| anyhow!("Invalid signature"))?;
             lock.cookies.remove(endpoint);
             lock.dec_cookie_count(*ip_addr);
         }

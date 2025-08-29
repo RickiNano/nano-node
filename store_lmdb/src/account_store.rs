@@ -8,8 +8,9 @@ use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, AccountInfo};
 
 use crate::{
+    ACCOUNT_TEST_DATABASE,
     iterator::{LmdbIterator, LmdbRangeIterator},
-    parallel_traversal, ACCOUNT_TEST_DATABASE,
+    parallel_traversal,
 };
 
 pub struct LmdbAccountStore {

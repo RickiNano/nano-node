@@ -8,8 +8,8 @@ use std::{
 use bitvec::prelude::BitArray;
 use serde_derive::Serialize;
 
-use rsnano_types::{read_u32_be, read_u64_be, read_u8, DeserializationError};
-use rsnano_types::{to_hex_string, Account, BlockHash, NodeId, PrivateKey, Signature};
+use rsnano_types::{Account, BlockHash, NodeId, PrivateKey, Signature, to_hex_string};
+use rsnano_types::{DeserializationError, read_u8, read_u32_be, read_u64_be};
 
 use super::MessageVariant;
 
@@ -352,7 +352,7 @@ impl Display for TelemetryData {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialized_size() {

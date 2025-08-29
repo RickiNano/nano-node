@@ -6,7 +6,7 @@ use std::{
 use bitvec::prelude::*;
 use num_traits::FromPrimitive;
 
-use rsnano_types::{read_u8, DeserializationError, Networks, ProtocolInfo};
+use rsnano_types::{DeserializationError, Networks, ProtocolInfo, read_u8};
 use rsnano_utils::stats::DetailType;
 
 use super::*;

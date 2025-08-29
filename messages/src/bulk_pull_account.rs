@@ -4,7 +4,7 @@ use num_traits::FromPrimitive;
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 
-use rsnano_types::{read_u8, Account, Amount, DeserializationError};
+use rsnano_types::{Account, Amount, DeserializationError, read_u8};
 
 use super::MessageVariant;
 

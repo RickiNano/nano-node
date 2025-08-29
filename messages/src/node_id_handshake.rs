@@ -8,8 +8,8 @@ use rand::Rng;
 use serde::ser::SerializeStruct;
 
 use rsnano_types::{
-    write_hex_bytes, Account, BlockHash, DeserializationError, NodeId, PrivateKey, PublicKey,
-    Signature,
+    Account, BlockHash, DeserializationError, NodeId, PrivateKey, PublicKey, Signature,
+    write_hex_bytes,
 };
 
 use super::MessageVariant;
@@ -77,7 +77,9 @@ impl NodeIdHandshakeResponse {
     pub fn validate(&self, cookie: &Cookie) -> anyhow::Result<()> {
         let data = self.data_to_sign(cookie);
         let pub_key: PublicKey = self.node_id.into();
-        pub_key.verify(&data, &self.signature)
+        pub_key
+            .verify(&data, &self.signature)
+            .map_err(|_| anyhow!("Invalid signature"))
     }
 
     fn data_to_sign(&self, cookie: &Cookie) -> Vec<u8> {
@@ -317,7 +319,7 @@ impl Display for NodeIdHandshake {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialize_query() {

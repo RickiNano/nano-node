@@ -111,7 +111,7 @@ impl Display for BulkPull {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn bulk_pull_serialization() {

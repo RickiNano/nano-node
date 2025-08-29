@@ -2,7 +2,7 @@ use super::MessageVariant;
 use anyhow::Result;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{serialized_block_size, BlockHash, BlockType, DeserializationError, Root};
+use rsnano_types::{BlockHash, BlockType, DeserializationError, Root, serialized_block_size};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use std::fmt::{Debug, Display, Write};
 
@@ -198,8 +198,8 @@ impl<'a> serde::Serialize for SerializableRootHash<'a> {
         S: serde::Serializer,
     {
         let mut seq = serializer.serialize_struct("RootHash", 2)?;
-        seq.serialize_field("hash", &self.0 .0)?;
-        seq.serialize_field("root", &self.0 .1.encode_hex())?;
+        seq.serialize_field("hash", &self.0.0)?;
+        seq.serialize_field("root", &self.0.1.encode_hex())?;
         seq.end()
     }
 }
@@ -239,7 +239,7 @@ impl Display for ConfirmReq {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialize() {

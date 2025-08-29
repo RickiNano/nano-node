@@ -89,10 +89,10 @@ impl Epochs {
         epoch_id >= Epoch::Epoch0 as u8 && new_epoch_id == epoch_id + 1
     }
 
-    pub fn validate_epoch_signature(&self, block: &Block) -> anyhow::Result<()> {
+    pub fn validate_epoch_signature(&self, block: &Block) -> Result<(), ()> {
         let epoch_signer: PublicKey = self
             .epoch_signer(&block.link_field().unwrap_or_default())
-            .ok_or_else(|| anyhow!("not an epoch link!"))?
+            .ok_or_else(|| ())?
             .into();
 
         epoch_signer.verify(block.hash().as_bytes(), block.signature())

@@ -116,7 +116,7 @@ impl Display for ConfirmAck {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
     use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp};
 
     #[test]

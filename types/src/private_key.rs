@@ -147,7 +147,7 @@ mod tests {
     use ed25519_dalek::ed25519::signature::SignerMut;
 
     #[test]
-    fn ed25519_signing() -> anyhow::Result<()> {
+    fn ed25519_signing() {
         let secret_key = ed25519_dalek::SecretKey::from([0u8; 32]);
         let message = [0u8; 32];
         let mut signing_key = ed25519_dalek::SigningKey::from(&secret_key);
@@ -159,17 +159,14 @@ mod tests {
         sig_bytes[32] ^= 0x1;
         let signature = ed25519_dalek::Signature::from_bytes(&sig_bytes);
         assert!(public_key.verify_strict(&message, &signature).is_err());
-
-        Ok(())
     }
 
     #[test]
-    fn sign_message_test() -> anyhow::Result<()> {
+    fn sign_message_test() {
         let prv_key = PrivateKey::new();
         let data = [0u8; 32];
         let signature = prv_key.sign(&data);
-        prv_key.public_key().verify(&data, &signature)?;
-        Ok(())
+        prv_key.public_key().verify(&data, &signature).unwrap();
     }
 
     #[test]

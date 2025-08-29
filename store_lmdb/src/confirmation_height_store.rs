@@ -7,7 +7,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_types::{Account, ConfirmationHeightInfo};
 
 use crate::{
-    parallel_traversal, LmdbIterator, LmdbRangeIterator, CONFIRMATION_HEIGHT_TEST_DATABASE,
+    CONFIRMATION_HEIGHT_TEST_DATABASE, LmdbIterator, LmdbRangeIterator, parallel_traversal,
 };
 
 pub struct LmdbConfirmationHeightStore {

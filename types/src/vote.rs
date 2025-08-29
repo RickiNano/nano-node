@@ -163,7 +163,9 @@ impl Vote {
     }
 
     pub fn validate(&self) -> anyhow::Result<()> {
-        self.voter.verify(self.hash().as_bytes(), &self.signature)
+        self.voter
+            .verify(self.hash().as_bytes(), &self.signature)
+            .map_err(|_| anyhow!("Invalid signature"))
     }
 
     pub const fn serialized_size(count: usize) -> usize {

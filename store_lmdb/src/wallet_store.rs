@@ -1,5 +1,5 @@
 use std::{
-    fs::{set_permissions, File, Permissions},
+    fs::{File, Permissions, set_permissions},
     io::{Read, Write},
     ops::RangeBounds,
     os::unix::prelude::PermissionsExt,
@@ -13,8 +13,8 @@ use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_types::{
-    deterministic_key, read_u64_ne, Account, DeserializationError, KeyDerivationFunction,
-    PublicKey, RawKey, WorkNonce,
+    Account, DeserializationError, KeyDerivationFunction, PublicKey, RawKey, WorkNonce,
+    deterministic_key, read_u64_ne,
 };
 
 use crate::{Fan, LmdbDatabase, LmdbRangeIterator};

@@ -28,6 +28,7 @@ impl StateBlock {
         self.account()
             .as_key()
             .verify(self.hash().as_bytes(), self.signature())
+            .map_err(|_| anyhow!("Invalid signature"))
     }
 
     pub fn account(&self) -> Account {

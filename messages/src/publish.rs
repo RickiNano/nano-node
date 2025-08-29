@@ -1,7 +1,7 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{serialized_block_size, Block, BlockType, DeserializationError};
+use rsnano_types::{Block, BlockType, DeserializationError, serialized_block_size};
 use serde_derive::Serialize;
 use std::fmt::{Debug, Display};
 
