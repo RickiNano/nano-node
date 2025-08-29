@@ -204,10 +204,8 @@ mod tests {
     #[test]
     fn regression_validate_weird_signature2() {
         let public_key = PublicKey::from(
-            Account::decode_account(
-                "nano_11a11111111111111111111111111111111111111111111111116iq5p4i8",
-            )
-            .unwrap(),
+            Account::parse("nano_11a11111111111111111111111111111111111111111111111116iq5p4i8")
+                .unwrap(),
         );
 
         let hash = BlockHash::decode_hex(

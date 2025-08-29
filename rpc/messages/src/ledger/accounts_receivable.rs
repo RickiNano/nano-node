@@ -95,10 +95,8 @@ mod tests {
     fn serialize_accounts_receivable_args_options_some() {
         let args = AccountsReceivableArgs {
             accounts: vec![
-                Account::decode_account(
-                    "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-                )
-                .unwrap(),
+                Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                    .unwrap(),
             ],
             count: Some(10.into()),
             threshold: Some(Amount::raw(1000)),
@@ -137,10 +135,8 @@ mod tests {
         assert_eq!(deserialized.accounts.len(), 1);
         assert_eq!(
             deserialized.accounts[0],
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-            )
-            .unwrap()
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap()
         );
         assert_eq!(deserialized.count, Some(5.into()));
         assert_eq!(deserialized.threshold, Some(Amount::raw(1000)));
@@ -154,10 +150,8 @@ mod tests {
     fn serialize_accounts_receivable_args_options_none() {
         let args = AccountsReceivableArgs {
             accounts: vec![
-                Account::decode_account(
-                    "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-                )
-                .unwrap(),
+                Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                    .unwrap(),
             ],
             count: Some(10.into()),
             threshold: None,
@@ -191,10 +185,8 @@ mod tests {
         assert_eq!(deserialized.accounts.len(), 1);
         assert_eq!(
             deserialized.accounts[0],
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-            )
-            .unwrap()
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap()
         );
         assert_eq!(deserialized.count, Some(5.into()));
         assert_eq!(deserialized.threshold, None);

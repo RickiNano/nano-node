@@ -159,7 +159,7 @@ impl NodeConfig {
                 preconfigured_peers
                     .push(Peer::new(DEFAULT_BETA_PEER_NETWORK.clone(), default_port));
                 preconfigured_representatives.push(
-                    Account::decode_account(
+                    Account::parse(
                         "nano_1defau1t9off1ine9rep99999999999999999999999999999999wgmuzxxy",
                     )
                     .unwrap()

@@ -4,7 +4,6 @@ use crate::{
     Account, Amount, Block, BlockBase, BlockDetails, BlockHash, BlockSideband, Epoch, Link,
     PrivateKey, PublicKey, SavedBlock, Signature, StateBlockArgs, WorkNonce,
 };
-use anyhow::Result;
 
 pub struct TestStateBlockBuilder {
     account: Option<Account>,
@@ -59,8 +58,8 @@ impl TestStateBlockBuilder {
         self
     }
 
-    pub fn account_address(self, address: impl AsRef<str>) -> Result<Self> {
-        Ok(self.account(Account::decode_account(address)?))
+    pub fn account_address(self, address: impl AsRef<str>) -> anyhow::Result<Self> {
+        Ok(self.account(Account::parse(address).ok_or_else(|| anyhow!("Invalid account"))?))
     }
 
     pub fn previous(mut self, previous: impl Into<BlockHash>) -> Self {
@@ -68,7 +67,7 @@ impl TestStateBlockBuilder {
         self
     }
 
-    pub fn previous_hex(self, previous: impl AsRef<str>) -> Result<Self> {
+    pub fn previous_hex(self, previous: impl AsRef<str>) -> anyhow::Result<Self> {
         Ok(self.previous(BlockHash::decode_hex(previous)?))
     }
 
@@ -77,8 +76,10 @@ impl TestStateBlockBuilder {
         self
     }
 
-    pub fn representative_address(self, address: impl AsRef<str>) -> Result<Self> {
-        Ok(self.representative(Account::decode_account(address)?))
+    pub fn representative_address(self, address: impl AsRef<str>) -> anyhow::Result<Self> {
+        Ok(self.representative(
+            Account::parse(address).ok_or_else(|| anyhow!("Invalid representative"))?,
+        ))
     }
 
     pub fn balance(mut self, balance: impl Into<Amount>) -> Self {
@@ -86,7 +87,7 @@ impl TestStateBlockBuilder {
         self
     }
 
-    pub fn balance_dec(self, balance: impl AsRef<str>) -> Result<Self> {
+    pub fn balance_dec(self, balance: impl AsRef<str>) -> anyhow::Result<Self> {
         Ok(self.balance(balance.as_ref().parse::<u128>()?))
     }
 
@@ -109,7 +110,7 @@ impl TestStateBlockBuilder {
         self
     }
 
-    pub fn link_hex(self, link: impl AsRef<str>) -> Result<Self> {
+    pub fn link_hex(self, link: impl AsRef<str>) -> anyhow::Result<Self> {
         Ok(self.link(Link::decode_hex(link)?))
     }
 
@@ -297,16 +298,21 @@ mod tests {
     }
 
     #[test]
-    fn state_block_from_live_network() -> Result<()> {
+    fn state_block_from_live_network() {
         // Test against a random hash from the live network
         let block = TestBlockBuilder::state()
-            .account_address("xrb_15nhh1kzw3x8ohez6s75wy3jr6dqgq65oaede1fzk5hqxk4j8ehz7iqtb3to")?
-            .previous_hex("FEFBCE274E75148AB31FF63EFB3082EF1126BF72BF3FA9C76A97FD5A9F0EBEC5")?
-            .balance_dec("2251569974100400000000000000000000")?
+            .account_address("xrb_15nhh1kzw3x8ohez6s75wy3jr6dqgq65oaede1fzk5hqxk4j8ehz7iqtb3to")
+            .unwrap()
+            .previous_hex("FEFBCE274E75148AB31FF63EFB3082EF1126BF72BF3FA9C76A97FD5A9F0EBEC5")
+            .unwrap()
+            .balance_dec("2251569974100400000000000000000000")
+            .unwrap()
             .representative_address(
                 "xrb_1stofnrxuz3cai7ze75o174bpm7scwj9jn3nxsn8ntzg784jf1gzn1jjdkou",
-            )?
-            .link_hex("E16DD58C1EFA8B521545B0A74375AA994D9FC43828A4266D75ECF57F07A7EE86")?
+            )
+            .unwrap()
+            .link_hex("E16DD58C1EFA8B521545B0A74375AA994D9FC43828A4266D75ECF57F07A7EE86")
+            .unwrap()
             .build();
         assert_eq!(
             block.hash().to_string(),
@@ -318,7 +324,6 @@ mod tests {
             block.link_field().unwrap().encode_hex(),
             "E16DD58C1EFA8B521545B0A74375AA994D9FC43828A4266D75ECF57F07A7EE86"
         );
-        Ok(())
     }
 
     #[test]

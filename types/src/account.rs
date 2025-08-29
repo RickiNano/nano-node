@@ -1,6 +1,5 @@
 use super::PublicKey;
 use crate::u256_struct;
-use anyhow::Result;
 use blake2::{
     Blake2bVar,
     digest::{Update, VariableOutput},
@@ -36,7 +35,7 @@ impl Account {
         check
     }
 
-    pub fn decode_account(source: impl AsRef<str>) -> Result<Account> {
+    pub fn parse(source: impl AsRef<str>) -> Option<Self> {
         EncodedAccountStr(source.as_ref()).to_u512()?.to_account()
     }
 
@@ -78,7 +77,7 @@ impl<'de> Visitor<'de> for AccountVisitor {
     where
         E: serde::de::Error,
     {
-        Account::decode_account(v).map_err(|_| {
+        Account::parse(v).ok_or_else(|| {
             serde::de::Error::invalid_value(
                 Unexpected::Str(v),
                 &"an account in the form \"nano_...\"",
@@ -107,12 +106,12 @@ impl EncodedAccountU512 {
         ]
     }
 
-    fn to_account(&self) -> Result<Account> {
+    fn to_account(&self) -> Option<Account> {
         let account = Account::from_bytes(self.account_bytes());
         if account.account_checksum() == self.checksum_bytes() {
-            Ok(account)
+            Some(account)
         } else {
-            Err(anyhow!("invalid checksum"))
+            None
         }
     }
 }
@@ -168,22 +167,18 @@ impl<'a> EncodedAccountStr<'a> {
         self.0.chars().skip(self.prefix_len())
     }
 
-    fn to_u512(&self) -> Result<EncodedAccountU512> {
+    fn to_u512(&self) -> Option<EncodedAccountU512> {
         if !self.is_valid() {
-            bail!("invalid account string");
+            return None;
         }
 
         let mut number = U512::default();
         for character in self.chars_after_prefix() {
-            match self.decode_byte(character) {
-                Some(byte) => {
-                    number <<= 5;
-                    number = number + byte;
-                }
-                None => bail!("invalid hex string"),
-            }
+            let byte = self.decode_byte(character)?;
+            number <<= 5;
+            number = number + byte;
         }
-        Ok(EncodedAccountU512(number))
+        Some(EncodedAccountU512(number))
     }
 
     fn decode_byte(&self, character: char) -> Option<u8> {
@@ -262,7 +257,7 @@ mod tests {
             encoded,
             "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
         );
-        let copy = Account::decode_account(&encoded).expect("decode failed");
+        let copy = Account::parse(&encoded).expect("parse should succeed");
         assert_eq!(account, copy);
     }
 
@@ -274,7 +269,7 @@ mod tests {
             encoded,
             "nano_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon41"
         );
-        let copy = Account::decode_account(&encoded).expect("decode failed");
+        let copy = Account::parse(&encoded).expect("parse should succeed");
         assert_eq!(account, copy);
     }
 
@@ -283,22 +278,18 @@ mod tests {
         let account = Account::zero();
         let mut encoded = account.encode_account();
         encoded.replace_range(16..17, "x");
-        assert!(Account::decode_account(&encoded).is_err());
+        assert!(Account::parse(&encoded).is_none());
     }
 
     #[test]
     fn decode_fail_too_log() {
         assert!(
-            Account::decode_account(
-                "nano_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411"
-            )
-            .is_err()
+            Account::parse("nano_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411")
+                .is_none()
         );
         assert!(
-            Account::decode_account(
-                "xrb_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411"
-            )
-            .is_err()
+            Account::parse("xrb_3zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzc3yoon411")
+                .is_none()
         );
     }
 
@@ -312,19 +303,14 @@ mod tests {
             encoded,
             "nano_3szoyggo7d3koqwqjgyhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti"
         );
-        assert_eq!(
-            Account::decode_account(&encoded).expect("could not decode"),
-            account
-        );
+        assert_eq!(Account::parse(&encoded).unwrap(), account);
     }
 
     #[test]
     fn decode_xrb_variant() {
         assert_eq!(
-            Account::decode_account(
-                "xrb_3szoyggo7d3koqwqjgyhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti"
-            )
-            .unwrap(),
+            Account::parse("xrb_3szoyggo7d3koqwqjgyhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti")
+                .unwrap(),
             Account::decode_hex("E7F5F39D52AC32ADF978BBCF6EA50C7A5FBBDDCADE965C542808ADAE9DEF6B20")
                 .unwrap()
         );
@@ -345,48 +331,32 @@ mod tests {
     #[test]
     fn decode_invalid_checksum() {
         assert_eq!(
-            Account::decode_account(
-                "nano_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtd1"
-            )
-            .unwrap_err()
-            .to_string(),
-            "invalid checksum"
+            Account::parse("nano_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmac6iq689wyjfpiij4txtd1"),
+            None
         );
     }
 
     #[test]
     fn decode_invalid_hex_string() {
         assert_eq!(
-            Account::decode_account(
-                "nano_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmXXXiq689wyjfpiij4txtd1"
-            )
-            .unwrap_err()
-            .to_string(),
-            "invalid hex string"
+            Account::parse("nano_3e3j5tkog48pnny9dmfzj1r16pg8t1e76dz5tmXXXiq689wyjfpiij4txtd1"),
+            None
         );
     }
 
     #[test]
     fn decode_fails_invalid_char() {
         assert_eq!(
-            Account::decode_account(
-                "xrb_3szoyggo7d3koqwqj/yhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti"
-            )
-            .unwrap_err()
-            .to_string(),
-            "invalid hex string"
+            Account::parse("xrb_3szoyggo7d3koqwqj/yhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti"),
+            None
         );
     }
 
     #[test]
     fn decode_fails_utf8_char() {
         assert_eq!(
-            Account::decode_account(
-                "xrb_3szoyggo7d3koqwqjӾyhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti"
-            )
-            .unwrap_err()
-            .to_string(),
-            "invalid hex string"
+            Account::parse("xrb_3szoyggo7d3koqwqjӾyhftkirykzqhgwoqnpdjc4i47fotgyyts1j8ab3mti"),
+            None
         );
     }
 

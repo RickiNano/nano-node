@@ -17,7 +17,7 @@ impl PublicKey {
     pub fn verify(&self, message: &[u8], signature: &Signature) -> Result<(), ()> {
         let public = ed25519_dalek::VerifyingKey::from_bytes(&self.0).map_err(|_| ())?;
         let sig = ed25519_dalek::Signature::from_bytes(signature.as_bytes());
-        public.verify(message, &sig).map_err(|e| ())?;
+        public.verify(message, &sig).map_err(|_| ())?;
         Ok(())
     }
 }

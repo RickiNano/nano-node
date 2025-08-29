@@ -30,9 +30,7 @@ fn deterministic_key() {
 
     assert_eq!(
         result.account,
-        Account::decode_account(
-            "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
-        )
-        .unwrap()
+        Account::parse("nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7")
+            .unwrap()
     );
 }

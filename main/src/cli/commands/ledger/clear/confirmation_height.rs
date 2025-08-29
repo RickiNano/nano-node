@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 
 use rsnano_ledger::LedgerConstants;
@@ -43,7 +44,7 @@ impl ConfirmationHeightArgs {
         let mut txn = env.begin_write();
 
         if let Some(account_hex) = &self.account {
-            let account = Account::decode_account(account_hex)?;
+            let account = Account::parse(account_hex).ok_or_else(|| anyhow!("Invalid account"))?;
             let mut conf_height_reset_num = 0;
 
             let mut info = confirmation_height_store

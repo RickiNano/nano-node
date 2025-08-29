@@ -1,4 +1,5 @@
 use crate::cli::CliInfrastructure;
+use anyhow::anyhow;
 use clap::{CommandFactory, Parser, Subcommand};
 use rsnano_types::{Account, PrivateKey, PublicKey};
 
@@ -62,7 +63,7 @@ fn public_key_to_account(args: PublicKeyArgs) -> anyhow::Result<()> {
 }
 
 fn account_to_public_key(args: AccountToPublicKeyArgs) -> anyhow::Result<()> {
-    let public_key = Account::decode_account(&args.account)?;
+    let public_key = Account::parse(&args.account).ok_or_else(|| anyhow!("Invalid account"))?;
     println!("Public key: {:?}", public_key);
     Ok(())
 }

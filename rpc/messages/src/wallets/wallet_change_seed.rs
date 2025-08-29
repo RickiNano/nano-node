@@ -229,10 +229,8 @@ mod tests {
         assert_eq!(deserialized.success, "");
         assert_eq!(
             deserialized.last_restored_account,
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-            )
-            .unwrap()
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap()
         );
         assert_eq!(deserialized.restored_count, 15.into());
     }

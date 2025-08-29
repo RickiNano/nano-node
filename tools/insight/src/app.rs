@@ -120,7 +120,7 @@ impl InsightApp {
     }
 
     pub(crate) fn add_priority_account(&mut self) {
-        if let Ok(account) = Account::decode_account(&self.bootstrap.add_account) {
+        if let Some(account) = Account::parse(&self.bootstrap.add_account) {
             self.bootstrap.add_account.clear();
             if let Some(node) = self.node_runner.node() {
                 node.bootstrapper

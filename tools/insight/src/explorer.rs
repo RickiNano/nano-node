@@ -22,7 +22,7 @@ impl Explorer {
             return true;
         };
 
-        if let Ok(account) = Account::decode_account(input) {
+        if let Some(account) = Account::parse(input) {
             let any = ledger.any();
             self.state = if let Some(head) = any.account_head(&account) {
                 match any.detailed_block(&head) {

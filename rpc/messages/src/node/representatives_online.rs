@@ -86,10 +86,8 @@ mod tests {
     #[test]
     fn serialize_representatives_online_command_options_some() {
         let accounts = vec![
-            Account::decode_account(
-                "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j",
-            )
-            .unwrap(),
+            Account::parse("nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j")
+                .unwrap(),
         ];
         let args = RepresentativesOnlineArgs::builder()
             .weight()
@@ -118,7 +116,7 @@ mod tests {
             assert_eq!(
                 args.accounts,
                 Some(vec![
-                    Account::decode_account(
+                    Account::parse(
                         "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"
                     )
                     .unwrap()
@@ -133,10 +131,8 @@ mod tests {
     fn serialize_representatives_online_dto_with_weight() {
         let mut detailed = DetailedRepresentativesOnline::default();
         detailed.representatives.insert(
-            Account::decode_account(
-                "nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi",
-            )
-            .unwrap(),
+            Account::parse("nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi")
+                .unwrap(),
             RepWeightDto {
                 weight: Amount::raw(150462654614686936429917024683496890),
             },
@@ -151,10 +147,8 @@ mod tests {
     fn serialize_representatives_online_dto_without_weight() {
         let mut representatives = Vec::new();
         representatives.push(
-            Account::decode_account(
-                "nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi",
-            )
-            .unwrap(),
+            Account::parse("nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi")
+                .unwrap(),
         );
         let dto =
             RepresentativesOnlineResponse::Simple(SimpleRepresentativesOnline { representatives });
@@ -169,10 +163,9 @@ mod tests {
         let deserialized: DetailedRepresentativesOnline = serde_json::from_str(json).unwrap();
 
         assert_eq!(deserialized.representatives.len(), 1);
-        let account = Account::decode_account(
-            "nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi")
+                .unwrap();
         assert_eq!(
             deserialized.representatives[&account].weight,
             Amount::raw(150462654614686936429917024683496890)
@@ -185,10 +178,9 @@ mod tests {
         let deserialized: SimpleRepresentativesOnline = serde_json::from_str(json).unwrap();
 
         assert_eq!(deserialized.representatives.len(), 1);
-        let account = Account::decode_account(
-            "nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_114nk4rwjctu6n6tr6g6ps61g1w3hdpjxfas4xj1tq6i8jyomc5d858xr1xi")
+                .unwrap();
         assert!(deserialized.representatives.contains(&account));
     }
 }

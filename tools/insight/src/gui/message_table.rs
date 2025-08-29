@@ -238,12 +238,12 @@ impl MessageTableViewModel {
             self.messages.write().unwrap().filter_account(None);
             self.account_error = false;
         } else {
-            match Account::decode_account(self.account_filter.trim()) {
-                Ok(account) => {
+            match Account::parse(self.account_filter.trim()) {
+                Some(account) => {
                     self.messages.write().unwrap().filter_account(Some(account));
                     self.account_error = false;
                 }
-                _ => match Account::decode_hex(self.account_filter.trim()) {
+                None => match Account::decode_hex(self.account_filter.trim()) {
                     Ok(account) => {
                         self.messages.write().unwrap().filter_account(Some(account));
                         self.account_error = false;

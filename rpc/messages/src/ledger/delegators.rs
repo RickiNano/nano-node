@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn serialize_delegators_args() {
         let args = DelegatorsArgs {
-            account: Account::decode_account(
+            account: Account::parse(
                 "nano_1111111111111111111111111111111111111111111111111117353trpda",
             )
             .unwrap(),
@@ -129,10 +129,8 @@ mod tests {
         let deserialized: DelegatorsArgs = serde_json::from_str(json).unwrap();
         assert_eq!(
             deserialized.account,
-            Account::decode_account(
-                "nano_1111111111111111111111111111111111111111111111111117353trpda"
-            )
-            .unwrap()
+            Account::parse("nano_1111111111111111111111111111111111111111111111111117353trpda")
+                .unwrap()
         );
         assert_eq!(deserialized.threshold, Some(Amount::raw(1)));
         assert_eq!(deserialized.count, Some(0.into()));

@@ -56,10 +56,9 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let account = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let block = BlockHash::decode_hex(
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
@@ -100,10 +99,8 @@ mod tests {
         );
         assert_eq!(
             deserialized.account,
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-            )
-            .unwrap()
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap()
         );
         assert_eq!(
             deserialized.block,
@@ -122,7 +119,7 @@ mod tests {
                 "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
             )
             .unwrap(),
-            account: Account::decode_account(
+            account: Account::parse(
                 "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
             )
             .unwrap(),
@@ -145,10 +142,9 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let account = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let block = BlockHash::decode_hex(
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
@@ -195,7 +191,7 @@ mod tests {
                 );
                 assert_eq!(
                     args.account,
-                    Account::decode_account(
+                    Account::parse(
                         "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
                     )
                     .unwrap()
@@ -219,10 +215,9 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let account = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let block = BlockHash::decode_hex(
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )

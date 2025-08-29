@@ -64,14 +64,10 @@ mod tests {
     #[test]
     fn deserialize_accounts_balances_rpc_command() {
         let accounts = vec![
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap(),
-            Account::decode_account(
-                "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7",
-            )
-            .unwrap(),
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap(),
+            Account::parse("nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7")
+                .unwrap(),
         ];
 
         let command = RpcCommand::AccountsBalances(accounts.clone().into());
@@ -107,14 +103,14 @@ mod tests {
                 assert_eq!(args.accounts.len(), 2);
                 assert_eq!(
                     args.accounts[0],
-                    Account::decode_account(
+                    Account::parse(
                         "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
                     )
                     .unwrap()
                 );
                 assert_eq!(
                     args.accounts[1],
-                    Account::decode_account(
+                    Account::parse(
                         "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
                     )
                     .unwrap()
@@ -147,14 +143,10 @@ mod tests {
     #[test]
     fn test_accounts_balances_args_builder() {
         let accounts = vec![
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap(),
-            Account::decode_account(
-                "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7",
-            )
-            .unwrap(),
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap(),
+            Account::parse("nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7")
+                .unwrap(),
         ];
 
         let args = AccountsBalancesArgs::new(accounts.clone())
@@ -174,10 +166,8 @@ mod tests {
     fn serialize_accounts_balances_dto() {
         let mut balances = HashMap::new();
         balances.insert(
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap(),
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap(),
             AccountBalanceResponse {
                 balance: Amount::raw(325586539664609129644855132177),
                 pending: Amount::raw(2309372032769300000000000000000000),
@@ -185,10 +175,8 @@ mod tests {
             },
         );
         balances.insert(
-            Account::decode_account(
-                "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7",
-            )
-            .unwrap(),
+            Account::parse("nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7")
+                .unwrap(),
             AccountBalanceResponse {
                 balance: Amount::raw(10000000),
                 pending: Amount::raw(0),
@@ -205,7 +193,7 @@ mod tests {
         assert_eq!(
             dto.balances
                 .get(
-                    &Account::decode_account(
+                    &Account::parse(
                         "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
                     )
                     .unwrap()
@@ -217,7 +205,7 @@ mod tests {
         assert_eq!(
             dto.balances
                 .get(
-                    &Account::decode_account(
+                    &Account::parse(
                         "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
                     )
                     .unwrap()
@@ -253,7 +241,7 @@ mod tests {
         let balance1 = deserialized
             .balances
             .get(
-                &Account::decode_account(
+                &Account::parse(
                     "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
                 )
                 .unwrap(),
@@ -275,7 +263,7 @@ mod tests {
         let balance2 = deserialized
             .balances
             .get(
-                &Account::decode_account(
+                &Account::parse(
                     "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7",
                 )
                 .unwrap(),

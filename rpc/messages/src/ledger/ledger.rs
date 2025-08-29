@@ -119,10 +119,9 @@ mod tests {
 
     #[test]
     fn test_ledger_rpc_command_serialization() {
-        let account = Account::decode_account(
-            "nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est")
+                .unwrap();
         let ledger_args = LedgerArgs::builder()
             .from_account(account)
             .count(1000)
@@ -175,7 +174,7 @@ mod tests {
                 assert_eq!(
                     args.account,
                     Some(
-                        Account::decode_account(
+                        Account::parse(
                             "nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est"
                         )
                         .unwrap()
@@ -200,10 +199,8 @@ mod tests {
     fn test_ledger_dto_serialization() {
         let mut accounts = HashMap::new();
         accounts.insert(
-            Account::decode_account(
-                "nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est",
-            )
-            .unwrap(),
+            Account::parse("nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est")
+                .unwrap(),
             LedgerAccountInfo {
                 frontier: BlockHash::decode_hex(
                     "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
@@ -221,7 +218,7 @@ mod tests {
                 modified_timestamp: 1553174994.into(),
                 block_count: 50.into(),
                 representative: Some(
-                    Account::decode_account(
+                    Account::parse(
                         "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
                     )
                     .unwrap(),
@@ -279,10 +276,9 @@ mod tests {
 
         assert_eq!(deserialized.accounts.len(), 1);
 
-        let account = Account::decode_account(
-            "nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est",
-        )
-        .unwrap();
+        let account =
+            Account::parse("nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est")
+                .unwrap();
         let account_info = deserialized.accounts.get(&account).unwrap();
 
         assert_eq!(
@@ -315,10 +311,8 @@ mod tests {
         assert_eq!(
             account_info.representative,
             Some(
-                Account::decode_account(
-                    "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-                )
-                .unwrap()
+                Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                    .unwrap()
             )
         );
         assert_eq!(

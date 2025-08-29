@@ -152,7 +152,7 @@ impl NodeConfig {
             self.preconfigured_representatives = preconfigured_representatives
                 .iter()
                 .map(|string| {
-                    Account::decode_account(&string)
+                    Account::parse(&string)
                         .expect("Invalid representative")
                         .into()
                 })

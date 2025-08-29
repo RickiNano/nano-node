@@ -28,10 +28,8 @@ mod tests {
     fn serialize_frontiers_dto_with_errors() {
         let mut frontiers = HashMap::new();
         frontiers.insert(
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap(),
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap(),
             BlockHash::decode_hex(
                 "023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C",
             )
@@ -40,10 +38,8 @@ mod tests {
 
         let mut errors = HashMap::new();
         errors.insert(
-            Account::decode_account(
-                "nano_1hrts7hcoozxccnffoq9hqhngnn9jz783usapejm57ejtqcyz9dpso1bibuy",
-            )
-            .unwrap(),
+            Account::parse("nano_1hrts7hcoozxccnffoq9hqhngnn9jz783usapejm57ejtqcyz9dpso1bibuy")
+                .unwrap(),
             "Account not found".to_string(),
         );
 
@@ -65,10 +61,8 @@ mod tests {
     fn serialize_frontiers_dto_without_errors() {
         let mut frontiers = HashMap::new();
         frontiers.insert(
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap(),
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap(),
             BlockHash::decode_hex(
                 "023B94B7D27B311666C8636954FE17F1FD2EAA97A8BAC27DE5084FBBD5C6B02C",
             )
@@ -99,10 +93,8 @@ mod tests {
 
         let mut frontiers = HashMap::new();
         frontiers.insert(
-            Account::decode_account(
-                "nano_1111111111111111111111111111111111111111111111111111hifc8npp",
-            )
-            .unwrap(),
+            Account::parse("nano_1111111111111111111111111111111111111111111111111111hifc8npp")
+                .unwrap(),
             BlockHash::decode_hex(
                 "0000000000000000000000000000000000000000000000000000000000000000",
             )
@@ -111,10 +103,8 @@ mod tests {
 
         let mut errors = HashMap::new();
         errors.insert(
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-            )
-            .unwrap(),
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap(),
             "Account not found".to_string(),
         );
 
@@ -131,10 +121,8 @@ mod tests {
         let deserialized: FrontiersResponse = serde_json::from_str(json_str).unwrap();
         let mut frontiers = HashMap::new();
         frontiers.insert(
-            Account::decode_account(
-                "nano_1111111111111111111111111111111111111111111111111111hifc8npp",
-            )
-            .unwrap(),
+            Account::parse("nano_1111111111111111111111111111111111111111111111111111hifc8npp")
+                .unwrap(),
             BlockHash::decode_hex(
                 "0000000000000000000000000000000000000000000000000000000000000000",
             )

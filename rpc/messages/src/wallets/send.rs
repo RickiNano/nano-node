@@ -31,14 +31,12 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let source = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
-        let destination = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let source =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
+        let destination =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let amount = Amount::raw(1000000);
 
         let send_command = RpcCommand::send(SendArgs {
@@ -77,14 +75,12 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let source = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
-        let destination = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let source =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
+        let destination =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let amount = Amount::raw(1000000);
 
         assert_eq!(
@@ -105,14 +101,12 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let source = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
-        let destination = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let source =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
+        let destination =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let amount = Amount::raw(1000000);
 
         let send_command = SendArgs {
@@ -154,17 +148,13 @@ mod tests {
         );
         assert_eq!(
             deserialized.source,
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-            )
-            .unwrap()
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap()
         );
         assert_eq!(
             deserialized.destination,
-            Account::decode_account(
-                "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3"
-            )
-            .unwrap()
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap()
         );
         assert_eq!(deserialized.amount, Amount::raw(1000000));
     }
@@ -175,14 +165,12 @@ mod tests {
             "000D1BAEC8EC208142C99059B393051BAC8380F9B5A2E6B2489A277D81789F3F",
         )
         .unwrap();
-        let source = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
-        let destination = Account::decode_account(
-            "nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3",
-        )
-        .unwrap();
+        let source =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
+        let destination =
+            Account::parse("nano_3t6k35gi95xu6tergt6p69ck76ogmitsa8mnijtpxm9fkcm736xtoncuohr3")
+                .unwrap();
         let amount = Amount::raw(1000000);
 
         let send_args = SendArgs {

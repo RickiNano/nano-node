@@ -50,11 +50,9 @@ impl WalletsConfig {
     pub fn defaults_beta() -> Self {
         Self {
             preconfigured_representatives: vec![
-                Account::decode_account(
-                    "nano_1defau1t9off1ine9rep99999999999999999999999999999999wgmuzxxy",
-                )
-                .unwrap()
-                .into(),
+                Account::parse("nano_1defau1t9off1ine9rep99999999999999999999999999999999wgmuzxxy")
+                    .unwrap()
+                    .into(),
             ],
             ..Self::defaults_live()
         }

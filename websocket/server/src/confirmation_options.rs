@@ -77,12 +77,12 @@ impl ConfirmationOptions {
         if let Some(accounts) = options.accounts {
             result.has_account_filtering_options = true;
             for account in accounts {
-                match Account::decode_account(&account) {
-                    Ok(result_l) => {
+                match Account::parse(&account) {
+                    Some(acc) => {
                         // Do not insert the given raw data to keep old prefix support
-                        result.accounts.insert(result_l.encode_account());
+                        result.accounts.insert(acc.encode_account());
                     }
-                    Err(_) => {
+                    None => {
                         warn!("Invalid account provided for filtering blocks: {}", account);
                     }
                 }
@@ -134,8 +134,8 @@ impl ConfirmationOptions {
                     _ => "",
                 };
                 if self.all_local_accounts {
-                    let source = Account::decode_account(source_text).unwrap_or_default();
-                    let destination = Account::decode_account(destination_text).unwrap_or_default();
+                    let source = Account::parse(source_text).unwrap_or_default();
+                    let destination = Account::parse(destination_text).unwrap_or_default();
                     if wallets.exists(&source.into()) || wallets.exists(&destination.into()) {
                         should_filter_account = false;
                     }
@@ -161,8 +161,8 @@ impl ConfirmationOptions {
             if let serde_json::Value::Array(accounts) = accounts_text {
                 for account in accounts {
                     if let serde_json::Value::String(acc_str) = account {
-                        match Account::decode_account(acc_str) {
-                            Ok(result) => {
+                        match Account::parse(acc_str) {
+                            Some(result) => {
                                 // Re-encode to keep old prefix support
                                 let encoded = result.encode_account();
                                 if insert {
@@ -171,7 +171,7 @@ impl ConfirmationOptions {
                                     self.accounts.remove(&encoded);
                                 }
                             }
-                            Err(_) => {
+                            None => {
                                 warn!("Invalid account provided for filtering blocks: {}", acc_str);
                             }
                         }

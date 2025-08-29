@@ -15,7 +15,7 @@ fn account_info() {
             .client
             .account_info(
                 AccountInfoArgs::build(
-                    Account::decode_account(
+                    Account::parse(
                         "nano_1111111111111111111111111111111111111111111111111111hifc8npp",
                     )
                     .unwrap(),

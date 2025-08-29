@@ -181,18 +181,14 @@ mod tests {
             key: Some(RawKey::decode_hex("2").unwrap()),
             wallet: None,
             account: Some(
-                Account::decode_account(
-                    "nano_1hza3f7wiiqa7ig3jczyxj5yo86yegcmqk3criaz838j91sxcckpfhbhhra1",
-                )
-                .unwrap(),
+                Account::parse("nano_1hza3f7wiiqa7ig3jczyxj5yo86yegcmqk3criaz838j91sxcckpfhbhhra1")
+                    .unwrap(),
             ),
             source: None,
             destination: None,
             representative: Some(
-                Account::decode_account(
-                    "nano_1hza3f7wiiqa7ig3jczyxj5yo86yegcmqk3criaz838j91sxcckpfhbhhra1",
-                )
-                .unwrap(),
+                Account::parse("nano_1hza3f7wiiqa7ig3jczyxj5yo86yegcmqk3criaz838j91sxcckpfhbhhra1")
+                    .unwrap(),
             ),
             link: Some(
                 Link::decode_hex(

@@ -30,12 +30,12 @@ impl VoteOptions {
         result.include_indeterminate = options_a.include_indeterminate.unwrap_or(false);
         if let Some(representatives_l) = options_a.representatives {
             for representative_l in representatives_l {
-                match Account::decode_account(&representative_l) {
-                    Ok(result_l) => {
+                match Account::parse(&representative_l) {
+                    Some(acc) => {
                         // Do not insert the given raw data to keep old prefix support
-                        result.representatives.insert(result_l.encode_account());
+                        result.representatives.insert(acc.encode_account());
                     }
-                    Err(_) => {
+                    None => {
                         warn!(
                             "Invalid account provided for filtering votes: {}",
                             representative_l

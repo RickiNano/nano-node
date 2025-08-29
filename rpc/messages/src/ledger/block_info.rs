@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn serialize_block_info_dto() {
         let block_info = BlockInfoResponse {
-            block_account: Account::decode_account(
+            block_account: Account::parse(
                 "nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est",
             )
             .unwrap(),
@@ -131,10 +131,8 @@ mod tests {
 
         assert_eq!(
             deserialized.block_account,
-            Account::decode_account(
-                "nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est"
-            )
-            .unwrap()
+            Account::parse("nano_1ipx847tk8o46pwxt5qjdbncjqcbwcc1rrmqnkztrfjy5k7z4imsrata9est")
+                .unwrap()
         );
         assert_eq!(
             deserialized.amount.unwrap(),

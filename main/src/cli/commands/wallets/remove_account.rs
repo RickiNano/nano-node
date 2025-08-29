@@ -1,5 +1,5 @@
 use crate::cli::{GlobalArgs, build_node};
-use anyhow::{Result, anyhow};
+use anyhow::anyhow;
 use clap::Parser;
 use rsnano_types::{Account, WalletId};
 
@@ -17,11 +17,13 @@ pub(crate) struct RemoveAccountArgs {
 }
 
 impl RemoveAccountArgs {
-    pub(crate) fn remove_account(&self, global_args: GlobalArgs) -> Result<()> {
+    pub(crate) fn remove_account(&self, global_args: GlobalArgs) -> anyhow::Result<()> {
         let node = build_node(&global_args)?;
         let wallet_id = WalletId::decode_hex(&self.wallet)?;
         let password = self.password.clone().unwrap_or_default();
-        let account = Account::decode_account(&self.account)?.into();
+        let account = Account::parse(&self.account)
+            .ok_or_else(|| anyhow!("Invalid account"))?
+            .into();
 
         node.wallets.ensure_wallet_is_unlocked(wallet_id, &password);
 

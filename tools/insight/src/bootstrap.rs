@@ -16,7 +16,7 @@ pub(crate) struct BootstrapInfo {
 
 impl BootstrapInfo {
     pub(crate) fn update(&mut self, state: &BootstrapState) {
-        let target_account = Account::decode_account(&self.search).ok();
+        let target_account = Account::parse(&self.search);
         let candidates = &state.candidate_accounts;
         self.priority_accounts = candidates.priority_len();
         self.blocked_accounts = candidates.blocked_len();
