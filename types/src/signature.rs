@@ -20,10 +20,6 @@ impl Signature {
         Self { bytes }
     }
 
-    pub fn try_from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        Ok(Self::from_bytes(bytes.try_into()?))
-    }
-
     pub fn deserialize<T>(reader: &mut T) -> std::io::Result<Signature>
     where
         T: Read,
@@ -45,10 +41,10 @@ impl Signature {
         result
     }
 
-    pub fn decode_hex(s: impl AsRef<str>) -> anyhow::Result<Self> {
+    pub fn decode_hex(s: impl AsRef<str>) -> Option<Self> {
         let mut bytes = [0u8; 64];
-        hex::decode_to_slice(s.as_ref(), &mut bytes)?;
-        Ok(Signature::from_bytes(bytes))
+        hex::decode_to_slice(s.as_ref(), &mut bytes).ok()?;
+        Some(Signature::from_bytes(bytes))
     }
 
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -106,7 +102,7 @@ impl<'de> Visitor<'de> for SignatureVisitor {
     where
         E: serde::de::Error,
     {
-        let signature = Signature::decode_hex(v).map_err(|_| {
+        let signature = Signature::decode_hex(v).ok_or_else(|| {
             serde::de::Error::invalid_value(Unexpected::Str(v), &"a hex string containing 64 bytes")
         })?;
         Ok(signature)

@@ -24,31 +24,28 @@ impl Peer {
     pub fn parse_list(input: &[String], default_port: u16) -> Vec<Peer> {
         input
             .iter()
-            .filter_map(|s| parse_peer(s, default_port).ok())
+            .filter_map(|s| parse_peer(s, default_port))
             .collect()
     }
 }
 
-fn parse_peer(input: &str, default_port: u16) -> anyhow::Result<Peer> {
+fn parse_peer(input: &str, default_port: u16) -> Option<Peer> {
     if input.contains(']') {
         // IPV6 with port
-        let addr = SocketAddrV6::from_str(input)?;
-        Ok(Peer::new(addr.ip().to_string(), addr.port()))
+        let addr = SocketAddrV6::from_str(input).ok()?;
+        Some(Peer::new(addr.ip().to_string(), addr.port()))
     } else if input.contains("::") {
         // IPV6 without port
-        Ok(Peer::new(input.to_owned(), default_port))
+        Some(Peer::new(input.to_owned(), default_port))
     } else if input.contains(':') {
         // hostname/ipv4 with port
         let mut values = input.split(':');
         let host = values.next().unwrap().to_owned();
-        let port = values
-            .next()
-            .ok_or_else(|| anyhow!("no port"))?
-            .parse::<u16>()?;
-        Ok(Peer::new(host, port))
+        let port = values.next()?.parse::<u16>().ok()?;
+        Some(Peer::new(host, port))
     } else {
         // just hostname/ipv4
-        Ok(Peer::new(input.to_owned(), default_port))
+        Some(Peer::new(input.to_owned(), default_port))
     }
 }
 

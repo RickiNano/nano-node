@@ -106,14 +106,6 @@ impl Epochs {
 // Epoch is bit packed in BlockDetails. That's why it's max is limited to 4 bits
 const_assert!((Epoch::MAX as u8) < (1 << 5));
 
-impl TryFrom<u8> for Epoch {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        FromPrimitive::from_u8(value).ok_or_else(|| anyhow!("invalid epoch value"))
-    }
-}
-
 pub fn epoch_v1_link() -> Link {
     let mut link_bytes = [0u8; 32];
     link_bytes[..14].copy_from_slice(b"epoch v1 block");
