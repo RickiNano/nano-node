@@ -8,6 +8,7 @@ use std::{
     thread::{self, available_parallelism},
 };
 
+use ed25519_dalek_blake2b::SignatureError;
 use rsnano_ledger::LedgerConstants;
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbBlockStore};
@@ -108,9 +109,10 @@ pub fn validate_message(
     public_key: &PublicKey,
     message: &[u8],
     signature: &Signature,
-) -> Result<(), ()> {
-    let public =
-        ed25519_dalek_blake2b::PublicKey::from_bytes(public_key.as_bytes()).map_err(|_| ())?;
-    let sig = ed25519_dalek_blake2b::Signature::from_bytes(signature.as_bytes()).map_err(|_| ())?;
-    public.verify_strict(message, &sig).map_err(|_| ())
+) -> Result<(), SignatureError> {
+    let public = ed25519_dalek_blake2b::PublicKey::from_bytes(public_key.as_bytes())
+        .map_err(|_| SignatureError::new())?;
+    let sig = ed25519_dalek_blake2b::Signature::from_bytes(signature.as_bytes())
+        .map_err(|_| SignatureError::new())?;
+    public.verify_strict(message, &sig)
 }

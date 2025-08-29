@@ -126,7 +126,7 @@ impl RepCrawler {
         queries.modify_for_channel(channel.channel_id(), |query| {
             // TODO: This linear search could be slow, especially with large votes.
             let target_hash = query.hash;
-            let found = vote.hashes.iter().any(|h| *h == target_hash);
+            let found = vote.hashes.contains(&target_hash);
             let done;
 
             if found {
@@ -308,7 +308,7 @@ impl RepCrawler {
         }
     }
 
-    fn validate_and_process<'a>(&self, mut guard: MutexGuard<RepCrawlerImpl>) {
+    fn validate_and_process(&self, mut guard: MutexGuard<RepCrawlerImpl>) {
         let mut responses = BoundedVecDeque::new(Self::MAX_RESPONSES);
         std::mem::swap(&mut guard.responses, &mut responses);
         drop(guard);
@@ -620,11 +620,11 @@ impl OrderedQueries {
                     self.by_channel.insert(entry.channel_id, by_channel);
                 }
             }
-            if let Some(mut by_hash) = self.by_hash.remove(&entry.hash) {
-                if by_hash.len() > 1 {
-                    by_hash.retain(|i| *i != entry_id);
-                    self.by_hash.insert(entry.hash, by_hash);
-                }
+            if let Some(mut by_hash) = self.by_hash.remove(&entry.hash)
+                && by_hash.len() > 1
+            {
+                by_hash.retain(|i| *i != entry_id);
+                self.by_hash.insert(entry.hash, by_hash);
             }
         }
     }

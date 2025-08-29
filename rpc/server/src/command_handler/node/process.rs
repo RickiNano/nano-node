@@ -14,47 +14,47 @@ impl RpcCommandHandler {
         let block: Block = args.block.into();
 
         // State blocks subtype check
-        if let Block::State(state) = &block {
-            if let Some(subtype) = args.subtype {
-                let any = self.node.ledger.any();
-                if !state.previous().is_zero() && !any.block_exists(&state.previous()) {
-                    bail!("Gap previous block")
-                } else {
-                    let balance = any.account_balance(&state.account());
-                    match subtype {
-                        BlockSubTypeDto::Send => {
-                            if balance <= state.balance() {
-                                bail!("Invalid block balance for given subtype");
-                            }
-                            // Send with previous == 0 fails balance check. No previous != 0 check required
+        if let Block::State(state) = &block
+            && let Some(subtype) = args.subtype
+        {
+            let any = self.node.ledger.any();
+            if !state.previous().is_zero() && !any.block_exists(&state.previous()) {
+                bail!("Gap previous block")
+            } else {
+                let balance = any.account_balance(&state.account());
+                match subtype {
+                    BlockSubTypeDto::Send => {
+                        if balance <= state.balance() {
+                            bail!("Invalid block balance for given subtype");
                         }
-                        BlockSubTypeDto::Receive => {
-                            if balance > state.balance() {
-                                bail!("Invalid block balance for given subtype");
-                            }
-                            // Receive can be point to open block. No previous != 0 check required
-                        }
-                        BlockSubTypeDto::Open => {
-                            if !state.previous().is_zero() {
-                                bail!("Invalid previous block for given subtype");
-                            }
-                        }
-                        BlockSubTypeDto::Change => {
-                            if balance != state.balance() {
-                                bail!("Invalid block balance for given subtype");
-                            } else if state.previous().is_zero() {
-                                bail!("Invalid previous block for given subtype");
-                            }
-                        }
-                        BlockSubTypeDto::Epoch => {
-                            if balance != state.balance() {
-                                bail!("Invalid block balance for given subtype");
-                            } else if !self.node.ledger.is_epoch_link(&state.link()) {
-                                bail!("Invalid epoch link");
-                            }
-                        }
-                        BlockSubTypeDto::Unknown => bail!("Invalid block subtype"),
+                        // Send with previous == 0 fails balance check. No previous != 0 check required
                     }
+                    BlockSubTypeDto::Receive => {
+                        if balance > state.balance() {
+                            bail!("Invalid block balance for given subtype");
+                        }
+                        // Receive can be point to open block. No previous != 0 check required
+                    }
+                    BlockSubTypeDto::Open => {
+                        if !state.previous().is_zero() {
+                            bail!("Invalid previous block for given subtype");
+                        }
+                    }
+                    BlockSubTypeDto::Change => {
+                        if balance != state.balance() {
+                            bail!("Invalid block balance for given subtype");
+                        } else if state.previous().is_zero() {
+                            bail!("Invalid previous block for given subtype");
+                        }
+                    }
+                    BlockSubTypeDto::Epoch => {
+                        if balance != state.balance() {
+                            bail!("Invalid block balance for given subtype");
+                        } else if !self.node.ledger.is_epoch_link(&state.link()) {
+                            bail!("Invalid epoch link");
+                        }
+                    }
+                    BlockSubTypeDto::Unknown => bail!("Invalid block subtype"),
                 }
             }
         }

@@ -67,34 +67,34 @@ impl RpcCommandHandler {
             ledger.sort_by(|a, b| b.cmp(a));
 
             for (_, account) in ledger {
-                if let Some(info) = any.get_account(&account) {
-                    if receivable || info.balance >= threshold {
-                        let pending = if receivable {
-                            let account_receivable = any.account_receivable(&account);
-                            if info.balance + account_receivable < threshold {
-                                continue;
-                            }
-                            Some(account_receivable)
-                        } else {
-                            None
-                        };
-
-                        let entry = LedgerAccountInfo {
-                            frontier: info.head,
-                            open_block: info.open_block,
-                            representative_block: any.representative_block_hash(&info.head),
-                            balance: info.balance,
-                            modified_timestamp: info.modified.as_u64().into(),
-                            block_count: info.block_count.into(),
-                            representative: representative.then(|| info.representative.into()),
-                            weight: weight.then(|| any.weight_exact(account.into())),
-                            pending,
-                            receivable: pending,
-                        };
-                        accounts.insert(account, entry);
-                        if accounts.len() >= count as usize {
-                            break;
+                if let Some(info) = any.get_account(&account)
+                    && (receivable || info.balance >= threshold)
+                {
+                    let pending = if receivable {
+                        let account_receivable = any.account_receivable(&account);
+                        if info.balance + account_receivable < threshold {
+                            continue;
                         }
+                        Some(account_receivable)
+                    } else {
+                        None
+                    };
+
+                    let entry = LedgerAccountInfo {
+                        frontier: info.head,
+                        open_block: info.open_block,
+                        representative_block: any.representative_block_hash(&info.head),
+                        balance: info.balance,
+                        modified_timestamp: info.modified.as_u64().into(),
+                        block_count: info.block_count.into(),
+                        representative: representative.then(|| info.representative.into()),
+                        weight: weight.then(|| any.weight_exact(account.into())),
+                        pending,
+                        receivable: pending,
+                    };
+                    accounts.insert(account, entry);
+                    if accounts.len() >= count as usize {
+                        break;
                     }
                 }
             }

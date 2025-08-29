@@ -44,23 +44,23 @@ fn get_accounts_info(
     let mut account_dtos = HashMap::new();
 
     for account in accounts {
-        if let Some(info) = any.get_account(&account) {
-            if info.modified >= modified_since {
-                let entry = AccountInfo {
-                    frontier: info.head,
-                    open_block: info.open_block,
-                    representative_block: any.representative_block_hash(&info.head),
-                    balance: info.balance,
-                    modified_timestamp: info.modified.as_u64().into(),
-                    block_count: info.block_count.into(),
-                    representative: representative.then(|| info.representative.as_account()),
-                    weight: weight.then(|| any.weight_exact(account.into())),
-                    receivable: receivable.then(|| any.account_receivable(&account)),
-                    pending: receivable.then(|| any.account_receivable(&account)),
-                };
+        if let Some(info) = any.get_account(&account)
+            && info.modified >= modified_since
+        {
+            let entry = AccountInfo {
+                frontier: info.head,
+                open_block: info.open_block,
+                representative_block: any.representative_block_hash(&info.head),
+                balance: info.balance,
+                modified_timestamp: info.modified.as_u64().into(),
+                block_count: info.block_count.into(),
+                representative: representative.then(|| info.representative.as_account()),
+                weight: weight.then(|| any.weight_exact(account.into())),
+                receivable: receivable.then(|| any.account_receivable(&account)),
+                pending: receivable.then(|| any.account_receivable(&account)),
+            };
 
-                account_dtos.insert(account, entry);
-            }
+            account_dtos.insert(account, entry);
         }
     }
 

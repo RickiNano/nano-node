@@ -128,7 +128,7 @@ impl Telemetry {
             return false;
         }
 
-        return true; // Telemetry is OK
+        true // Telemetry is OK
     }
 
     /// Process telemetry message from network
@@ -176,16 +176,20 @@ impl Telemetry {
         self.mutex.lock().unwrap().telemetries.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn broadcast_predicate(&self, data: &TelemetryImpl) -> bool {
-        if self.config.enable_ongoing_broadcasts {
-            return data.last_broadcast.is_none()
-                || data.last_broadcast.unwrap().elapsed()
-                    >= Duration::from_millis(
-                        self.network_params.network.telemetry_broadcast_interval_ms as u64,
-                    );
+        if !self.config.enable_ongoing_broadcasts {
+            return false;
         }
 
-        return false;
+        data.last_broadcast.is_none()
+            || data.last_broadcast.unwrap().elapsed()
+                >= Duration::from_millis(
+                    self.network_params.network.telemetry_broadcast_interval_ms as u64,
+                )
     }
 
     fn run(&self) {
@@ -257,10 +261,10 @@ impl Telemetry {
     /// Returns telemetry for selected endpoint
     pub fn get_telemetry(&self, endpoint: &SocketAddrV6) -> Option<TelemetryData> {
         let guard = self.mutex.lock().unwrap();
-        if let Some(entry) = guard.telemetries.get_by_endpoint(endpoint) {
-            if !self.has_timed_out(entry) {
-                return Some(entry.data.clone());
-            }
+        if let Some(entry) = guard.telemetries.get_by_endpoint(endpoint)
+            && !self.has_timed_out(entry)
+        {
+            return Some(entry.data.clone());
         }
         None
     }
@@ -427,10 +431,10 @@ impl OrderedTelemetries {
     }
 
     fn pop_front(&mut self) {
-        if let Some(channel_id) = self.sequenced.pop_front() {
-            if let Some(entry) = self.by_channel_id.remove(&channel_id) {
-                self.by_endpoint.remove(&entry.endpoint);
-            }
+        if let Some(channel_id) = self.sequenced.pop_front()
+            && let Some(entry) = self.by_channel_id.remove(&channel_id)
+        {
+            self.by_endpoint.remove(&entry.endpoint);
         }
     }
 

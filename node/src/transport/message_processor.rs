@@ -27,7 +27,7 @@ pub struct MessageProcessorConfig {
 impl MessageProcessorConfig {
     pub fn new(parallelism: usize) -> Self {
         Self {
-            threads: min(2, max(parallelism / 4, 1)),
+            threads: (parallelism / 4).clamp(1, 2),
             max_queue: 64,
         }
     }

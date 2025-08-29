@@ -84,10 +84,10 @@ impl RpcCommandHandler {
         }
 
         // Check for incorrect account key
-        if let Some(acc) = args.account {
-            if acc != account {
-                bail!("Incorrect key for given account");
-            }
+        if let Some(acc) = args.account
+            && acc != account
+        {
+            bail!("Incorrect key for given account");
         }
 
         let root: Root;
@@ -252,19 +252,18 @@ pub fn difficulty_ledger(node: Arc<Node>, any: &impl AnySet, block: &Block) -> u
     }
 
     // Link check
-    if let Some(link) = block.link_field() {
-        if !details.is_send {
-            if let Some(block_link) = any.get_block(&link.into()) {
-                let account = block.account_field().unwrap(); // Link is non-zero therefore it's a state block and has an account field;
-                if any
-                    .get_pending(&PendingKey::new(account, link.into()))
-                    .is_some()
-                {
-                    let epoch = std::cmp::max(details.epoch, block_link.epoch());
-                    details = BlockDetails::new(epoch, details.is_send, true, details.is_epoch);
-                    details_found = true;
-                }
-            }
+    if let Some(link) = block.link_field()
+        && !details.is_send
+        && let Some(block_link) = any.get_block(&link.into())
+    {
+        let account = block.account_field().unwrap(); // Link is non-zero therefore it's a state block and has an account field;
+        if any
+            .get_pending(&PendingKey::new(account, link.into()))
+            .is_some()
+        {
+            let epoch = std::cmp::max(details.epoch, block_link.epoch());
+            details = BlockDetails::new(epoch, details.is_send, true, details.is_epoch);
+            details_found = true;
         }
     }
 

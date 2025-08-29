@@ -22,7 +22,7 @@ impl StateBlock {
             + Amount::SERIALIZED_SIZE // Balance
             + Link::SERIALIZED_SIZE // Link
             + Signature::SERIALIZED_SIZE
-            + std::mem::size_of::<u64>() // Work
+            + 8 // Work
     ;
 
     pub fn verify_signature(&self) -> Result<(), SignatureError> {
