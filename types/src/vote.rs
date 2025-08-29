@@ -146,7 +146,7 @@ impl Vote {
 
     pub fn deserialize_reader(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let voter = PublicKey::deserialize(&mut bytes)?;
-        let signature = Signature::deserialize_reader(&mut bytes)?;
+        let signature = Signature::deserialize(&mut bytes)?;
         let mut buffer = [0; 8];
         bytes.read_exact(&mut buffer)?;
         let timestamp = VoteTimestamp::from_le_bytes(buffer);

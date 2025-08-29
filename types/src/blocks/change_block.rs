@@ -45,7 +45,7 @@ impl ChangeBlock {
             representative: PublicKey::deserialize(reader)?,
         };
 
-        let signature = Signature::deserialize_reader(reader)?;
+        let signature = Signature::deserialize(reader)?;
         let work = read_u64_le(reader)?;
         let hash = hashables.hash();
         Ok(Self {

@@ -35,7 +35,7 @@ impl SendBlock {
         T: Read,
     {
         let hashables = SendHashables::deserialize_reader(reader)?;
-        let signature = Signature::deserialize_reader(reader)?;
+        let signature = Signature::deserialize(reader)?;
 
         let work = read_u64_le(reader)?;
         let hash = hashables.hash();

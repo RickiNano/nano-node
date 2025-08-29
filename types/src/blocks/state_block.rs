@@ -63,7 +63,7 @@ impl StateBlock {
         let representative = PublicKey::deserialize(reader)?;
         let balance = Amount::deserialize_reader(reader)?;
         let link = Link::deserialize(reader)?;
-        let signature = Signature::deserialize_reader(reader)?;
+        let signature = Signature::deserialize(reader)?;
         let work = read_u64_be(reader)?;
         let hashables = StateHashables {
             account,

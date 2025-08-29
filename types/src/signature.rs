@@ -28,7 +28,7 @@ impl Signature {
         64
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> std::io::Result<Signature>
+    pub fn deserialize<T>(reader: &mut T) -> std::io::Result<Signature>
     where
         T: Read,
     {

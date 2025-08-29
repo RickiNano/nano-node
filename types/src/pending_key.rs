@@ -1,6 +1,6 @@
 use crate::{Account, Block, BlockHash, DeserializationError};
 use primitive_types::U512;
-use std::io::Read;
+use std::io::{Read, Write};
 
 /// This struct represents the data written into the pending (receivable) database table key
 /// the receiving account and hash of the send block identify a pending db table entry
@@ -26,9 +26,7 @@ impl PendingKey {
 
     pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
         let mut result = [0; Self::SERIALIZED_SIZE];
-        let mut slice = result.as_mut_slice();
-        self.receiving_account.serialize(&mut slice).unwrap();
-        self.send_block_hash.serialize(&mut slice).unwrap();
+        self.serialize(&mut result.as_mut_slice()).unwrap();
         result
     }
 
@@ -43,7 +41,15 @@ impl PendingKey {
         )
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: Write,
+    {
+        self.receiving_account.serialize(writer)?;
+        self.send_block_hash.serialize(writer)
+    }
+
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {

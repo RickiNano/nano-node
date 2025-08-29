@@ -7,7 +7,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, BlockHash, PendingInfo, PendingKey};
 
-use crate::{LmdbIterator, PENDING_TEST_DATABASE, iterator::LmdbRangeIterator};
+use crate::{iterator::LmdbRangeIterator, LmdbIterator, PENDING_TEST_DATABASE};
 
 pub struct LmdbPendingStore {
     database: LmdbDatabase,
@@ -138,7 +138,7 @@ impl ConfiguredPendingDatabaseBuilder {
 }
 
 pub fn read_pending_record(mut key: &[u8], mut value: &[u8]) -> (PendingKey, PendingInfo) {
-    let key = PendingKey::deserialize_reader(&mut key).unwrap();
+    let key = PendingKey::deserialize(&mut key).unwrap();
     let info = PendingInfo::deserialize_reader(&mut value).unwrap();
     (key, info)
 }

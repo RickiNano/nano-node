@@ -1,5 +1,5 @@
 use std::{
-    fs::{File, Permissions, set_permissions},
+    fs::{set_permissions, File, Permissions},
     io::{Read, Write},
     ops::RangeBounds,
     os::unix::prelude::PermissionsExt,
@@ -13,8 +13,8 @@ use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_types::{
-    Account, DeserializationError, KeyDerivationFunction, PublicKey, RawKey, WorkNonce,
-    deterministic_key, read_u64_ne,
+    deterministic_key, read_u64_ne, Account, DeserializationError, KeyDerivationFunction,
+    PublicKey, RawKey, WorkNonce,
 };
 
 use crate::{Fan, LmdbDatabase, LmdbRangeIterator};
@@ -39,17 +39,19 @@ pub struct WalletValue {
 }
 
 impl WalletValue {
+    pub const SERIALIZED_SIZE: usize = RawKey::SERIALIZED_SIZE + 8;
+
     pub fn new(key: RawKey, work: WorkNonce) -> Self {
         Self { key, work }
     }
 
-    pub fn to_bytes(&self) -> [u8; 40] {
-        let mut buffer = [0; 40];
-        self.serialize_writer(&mut buffer.as_mut()).unwrap();
+    pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
+        let mut buffer = [0; Self::SERIALIZED_SIZE];
+        self.serialize(&mut buffer.as_mut()).unwrap();
         buffer
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: Write,
     {
@@ -57,7 +59,7 @@ impl WalletValue {
         writer.write_all(&u64::from(self.work).to_ne_bytes())
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
@@ -268,7 +270,7 @@ impl LmdbWalletStore {
     pub fn entry_get_raw(&self, txn: &dyn Transaction, pub_key: &PublicKey) -> WalletValue {
         match txn.get(self.db_handle(), pub_key.as_bytes()) {
             Ok(mut bytes) => {
-                WalletValue::deserialize_reader(&mut bytes).expect("Should be a valid wallet value")
+                WalletValue::deserialize(&mut bytes).expect("Should be a valid wallet value")
             }
             _ => WalletValue::new(RawKey::zero(), 0.into()),
         }
@@ -724,6 +726,6 @@ impl LmdbWalletStore {
 
 fn read_wallet_record(k: &[u8], mut v: &[u8]) -> (PublicKey, WalletValue) {
     let key = PublicKey::from_slice(k).expect("Should be a valid key");
-    let value = WalletValue::deserialize_reader(&mut v).expect("Should be a valid wallet value");
+    let value = WalletValue::deserialize(&mut v).expect("Should be a valid wallet value");
     (key, value)
 }

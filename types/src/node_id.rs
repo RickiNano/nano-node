@@ -27,7 +27,7 @@ impl NodeId {
         writer.write_all(self.as_bytes())
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> std::io::Result<Self>
+    pub fn deserialize<T>(reader: &mut T) -> std::io::Result<Self>
     where
         T: Read,
     {

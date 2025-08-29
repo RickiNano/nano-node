@@ -4,7 +4,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use serde_derive::Serialize;
 
-use rsnano_types::{Account, BlockHash, DeserializationError, HashOrAccount, read_u8, read_u64_be};
+use rsnano_types::{read_u64_be, read_u8, Account, BlockHash, DeserializationError, HashOrAccount};
 use rsnano_utils::stats::DetailType;
 
 use super::MessageVariant;
@@ -39,14 +39,14 @@ impl AscPullReqType {
         })
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         match self {
-            AscPullReqType::Blocks(i) => i.serialize_writer(writer),
-            AscPullReqType::AccountInfo(i) => i.serialize_writer(writer),
-            AscPullReqType::Frontiers(i) => i.serialize_writer(writer),
+            AscPullReqType::Blocks(i) => i.serialize(writer),
+            AscPullReqType::AccountInfo(i) => i.serialize(writer),
+            AscPullReqType::Frontiers(i) => i.serialize(writer),
         }
     }
 }
@@ -98,7 +98,7 @@ impl BlocksReqPayload {
         })
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -134,7 +134,7 @@ impl AccountInfoReqPayload {
         })
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -166,7 +166,7 @@ impl FrontiersReqPayload {
         Ok(Self { start, count })
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -268,7 +268,7 @@ impl AscPullReq {
     {
         writer.write_all(&[self.payload_type() as u8])?;
         writer.write_all(&self.id.to_be_bytes())?;
-        self.req_type.serialize_writer(writer)
+        self.req_type.serialize(writer)
     }
 }
 
@@ -295,7 +295,7 @@ impl From<&AscPullReqType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn serialize_blocks() {
