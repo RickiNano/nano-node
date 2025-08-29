@@ -59,7 +59,7 @@ impl PendingInfo {
     where
         T: Read,
     {
-        let source = Account::deserialize_reader(reader)?;
+        let source = Account::deserialize(reader)?;
         let amount = Amount::deserialize_reader(reader)?;
         let epoch =
             FromPrimitive::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;

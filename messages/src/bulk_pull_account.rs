@@ -34,7 +34,7 @@ impl BulkPullAccount {
     }
 
     pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
-        let account = Account::deserialize_reader(&mut bytes)?;
+        let account = Account::deserialize(&mut bytes)?;
         let minimum_amount = Amount::deserialize_reader(&mut bytes)?;
         let flags = BulkPullAccountFlags::from_u8(read_u8(&mut bytes)?)
             .ok_or(DeserializationError::InvalidData)?;

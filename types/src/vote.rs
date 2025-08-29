@@ -145,14 +145,14 @@ impl Vote {
     }
 
     pub fn deserialize_reader(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
-        let voter = PublicKey::deserialize_reader(&mut bytes)?;
+        let voter = PublicKey::deserialize(&mut bytes)?;
         let signature = Signature::deserialize_reader(&mut bytes)?;
         let mut buffer = [0; 8];
         bytes.read_exact(&mut buffer)?;
         let timestamp = VoteTimestamp::from_le_bytes(buffer);
         let mut hashes = Vec::new();
         while bytes.len() > 0 && hashes.len() < Self::MAX_HASHES {
-            hashes.push(BlockHash::deserialize_reader(&mut bytes)?);
+            hashes.push(BlockHash::deserialize(&mut bytes)?);
         }
         Ok(Self {
             timestamp,

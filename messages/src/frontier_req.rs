@@ -34,7 +34,7 @@ impl FrontierReq {
         mut bytes: &[u8],
         extensions: BitArray<u16>,
     ) -> Result<Self, DeserializationError> {
-        let start = Account::deserialize_reader(&mut bytes)?;
+        let start = Account::deserialize(&mut bytes)?;
         let mut buffer = [0u8; 4];
         bytes.read_exact(&mut buffer)?;
         let age = u32::from_le_bytes(buffer);

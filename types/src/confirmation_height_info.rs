@@ -41,7 +41,7 @@ impl ConfirmationHeightInfo {
         T: Read,
     {
         let height = read_u64_ne(reader)?;
-        let frontier = BlockHash::deserialize_reader(reader)?;
+        let frontier = BlockHash::deserialize(reader)?;
         Ok(Self { height, frontier })
     }
 }

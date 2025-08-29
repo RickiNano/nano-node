@@ -39,8 +39,8 @@ impl QualifiedRoot {
     where
         T: Read,
     {
-        let root = Root::deserialize_reader(reader)?;
-        let previous = BlockHash::deserialize_reader(reader)?;
+        let root = Root::deserialize(reader)?;
+        let previous = BlockHash::deserialize(reader)?;
         Ok(QualifiedRoot { root, previous })
     }
 

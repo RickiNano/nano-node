@@ -88,7 +88,7 @@ impl BlocksReqPayload {
     where
         T: Read,
     {
-        let start = HashOrAccount::deserialize_reader(reader)?;
+        let start = HashOrAccount::deserialize(reader)?;
         let count = read_u8(reader)?;
         let start_type = HashType::deserialize(reader)?;
         Ok(Self {
@@ -126,7 +126,7 @@ impl AccountInfoReqPayload {
     where
         T: Read,
     {
-        let target = HashOrAccount::deserialize_reader(reader)?;
+        let target = HashOrAccount::deserialize(reader)?;
         let target_type = HashType::deserialize(reader)?;
         Ok(Self {
             target,
@@ -159,7 +159,7 @@ impl FrontiersReqPayload {
     where
         T: Read,
     {
-        let start = Account::deserialize_reader(reader)?;
+        let start = Account::deserialize(reader)?;
         let mut count_bytes = [0u8; 2];
         reader.read_exact(&mut count_bytes)?;
         let count = u16::from_be_bytes(count_bytes);

@@ -63,9 +63,9 @@ impl AccountInfo {
     where
         T: Read,
     {
-        let head = BlockHash::deserialize_reader(reader)?;
-        let representative = PublicKey::deserialize_reader(reader)?;
-        let open_block = BlockHash::deserialize_reader(reader)?;
+        let head = BlockHash::deserialize(reader)?;
+        let representative = PublicKey::deserialize(reader)?;
+        let open_block = BlockHash::deserialize(reader)?;
         let balance = Amount::deserialize_reader(reader)?;
         let modified = read_u64_ne(reader)?.into();
         let block_count = read_u64_ne(reader)?;

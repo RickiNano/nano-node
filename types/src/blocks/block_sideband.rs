@@ -109,7 +109,7 @@ impl BlockSideband {
         T: Read,
     {
         let account = if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
-            Account::deserialize_reader(reader)?
+            Account::deserialize(reader)?
         } else {
             Account::zero()
         };

@@ -44,8 +44,8 @@ impl BulkPull {
         mut bytes: &[u8],
         extensions: BitArray<u16>,
     ) -> Result<Self, DeserializationError> {
-        let start = HashOrAccount::deserialize_reader(&mut bytes)?;
-        let end = BlockHash::deserialize_reader(&mut bytes)?;
+        let start = HashOrAccount::deserialize(&mut bytes)?;
+        let end = BlockHash::deserialize(&mut bytes)?;
 
         let count = if extensions[BulkPull::COUNT_PRESENT_FLAG] {
             let mut extended_parameters_buffers = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];

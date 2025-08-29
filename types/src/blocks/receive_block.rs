@@ -40,8 +40,8 @@ impl ReceiveBlock {
     where
         T: Read,
     {
-        let previous = BlockHash::deserialize_reader(reader)?;
-        let source = BlockHash::deserialize_reader(reader)?;
+        let previous = BlockHash::deserialize(reader)?;
+        let source = BlockHash::deserialize(reader)?;
         let signature = Signature::deserialize_reader(reader)?;
         let work = read_u64_le(reader)?;
         let hashables = ReceiveHashables { previous, source };

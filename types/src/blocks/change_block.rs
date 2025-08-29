@@ -41,8 +41,8 @@ impl ChangeBlock {
         T: Read,
     {
         let hashables = ChangeHashables {
-            previous: BlockHash::deserialize_reader(reader)?,
-            representative: PublicKey::deserialize_reader(reader)?,
+            previous: BlockHash::deserialize(reader)?,
+            representative: PublicKey::deserialize(reader)?,
         };
 
         let signature = Signature::deserialize_reader(reader)?;

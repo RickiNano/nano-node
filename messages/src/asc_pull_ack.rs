@@ -259,11 +259,11 @@ impl AccountInfoAckPayload {
     where
         T: Read,
     {
-        let account = Account::deserialize_reader(reader)?;
-        let account_open = BlockHash::deserialize_reader(reader)?;
-        let account_head = BlockHash::deserialize_reader(reader)?;
+        let account = Account::deserialize(reader)?;
+        let account_open = BlockHash::deserialize(reader)?;
+        let account_head = BlockHash::deserialize(reader)?;
         let account_block_count = read_u64_be(reader)?;
-        let account_conf_frontier = BlockHash::deserialize_reader(reader)?;
+        let account_conf_frontier = BlockHash::deserialize(reader)?;
         let account_conf_height = read_u64_be(reader)?;
 
         Ok(Self {

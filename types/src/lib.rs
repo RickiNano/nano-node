@@ -344,8 +344,8 @@ impl Frontier {
     where
         T: Read,
     {
-        let account = Account::deserialize_reader(reader)?;
-        let hash = BlockHash::deserialize_reader(reader)?;
+        let account = Account::deserialize(reader)?;
+        let hash = BlockHash::deserialize(reader)?;
         Ok(Self::new(account, hash))
     }
 }

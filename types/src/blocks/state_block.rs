@@ -58,11 +58,11 @@ impl StateBlock {
     where
         T: Read,
     {
-        let account = Account::deserialize_reader(reader)?;
-        let previous = BlockHash::deserialize_reader(reader)?;
-        let representative = PublicKey::deserialize_reader(reader)?;
+        let account = Account::deserialize(reader)?;
+        let previous = BlockHash::deserialize(reader)?;
+        let representative = PublicKey::deserialize(reader)?;
         let balance = Amount::deserialize_reader(reader)?;
-        let link = Link::deserialize_reader(reader)?;
+        let link = Link::deserialize(reader)?;
         let signature = Signature::deserialize_reader(reader)?;
         let work = read_u64_be(reader)?;
         let hashables = StateHashables {

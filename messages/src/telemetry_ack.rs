@@ -155,7 +155,7 @@ impl TelemetryData {
         let peer_count = read_u32_be(reader)?;
         let protocol_version = read_u8(reader)?;
         let uptime = read_u64_be(reader)?;
-        let genesis_block = BlockHash::deserialize_reader(reader)?;
+        let genesis_block = BlockHash::deserialize(reader)?;
         let major_version = read_u8(reader)?;
         let minor_version = read_u8(reader)?;
         let patch_version = read_u8(reader)?;

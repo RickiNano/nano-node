@@ -226,8 +226,8 @@ impl SendHashables {
     where
         T: Read,
     {
-        let previous = BlockHash::deserialize_reader(reader)?;
-        let destination = Account::deserialize_reader(reader)?;
+        let previous = BlockHash::deserialize(reader)?;
+        let destination = Account::deserialize(reader)?;
         let balance = Amount::deserialize_reader(reader)?;
 
         Ok(Self {

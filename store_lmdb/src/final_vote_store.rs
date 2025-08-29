@@ -71,9 +71,9 @@ impl LmdbFinalVoteStore {
         let result = tx.get(self.database, &root.to_bytes());
         match result {
             Err(Error::NotFound) => None,
-            Ok(mut bytes) => Some(
-                BlockHash::deserialize_reader(&mut bytes).expect("Should be valid block hash data"),
-            ),
+            Ok(mut bytes) => {
+                Some(BlockHash::deserialize(&mut bytes).expect("Should be valid block hash data"))
+            }
             Err(e) => panic!("Could not load final vote info {:?}", e),
         }
     }
@@ -94,7 +94,7 @@ impl LmdbFinalVoteStore {
 
 fn read_final_vote_record(mut key: &[u8], mut value: &[u8]) -> (QualifiedRoot, BlockHash) {
     let root = QualifiedRoot::deserialize_reader(&mut key).unwrap();
-    let hash = BlockHash::deserialize_reader(&mut value).unwrap();
+    let hash = BlockHash::deserialize(&mut value).unwrap();
     (root, hash)
 }
 

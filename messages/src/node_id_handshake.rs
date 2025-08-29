@@ -103,7 +103,7 @@ impl NodeIdHandshakeResponse {
             let node_id = NodeId::deserialize_reader(&mut bytes)?;
             let mut salt = [0u8; 32];
             bytes.read_exact(&mut salt)?;
-            let genesis = BlockHash::deserialize_reader(&mut bytes)?;
+            let genesis = BlockHash::deserialize(&mut bytes)?;
             let signature = Signature::deserialize_reader(&mut bytes)?;
             Ok(Self {
                 node_id,

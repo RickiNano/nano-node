@@ -47,8 +47,8 @@ impl PendingKey {
     where
         T: Read,
     {
-        let receiving_account = Account::deserialize_reader(reader)?;
-        let send_block_hash = BlockHash::deserialize_reader(reader)?;
+        let receiving_account = Account::deserialize(reader)?;
+        let send_block_hash = BlockHash::deserialize(reader)?;
         Ok(Self {
             receiving_account,
             send_block_hash,

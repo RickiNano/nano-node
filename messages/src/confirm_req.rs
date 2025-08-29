@@ -82,8 +82,8 @@ impl ConfirmReq {
         let count = Self::count(extensions) as usize;
         let mut roots_hashes = Vec::with_capacity(count);
         for _ in 0..count {
-            let block_hash = BlockHash::deserialize_reader(&mut bytes)?;
-            let root = Root::deserialize_reader(&mut bytes)?;
+            let block_hash = BlockHash::deserialize(&mut bytes)?;
+            let root = Root::deserialize(&mut bytes)?;
             if !block_hash.is_zero() || !root.is_zero() {
                 roots_hashes.push((block_hash, root));
             }

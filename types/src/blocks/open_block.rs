@@ -46,9 +46,9 @@ impl OpenBlock {
         T: Read,
     {
         let hashables = OpenHashables {
-            source: BlockHash::deserialize_reader(reader)?,
-            representative: PublicKey::deserialize_reader(reader)?,
-            account: Account::deserialize_reader(reader)?,
+            source: BlockHash::deserialize(reader)?,
+            representative: PublicKey::deserialize(reader)?,
+            account: Account::deserialize(reader)?,
         };
         let signature = Signature::deserialize_reader(reader)?;
         let work = read_u64_le(reader)?;

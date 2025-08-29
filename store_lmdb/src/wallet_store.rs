@@ -61,7 +61,7 @@ impl WalletValue {
     where
         T: Read,
     {
-        let key = RawKey::deserialize_reader(reader)?;
+        let key = RawKey::deserialize(reader)?;
         let work = read_u64_ne(reader)?;
         Ok(WalletValue::new(key, work.into()))
     }
