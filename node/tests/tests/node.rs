@@ -1,4 +1,10 @@
-use std::{cmp::max, collections::HashMap, sync::Arc, thread::sleep, time::Duration};
+use std::{
+    cmp::max,
+    collections::HashMap,
+    sync::{Arc, mpsc::TryRecvError},
+    thread::sleep,
+    time::{Duration, Instant},
+};
 
 use rsnano_ledger::{
     AnySet, BlockError, ConfirmedSet, DEV_GENESIS_ACCOUNT, DEV_GENESIS_HASH, DEV_GENESIS_PUB_KEY,
@@ -99,13 +105,13 @@ fn vote_by_hash_bundle() {
     let block = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
 
     blocks.push(block.clone());
-    node.process_local(block).unwrap();
+    node.process(block);
 
     // Create a chain of blocks
     for _ in 2..10 {
         let block = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
         blocks.push(block.clone());
-        node.process_local(block).unwrap();
+        node.process(block);
     }
 
     // Confirm the last block to confirm the entire chain
@@ -113,15 +119,15 @@ fn vote_by_hash_bundle() {
 
     // Insert the genesis key and a new key into the wallet
     node.wallets
-        .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
+        .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), false)
         .unwrap();
+
     let key1 = PrivateKey::new();
     node.wallets
-        .insert_adhoc2(&wallet_id, &key1.raw_key(), true)
+        .insert_adhoc2(&wallet_id, &key1.raw_key(), false)
         .unwrap();
 
     // Set up an observer to track the maximum number of hashes in a vote
-
     let (tx, rx) = backpressure_channel::channel(128);
     node.vote_processor.add_observer(tx);
 
@@ -132,13 +138,24 @@ fn vote_by_hash_bundle() {
     }
 
     let mut max_hashes = 0;
-    while let Ok(e) = rx.recv() {
-        if let AecEvent::VoteProcessed(vote, _, _) = e {
-            max_hashes = max(max_hashes, vote.hashes.len());
+    let start = Instant::now();
+    loop {
+        if start.elapsed() > Duration::from_secs(5) {
+            panic!("timeout!");
+        }
 
-            if max_hashes >= 3 {
-                break;
+        match rx.try_recv() {
+            Ok(e) => {
+                if let AecEvent::VoteProcessed(vote, _, _) = e {
+                    max_hashes = max(max_hashes, vote.hashes.len());
+
+                    if max_hashes >= 3 {
+                        break;
+                    }
+                }
             }
+            Err(TryRecvError::Disconnected) => break,
+            Err(TryRecvError::Empty) => std::thread::sleep(Duration::from_millis(1)),
         }
     }
 
