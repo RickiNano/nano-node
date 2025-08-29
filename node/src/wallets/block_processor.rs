@@ -28,6 +28,7 @@ impl WalletBlockProcessor {
     pub(crate) fn run(self) {
         while let Ok(block) = self.inbound.recv() {
             let wallets = self.wallets.clone();
+            let hash = block.hash();
 
             let context = BlockContext::new_with_callback(
                 block,
@@ -38,8 +39,11 @@ impl WalletBlockProcessor {
                 }),
             );
 
-            let _inserted = self.block_processor.push(context);
-            // TODO stats for drops?
+            let inserted = self.block_processor.push(context);
+            if !inserted {
+                self.wallets.block_processed(&hash, None);
+                // TODO stats for drops?
+            }
         }
     }
 }
