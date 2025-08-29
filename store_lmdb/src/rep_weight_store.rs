@@ -6,10 +6,7 @@ use rsnano_nullable_lmdb::{
     sys::{MDB_FIRST, MDB_NEXT, MDB_cursor_op},
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::{
-    Amount, PublicKey,
-    stream::{BufferReader, Deserialize},
-};
+use rsnano_types::{Amount, PublicKey};
 
 use crate::REP_WEIGHT_TEST_DATABASE;
 
@@ -40,9 +37,8 @@ impl LmdbRepWeightStore {
 
     pub fn get(&self, txn: &dyn Transaction, pub_key: &PublicKey) -> Option<Amount> {
         match txn.get(self.database, pub_key.as_bytes()) {
-            Ok(bytes) => {
-                let mut stream = BufferReader::new(bytes);
-                Amount::deserialize(&mut stream).ok()
+            Ok(mut bytes) => {
+                Some(Amount::deserialize_reader(&mut bytes).expect("Should be valid amount"))
             }
             Err(rsnano_nullable_lmdb::Error::NotFound) => None,
             Err(e) => {

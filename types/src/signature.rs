@@ -1,4 +1,3 @@
-use crate::stream::Stream;
 use serde::de::{Unexpected, Visitor};
 use std::{
     fmt::{Debug, Write},
@@ -35,13 +34,6 @@ impl Signature {
     {
         let mut result = Signature { bytes: [0; 64] };
         reader.read_exact(&mut result.bytes)?;
-        Ok(result)
-    }
-
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Signature> {
-        let mut result = Signature { bytes: [0; 64] };
-
-        stream.read_bytes(&mut result.bytes, 64)?;
         Ok(result)
     }
 

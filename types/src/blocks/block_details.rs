@@ -1,7 +1,7 @@
 use num::FromPrimitive;
 
 use super::BlockSubType;
-use crate::{DeserializationError, Epoch, read_u8, stream::Stream};
+use crate::{DeserializationError, Epoch, read_u8};
 use std::io::Read;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -31,10 +31,6 @@ impl BlockDetails {
         T: Read,
     {
         BlockDetails::unpack(read_u8(reader)?).map_err(|_| DeserializationError::InvalidData)
-    }
-
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<BlockDetails> {
-        BlockDetails::unpack(stream.read_u8()?)
     }
 
     pub fn packed(&self) -> u8 {
@@ -88,7 +84,6 @@ impl BlockDetails {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::stream::BufferReader;
 
     #[test]
     fn test_block_details() {
@@ -152,8 +147,7 @@ mod test {
     fn serialize() {
         let details = BlockDetails::new(Epoch::Epoch2, false, true, false);
         let buffer = [details.packed()];
-        let mut stream = BufferReader::new(&buffer);
-        let deserialized = BlockDetails::deserialize(&mut stream).unwrap();
+        let deserialized = BlockDetails::deserialize_reader(&mut buffer.as_slice()).unwrap();
         assert_eq!(deserialized, details);
     }
 }

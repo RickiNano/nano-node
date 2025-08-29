@@ -1,11 +1,7 @@
-use anyhow::Result;
 use num_traits::FromPrimitive;
 
 use super::{BlockHash, Epoch};
-use crate::{
-    Amount, DeserializationError, PublicKey, UnixTimestamp, read_u8, read_u64_ne,
-    stream::{Deserialize, Stream, StreamExt},
-};
+use crate::{Amount, DeserializationError, PublicKey, UnixTimestamp, read_u8, read_u64_ne};
 use std::io::Read;
 
 /// Latest information about an account
@@ -22,12 +18,14 @@ pub struct AccountInfo {
 }
 
 impl AccountInfo {
-    pub fn to_bytes(&self) -> [u8; 129] {
-        let mut buffer = [0; 129];
-        self.serialize_writer(&mut buffer.as_mut())
-            .expect("Should serialize account info");
-        buffer
-    }
+    pub const SERIALIZED_SIZE: usize = BlockHash::SERIALIZED_SIZE
+        + PublicKey::SERIALIZED_SIZE // head
+        + BlockHash::SERIALIZED_SIZE // representative
+        + Amount::SERIALIZED_SIZE // balance
+        + 8 // modified
+        + 8 //block count
+        + 1 // epoch
+        ;
 
     pub fn new_test_instance() -> Self {
         Self {
@@ -39,6 +37,13 @@ impl AccountInfo {
             block_count: 5,
             epoch: Epoch::Epoch2,
         }
+    }
+
+    pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
+        let mut buffer = [0; Self::SERIALIZED_SIZE];
+        self.serialize_writer(&mut buffer.as_mut())
+            .expect("Should serialize account info");
+        buffer
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -73,21 +78,6 @@ impl AccountInfo {
             modified,
             block_count,
             epoch,
-        })
-    }
-}
-
-impl Deserialize for AccountInfo {
-    type Target = Self;
-    fn deserialize(stream: &mut dyn Stream) -> Result<AccountInfo> {
-        Ok(Self {
-            head: BlockHash::deserialize(stream)?,
-            representative: PublicKey::deserialize(stream)?,
-            open_block: BlockHash::deserialize(stream)?,
-            balance: Amount::deserialize(stream)?,
-            modified: stream.read_u64_ne()?.into(),
-            block_count: stream.read_u64_ne()?,
-            epoch: Epoch::from_u8(stream.read_u8()?).ok_or_else(|| anyhow!("invalid epoch"))?,
         })
     }
 }

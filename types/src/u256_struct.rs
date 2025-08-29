@@ -80,15 +80,6 @@ macro_rules! u256_struct {
             }
         }
 
-        impl $crate::stream::Deserialize for $name {
-            type Target = Self;
-            fn deserialize(stream: &mut dyn $crate::stream::Stream) -> anyhow::Result<Self> {
-                let mut result = Self::zero();
-                stream.read_bytes(&mut result.0, 32)?;
-                Ok(result)
-            }
-        }
-
         impl From<i32> for $name {
             fn from(value: i32) -> Self {
                 let mut bytes = [0; 32];

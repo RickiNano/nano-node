@@ -1,7 +1,4 @@
-use crate::{
-    DeserializationError,
-    stream::{Deserialize, Stream},
-};
+use crate::DeserializationError;
 use anyhow::Result;
 use serde::de::{Unexpected, Visitor};
 use std::{fmt::Debug, io::Read, iter::Sum, ops::Deref};
@@ -144,16 +141,6 @@ impl Amount {
 impl From<u128> for Amount {
     fn from(value: u128) -> Self {
         Amount::raw(value)
-    }
-}
-
-impl Deserialize for Amount {
-    type Target = Self;
-    fn deserialize(stream: &mut dyn Stream) -> Result<Self> {
-        let mut buffer = [0u8; 16];
-        let len = buffer.len();
-        stream.read_bytes(&mut buffer, len)?;
-        Ok(Amount::raw(u128::from_be_bytes(buffer)))
     }
 }
 

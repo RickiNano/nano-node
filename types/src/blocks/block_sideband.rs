@@ -5,7 +5,6 @@ use super::Block;
 use crate::{
     Account, Amount, BlockDetails, BlockType, DeserializationError, Epoch, UnixMillisTimestamp,
     read_u8,
-    stream::{Deserialize, Stream},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,7 +53,7 @@ impl BlockSideband {
         }
 
         if block_type != BlockType::LegacyOpen {
-            size += std::mem::size_of::<u64>(); // height
+            size += 8; // height
         }
 
         if block_type == BlockType::LegacyReceive
@@ -64,7 +63,7 @@ impl BlockSideband {
             size += Amount::SERIALIZED_SIZE; // balance
         }
 
-        size += std::mem::size_of::<u64>(); // timestamp
+        size += 8; // timestamp
 
         if block_type == BlockType::State {
             // block_details must not be larger than the epoch enum
@@ -100,19 +99,6 @@ impl BlockSideband {
             writer.write_all(&[self.details.packed(), self.source_epoch as u8])?;
         }
         Ok(())
-    }
-
-    pub fn from_stream(stream: &mut dyn Stream, block_type: BlockType) -> anyhow::Result<Self> {
-        let mut result = Self {
-            height: 0,
-            timestamp: UnixMillisTimestamp::ZERO,
-            account: Account::zero(),
-            balance: Amount::zero(),
-            details: BlockDetails::new(Epoch::Epoch0, false, false, false),
-            source_epoch: Epoch::Epoch0,
-        };
-        result.deserialize(stream, block_type)?;
-        Ok(result)
     }
 
     pub fn deserialize_reader<T>(
@@ -167,48 +153,11 @@ impl BlockSideband {
             source_epoch,
         })
     }
-
-    pub fn deserialize(
-        &mut self,
-        stream: &mut dyn Stream,
-        block_type: BlockType,
-    ) -> anyhow::Result<()> {
-        if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
-            self.account = Account::deserialize(stream)?;
-        }
-
-        let mut buffer = [0u8; 8];
-        if block_type != BlockType::LegacyOpen {
-            stream.read_bytes(&mut buffer, 8)?;
-            self.height = u64::from_be_bytes(buffer);
-        } else {
-            self.height = 1;
-        }
-
-        if block_type == BlockType::LegacyReceive
-            || block_type == BlockType::LegacyChange
-            || block_type == BlockType::LegacyOpen
-        {
-            self.balance = Amount::deserialize(stream)?;
-        }
-
-        stream.read_bytes(&mut buffer, 8)?;
-        self.timestamp = UnixMillisTimestamp::from_be_bytes(buffer);
-
-        if block_type == BlockType::State {
-            self.details = BlockDetails::deserialize(stream)?;
-            self.source_epoch = FromPrimitive::from_u8(stream.read_u8()?)
-                .ok_or_else(|| anyhow!("invalid epoch value"))?;
-        }
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::stream::BufferReader;
 
     #[test]
     fn serialize() {
@@ -227,9 +176,9 @@ mod tests {
             .serialize(BlockType::LegacyReceive, &mut buffer)
             .unwrap();
 
-        let mut stream = BufferReader::new(&buffer);
         let deserialized =
-            BlockSideband::from_stream(&mut stream, BlockType::LegacyReceive).unwrap();
+            BlockSideband::deserialize_reader(&mut buffer.as_slice(), BlockType::LegacyReceive)
+                .unwrap();
         assert_eq!(deserialized, sideband);
     }
 

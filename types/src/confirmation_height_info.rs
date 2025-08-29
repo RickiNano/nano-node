@@ -1,7 +1,4 @@
-use crate::{
-    BlockHash, DeserializationError, read_u64_ne,
-    stream::{Deserialize, Stream, StreamExt},
-};
+use crate::{BlockHash, DeserializationError, read_u64_ne};
 use std::io::{Read, Write};
 
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
@@ -11,6 +8,8 @@ pub struct ConfirmationHeightInfo {
 }
 
 impl ConfirmationHeightInfo {
+    pub const SERIALIZED_SIZE: usize = BlockHash::SERIALIZED_SIZE + 8;
+
     pub fn new(height: u64, frontier: BlockHash) -> Self {
         Self { height, frontier }
     }
@@ -23,7 +22,7 @@ impl ConfirmationHeightInfo {
     }
 
     pub fn to_bytes(&self) -> [u8; 40] {
-        let mut buffer = [0; 40];
+        let mut buffer = [0; Self::SERIALIZED_SIZE];
         self.serialize_writer(&mut buffer.as_mut())
             .expect("Should serialize conf height info");
         buffer
@@ -43,15 +42,6 @@ impl ConfirmationHeightInfo {
     {
         let height = read_u64_ne(reader)?;
         let frontier = BlockHash::deserialize_reader(reader)?;
-        Ok(Self { height, frontier })
-    }
-}
-
-impl Deserialize for ConfirmationHeightInfo {
-    type Target = Self;
-    fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let height = stream.read_u64_ne()?;
-        let frontier = BlockHash::deserialize(stream)?;
         Ok(Self { height, frontier })
     }
 }

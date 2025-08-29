@@ -31,7 +31,6 @@ mod public_key;
 mod qualified_root;
 mod raw_key;
 mod signature;
-pub mod stream;
 mod timestamp;
 mod u256_struct;
 mod vote;
@@ -68,7 +67,6 @@ pub use qualified_root::QualifiedRoot;
 pub use raw_key::RawKey;
 use serde::de::{Unexpected, Visitor};
 pub use signature::Signature;
-use stream::{Deserialize, Stream};
 use thiserror::Error;
 pub use timestamp::{UnixMillisTimestamp, UnixTimestamp, milliseconds_since_epoch};
 pub use vote::{TestVoteBuilder, Vote, VoteError, VoteSource};
@@ -238,16 +236,6 @@ impl From<&BlockHash> for Root {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Copy, Clone, PartialOrd, Ord)]
-pub struct NoValue {}
-
-impl stream::Deserialize for NoValue {
-    type Target = Self;
-    fn deserialize(_stream: &mut dyn stream::Stream) -> anyhow::Result<NoValue> {
-        Ok(NoValue {})
-    }
-}
-
 pub fn deterministic_key(seed: &RawKey, index: u32) -> RawKey {
     let mut hasher = Blake2bVar::new(32).unwrap();
     hasher.update(seed.as_bytes());
@@ -358,14 +346,6 @@ impl Frontier {
     {
         let account = Account::deserialize_reader(reader)?;
         let hash = BlockHash::deserialize_reader(reader)?;
-        Ok(Self::new(account, hash))
-    }
-}
-
-impl Frontier {
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let account = Account::deserialize(stream)?;
-        let hash = BlockHash::deserialize(stream)?;
         Ok(Self::new(account, hash))
     }
 }

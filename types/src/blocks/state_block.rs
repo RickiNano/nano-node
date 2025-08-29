@@ -1,10 +1,7 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DeserializationError, JsonBlock, Link,
-    PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    private_key::TEST_KEY,
-    read_u64_be,
-    stream::{Deserialize, Stream},
+    PrivateKey, PublicKey, Root, Signature, WorkNonce, private_key::TEST_KEY, read_u64_be,
 };
 use std::io::Read;
 
@@ -84,33 +81,7 @@ impl StateBlock {
         })
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let account = Account::deserialize(stream)?;
-        let previous = BlockHash::deserialize(stream)?;
-        let representative = PublicKey::deserialize(stream)?;
-        let balance = Amount::deserialize(stream)?;
-        let link = Link::deserialize(stream)?;
-        let signature = Signature::deserialize(stream)?;
-        let mut work_bytes = [0u8; 8];
-        stream.read_bytes(&mut work_bytes, 8)?;
-        let work = u64::from_be_bytes(work_bytes).into();
-        let hashables = StateHashables {
-            account,
-            previous,
-            representative,
-            balance,
-            link,
-        };
-        let hash = hashables.hash();
-        Ok(Self {
-            work,
-            signature,
-            hashables,
-            hash,
-        })
-    }
-
-    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -363,7 +334,7 @@ pub struct JsonStateBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, TestBlockBuilder, TestStateBlockBuilder, stream::BufferReader};
+    use crate::{Block, TestBlockBuilder, TestStateBlockBuilder};
 
     #[test]
     fn send() {
@@ -384,8 +355,7 @@ mod tests {
         assert_eq!(StateBlock::SERIALIZED_SIZE, buffer.len());
         assert_eq!(buffer[215], 0x5); // Ensure work is serialized big-endian
 
-        let mut stream = BufferReader::new(&buffer);
-        let block2 = StateBlock::deserialize(&mut stream).unwrap();
+        let block2 = StateBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, Block::State(block2));
     }
 

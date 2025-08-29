@@ -58,7 +58,7 @@ impl Publish {
         digest: u128,
     ) -> Result<Self, DeserializationError> {
         let payload = Publish {
-            block: Block::deserialize_block_type_reader(Self::block_type(extensions), &mut bytes)?,
+            block: Block::deserialize_block_type(Self::block_type(extensions), &mut bytes)?,
             digest,
             is_originator: extensions.data & Self::ORIGINATOR_FLAG > 0,
         };

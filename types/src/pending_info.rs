@@ -1,9 +1,6 @@
-use crate::{
-    Account, Amount, DeserializationError, Epoch, read_u8,
-    stream::{Deserialize, Stream},
-};
+use crate::{Account, Amount, DeserializationError, Epoch, read_u8};
 use num::FromPrimitive;
-use std::io::Read;
+use std::io::{Read, Write};
 
 /// Information on an uncollected send
 /// This struct captures the data stored in a pending table entry
@@ -28,6 +25,8 @@ impl Default for PendingInfo {
 }
 
 impl PendingInfo {
+    pub const SERIALIZED_SIZE: usize = Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE + 1;
+
     pub fn new(source: Account, amount: Amount, epoch: Epoch) -> Self {
         Self {
             source,
@@ -41,11 +40,19 @@ impl PendingInfo {
     }
 
     pub fn to_bytes(&self) -> [u8; 49] {
-        let mut bytes = [0; 49];
-        bytes[..32].copy_from_slice(self.source.as_bytes());
-        bytes[32..48].copy_from_slice(&self.amount.to_be_bytes());
-        bytes[48] = self.epoch as u8;
+        let mut bytes = [0_u8; Self::SERIALIZED_SIZE];
+        self.serialize(&mut bytes.as_mut_slice())
+            .expect("Should serialize pending info");
         bytes
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: Write,
+    {
+        self.source.serialize_writer(writer)?;
+        self.amount.serialize_writer(writer)?;
+        writer.write_all(&[self.epoch as u8])
     }
 
     pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
@@ -56,22 +63,6 @@ impl PendingInfo {
         let amount = Amount::deserialize_reader(reader)?;
         let epoch =
             FromPrimitive::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
-        Ok(Self {
-            source,
-            amount,
-            epoch,
-        })
-    }
-}
-
-impl Deserialize for PendingInfo {
-    type Target = Self;
-
-    fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self::Target> {
-        let source = Account::deserialize(stream)?;
-        let amount = Amount::deserialize(stream)?;
-        let epoch =
-            FromPrimitive::from_u8(stream.read_u8()?).ok_or_else(|| anyhow!("invalid epoch"))?;
         Ok(Self {
             source,
             amount,

@@ -32,7 +32,6 @@ pub use builders::*;
 use crate::{
     Account, Amount, BlockHash, DeserializationError, Epoch, Epochs, Link, PrivateKey, PublicKey,
     QualifiedRoot, Root, Signature, UnixMillisTimestamp, WorkNonce, read_u8,
-    stream::{Deserialize, Stream},
 };
 use num::FromPrimitive;
 use std::{
@@ -245,15 +244,15 @@ impl Block {
         T: std::io::Write,
     {
         match self {
-            Block::LegacySend(b) => b.serialize_without_block_type_writer(writer),
-            Block::LegacyReceive(b) => b.serialize_without_block_type_writer(writer),
+            Block::LegacySend(b) => b.serialize_without_block_type(writer),
+            Block::LegacyReceive(b) => b.serialize_without_block_type(writer),
             Block::LegacyOpen(b) => b.serialize_without_block_type_writer(writer),
-            Block::LegacyChange(b) => b.serialize_without_block_type_writer(writer),
-            Block::State(b) => b.serialize_without_block_type_writer(writer),
+            Block::LegacyChange(b) => b.serialize_without_block_type(writer),
+            Block::State(b) => b.serialize_without_block_type(writer),
         }
     }
 
-    pub fn deserialize_block_type_reader<T>(
+    pub fn deserialize_block_type<T>(
         block_type: BlockType,
         reader: &mut T,
     ) -> Result<Self, DeserializationError>
@@ -275,27 +274,6 @@ impl Block {
         Ok(block)
     }
 
-    pub fn deserialize_block_type(
-        block_type: BlockType,
-        stream: &mut dyn Stream,
-    ) -> anyhow::Result<Self> {
-        let block = match block_type {
-            BlockType::LegacyReceive => Self::LegacyReceive(ReceiveBlock::deserialize(stream)?),
-            BlockType::LegacyOpen => Self::LegacyOpen(OpenBlock::deserialize(stream)?),
-            BlockType::LegacyChange => Self::LegacyChange(ChangeBlock::deserialize(stream)?),
-            BlockType::State => Self::State(StateBlock::deserialize(stream)?),
-            BlockType::LegacySend => Self::LegacySend(SendBlock::deserialize(stream)?),
-            BlockType::Invalid | BlockType::NotABlock => bail!("invalid block type"),
-        };
-        Ok(block)
-    }
-
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Block> {
-        let block_type =
-            BlockType::from_u8(stream.read_u8()?).ok_or_else(|| anyhow!("invalid block type"))?;
-        Self::deserialize_block_type(block_type, stream)
-    }
-
     pub fn deserialize_reader<T>(reader: &mut T) -> Result<Block, DeserializationError>
     where
         T: Read,
@@ -303,7 +281,7 @@ impl Block {
         let block_type =
             BlockType::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
 
-        Self::deserialize_block_type_reader(block_type, reader)
+        Self::deserialize_block_type(block_type, reader)
     }
 }
 
@@ -648,37 +626,6 @@ impl From<SavedBlock> for Block {
     }
 }
 
-impl Deserialize for SavedBlock {
-    type Target = Self;
-    fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let block = Block::deserialize(stream)?;
-        let mut sideband = BlockSideband::from_stream(stream, block.block_type())?;
-        // BlockSideband does not serialize all data depending on the block type.
-        // That's why we fill in the missing data here:
-        match &block {
-            Block::LegacySend(i) => {
-                sideband.balance = i.balance();
-                sideband.details = BlockDetails::new(Epoch::Epoch0, true, false, false)
-            }
-            Block::LegacyOpen(open) => {
-                sideband.account = open.account();
-                sideband.details = BlockDetails::new(Epoch::Epoch0, false, true, false)
-            }
-            Block::LegacyReceive(_) => {
-                sideband.details = BlockDetails::new(Epoch::Epoch0, false, true, false)
-            }
-            Block::LegacyChange(_) => {
-                sideband.details = BlockDetails::new(Epoch::Epoch0, false, false, false)
-            }
-            Block::State(state) => {
-                sideband.account = state.account();
-                sideband.balance = state.balance();
-            }
-        }
-        Ok(SavedBlock { block, sideband })
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MaybeSavedBlock {
     Saved(SavedBlock),
@@ -772,7 +719,6 @@ pub struct DetailedBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::stream::BufferReader;
 
     #[test]
     fn serialize_legacy_open() {
@@ -807,8 +753,7 @@ mod tests {
     fn assert_serializable(block: Block) {
         let mut buffer = Vec::new();
         block.serialize_writer(&mut buffer).unwrap();
-        let mut stream = BufferReader::new(&buffer);
-        let deserialized = Block::deserialize(&mut stream).unwrap();
+        let deserialized = Block::deserialize_reader(&mut buffer.as_slice()).unwrap();
         assert_eq!(deserialized, block);
     }
 }

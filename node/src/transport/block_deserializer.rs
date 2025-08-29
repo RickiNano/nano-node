@@ -20,7 +20,7 @@ async fn received_type(
             let mut buffer = [0; 256];
             input.read(&mut buffer, block_size).await?;
             let mut block_data = &buffer[..block_size];
-            let block = Block::deserialize_block_type_reader(block_type, &mut block_data)?;
+            let block = Block::deserialize_block_type(block_type, &mut block_data)?;
             Ok(Some(block))
         }
     }

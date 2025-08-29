@@ -7,7 +7,6 @@ use serde_derive::Serialize;
 
 use rsnano_types::{
     Account, Block, BlockHash, BlockType, DeserializationError, Frontier, read_u8, read_u64_be,
-    stream::Stream,
 };
 use rsnano_utils::stats::DetailType;
 
@@ -200,7 +199,7 @@ impl BlocksAckPayload {
                 break;
             }
 
-            let block = Block::deserialize_block_type_reader(block_type, reader)?;
+            let block = Block::deserialize_block_type(block_type, reader)?;
             blocks.push_back(block);
 
             if blocks.len() > Self::MAX_BLOCKS as usize {
@@ -209,16 +208,6 @@ impl BlocksAckPayload {
         }
 
         Ok(Self::new(blocks))
-    }
-
-    pub fn deserialize(&mut self, stream: &mut dyn Stream) -> anyhow::Result<()> {
-        while let Ok(current) = Block::deserialize(stream) {
-            if self.0.len() >= Self::MAX_BLOCKS as usize {
-                bail!("too many blocks")
-            }
-            self.0.push_back(current);
-        }
-        Ok(())
     }
 
     pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>

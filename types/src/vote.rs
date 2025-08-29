@@ -3,7 +3,6 @@ use std::{io::Read, time::Duration};
 use super::{
     Account, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature, UnixMillisTimestamp,
     VoteTimestamp,
-    stream::{Deserialize, Stream},
 };
 use crate::DeserializationError;
 
@@ -161,19 +160,6 @@ impl Vote {
             signature,
             hashes,
         })
-    }
-
-    pub fn deserialize(&mut self, stream: &mut impl Stream) -> anyhow::Result<()> {
-        self.voter = PublicKey::deserialize(stream)?;
-        self.signature = Signature::deserialize(stream)?;
-        let mut buffer = [0; 8];
-        stream.read_bytes(&mut buffer, 8)?;
-        self.timestamp = VoteTimestamp::from_le_bytes(buffer);
-        self.hashes = Vec::new();
-        while stream.data_available()? > 0 && self.hashes.len() < Self::MAX_HASHES {
-            self.hashes.push(BlockHash::deserialize(stream)?);
-        }
-        Ok(())
     }
 
     pub fn validate(&self) -> anyhow::Result<()> {

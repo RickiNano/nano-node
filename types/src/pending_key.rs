@@ -1,7 +1,4 @@
-use crate::{
-    Account, Block, BlockHash, DeserializationError,
-    stream::{Deserialize, Stream},
-};
+use crate::{Account, Block, BlockHash, DeserializationError};
 use primitive_types::U512;
 use std::io::Read;
 
@@ -27,10 +24,11 @@ impl PendingKey {
         Self::new(Account::from(1), BlockHash::from(2))
     }
 
-    pub fn to_bytes(&self) -> [u8; 64] {
-        let mut result = [0; 64];
-        result[..32].copy_from_slice(self.receiving_account.as_bytes());
-        result[32..].copy_from_slice(self.send_block_hash.as_bytes());
+    pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
+        let mut result = [0; Self::SERIALIZED_SIZE];
+        let mut slice = result.as_mut_slice();
+        self.receiving_account.serialize_writer(&mut slice).unwrap();
+        self.send_block_hash.serialize_writer(&mut slice).unwrap();
         result
     }
 
@@ -49,24 +47,11 @@ impl PendingKey {
     where
         T: Read,
     {
-        let account = Account::deserialize_reader(reader)?;
-        let hash = BlockHash::deserialize_reader(reader)?;
+        let receiving_account = Account::deserialize_reader(reader)?;
+        let send_block_hash = BlockHash::deserialize_reader(reader)?;
         Ok(Self {
-            receiving_account: account,
-            send_block_hash: hash,
-        })
-    }
-}
-
-impl Deserialize for PendingKey {
-    type Target = Self;
-
-    fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self::Target> {
-        let account = Account::deserialize(stream)?;
-        let hash = BlockHash::deserialize(stream)?;
-        Ok(Self {
-            receiving_account: account,
-            send_block_hash: hash,
+            receiving_account,
+            send_block_hash,
         })
     }
 }

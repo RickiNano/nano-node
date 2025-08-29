@@ -1,7 +1,4 @@
-use crate::{
-    BlockHash, DeserializationError, Root,
-    stream::{Deserialize, Stream},
-};
+use crate::{BlockHash, DeserializationError, Root};
 use primitive_types::U512;
 use serde::de::Unexpected;
 use std::{
@@ -23,8 +20,8 @@ impl QualifiedRoot {
         Self { root, previous }
     }
 
-    pub fn to_bytes(&self) -> [u8; 64] {
-        let mut buffer = [0; 64];
+    pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
+        let mut buffer = [0; Self::SERIALIZED_SIZE];
         self.serialize_writer(&mut buffer.as_mut())
             .expect("Should serialize qualified root");
         buffer
@@ -57,15 +54,6 @@ impl QualifiedRoot {
         let root = Root::from_bytes(bytes[0..32].try_into().unwrap());
         let previous = BlockHash::from_bytes(bytes[32..].try_into().unwrap());
         Ok(Self { root, previous })
-    }
-}
-
-impl Deserialize for QualifiedRoot {
-    type Target = Self;
-    fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<QualifiedRoot> {
-        let root = Root::deserialize(stream)?;
-        let previous = BlockHash::deserialize(stream)?;
-        Ok(QualifiedRoot { root, previous })
     }
 }
 

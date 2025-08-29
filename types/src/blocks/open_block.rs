@@ -2,7 +2,6 @@ use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
     JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
-    stream::{Deserialize, Stream},
 };
 use std::io::Read;
 
@@ -56,25 +55,6 @@ impl OpenBlock {
         let hash = hashables.hash();
         Ok(OpenBlock {
             work: work.into(),
-            signature,
-            hashables,
-            hash,
-        })
-    }
-
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let hashables = OpenHashables {
-            source: BlockHash::deserialize(stream)?,
-            representative: PublicKey::deserialize(stream)?,
-            account: Account::deserialize(stream)?,
-        };
-        let signature = Signature::deserialize(stream)?;
-        let mut work_bytes = [0u8; 8];
-        stream.read_bytes(&mut work_bytes, 8)?;
-        let work = u64::from_le_bytes(work_bytes).into();
-        let hash = hashables.hash();
-        Ok(OpenBlock {
-            work,
             signature,
             hashables,
             hash,
@@ -273,7 +253,7 @@ impl From<JsonOpenBlock> for OpenBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, stream::BufferReader};
+    use crate::{Block, PrivateKey};
 
     #[test]
     fn create_block() {
@@ -292,7 +272,6 @@ mod tests {
         assert_eq!(block.root(), key.account().into());
     }
 
-    // original test: open_block.deserialize
     #[test]
     fn serialize() {
         let block1 = OpenBlock::new_test_instance();
@@ -302,8 +281,7 @@ mod tests {
             .unwrap();
         assert_eq!(OpenBlock::serialized_size(), buffer.len());
 
-        let mut stream = BufferReader::new(&buffer);
-        let block2 = OpenBlock::deserialize(&mut stream).unwrap();
+        let block2 = OpenBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
     }
 

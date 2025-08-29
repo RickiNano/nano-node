@@ -9,7 +9,6 @@ use serde::ser::SerializeStruct;
 
 use rsnano_types::{
     Account, BlockHash, DeserializationError, NodeId, PrivateKey, PublicKey, Signature,
-    stream::{Deserialize, Stream},
     write_hex_bytes,
 };
 
@@ -96,7 +95,7 @@ impl NodeIdHandshakeResponse {
         buffer
     }
 
-    pub fn deserialize2(
+    pub fn deserialize(
         mut bytes: &[u8],
         extensions: BitArray<u16>,
     ) -> Result<Self, DeserializationError> {
@@ -114,29 +113,6 @@ impl NodeIdHandshakeResponse {
         } else {
             let node_id = NodeId::deserialize_reader(&mut bytes)?;
             let signature = Signature::deserialize_reader(&mut bytes)?;
-            Ok(Self {
-                node_id,
-                signature,
-                v2: None,
-            })
-        }
-    }
-
-    pub fn deserialize(stream: &mut dyn Stream, extensions: BitArray<u16>) -> anyhow::Result<Self> {
-        if NodeIdHandshake::has_v2_flag(extensions) {
-            let node_id = NodeId::deserialize(stream)?;
-            let mut salt = [0u8; 32];
-            stream.read_bytes(&mut salt, 32)?;
-            let genesis = BlockHash::deserialize(stream)?;
-            let signature = Signature::deserialize(stream)?;
-            Ok(Self {
-                node_id,
-                signature,
-                v2: Some(V2Payload { salt, genesis }),
-            })
-        } else {
-            let node_id = NodeId::deserialize(stream)?;
-            let signature = Signature::deserialize(stream)?;
             Ok(Self {
                 node_id,
                 signature,
@@ -245,7 +221,7 @@ impl NodeIdHandshake {
             None
         };
         let response = if NodeIdHandshake::is_response(extensions) {
-            Some(NodeIdHandshakeResponse::deserialize2(bytes, extensions)?)
+            Some(NodeIdHandshakeResponse::deserialize(bytes, extensions)?)
         } else {
             None
         };

@@ -3,7 +3,6 @@ use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, BlockType, DependentBlocks,
     DeserializationError, JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce,
     read_u64_le,
-    stream::{Deserialize, Stream},
 };
 use std::io::Read;
 
@@ -57,29 +56,11 @@ impl ChangeBlock {
         })
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let hashables = ChangeHashables {
-            previous: BlockHash::deserialize(stream)?,
-            representative: PublicKey::deserialize(stream)?,
-        };
-
-        let signature = Signature::deserialize(stream)?;
-        let mut work_bytes = [0u8; 8];
-        stream.read_bytes(&mut work_bytes, 8)?;
-        let work = u64::from_le_bytes(work_bytes).into();
-        let hash = hashables.hash();
-        Ok(Self {
-            work,
-            signature,
-            hashables,
-            hash,
-        })
-    }
-
     pub fn dependent_blocks(&self) -> DependentBlocks {
         DependentBlocks::new(self.previous(), BlockHash::zero())
     }
-    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+
+    pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -261,7 +242,7 @@ impl From<JsonChangeBlock> for ChangeBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, stream::BufferReader};
+    use crate::{Block, PrivateKey};
 
     #[test]
     fn create_block() {
@@ -278,7 +259,6 @@ mod tests {
         assert_eq!(block.root(), block.previous().into());
     }
 
-    // original test: change_block.deserialize
     #[test]
     fn serialize() {
         let key1 = PrivateKey::new();
@@ -290,13 +270,10 @@ mod tests {
         }
         .into();
         let mut buffer = Vec::new();
-        block1
-            .serialize_without_block_type_writer(&mut buffer)
-            .unwrap();
+        block1.serialize_without_block_type(&mut buffer).unwrap();
         assert_eq!(ChangeBlock::serialized_size(), buffer.len());
 
-        let mut stream = BufferReader::new(&buffer);
-        let block2 = ChangeBlock::deserialize(&mut stream).unwrap();
+        let block2 = ChangeBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
     }
 

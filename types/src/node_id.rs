@@ -90,15 +90,6 @@ impl FromStr for NodeId {
     }
 }
 
-impl crate::stream::Deserialize for NodeId {
-    type Target = Self;
-    fn deserialize(stream: &mut dyn crate::stream::Stream) -> anyhow::Result<Self> {
-        let mut result = Self::ZERO;
-        stream.read_bytes(&mut result.0, 32)?;
-        Ok(result)
-    }
-}
-
 impl serde::Serialize for NodeId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

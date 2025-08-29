@@ -2,7 +2,6 @@ use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
     JsonBlock, Link, PendingKey, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
-    stream::Stream,
 };
 use serde::de::{Unexpected, Visitor};
 use std::io::Read;
@@ -48,22 +47,6 @@ impl SendBlock {
         })
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let hashables = SendHashables::deserialize(stream)?;
-        let signature = Signature::deserialize(stream)?;
-
-        let mut buffer = [0u8; 8];
-        stream.read_bytes(&mut buffer, 8)?;
-        let work = u64::from_le_bytes(buffer).into();
-        let hash = hashables.hash();
-        Ok(SendBlock {
-            hashables,
-            signature,
-            work,
-            hash,
-        })
-    }
-
     pub fn zero(&mut self) {
         self.work = 0.into();
         self.signature = Signature::new();
@@ -98,7 +81,7 @@ impl SendBlock {
         DependentBlocks::new(self.previous(), BlockHash::zero())
     }
 
-    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -254,26 +237,6 @@ impl SendHashables {
         })
     }
 
-    pub fn deserialize(stream: &mut dyn Stream) -> anyhow::Result<Self> {
-        let mut buffer_32 = [0u8; 32];
-        let mut buffer_16 = [0u8; 16];
-
-        stream.read_bytes(&mut buffer_32, 32)?;
-        let previous = BlockHash::from_bytes(buffer_32);
-
-        stream.read_bytes(&mut buffer_32, 32)?;
-        let destination = Account::from_bytes(buffer_32);
-
-        stream.read_bytes(&mut buffer_16, 16)?;
-        let balance = Amount::raw(u128::from_be_bytes(buffer_16));
-
-        Ok(Self {
-            previous,
-            destination,
-            balance,
-        })
-    }
-
     fn clear(&mut self) {
         self.previous = BlockHash::zero();
         self.destination = Account::zero();
@@ -400,7 +363,7 @@ impl Visitor<'_> for AmountHexVisitor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Block, PrivateKey, stream::BufferReader};
+    use crate::{Block, PrivateKey};
 
     #[test]
     fn create_send_block() {
@@ -436,8 +399,6 @@ mod tests {
         );
     }
 
-    // original test: block.send_serialize
-    // original test: send_block.deserialize
     #[test]
     fn serialize() {
         let key = PrivateKey::new();
@@ -450,13 +411,10 @@ mod tests {
         }
         .into();
         let mut buffer = Vec::new();
-        block1
-            .serialize_without_block_type_writer(&mut buffer)
-            .unwrap();
+        block1.serialize_without_block_type(&mut buffer).unwrap();
         assert_eq!(SendBlock::SERIALIZED_SIZE, buffer.len());
 
-        let mut stream = BufferReader::new(&buffer);
-        let block2 = SendBlock::deserialize(&mut stream).unwrap();
+        let block2 = SendBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
     }
 
