@@ -413,7 +413,7 @@ pub fn setup_chain(
 
     for _ in 0..count {
         let throwaway = PrivateKey::new();
-        balance = balance - Amount::raw(1);
+        balance -= Amount::raw(1);
         let send: Block = StateBlockArgs {
             key: target,
             previous: latest,
@@ -456,7 +456,7 @@ pub fn setup_chains(
     for _ in 0..chain_count {
         let key = PrivateKey::new();
         let amount_sent = Amount::raw(block_count as u128 * 2);
-        balance = balance - amount_sent; // Send enough to later create `block_count` blocks
+        balance -= amount_sent; // Send enough to later create `block_count` blocks
         let send: Block = StateBlockArgs {
             key: source,
             previous: latest,

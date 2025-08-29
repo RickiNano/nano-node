@@ -23,7 +23,7 @@ pub fn block_priority(block: &SavedBlock, previous_block: Option<&SavedBlock>) -
     // rollbacks happen
     let priority_timestamp = previous_block
         .map(|b| b.timestamp())
-        .unwrap_or(block.timestamp().into());
+        .unwrap_or(block.timestamp());
 
     BlockPriority::new(priority_balance, priority_timestamp.into())
 }

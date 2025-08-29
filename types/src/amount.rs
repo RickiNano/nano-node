@@ -263,7 +263,7 @@ pub struct DescTallyKey(pub Amount);
 
 impl DescTallyKey {
     pub fn amount(&self) -> Amount {
-        self.0.clone()
+        self.0
     }
 }
 
@@ -283,7 +283,7 @@ impl Ord for DescTallyKey {
 
 impl PartialOrd for DescTallyKey {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        other.0.partial_cmp(&self.0)
+        Some(self.cmp(other))
     }
 }
 

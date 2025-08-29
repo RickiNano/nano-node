@@ -169,12 +169,11 @@ impl AccountMap {
             return;
         };
 
-        if let Some(dest) = destination {
-            if let Some(entries) = self.receivable.get(&dest) {
-                if let Some((_, amount)) = entries.iter().find(|(h, _)| *h == hash) {
-                    self.confirmed_receivable.insert((dest, hash), *amount);
-                }
-            }
+        if let Some(dest) = destination
+            && let Some(entries) = self.receivable.get(&dest)
+            && let Some((_, amount)) = entries.iter().find(|(h, _)| *h == hash)
+        {
+            self.confirmed_receivable.insert((dest, hash), *amount);
         }
 
         let Some(state) = self.account_states.get_mut(&account) else {

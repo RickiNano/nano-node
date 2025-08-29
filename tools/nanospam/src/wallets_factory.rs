@@ -8,7 +8,6 @@ use rsnano_rpc_messages::{ReceiveArgs, SendArgs, WalletAddArgs, WalletRepresenta
 use rsnano_types::{Amount, Block, BlockHash, JsonBlock, StateBlockArgs, WalletId, WorkNonce};
 
 use crate::{
-    app::Args,
     domain::AccountMap,
     setup::{genesis_key, pr_key},
 };
@@ -16,15 +15,14 @@ use crate::{
 const INITIAL_AMOUNT: Amount = Amount::nano(100_000_000);
 
 pub(crate) async fn create_wallets(
-    args: &Args,
     rpc_clients: &[NanoRpcClient],
     genesis_rpc: &NanoRpcClient,
     account_map: &mut AccountMap,
 ) -> WalletId {
     let mut genesis_wallet = WalletId::ZERO;
     let genesis_key = genesis_key();
-    for i in 0..args.prs {
-        let rpc_client = &rpc_clients[i];
+    let pr_count = rpc_clients.len();
+    for (i, rpc_client) in rpc_clients.iter().enumerate() {
         info!("Creating wallet...");
         let resp = rpc_client.wallet_create(None).await.unwrap();
         if i == 0 {
@@ -40,6 +38,7 @@ pub(crate) async fn create_wallets(
             .await
             .unwrap();
 
+        // the first rpc client is the genesis client
         if i > 0 {
             info!("Setting default representative...");
             rpc_client
@@ -51,7 +50,7 @@ pub(crate) async fn create_wallets(
                 .await
                 .unwrap();
 
-            let pr_balance = (Amount::MAX - INITIAL_AMOUNT) / args.prs as u128;
+            let pr_balance = (Amount::MAX - INITIAL_AMOUNT) / pr_count as u128;
             info!(
                 "Sending Ӿ{} to PR{i} wallet {} ...",
                 pr_balance.format_balance(0),
@@ -69,7 +68,7 @@ pub(crate) async fn create_wallets(
                 .await
                 .unwrap()
                 .block;
-            wait_until_confirmed(&rpc_client, send_hash).await;
+            wait_until_confirmed(rpc_client, send_hash).await;
 
             info!("Receiving...");
             // trigger wallet receive to speed things up
@@ -86,7 +85,7 @@ pub(crate) async fn create_wallets(
                 .await
                 .unwrap()
                 .frontier;
-            wait_until_confirmed(&rpc_client, recv_hash).await;
+            wait_until_confirmed(rpc_client, recv_hash).await;
             info!("DONE");
             info!(
                 "********************************************************************************"
@@ -109,7 +108,7 @@ pub(crate) async fn create_wallets(
         .await
         .unwrap()
         .block;
-    wait_until_confirmed(&genesis_rpc, genesis_send).await;
+    wait_until_confirmed(genesis_rpc, genesis_send).await;
     info!("Receiving initial spam amount...");
     let genesis_receive: Block = StateBlockArgs {
         key: &initial_key,
@@ -126,7 +125,7 @@ pub(crate) async fn create_wallets(
         .await
         .unwrap();
 
-    wait_until_confirmed(&genesis_rpc, recv.hash).await;
+    wait_until_confirmed(genesis_rpc, recv.hash).await;
 
     account_map.set_account_state(
         initial_key.account(),

@@ -75,7 +75,7 @@ fn check_ledger_file(ledger_file: impl Into<PathBuf>) {
             }
 
             queues[(checked % queues.len() as u64) as usize]
-                .send(block.clone().into())
+                .send(block.clone())
                 .unwrap();
             checked += 1;
         }

@@ -460,6 +460,12 @@ pub struct WorkDoneNotifier {
     state: Arc<(Mutex<WorkDoneState>, Condvar)>,
 }
 
+impl Default for WorkDoneNotifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkDoneNotifier {
     pub fn new() -> Self {
         Self {

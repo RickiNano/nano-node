@@ -86,10 +86,10 @@ impl InsightApp {
 
     pub(crate) fn update(&mut self) -> bool {
         let now = self.clock.now();
-        if let Some(last_update) = self.last_update {
-            if now - last_update < Duration::from_millis(500) {
-                return false;
-            }
+        if let Some(last_update) = self.last_update
+            && now - last_update < Duration::from_millis(500)
+        {
+            return false;
         }
 
         if let Some(node) = self.node_runner.node() {
@@ -132,10 +132,10 @@ impl InsightApp {
     }
 
     pub(crate) fn roll_back(&self) {
-        if let Some(hash) = BlockHash::decode_hex(&self.rollback_hash) {
-            if let Some(node) = self.node_runner.node() {
-                let _ = node.ledger.roll_back(&hash);
-            }
+        if let Some(hash) = BlockHash::decode_hex(&self.rollback_hash)
+            && let Some(node) = self.node_runner.node()
+        {
+            let _ = node.ledger.roll_back(&hash);
         }
     }
 }

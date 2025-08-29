@@ -63,11 +63,12 @@ impl ConfirmationMessageFactory<'_> {
         if self.options.include_block {
             let mut block_value: serde_json::Value = (**self.block).clone().into();
             let subtype = self.subtype();
-            if !subtype.is_empty() {
-                if let serde_json::Value::Object(o) = &mut block_value {
-                    o.insert("subtype".to_string(), serde_json::Value::String(subtype));
-                }
+            if !subtype.is_empty()
+                && let serde_json::Value::Object(o) = &mut block_value
+            {
+                o.insert("subtype".to_string(), serde_json::Value::String(subtype));
             }
+
             Some(block_value)
         } else {
             None

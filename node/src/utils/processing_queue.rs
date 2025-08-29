@@ -102,6 +102,10 @@ impl<T: Send + 'static> ProcessingQueue<T> {
     pub fn len(&self) -> usize {
         self.shared_state.queue.lock().unwrap().len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl<T: Send + 'static> Drop for ProcessingQueue<T> {

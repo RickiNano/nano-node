@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader, Write},
+    path::Path,
 };
 
 use tracing::info;
@@ -9,13 +10,10 @@ use rsnano_types::RawKey;
 
 use crate::domain::AccountMap;
 
-pub(crate) fn create_account_map(
-    data_dir: &std::path::PathBuf,
-    account_count: usize,
-) -> AccountMap {
+pub(crate) fn create_account_map(data_dir: &Path, account_count: usize) -> AccountMap {
     let mut account_map = AccountMap::default();
 
-    let mut account_keys_path = data_dir.clone();
+    let mut account_keys_path = data_dir.to_path_buf();
     account_keys_path.push("account_keys.txt");
 
     let mut should_create_new_file = true;

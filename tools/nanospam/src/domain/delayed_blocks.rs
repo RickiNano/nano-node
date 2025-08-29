@@ -27,7 +27,7 @@ impl DelayedBlocks {
 
     pub fn next(&mut self, now: Instant) -> Option<Block> {
         let mut entry = self.by_time.first_entry()?;
-        let sent = entry.key().clone();
+        let sent = *entry.key();
         let block_hashes = entry.get_mut();
         if now < sent + DELAY_LIMIT {
             return None;
@@ -45,10 +45,10 @@ impl DelayedBlocks {
 
     pub fn insert(&mut self, block: Block) {
         let hash = block.hash();
-        if let Some(info) = self.blocks.insert(hash, PublishInfo::new(block)) {
-            if let Some(old_sent) = info.last_publish {
-                self.remove_from_time_index(&hash, old_sent);
-            }
+        if let Some(info) = self.blocks.insert(hash, PublishInfo::new(block))
+            && let Some(old_sent) = info.last_publish
+        {
+            self.remove_from_time_index(&hash, old_sent);
         }
     }
 

@@ -52,7 +52,7 @@ pub(crate) async fn perform_handshake(
     {
         (Some(_node_id), Some(response)) => {
             let buffer = serializer.serialize(&Message::NodeIdHandshake(response));
-            tcp_stream.write(buffer).await?;
+            tcp_stream.write_all(buffer).await?;
         }
         _ => unreachable!(),
     }

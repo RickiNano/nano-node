@@ -4,7 +4,6 @@ use std::collections::HashMap;
 /**
  * Tag for which epoch an entry belongs to
  */
-
 #[repr(u8)]
 #[derive(PartialEq, Eq, Debug, Clone, Copy, FromPrimitive, Hash, Default, PartialOrd, Ord)]
 pub enum Epoch {
@@ -91,7 +90,7 @@ impl Epochs {
     pub fn validate_epoch_signature(&self, block: &Block) -> Result<(), ()> {
         let epoch_signer: PublicKey = self
             .epoch_signer(&block.link_field().unwrap_or_default())
-            .ok_or_else(|| ())?
+            .ok_or(())?
             .into();
 
         epoch_signer.verify(block.hash().as_bytes(), block.signature())

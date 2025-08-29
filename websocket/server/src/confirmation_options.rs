@@ -126,23 +126,22 @@ impl ConfirmationOptions {
         }
 
         let mut should_filter_account = self.has_account_filtering_options;
-        if let Some(serde_json::Value::Object(block)) = message_content.get("block") {
-            if let Some(serde_json::Value::String(destination_text)) = block.get("link_as_account")
-            {
-                let source_text = match message_content.get("account") {
-                    Some(serde_json::Value::String(s)) => s.as_str(),
-                    _ => "",
-                };
-                if self.all_local_accounts {
-                    let source = Account::parse(source_text).unwrap_or_default();
-                    let destination = Account::parse(destination_text).unwrap_or_default();
-                    if wallets.exists(&source.into()) || wallets.exists(&destination.into()) {
-                        should_filter_account = false;
-                    }
-                }
-                if self.accounts.contains(source_text) || self.accounts.contains(destination_text) {
+        if let Some(serde_json::Value::Object(block)) = message_content.get("block")
+            && let Some(serde_json::Value::String(destination_text)) = block.get("link_as_account")
+        {
+            let source_text = match message_content.get("account") {
+                Some(serde_json::Value::String(s)) => s.as_str(),
+                _ => "",
+            };
+            if self.all_local_accounts {
+                let source = Account::parse(source_text).unwrap_or_default();
+                let destination = Account::parse(destination_text).unwrap_or_default();
+                if wallets.exists(&source.into()) || wallets.exists(&destination.into()) {
                     should_filter_account = false;
                 }
+            }
+            if self.accounts.contains(source_text) || self.accounts.contains(destination_text) {
+                should_filter_account = false;
             }
         }
 

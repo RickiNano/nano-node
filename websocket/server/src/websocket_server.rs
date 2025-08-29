@@ -44,10 +44,10 @@ pub fn create_websocket_server(
     let server_w = Arc::downgrade(&server);
     node.telemetry
         .on_telemetry_processed(Box::new(move |data, peer_addr| {
-            if let Some(server) = server_w.upgrade() {
-                if server.any_subscriber(Topic::Telemetry) {
-                    server.broadcast(&telemetry_received(data, *peer_addr));
-                }
+            if let Some(server) = server_w.upgrade()
+                && server.any_subscriber(Topic::Telemetry)
+            {
+                server.broadcast(&telemetry_received(data, *peer_addr));
             }
         }));
 
@@ -207,7 +207,7 @@ impl NodeEventHandler for NodeEventProcessor {
                     for result in results {
                         if result.status.is_ok() {
                             let block = result.saved_block.as_ref().unwrap();
-                            self.server.broadcast(&new_block_arrived_message(&block));
+                            self.server.broadcast(&new_block_arrived_message(block));
                         }
                     }
                 }

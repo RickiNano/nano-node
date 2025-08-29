@@ -82,7 +82,7 @@ impl FromStr for NodeId {
         let mut node_id = s.to_string();
         if node_id.starts_with("node_") {
             node_id.replace_range(0..5, "nano_");
-            let account = Account::parse(node_id).ok_or_else(|| ())?;
+            let account = Account::parse(node_id).ok_or(())?;
             Ok(Self::from_bytes(*account.as_bytes()))
         } else {
             Err(())

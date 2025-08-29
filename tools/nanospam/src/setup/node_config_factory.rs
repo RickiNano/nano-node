@@ -1,4 +1,4 @@
-use std::fs::remove_dir_all;
+use std::{fs::remove_dir_all, path::Path};
 
 use tracing::info;
 
@@ -67,9 +67,9 @@ enable_control = true
 port = RPC_PORT
 "#;
 
-pub(crate) fn configure_nodes(args: &Args, data_dir: &std::path::PathBuf) {
+pub(crate) fn configure_nodes(args: &Args, data_dir: &Path) {
     for i in 0..100 {
-        let mut pr_dir = data_dir.clone();
+        let mut pr_dir = data_dir.to_path_buf();
         pr_dir.push(format!("pr{i}"));
 
         if pr_dir.exists() {
@@ -84,7 +84,7 @@ pub(crate) fn configure_nodes(args: &Args, data_dir: &std::path::PathBuf) {
         info!("********************************************************************************");
         info!("Setting up node PR{i}...");
 
-        let mut node_dir = data_dir.clone();
+        let mut node_dir = data_dir.to_path_buf();
         node_dir.push(format!("pr{i}"));
 
         info!("Creating directory {node_dir:?}");

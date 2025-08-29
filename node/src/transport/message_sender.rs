@@ -65,7 +65,7 @@ impl MessageSender {
         }
         let buffer = self.message_serializer.serialize(message);
         let sent =
-            { try_send_serialized_message(&channel, &self.stats, buffer, message, traffic_type) };
+            { try_send_serialized_message(channel, &self.stats, buffer, message, traffic_type) };
 
         if let Some(callback) = &self.published_callback {
             callback(channel.channel_id(), message);

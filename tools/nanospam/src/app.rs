@@ -130,12 +130,7 @@ impl NanoSpamApp {
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
         let genesis_hash = get_genesis_hash();
-        let rate_spec: RateSpec = args
-            .rate
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or(DEFAULT_RATE)
-            .parse()?;
+        let rate_spec: RateSpec = args.rate.as_deref().unwrap_or(DEFAULT_RATE).parse()?;
 
         let mut data_dir = dirs::home_dir().unwrap();
         data_dir.push("NanoSpam");
@@ -168,7 +163,7 @@ impl NanoSpamApp {
 
         if !args.attach && !args.sync {
             let genesis_wallet_id =
-                create_wallets(&args, &rpc_clients, genesis_rpc, &mut account_map).await;
+                create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await;
             high_prio_check
                 .create_prio_accounts(genesis_wallet_id)
                 .await?;
@@ -368,13 +363,11 @@ async fn publish_blocks(
 
         tokio_scoped::scope(|s| {
             for stream in &mut tcp_streams {
-                if drop_percentage > 0 {
-                    if rng().random_range(0..=100) <= drop_percentage {
-                        continue;
-                    }
+                if drop_percentage > 0 && rng().random_range(0..=100) <= drop_percentage {
+                    continue;
                 }
                 s.spawn(async {
-                    stream[writer_index].write(buffer).await.unwrap();
+                    stream[writer_index].write_all(buffer).await.unwrap();
                 });
             }
         });
@@ -428,7 +421,7 @@ async fn receive_messages(
                 set.spawn(async move {
                     let mut recv_buffer = vec![0; 1024 * 4];
                     loop{
-                        reader.read(&mut recv_buffer).await.unwrap();
+                        let _ = reader.read(&mut recv_buffer).await.unwrap();
                     }
                 });
             }

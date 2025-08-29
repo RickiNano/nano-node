@@ -219,11 +219,11 @@ impl WebsocketSession {
             action_succeeded = true;
         } else if message.action == Some("update") {
             let mut subs = self.entry.subscriptions.lock().unwrap();
-            if let Some(option) = subs.get_mut(&topic) {
-                if let Some(options_value) = message.options {
-                    option.update(&options_value);
-                    action_succeeded = true;
-                }
+            if let Some(option) = subs.get_mut(&topic)
+                && let Some(options_value) = message.options
+            {
+                option.update(&options_value);
+                action_succeeded = true;
             }
         } else if message.action == Some("unsubscribe") && topic != Topic::Invalid {
             let mut subs = self.entry.subscriptions.lock().unwrap();

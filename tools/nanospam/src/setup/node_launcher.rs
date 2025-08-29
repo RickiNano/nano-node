@@ -16,7 +16,7 @@ pub(crate) async fn start_nodes(
     rpc_clients: &[NanoRpcClient],
 ) -> Vec<std::process::Child> {
     let mut children = Vec::new();
-    for i in 0..args.prs {
+    for (i, rpc_client) in rpc_clients.iter().enumerate() {
         let mut node_dir = data_dir.clone();
         node_dir.push(format!("pr{i}"));
 
@@ -52,7 +52,6 @@ pub(crate) async fn start_nodes(
         info!("Starting node: {cmd:?}");
         children.push(cmd.spawn().unwrap());
 
-        let rpc_client = &rpc_clients[i];
         info!("Waiting for RPC...");
         while rpc_client.version().await.is_err() {
             sleep(Duration::from_millis(100)).await;
@@ -62,13 +61,10 @@ pub(crate) async fn start_nodes(
     if args.cpp {
         // Send keepalives so that nano_node connects (their preconfigured peers don't allow ports)!
         info!("Sending keepalives...");
-        for i in 0..args.prs {
+        for (i, rpc_client) in rpc_clients.iter().enumerate() {
             for k in 0..args.prs {
                 if k != i {
-                    rpc_clients[i]
-                        .keepalive("::1", peering_port(k))
-                        .await
-                        .unwrap();
+                    rpc_client.keepalive("::1", peering_port(k)).await.unwrap();
                 }
             }
         }

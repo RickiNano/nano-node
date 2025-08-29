@@ -151,7 +151,7 @@ impl Vote {
         bytes.read_exact(&mut buffer)?;
         let timestamp = VoteTimestamp::from_le_bytes(buffer);
         let mut hashes = Vec::new();
-        while bytes.len() > 0 && hashes.len() < Self::MAX_HASHES {
+        while !bytes.is_empty() && hashes.len() < Self::MAX_HASHES {
             hashes.push(BlockHash::deserialize(&mut bytes)?);
         }
         Ok(Self {

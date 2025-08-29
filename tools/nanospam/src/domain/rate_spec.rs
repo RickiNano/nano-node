@@ -32,15 +32,13 @@ impl RateSpec {
     fn parse_increment_and_interval(input: &str) -> anyhow::Result<(usize, Duration)> {
         if input.is_empty() {
             Ok((0, Duration::ZERO))
+        } else if let Some((incr_str, interval_str)) = input.split_once('@') {
+            let increment = Self::parse_increment(incr_str)?;
+            let interval = Self::parse_interval(interval_str)?;
+            Ok((increment, interval))
         } else {
-            if let Some((incr_str, interval_str)) = input.split_once('@') {
-                let increment = Self::parse_increment(incr_str)?;
-                let interval = Self::parse_interval(interval_str)?;
-                Ok((increment, interval))
-            } else {
-                let increment = Self::parse_increment(input)?;
-                Ok((increment, Duration::from_secs(1)))
-            }
+            let increment = Self::parse_increment(input)?;
+            Ok((increment, Duration::from_secs(1)))
         }
     }
 
@@ -65,15 +63,9 @@ impl RateSpec {
     }
 
     fn try_parse_suffix(suffix: &str, input: &str) -> Option<anyhow::Result<u64>> {
-        if input.ends_with(suffix) {
-            Some(
-                input[..input.len() - suffix.len()]
-                    .parse::<u64>()
-                    .context("invalid interval"),
-            )
-        } else {
-            None
-        }
+        input
+            .strip_suffix(suffix)
+            .map(|s| s.parse::<u64>().context("invalid interval"))
     }
 }
 

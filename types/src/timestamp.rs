@@ -129,13 +129,11 @@ impl UnixMillisTimestamp {
     }
 
     pub fn checked_add(&self, duration: Duration) -> Option<Self> {
-        self.0
-            .checked_add(duration.as_millis() as u64)
-            .map(|i| Self(i))
+        self.0.checked_add(duration.as_millis() as u64).map(Self)
     }
 
     pub fn elapsed(&self, now: UnixMillisTimestamp) -> Duration {
-        Duration::from_millis(now.0.checked_sub(self.0).unwrap_or(0))
+        Duration::from_millis(now.0.saturating_sub(self.0))
     }
 
     pub fn utc(&self) -> DateTime<Utc> {

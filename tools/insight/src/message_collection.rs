@@ -129,7 +129,7 @@ impl MessageFilter {
                 }
                 AscPullReqType::Frontiers(_) => false,
             },
-            Message::ConfirmAck(i) => i.vote().hashes.iter().any(|h| *h == hash),
+            Message::ConfirmAck(i) => i.vote().hashes.contains(&hash),
             Message::ConfirmReq(i) => i.roots_hashes().iter().any(|(h, _)| *h == hash),
             _ => false,
         }

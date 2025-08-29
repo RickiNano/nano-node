@@ -83,35 +83,33 @@ impl BlockFactory {
 
             self.created += 1;
             Some(BlockResult::Block(receive))
-        } else {
-            if let Some(state) = self.account_map.random_account_that_can_send() {
-                assert!(state.confirmed());
-                let destination = self.account_map.random_account().unwrap();
-                let new_balance: Amount = rand::rng().random_range(..state.balance.number()).into();
-                let amount_sent = state.balance - new_balance;
+        } else if let Some(state) = self.account_map.random_account_that_can_send() {
+            assert!(state.confirmed());
+            let destination = self.account_map.random_account().unwrap();
+            let new_balance: Amount = rand::rng().random_range(..state.balance.number()).into();
+            let amount_sent = state.balance - new_balance;
 
-                let send: Block = StateBlockArgs {
-                    key: &state.key,
-                    previous: state.confirmed_frontier,
-                    representative: state.key.public_key(),
-                    balance: new_balance,
-                    link: destination.into(),
-                    work: 0.into(),
-                }
-                .into();
-
-                self.account_map.process_send(
-                    state.key.account(),
-                    destination,
-                    send.hash(),
-                    amount_sent,
-                );
-                self.created += 1;
-
-                Some(BlockResult::Block(send))
-            } else {
-                Some(BlockResult::Waiting)
+            let send: Block = StateBlockArgs {
+                key: &state.key,
+                previous: state.confirmed_frontier,
+                representative: state.key.public_key(),
+                balance: new_balance,
+                link: destination.into(),
+                work: 0.into(),
             }
+            .into();
+
+            self.account_map.process_send(
+                state.key.account(),
+                destination,
+                send.hash(),
+                amount_sent,
+            );
+            self.created += 1;
+
+            Some(BlockResult::Block(send))
+        } else {
+            Some(BlockResult::Waiting)
         }
     }
 
