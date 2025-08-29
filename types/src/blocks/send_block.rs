@@ -217,8 +217,8 @@ impl SendHashables {
     where
         T: std::io::Write,
     {
-        self.previous.serialize_writer(writer)?;
-        self.destination.serialize_writer(writer)?;
+        self.previous.serialize(writer)?;
+        self.destination.serialize(writer)?;
         self.balance.serialize_writer(writer)
     }
 

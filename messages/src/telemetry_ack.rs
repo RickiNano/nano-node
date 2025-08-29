@@ -120,7 +120,7 @@ impl TelemetryData {
         writer.write_all(&self.peer_count.to_be_bytes())?;
         writer.write_all(&[self.protocol_version])?;
         writer.write_all(&self.uptime.to_be_bytes())?;
-        self.genesis_block.serialize_writer(writer)?;
+        self.genesis_block.serialize(writer)?;
         writer.write_all(&[
             self.major_version,
             self.minor_version,

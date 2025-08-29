@@ -308,7 +308,7 @@ mod tests {
         assert_eq!(block.block_type(), BlockType::State);
         block.serialize_writer(&mut buffer).unwrap();
         let successor = BlockHash::from(12345);
-        successor.serialize_writer(&mut buffer).unwrap();
+        successor.serialize(&mut buffer).unwrap();
         buffer.extend_from_slice(&123_u64.to_be_bytes()); // block height
         buffer.extend_from_slice(&UnixTimestamp::from(123).to_be_bytes());
         buffer.push(42); // block details;

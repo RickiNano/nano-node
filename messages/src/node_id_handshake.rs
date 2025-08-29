@@ -87,7 +87,7 @@ impl NodeIdHandshakeResponse {
                 buffer.extend_from_slice(cookie);
                 buffer.extend_from_slice(&v2.salt);
                 v2.genesis
-                    .serialize_writer(&mut buffer)
+                    .serialize(&mut buffer)
                     .expect("Should serialize genesis block");
             }
             None => buffer.extend_from_slice(cookie),
@@ -140,7 +140,7 @@ impl NodeIdHandshakeResponse {
             Some(v2) => {
                 writer.write_all(self.node_id.as_bytes())?;
                 writer.write_all(&v2.salt)?;
-                v2.genesis.serialize_writer(writer)?;
+                v2.genesis.serialize(writer)?;
                 self.signature.serialize_writer(writer)
             }
             None => {

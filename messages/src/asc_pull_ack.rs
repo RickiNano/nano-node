@@ -280,11 +280,11 @@ impl AccountInfoAckPayload {
     where
         T: std::io::Write,
     {
-        self.account.serialize_writer(writer)?;
-        self.account_open.serialize_writer(writer)?;
-        self.account_head.serialize_writer(writer)?;
+        self.account.serialize(writer)?;
+        self.account_open.serialize(writer)?;
+        self.account_head.serialize(writer)?;
         writer.write_all(&self.account_block_count.to_be_bytes())?;
-        self.account_conf_frontier.serialize_writer(writer)?;
+        self.account_conf_frontier.serialize(writer)?;
         writer.write_all(&self.account_conf_height.to_be_bytes())
     }
 }

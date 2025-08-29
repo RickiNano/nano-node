@@ -336,8 +336,8 @@ impl Frontier {
     where
         T: std::io::Write,
     {
-        self.account.serialize_writer(writer)?;
-        self.hash.serialize_writer(writer)
+        self.account.serialize(writer)?;
+        self.hash.serialize(writer)
     }
 
     pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>

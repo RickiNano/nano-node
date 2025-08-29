@@ -54,7 +54,7 @@ impl BulkPullAccount {
     where
         T: std::io::Write,
     {
-        self.account.serialize_writer(writer)?;
+        self.account.serialize(writer)?;
         self.minimum_amount.serialize_writer(writer)?;
         writer.write_all(&[self.flags as u8])
     }

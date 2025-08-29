@@ -73,9 +73,9 @@ impl OpenBlock {
     where
         T: std::io::Write,
     {
-        self.hashables.source.serialize_writer(writer)?;
-        self.hashables.representative.serialize_writer(writer)?;
-        self.hashables.account.serialize_writer(writer)?;
+        self.hashables.source.serialize(writer)?;
+        self.hashables.representative.serialize(writer)?;
+        self.hashables.account.serialize(writer)?;
         self.signature.serialize_writer(writer)?;
         writer.write_all(&self.work.0.to_le_bytes())
     }

@@ -50,7 +50,7 @@ impl PendingInfo {
     where
         T: Write,
     {
-        self.source.serialize_writer(writer)?;
+        self.source.serialize(writer)?;
         self.amount.serialize_writer(writer)?;
         writer.write_all(&[self.epoch as u8])
     }

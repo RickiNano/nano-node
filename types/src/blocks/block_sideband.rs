@@ -79,7 +79,7 @@ impl BlockSideband {
         T: Write,
     {
         if block_type != BlockType::State && block_type != BlockType::LegacyOpen {
-            self.account.serialize_writer(writer)?;
+            self.account.serialize(writer)?;
         }
 
         if block_type != BlockType::LegacyOpen {

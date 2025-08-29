@@ -177,11 +177,11 @@ impl Vote {
     where
         T: std::io::Write,
     {
-        self.voter.serialize_writer(writer)?;
+        self.voter.serialize(writer)?;
         self.signature.serialize_writer(writer)?;
         writer.write_all(&self.timestamp.to_le_bytes())?;
         for hash in &self.hashes {
-            hash.serialize_writer(writer)?;
+            hash.serialize(writer)?;
         }
         Ok(())
     }

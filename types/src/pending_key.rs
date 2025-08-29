@@ -27,8 +27,8 @@ impl PendingKey {
     pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
         let mut result = [0; Self::SERIALIZED_SIZE];
         let mut slice = result.as_mut_slice();
-        self.receiving_account.serialize_writer(&mut slice).unwrap();
-        self.send_block_hash.serialize_writer(&mut slice).unwrap();
+        self.receiving_account.serialize(&mut slice).unwrap();
+        self.send_block_hash.serialize(&mut slice).unwrap();
         result
     }
 

@@ -170,7 +170,7 @@ impl FrontiersReqPayload {
     where
         T: std::io::Write,
     {
-        self.start.serialize_writer(writer)?;
+        self.start.serialize(writer)?;
         let count_bytes = self.count.to_be_bytes();
         writer.write_all(&count_bytes)
     }

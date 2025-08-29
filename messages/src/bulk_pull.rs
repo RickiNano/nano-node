@@ -75,8 +75,8 @@ impl BulkPull {
     where
         T: std::io::Write,
     {
-        self.start.serialize_writer(writer)?;
-        self.end.serialize_writer(writer)?;
+        self.start.serialize(writer)?;
+        self.end.serialize(writer)?;
 
         if self.count > 0 {
             let mut count_buffer = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];

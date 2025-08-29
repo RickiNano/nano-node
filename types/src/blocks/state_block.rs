@@ -85,11 +85,11 @@ impl StateBlock {
     where
         T: std::io::Write,
     {
-        self.hashables.account.serialize_writer(writer)?;
-        self.hashables.previous.serialize_writer(writer)?;
-        self.hashables.representative.serialize_writer(writer)?;
+        self.hashables.account.serialize(writer)?;
+        self.hashables.previous.serialize(writer)?;
+        self.hashables.representative.serialize(writer)?;
         self.hashables.balance.serialize_writer(writer)?;
-        self.hashables.link.serialize_writer(writer)?;
+        self.hashables.link.serialize(writer)?;
         self.signature.serialize_writer(writer)?;
         writer.write_all(&self.work.0.to_be_bytes())
     }

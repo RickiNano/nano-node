@@ -54,7 +54,7 @@ impl FrontierReq {
     where
         T: std::io::Write,
     {
-        self.start.serialize_writer(writer)?;
+        self.start.serialize(writer)?;
         writer.write_all(&self.age.to_le_bytes())?;
         writer.write_all(&self.count.to_le_bytes())
     }

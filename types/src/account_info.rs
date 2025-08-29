@@ -50,9 +50,9 @@ impl AccountInfo {
     where
         T: std::io::Write,
     {
-        self.head.serialize_writer(writer)?;
-        self.representative.serialize_writer(writer)?;
-        self.open_block.serialize_writer(writer)?;
+        self.head.serialize(writer)?;
+        self.representative.serialize(writer)?;
+        self.open_block.serialize(writer)?;
         self.balance.serialize_writer(writer)?;
         writer.write_all(&self.modified.as_u64().to_ne_bytes())?;
         writer.write_all(&self.block_count.to_ne_bytes())?;
