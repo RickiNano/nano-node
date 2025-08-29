@@ -1,4 +1,4 @@
-use crate::{Account, Block, DEV_GENESIS_KEY, Link, PrivateKey, PublicKey};
+use crate::{Account, Block, DEV_GENESIS_KEY, Link, PrivateKey, PublicKey, SignatureError};
 use std::collections::HashMap;
 
 /**
@@ -87,10 +87,10 @@ impl Epochs {
         epoch_id >= Epoch::Epoch0 as u8 && new_epoch_id == epoch_id + 1
     }
 
-    pub fn validate_epoch_signature(&self, block: &Block) -> Result<(), ()> {
+    pub fn validate_epoch_signature(&self, block: &Block) -> Result<(), SignatureError> {
         let epoch_signer: PublicKey = self
             .epoch_signer(&block.link_field().unwrap_or_default())
-            .ok_or(())?
+            .ok_or(SignatureError {})?
             .into();
 
         epoch_signer.verify(block.hash().as_bytes(), block.signature())

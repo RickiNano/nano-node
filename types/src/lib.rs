@@ -57,7 +57,7 @@ pub use pending_info::PendingInfo;
 pub use pending_key::PendingKey;
 pub use priority::{BlockPriority, TimePriority};
 pub use private_key::{PrivateKey, PrivateKeyFactory};
-pub use public_key::PublicKey;
+pub use public_key::{PublicKey, SignatureError};
 pub use qualified_root::QualifiedRoot;
 pub use raw_key::RawKey;
 use serde::de::{Unexpected, Visitor};

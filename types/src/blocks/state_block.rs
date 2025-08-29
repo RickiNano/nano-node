@@ -1,7 +1,8 @@
 use super::{Block, BlockBase, BlockType, BlockTypeId};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DeserializationError, JsonBlock, Link,
-    PrivateKey, PublicKey, Root, Signature, WorkNonce, private_key::TEST_KEY, read_u64_be,
+    PrivateKey, PublicKey, Root, Signature, SignatureError, WorkNonce, private_key::TEST_KEY,
+    read_u64_be,
 };
 use std::io::Read;
 
@@ -24,7 +25,7 @@ impl StateBlock {
             + std::mem::size_of::<u64>() // Work
     ;
 
-    pub fn verify_signature(&self) -> Result<(), ()> {
+    pub fn verify_signature(&self) -> Result<(), SignatureError> {
         self.account()
             .as_key()
             .verify(self.hash().as_bytes(), self.signature())

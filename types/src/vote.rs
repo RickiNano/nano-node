@@ -4,7 +4,7 @@ use super::{
     Account, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature, UnixMillisTimestamp,
     VoteTimestamp,
 };
-use crate::DeserializationError;
+use crate::{DeserializationError, SignatureError};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, EnumCount, EnumIter)]
 pub enum VoteSource {
@@ -162,7 +162,7 @@ impl Vote {
         })
     }
 
-    pub fn validate(&self) -> Result<(), ()> {
+    pub fn validate(&self) -> Result<(), SignatureError> {
         self.voter.verify(self.hash().as_bytes(), &self.signature)
     }
 
