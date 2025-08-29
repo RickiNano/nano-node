@@ -48,30 +48,13 @@ pub use success::*;
 pub use valid::*;
 pub use wallet::*;
 
-use rsnano_types::{BlockSubType, BlockType, WorkVersion};
+use rsnano_types::{BlockSubType, BlockType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum WorkVersionDto {
     Work1,
-}
-
-impl From<WorkVersion> for WorkVersionDto {
-    fn from(value: WorkVersion) -> Self {
-        match value {
-            WorkVersion::Unspecified => unimplemented!(),
-            WorkVersion::Work1 => WorkVersionDto::Work1,
-        }
-    }
-}
-
-impl From<WorkVersionDto> for WorkVersion {
-    fn from(value: WorkVersionDto) -> Self {
-        match value {
-            WorkVersionDto::Work1 => WorkVersion::Work1,
-        }
-    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]

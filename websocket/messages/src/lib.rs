@@ -9,9 +9,7 @@ use std::{fmt::Debug, hash::Hash, time::Duration};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use rsnano_types::{
-    BlockHash, DifficultyV1, SavedBlock, WorkNonce, WorkVersion, milliseconds_since_epoch,
-};
+use rsnano_types::{BlockHash, DifficultyV1, SavedBlock, WorkNonce, milliseconds_since_epoch};
 use rsnano_work::WorkThresholds;
 
 #[derive(
@@ -129,7 +127,7 @@ pub fn work_generation_message(
 ) -> MessageEnvelope {
     let request_multiplier = DifficultyV1::to_multiplier(difficulty, publish_threshold);
     let request = WorkRequest {
-        version: WorkVersion::Work1.as_str(),
+        version: "work_1",
         hash: root.to_string(),
         difficulty: format!("{:016x}", difficulty),
         multiplier: format!("{:.10}", request_multiplier),

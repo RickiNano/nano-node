@@ -53,7 +53,7 @@ use blake2::{
 pub use block_hash::{Blake2HashBuilder, BlockHash};
 pub use blocks::*;
 pub use confirmation_height_info::ConfirmationHeightInfo;
-pub use difficulty::{Difficulty, DifficultyV1, StubDifficulty, WorkVersion};
+pub use difficulty::{Difficulty, DifficultyV1, StubDifficulty};
 pub use epoch::*;
 pub use kdf::KeyDerivationFunction;
 pub use node_id::NodeId;

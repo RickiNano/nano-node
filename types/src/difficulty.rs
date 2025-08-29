@@ -6,33 +6,6 @@ use blake2::{
 use std::collections::HashMap;
 use std::mem::size_of;
 
-#[derive(Clone, Copy, FromPrimitive, PartialEq, Eq)]
-pub enum WorkVersion {
-    Unspecified,
-    Work1,
-}
-
-impl WorkVersion {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            WorkVersion::Work1 => "work_1",
-            WorkVersion::Unspecified => "unspecified",
-        }
-    }
-}
-
-impl TryFrom<u8> for WorkVersion {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(WorkVersion::Unspecified),
-            1 => Ok(WorkVersion::Work1),
-            _ => Err(anyhow!("unknown work version")),
-        }
-    }
-}
-
 pub trait Difficulty: Send + Sync {
     fn get_difficulty(&self, root: &Root, work: WorkNonce) -> u64;
     fn clone(&self) -> Box<dyn Difficulty>;
