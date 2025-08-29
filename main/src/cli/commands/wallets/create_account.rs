@@ -16,7 +16,8 @@ pub(crate) struct CreateAccountArgs {
 impl CreateAccountArgs {
     pub(crate) fn create_account(&self, global_args: GlobalArgs) -> anyhow::Result<()> {
         let node = build_node(&global_args)?;
-        let wallet = WalletId::decode_hex(&self.wallet)?;
+        let wallet =
+            WalletId::decode_hex(&self.wallet).ok_or_else(|| anyhow!("Invalid wallet id"))?;
         let password = self.password.clone().unwrap_or_default();
 
         node.wallets.ensure_wallet_is_unlocked(wallet, &password);

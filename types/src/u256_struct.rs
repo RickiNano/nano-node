@@ -54,10 +54,8 @@ macro_rules! u256_struct {
                 result
             }
 
-            pub fn decode_hex(s: impl AsRef<str>) -> anyhow::Result<Self> {
-                Ok(Self::from_bytes($crate::u256_struct::decode_32_bytes_hex(
-                    s,
-                )?))
+            pub fn decode_hex(s: impl AsRef<str>) -> Option<Self> {
+                $crate::u256_struct::decode_32_bytes_hex(s).map(Self::from_bytes)
             }
 
             pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -121,13 +119,10 @@ macro_rules! u256_struct {
     };
 }
 
-pub fn decode_32_bytes_hex(s: impl AsRef<str>) -> anyhow::Result<[u8; 32]> {
+pub fn decode_32_bytes_hex(s: impl AsRef<str>) -> Option<[u8; 32]> {
     let s = s.as_ref();
     if s.is_empty() || s.len() > 64 {
-        bail!(
-            "Invalid U256 string length. Expected <= 64 but was {}",
-            s.len()
-        );
+        return None;
     }
 
     let mut padded_string = String::new();
@@ -142,8 +137,8 @@ pub fn decode_32_bytes_hex(s: impl AsRef<str>) -> anyhow::Result<[u8; 32]> {
     };
 
     let mut bytes = [0u8; 32];
-    hex::decode_to_slice(sanitized, &mut bytes)?;
-    Ok(bytes)
+    hex::decode_to_slice(sanitized, &mut bytes).ok()?;
+    Some(bytes)
 }
 
 #[macro_export]
@@ -183,7 +178,7 @@ impl<'de> Visitor<'de> for U256Visitor {
     where
         E: serde::de::Error,
     {
-        let bytes = decode_32_bytes_hex(v).map_err(|_| {
+        let bytes = decode_32_bytes_hex(v).ok_or_else(|| {
             serde::de::Error::invalid_value(Unexpected::Str(v), &"a hex string containing 32 bytes")
         })?;
         Ok(bytes)
@@ -219,13 +214,13 @@ mod tests {
         );
 
         // Errors
-        assert!(U256Test::decode_hex("!").is_err());
-        assert!(U256Test::decode_hex("-1").is_err());
+        assert!(U256Test::decode_hex("!").is_none());
+        assert!(U256Test::decode_hex("-1").is_none());
         assert!(
             U256Test::decode_hex(
                 "affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
             )
-            .is_err()
+            .is_none()
         );
     }
 

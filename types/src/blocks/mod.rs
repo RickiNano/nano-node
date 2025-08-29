@@ -88,28 +88,15 @@ impl TryFrom<BlockTypeId> for BlockType {
     }
 }
 
-impl TryFrom<BlockTypeId> for BlockSubType {
-    type Error = anyhow::Error;
-
-    fn try_from(value: BlockTypeId) -> Result<Self, Self::Error> {
+impl From<BlockType> for BlockSubType {
+    fn from(value: BlockType) -> Self {
         match value {
-            BlockTypeId::LegacySend => Ok(BlockSubType::Send),
-            BlockTypeId::LegacyReceive => Ok(BlockSubType::Receive),
-            BlockTypeId::LegacyOpen => Ok(BlockSubType::Open),
-            BlockTypeId::LegacyChange => Ok(BlockSubType::Change),
-            BlockTypeId::State => Ok(BlockSubType::Send),
-            BlockTypeId::Invalid | BlockTypeId::NotABlock => {
-                Err(anyhow!("Invalid block type for conversion to subtype"))
-            }
+            BlockType::LegacySend => BlockSubType::Send,
+            BlockType::LegacyReceive => BlockSubType::Receive,
+            BlockType::LegacyOpen => BlockSubType::Open,
+            BlockType::LegacyChange => BlockSubType::Change,
+            BlockType::State => BlockSubType::Send,
         }
-    }
-}
-
-impl TryFrom<u8> for BlockTypeId {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        FromPrimitive::from_u8(value).ok_or_else(|| anyhow!("invalid block type value"))
     }
 }
 
@@ -144,8 +131,8 @@ pub trait BlockBase {
     fn work(&self) -> WorkNonce;
     fn set_work(&mut self, work: WorkNonce);
     fn previous(&self) -> BlockHash;
-    fn to_json(&self) -> anyhow::Result<String> {
-        Ok(serde_json::to_string(&self.json_representation())?)
+    fn to_json(&self) -> serde_json::Result<String> {
+        serde_json::to_string(&self.json_representation())
     }
     fn json_representation(&self) -> JsonBlock;
     fn root(&self) -> Root;

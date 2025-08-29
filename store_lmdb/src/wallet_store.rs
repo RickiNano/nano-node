@@ -179,8 +179,10 @@ impl LmdbWalletStore {
         if let serde_json::Value::Object(map) = json {
             for (k, v) in map.iter() {
                 if let serde_json::Value::String(v_str) = v {
-                    let key = PublicKey::decode_hex(k)?;
-                    let value = RawKey::decode_hex(v_str)?;
+                    let key =
+                        PublicKey::decode_hex(k).ok_or_else(|| anyhow!("Invalid public key"))?;
+                    let value =
+                        RawKey::decode_hex(v_str).ok_or_else(|| anyhow!("Invalid raw key"))?;
                     store.entry_put_raw(&mut txn, &key, &WalletValue::new(value, 0.into()));
                 } else {
                     bail!("expected string value");

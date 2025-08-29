@@ -30,7 +30,7 @@ impl BlockDetails {
     where
         T: Read,
     {
-        BlockDetails::unpack(read_u8(reader)?).map_err(|_| DeserializationError::InvalidData)
+        BlockDetails::unpack(read_u8(reader)?).ok_or(DeserializationError::InvalidData)
     }
 
     pub fn packed(&self) -> u8 {
@@ -48,15 +48,12 @@ impl BlockDetails {
         result
     }
 
-    pub fn unpack(value: u8) -> anyhow::Result<Self> {
+    pub fn unpack(value: u8) -> Option<Self> {
         let epoch_mask = 0b0001_1111u8;
         let epoch_value = value & epoch_mask;
-        let epoch = match FromPrimitive::from_u8(epoch_value) {
-            Some(e) => e,
-            None => bail!("unknown epoch value: {}", epoch_value),
-        };
+        let epoch = FromPrimitive::from_u8(epoch_value)?;
 
-        Ok(BlockDetails {
+        Some(BlockDetails {
             epoch,
             is_send: (0b1000_0000 & value) != 0,
             is_receive: (0b0100_0000 & value) != 0,

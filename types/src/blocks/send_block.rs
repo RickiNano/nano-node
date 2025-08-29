@@ -350,7 +350,7 @@ impl Visitor<'_> for AmountHexVisitor {
     where
         E: serde::de::Error,
     {
-        let amount = Amount::decode_hex(v).map_err(|_| {
+        let amount = Amount::decode_hex(v).ok_or_else(|| {
             serde::de::Error::invalid_value(
                 Unexpected::Str(v),
                 &"a u128 bit amount in encoded as hex string",

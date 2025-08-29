@@ -57,7 +57,8 @@ pub(crate) fn run_utils_command(
 }
 
 fn public_key_to_account(args: PublicKeyArgs) -> anyhow::Result<()> {
-    let account = Account::decode_hex(&args.public_key)?;
+    let account =
+        Account::decode_hex(&args.public_key).ok_or_else(|| anyhow!("Invalid public key"))?;
     println!("Account: {:?}", account.encode_account());
     Ok(())
 }
@@ -69,7 +70,8 @@ fn account_to_public_key(args: AccountToPublicKeyArgs) -> anyhow::Result<()> {
 }
 
 fn expand_private_key(args: ExpandPrivateKeyArgs) -> anyhow::Result<()> {
-    let private_key = PrivateKey::from_hex_str(&args.private_key)?;
+    let private_key = PrivateKey::from_hex_str(&args.private_key)
+        .ok_or_else(|| anyhow!("Invalid private key"))?;
     let public_key = PublicKey::from(&private_key);
     let account = Account::from(public_key).encode_account();
 

@@ -151,7 +151,7 @@ pub(crate) fn pr_key(node_id: usize) -> PrivateKey {
 }
 
 pub(crate) fn genesis_key() -> PrivateKey {
-    PrivateKey::from_hex_str(GENESIS_PRV).unwrap()
+    PrivateKey::from_hex_str(GENESIS_PRV).expect("Genesis key should be valid")
 }
 
 pub(crate) fn get_genesis_hash() -> BlockHash {

@@ -19,7 +19,8 @@ pub(crate) struct RemoveAccountArgs {
 impl RemoveAccountArgs {
     pub(crate) fn remove_account(&self, global_args: GlobalArgs) -> anyhow::Result<()> {
         let node = build_node(&global_args)?;
-        let wallet_id = WalletId::decode_hex(&self.wallet)?;
+        let wallet_id =
+            WalletId::decode_hex(&self.wallet).ok_or_else(|| anyhow!("Invalid wallet id"))?;
         let password = self.password.clone().unwrap_or_default();
         let account = Account::parse(&self.account)
             .ok_or_else(|| anyhow!("Invalid account"))?

@@ -222,7 +222,7 @@ impl MessageTableViewModel {
             self.hash_error = false;
         } else {
             match BlockHash::decode_hex(self.hash_filter.trim()) {
-                Ok(hash) => {
+                Some(hash) => {
                     self.messages.write().unwrap().filter_hash(Some(hash));
                     self.hash_error = false;
                 }
@@ -244,7 +244,7 @@ impl MessageTableViewModel {
                     self.account_error = false;
                 }
                 None => match Account::decode_hex(self.account_filter.trim()) {
-                    Ok(account) => {
+                    Some(account) => {
                         self.messages.write().unwrap().filter_account(Some(account));
                         self.account_error = false;
                     }

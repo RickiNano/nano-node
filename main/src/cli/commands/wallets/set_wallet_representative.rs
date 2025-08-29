@@ -19,7 +19,8 @@ pub(crate) struct SetWalletRepresentativeArgs {
 impl SetWalletRepresentativeArgs {
     pub(crate) fn set_representative_wallet(&self, global_args: GlobalArgs) -> anyhow::Result<()> {
         let node = build_node(&global_args)?;
-        let wallet_id = WalletId::decode_hex(&self.wallet)?;
+        let wallet_id =
+            WalletId::decode_hex(&self.wallet).ok_or_else(|| anyhow!("Invalid wallet id"))?;
         let representative = Account::parse(&self.account)
             .ok_or_else(|| anyhow!("Invalid account"))?
             .into();

@@ -32,7 +32,8 @@ impl ImportKeysArgs {
             .context("Unable to read <file> contents")?;
 
         let node = build_node(&global_args)?;
-        let wallet_id = WalletId::decode_hex(&self.wallet)?;
+        let wallet_id =
+            WalletId::decode_hex(&self.wallet).ok_or_else(|| anyhow!("Invalid wallet id"))?;
         let password = self.password.clone().unwrap_or_default();
 
         node.wallets.ensure_wallet_is_unlocked(wallet_id, &password);

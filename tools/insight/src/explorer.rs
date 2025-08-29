@@ -13,7 +13,7 @@ impl Explorer {
     }
 
     pub(crate) fn search(&mut self, ledger: &Ledger, input: &str) -> bool {
-        if let Ok(hash) = BlockHash::decode_hex(input.trim()) {
+        if let Some(hash) = BlockHash::decode_hex(input.trim()) {
             let any = ledger.any();
             self.state = match any.detailed_block(&hash) {
                 Some(block) => ExplorerState::Block(block),

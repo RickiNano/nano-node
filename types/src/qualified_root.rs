@@ -48,12 +48,14 @@ impl QualifiedRoot {
         Self::new(Root::from(111), BlockHash::from(222))
     }
 
-    pub fn decode_hex(s: impl AsRef<str>) -> anyhow::Result<Self> {
+    pub fn decode_hex(s: impl AsRef<str>) -> Option<Self> {
         let mut bytes = [0u8; 64];
-        hex::decode_to_slice(s.as_ref(), &mut bytes)?;
-        let root = Root::from_bytes(bytes[0..32].try_into().unwrap());
-        let previous = BlockHash::from_bytes(bytes[32..].try_into().unwrap());
-        Ok(Self { root, previous })
+        hex::decode_to_slice(s.as_ref(), &mut bytes).ok()?;
+
+        let mut slice = bytes.as_slice();
+        let root = Root::deserialize(&mut slice).ok()?;
+        let previous = BlockHash::deserialize(&mut slice).ok()?;
+        Some(Self { root, previous })
     }
 }
 
@@ -102,7 +104,7 @@ impl<'de> serde::de::Visitor<'de> for QualifiedRootVisitor {
         E: serde::de::Error,
     {
         QualifiedRoot::decode_hex(v)
-            .map_err(|_| serde::de::Error::invalid_value(Unexpected::Str(v), &"a qualified root"))
+            .ok_or_else(|| serde::de::Error::invalid_value(Unexpected::Str(v), &"a qualified root"))
     }
 }
 

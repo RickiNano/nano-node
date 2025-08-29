@@ -132,7 +132,7 @@ impl InsightApp {
     }
 
     pub(crate) fn roll_back(&self) {
-        if let Ok(hash) = BlockHash::decode_hex(&self.rollback_hash) {
+        if let Some(hash) = BlockHash::decode_hex(&self.rollback_hash) {
             if let Some(node) = self.node_runner.node() {
                 let _ = node.ledger.roll_back(&hash);
             }

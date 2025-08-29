@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use clap::{ArgGroup, Parser};
 
 use rsnano_store_lmdb::{LmdbFinalVoteStore, default_ledger_lmdb_options};
@@ -28,7 +29,8 @@ impl FinalVoteArgs {
         let mut txn = env.begin_write();
 
         if let Some(root) = &self.root {
-            let root_decoded = QualifiedRoot::decode_hex(root)?;
+            let root_decoded =
+                QualifiedRoot::decode_hex(root).ok_or_else(|| anyhow!("Invalid root"))?;
             final_vote_store.del(&mut txn, &root_decoded);
             println!("Successfully cleared final vote");
         } else {

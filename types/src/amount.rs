@@ -1,6 +1,6 @@
 use crate::DeserializationError;
 use serde::de::{Unexpected, Visitor};
-use std::{fmt::Debug, io::Read, iter::Sum, ops::Deref};
+use std::{fmt::Debug, io::Read, iter::Sum, num::ParseIntError, ops::Deref};
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Hash)]
 pub struct Amount {
@@ -65,13 +65,13 @@ impl Amount {
         format!("{:032X}", self.raw)
     }
 
-    pub fn decode_hex(s: impl AsRef<str>) -> anyhow::Result<Self> {
-        let value = u128::from_str_radix(s.as_ref(), 16)?;
-        Ok(Amount::raw(value))
+    pub fn decode_hex(s: impl AsRef<str>) -> Option<Self> {
+        let value = u128::from_str_radix(s.as_ref(), 16).ok()?;
+        Some(Amount::raw(value))
     }
 
-    pub fn decode_dec(s: impl AsRef<str>) -> anyhow::Result<Self> {
-        Ok(Self::raw(s.as_ref().parse::<u128>()?))
+    pub fn decode_dec(s: impl AsRef<str>) -> Result<Self, ParseIntError> {
+        s.as_ref().parse::<u128>().map(Self::raw)
     }
 
     pub fn to_string_dec(self) -> String {

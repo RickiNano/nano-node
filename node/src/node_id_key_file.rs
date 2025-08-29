@@ -50,10 +50,8 @@ impl NodeIdKeyFile {
             .context(format!("Could not read node id file {:?}", file_path))?;
 
         let first_line = content.lines().next().unwrap_or("");
-        PrivateKey::from_hex_str(first_line).context(format!(
-            "Could not decode node id key from file {:?}",
-            file_path
-        ))
+        PrivateKey::from_hex_str(first_line)
+            .ok_or_else(|| anyhow!("Could not decode node id key from file {:?}", file_path))
     }
 
     fn create_key(&mut self, app_path: &Path, file_path: &Path) -> anyhow::Result<PrivateKey> {

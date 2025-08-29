@@ -31,7 +31,7 @@ impl CreateWalletArgs {
         node.wallets.ensure_wallet_is_unlocked(wallet_id, &password);
 
         if let Some(seed) = &self.seed {
-            let key = RawKey::decode_hex(seed)?;
+            let key = RawKey::decode_hex(seed).ok_or_else(|| anyhow!("Invalid seed"))?;
 
             node.wallets
                 .change_seed(wallet_id, &key, 0)

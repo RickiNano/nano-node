@@ -19,8 +19,9 @@ pub(crate) struct ChangeWalletSeedArgs {
 impl ChangeWalletSeedArgs {
     pub(crate) fn change_wallet_seed(&self, global_args: GlobalArgs) -> anyhow::Result<()> {
         let node = build_node(&global_args)?;
-        let wallet_id = WalletId::decode_hex(&self.wallet)?;
-        let seed = RawKey::decode_hex(&self.seed)?;
+        let wallet_id =
+            WalletId::decode_hex(&self.wallet).ok_or_else(|| anyhow!("Invalid wallet id"))?;
+        let seed = RawKey::decode_hex(&self.seed).ok_or_else(|| anyhow!("Invalid seed"))?;
         let password = self.password.clone().unwrap_or_default();
 
         node.wallets.ensure_wallet_is_unlocked(wallet_id, &password);

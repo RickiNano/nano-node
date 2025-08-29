@@ -1,10 +1,10 @@
 use std::sync::LazyLock;
 
-use super::{PublicKey, RawKey, Signature};
-use crate::{Account, Link, Root};
-use anyhow::Context;
 use ed25519_dalek::ed25519::signature::SignerMut;
 use rsnano_nullable_random::NullableRng;
+
+use super::{PublicKey, RawKey, Signature};
+use crate::{Account, Link, Root};
 
 pub struct PrivateKeyFactory {
     rng: NullableRng,
@@ -75,12 +75,11 @@ impl PrivateKey {
         }
     }
 
-    pub fn from_hex_str(s: impl AsRef<str>) -> anyhow::Result<Self> {
+    pub fn from_hex_str(s: impl AsRef<str>) -> Option<Self> {
         let input = s.as_ref();
         let mut bytes = [0u8; 32];
-        hex::decode_to_slice(input, &mut bytes)
-            .with_context(|| format!("input string: '{}'", input))?;
-        Ok(Self::from_bytes(&bytes))
+        hex::decode_to_slice(input, &mut bytes).ok()?;
+        Some(Self::from_bytes(&bytes))
     }
 
     pub fn sign(&self, data: &[u8]) -> Signature {
