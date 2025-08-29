@@ -199,7 +199,7 @@ impl Bootstrapper {
         }
     }
 
-    pub fn state(&self) -> MutexGuard<BootstrapState> {
+    pub fn state(&self) -> MutexGuard<'_, BootstrapState> {
         self.state.lock().unwrap()
     }
 

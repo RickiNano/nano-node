@@ -136,11 +136,11 @@ impl MainViewModel {
             .collect()
     }
 
-    pub(crate) fn message_stats(&self) -> MessageStatsViewModel {
+    pub(crate) fn message_stats(&self) -> MessageStatsViewModel<'_> {
         MessageStatsViewModel::new(&self.app.msg_recorder)
     }
 
-    pub(crate) fn channels(&mut self) -> ChannelsViewModel {
+    pub(crate) fn channels(&mut self) -> ChannelsViewModel<'_> {
         ChannelsViewModel::new(&mut self.app.channels)
     }
 

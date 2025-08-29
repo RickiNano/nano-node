@@ -1,5 +1,4 @@
 use crate::{Account, Block, DEV_GENESIS_KEY, Link, PrivateKey, PublicKey};
-use num_traits::FromPrimitive;
 use std::collections::HashMap;
 
 /**

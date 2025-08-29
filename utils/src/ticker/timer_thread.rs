@@ -42,7 +42,7 @@ impl<T: Tickable> TimerThread<T> {
         }
     }
 
-    pub fn task(&self) -> std::sync::MutexGuard<Option<T>> {
+    pub fn task(&self) -> std::sync::MutexGuard<'_, Option<T>> {
         self.task.lock().unwrap()
     }
 

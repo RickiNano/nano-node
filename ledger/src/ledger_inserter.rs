@@ -15,7 +15,7 @@ impl<'a> LedgerInserter<'a> {
         Self { ledger }
     }
 
-    pub fn genesis(&self) -> LedgerBlockInserter {
+    pub fn genesis(&self) -> LedgerBlockInserter<'_> {
         LedgerBlockInserter {
             ledger: self.ledger,
             key: &DEV_GENESIS_KEY,

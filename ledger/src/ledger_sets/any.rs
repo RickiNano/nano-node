@@ -14,7 +14,7 @@ pub trait AnySet: LedgerSet {
     fn should_refresh(&self) -> bool;
     fn get_block(&self, hash: &BlockHash) -> Option<SavedBlock>;
     fn receivable_exists(&self, account: Account) -> bool;
-    fn confirmed(&self) -> BorrowingConfirmedSet;
+    fn confirmed(&self) -> BorrowingConfirmedSet<'_>;
 
     fn block_balance(&self, hash: &BlockHash) -> Option<Amount> {
         if hash.is_zero() {
@@ -60,17 +60,17 @@ pub trait AnySet: LedgerSet {
     fn detailed_block(&self, hash: &BlockHash) -> Option<DetailedBlock>;
 
     /// Returns the next receivable entry for an account greater than 'account'
-    fn receivable_upper_bound(&self, account: Account) -> AnyReceivableIterator;
+    fn receivable_upper_bound(&self, account: Account) -> AnyReceivableIterator<'_>;
 
     /// Returns the next receivable entry for an account greater than or equal to 'account'
-    fn receivable_lower_bound(&self, account: Account) -> AnyReceivableIterator;
+    fn receivable_lower_bound(&self, account: Account) -> AnyReceivableIterator<'_>;
 
     /// Returns the next receivable entry for the account 'account' with hash greater than 'hash'
     fn account_receivable_upper_bound(
         &self,
         account: Account,
         hash: BlockHash,
-    ) -> AnyReceivableIterator;
+    ) -> AnyReceivableIterator<'_>;
 
     fn get_final_vote(&self, root: &QualifiedRoot) -> Option<BlockHash>;
 }
@@ -201,7 +201,7 @@ impl<'a> AnySet for OwningAnySet<'a> {
         self.borrowing_set().get_block(hash)
     }
 
-    fn confirmed(&self) -> BorrowingConfirmedSet {
+    fn confirmed(&self) -> BorrowingConfirmedSet<'_> {
         BorrowingConfirmedSet::new(self.store, &self.txn)
     }
 
@@ -279,7 +279,7 @@ impl<'a> AnySet for OwningAnySet<'a> {
         self.borrowing_set().detailed_block(hash)
     }
 
-    fn receivable_upper_bound(&self, account: Account) -> AnyReceivableIterator {
+    fn receivable_upper_bound(&self, account: Account) -> AnyReceivableIterator<'_> {
         match account.inc() {
             None => AnyReceivableIterator::new(
                 &self.txn,
@@ -298,7 +298,7 @@ impl<'a> AnySet for OwningAnySet<'a> {
         }
     }
 
-    fn receivable_lower_bound(&self, account: Account) -> AnyReceivableIterator {
+    fn receivable_lower_bound(&self, account: Account) -> AnyReceivableIterator<'_> {
         AnyReceivableIterator::new(
             &self.txn,
             &self.store.pending,
@@ -312,7 +312,7 @@ impl<'a> AnySet for OwningAnySet<'a> {
         &self,
         account: Account,
         hash: BlockHash,
-    ) -> AnyReceivableIterator {
+    ) -> AnyReceivableIterator<'_> {
         AnyReceivableIterator::new(
             &self.txn,
             &self.store.pending,
@@ -387,7 +387,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
             .is_some()
     }
 
-    fn confirmed(&self) -> BorrowingConfirmedSet {
+    fn confirmed(&self) -> BorrowingConfirmedSet<'_> {
         BorrowingConfirmedSet::new(self.store, self.tx)
     }
 
@@ -518,7 +518,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
     }
 
     /// Returns the next receivable entry for an account greater than 'account'
-    fn receivable_upper_bound(&self, account: Account) -> AnyReceivableIterator {
+    fn receivable_upper_bound(&self, account: Account) -> AnyReceivableIterator<'_> {
         match account.inc() {
             None => AnyReceivableIterator::new(
                 self.tx,
@@ -537,7 +537,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
         }
     }
 
-    fn receivable_lower_bound(&self, account: Account) -> AnyReceivableIterator {
+    fn receivable_lower_bound(&self, account: Account) -> AnyReceivableIterator<'_> {
         AnyReceivableIterator::new(
             self.tx,
             &self.store.pending,
@@ -551,7 +551,7 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
         &self,
         account: Account,
         hash: BlockHash,
-    ) -> AnyReceivableIterator {
+    ) -> AnyReceivableIterator<'_> {
         AnyReceivableIterator::new(
             self.tx,
             &self.store.pending,

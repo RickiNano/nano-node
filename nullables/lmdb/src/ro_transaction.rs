@@ -61,7 +61,7 @@ impl Transaction for ReadTransaction {
         }
     }
 
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         match &self.strategy {
             TxnStrategy::Real(s) => s.open_ro_cursor(database),
             TxnStrategy::Nulled(s) => s.open_ro_cursor(database),
@@ -98,7 +98,7 @@ impl RoTransactionWrapper {
         lmdb::Transaction::get(&self.0, database.as_real(), &key)
     }
 
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         lmdb::Transaction::open_ro_cursor(&self.0, database.as_real()).map(|c| {
             //todo don't use static lifetime
             let c =
@@ -146,7 +146,7 @@ impl RoTransactionStub {
         }
     }
 
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         match self.get_database(database) {
             Some(db) => Ok(RoCursor::new_null_with(db)),
             None => Ok(RoCursor::new_null_with(&EMPTY_DATABASE)),

@@ -117,7 +117,7 @@ impl WriteTransaction {
         self.txn.clear_db(database)
     }
 
-    pub fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor> {
+    pub fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor<'_>> {
         self.txn.open_rw_cursor(database)
     }
 
@@ -135,7 +135,7 @@ impl Transaction for WriteTransaction {
         self.txn.get(database, key)
     }
 
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         self.txn.open_ro_cursor(database)
     }
 
@@ -249,14 +249,14 @@ impl RwTransaction {
         Ok(())
     }
 
-    pub fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    pub fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         match &self.strategy {
             RwTransactionStrategy::Real(s) => s.open_ro_cursor(database),
             RwTransactionStrategy::Nulled(s) => s.open_ro_cursor(database),
         }
     }
 
-    pub fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor> {
+    pub fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor<'_>> {
         match &mut self.strategy {
             RwTransactionStrategy::Real(s) => s.open_rw_cursor(database),
             RwTransactionStrategy::Nulled(_) => todo!(),
@@ -318,12 +318,12 @@ impl RwTransactionWrapper {
         lmdb::Transaction::commit(self.0)
     }
 
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         let cursor = lmdb::Transaction::open_ro_cursor(&self.0, database.as_real());
         cursor.map(RoCursor::new)
     }
 
-    fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor> {
+    fn open_rw_cursor(&mut self, database: LmdbDatabase) -> lmdb::Result<RwCursor<'_>> {
         let cursor = lmdb::RwTransaction::open_rw_cursor(&mut self.0, database.as_real());
         cursor.map(RwCursor::new)
     }
@@ -379,7 +379,7 @@ impl RwTransactionStub {
         Ok(())
     }
 
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor> {
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> lmdb::Result<RoCursor<'_>> {
         Ok(RoCursor::new_null_with(
             self.db_copies.iter().find(|db| db.dbi == database).unwrap(),
         ))

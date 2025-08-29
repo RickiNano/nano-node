@@ -335,7 +335,7 @@ impl Ledger {
             .put(txn, genesis_account.into(), Amount::MAX);
     }
 
-    pub fn any(&self) -> OwningAnySet {
+    pub fn any(&self) -> OwningAnySet<'_> {
         OwningAnySet::new(&self.store, &self.constants)
     }
 

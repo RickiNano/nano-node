@@ -34,6 +34,6 @@ pub trait Transaction {
             Err(e) => panic!("exists failed: {:?}", e),
         }
     }
-    fn open_ro_cursor(&self, database: LmdbDatabase) -> Result<RoCursor>;
+    fn open_ro_cursor(&self, database: LmdbDatabase) -> Result<RoCursor<'_>>;
     fn count(&self, database: LmdbDatabase) -> u64;
 }

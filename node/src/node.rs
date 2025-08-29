@@ -1519,7 +1519,7 @@ impl Node {
         self.stats_collector.collect().get_dir(stat, detail, dir)
     }
 
-    pub fn stats(&self) -> MutexGuard<StatsCollection> {
+    pub fn stats(&self) -> MutexGuard<'_, StatsCollection> {
         self.stats_collector.collect()
     }
 
