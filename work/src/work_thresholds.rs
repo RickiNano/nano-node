@@ -1,5 +1,5 @@
 use rsnano_types::{
-    Block, BlockDetails, BlockTypeId, Difficulty, DifficultyV1, Epoch, Networks, Root,
+    Block, BlockDetails, BlockType, Difficulty, DifficultyV1, Epoch, Networks, Root,
     StubDifficulty, WorkNonce,
 };
 use std::{
@@ -180,9 +180,9 @@ impl WorkThresholds {
         }
     }
 
-    pub fn threshold_entry(&self, block_type: BlockTypeId) -> u64 {
+    pub fn threshold_entry(&self, block_type: BlockType) -> u64 {
         match block_type {
-            BlockTypeId::State => self.entry,
+            BlockType::State => self.entry,
             _ => self.epoch_1,
         }
     }
@@ -261,12 +261,12 @@ impl WorkThresholds {
     }
 
     pub fn validate_entry(&self, root: &Root, work: WorkNonce) -> bool {
-        self.difficulty(root, work) >= self.threshold_entry(BlockTypeId::State)
+        self.difficulty(root, work) >= self.threshold_entry(BlockType::State)
     }
 
     pub fn validate_entry_block(&self, block: &Block) -> bool {
         let difficulty = self.difficulty_block(block);
-        let threshold = self.threshold_entry(block.block_type_id());
+        let threshold = self.threshold_entry(block.block_type());
         difficulty >= threshold
     }
 

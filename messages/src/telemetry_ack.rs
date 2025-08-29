@@ -48,6 +48,28 @@ pub struct TelemetryData {
 impl TelemetryData {
     pub const SIZE_MASK: u16 = 0x3ff;
 
+    /// Size does not include unknown_data
+    pub const SERIALIZED_SIZE_OF_KNOWN_DATA: usize =
+        Signature::SERIALIZED_SIZE
+        + Account::SERIALIZED_SIZE // node id
+        + size_of::<u64>() //block_count
+          + size_of::<u64>()// cemented_count 
+          + size_of::<u64>() // unchecked_count 
+          + size_of::<u64>() // account_count 
+          + size_of::<u64>() // bandwidth_cap 
+          + size_of::<u32>() // peer_count
+          + size_of::<u8>() // protocol_version
+          + size_of::<u64>() // uptime 
+          + BlockHash::SERIALIZED_SIZE
+          + size_of::<u8>() // major_version 
+          + size_of::<u8>() // minor_version 
+          + size_of::<u8>() // patch_version 
+          + size_of::<u8>() // pre_release_version 
+          + size_of::<u8>() // maker 
+          + size_of::<u64>() // timestamp 
+          + size_of::<u64>() //active_difficulty)
+    ;
+
     pub fn new() -> Self {
         Self {
             signature: Signature::new(),
@@ -82,28 +104,6 @@ impl TelemetryData {
         data.maker = TelemetryMaker::RsNano as u8;
         data.timestamp = SystemTime::UNIX_EPOCH + Duration::from_millis(100);
         data
-    }
-
-    /// Size does not include unknown_data
-    pub const fn serialized_size_of_known_data() -> usize {
-        Signature::SERIALIZED_SIZE
-        + Account::SERIALIZED_SIZE // node id
-        + size_of::<u64>() //block_count
-          + size_of::<u64>()// cemented_count 
-          + size_of::<u64>() // unchecked_count 
-          + size_of::<u64>() // account_count 
-          + size_of::<u64>() // bandwidth_cap 
-          + size_of::<u32>() // peer_count
-          + size_of::<u8>() // protocol_version
-          + size_of::<u64>() // uptime 
-          + BlockHash::SERIALIZED_SIZE
-          + size_of::<u8>() // major_version 
-          + size_of::<u8>() // minor_version 
-          + size_of::<u8>() // patch_version 
-          + size_of::<u8>() // pre_release_version 
-          + size_of::<u8>() // maker 
-          + size_of::<u64>() // timestamp 
-          + size_of::<u64>() //active_difficulty)
     }
 
     pub fn serialize_without_signature<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -164,9 +164,8 @@ impl TelemetryData {
         let timestamp_ms = read_u64_be(reader)?;
         let active_difficulty = read_u64_be(reader)?;
         let mut unknown_data = Vec::new();
-        if payload_len as usize > TelemetryData::serialized_size_of_known_data() {
-            let unknown_len =
-                (payload_len as usize) - TelemetryData::serialized_size_of_known_data();
+        if payload_len as usize > TelemetryData::SERIALIZED_SIZE_OF_KNOWN_DATA {
+            let unknown_len = (payload_len as usize) - TelemetryData::SERIALIZED_SIZE_OF_KNOWN_DATA;
             unknown_data.resize(unknown_len, 0);
             reader.read_exact(&mut unknown_data)?;
         }
@@ -302,7 +301,7 @@ impl MessageVariant for TelemetryAck {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
         match &self.0 {
             Some(data) => BitArray::new(
-                TelemetryData::serialized_size_of_known_data() as u16
+                TelemetryData::SERIALIZED_SIZE_OF_KNOWN_DATA as u16
                     + data.unknown_data.len() as u16,
             ),
             None => Default::default(),
@@ -356,7 +355,7 @@ mod tests {
 
     #[test]
     fn serialized_size() {
-        assert_eq!(TelemetryData::serialized_size_of_known_data(), 202);
+        assert_eq!(TelemetryData::SERIALIZED_SIZE_OF_KNOWN_DATA, 202);
     }
 
     #[test]
@@ -390,7 +389,7 @@ mod tests {
         data.unknown_data = vec![
             1;
             TelemetryData::SIZE_MASK as usize
-                - TelemetryData::serialized_size_of_known_data()
+                - TelemetryData::SERIALIZED_SIZE_OF_KNOWN_DATA
         ];
 
         assert_deserializable(&Message::TelemetryAck(TelemetryAck(Some(data))));

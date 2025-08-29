@@ -1,4 +1,4 @@
-use super::{Block, BlockBase, BlockType, BlockTypeId};
+use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
     JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
@@ -14,6 +14,9 @@ pub struct OpenBlock {
 }
 
 impl OpenBlock {
+    pub const SERIALIZED_SIZE: usize =
+        OpenHashables::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE + 8;
+
     pub fn account(&self) -> Account {
         self.hashables.account
     }
@@ -35,10 +38,6 @@ impl OpenBlock {
 
     pub fn representative(&self) -> PublicKey {
         self.hashables.representative
-    }
-
-    pub fn serialized_size() -> usize {
-        OpenHashables::serialized_size() + Signature::serialized_size() + std::mem::size_of::<u64>()
     }
 
     pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
@@ -144,7 +143,7 @@ impl BlockBase for OpenBlock {
         Some(self.hashables.representative)
     }
 
-    fn valid_predecessor(&self, _block_type: BlockTypeId) -> bool {
+    fn valid_predecessor(&self, _block_type: BlockType) -> bool {
         false
     }
 
@@ -176,9 +175,8 @@ struct OpenHashables {
 }
 
 impl OpenHashables {
-    const fn serialized_size() -> usize {
-        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE + Account::SERIALIZED_SIZE
-    }
+    const SERIALIZED_SIZE: usize =
+        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE + Account::SERIALIZED_SIZE;
 
     fn hash(&self) -> BlockHash {
         Blake2HashBuilder::new()
@@ -277,7 +275,7 @@ mod tests {
         let block1 = OpenBlock::new_test_instance();
         let mut buffer = Vec::new();
         block1.serialize_without_block_type(&mut buffer).unwrap();
-        assert_eq!(OpenBlock::serialized_size(), buffer.len());
+        assert_eq!(OpenBlock::SERIALIZED_SIZE, buffer.len());
 
         let block2 = OpenBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);

@@ -364,7 +364,7 @@ impl Default for SavedAccountChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::BlockTypeId;
+    use crate::BlockType;
 
     #[test]
     fn default_account() {
@@ -381,7 +381,7 @@ mod tests {
         chain.add_legacy_open_from_account(&genesis);
         let block = chain.latest_block();
         assert_eq!(block.account_field(), Some(chain.account()));
-        assert_eq!(block.block_type_id(), BlockTypeId::LegacyOpen);
+        assert_eq!(block.block_type(), BlockType::LegacyOpen);
         assert_eq!(block.height(), 1);
         assert_eq!(chain.frontier(), block.hash());
         assert_eq!(chain.height(), 1);

@@ -24,10 +24,6 @@ impl Signature {
         Ok(Self::from_bytes(bytes.try_into()?))
     }
 
-    pub const fn serialized_size() -> usize {
-        64
-    }
-
     pub fn deserialize<T>(reader: &mut T) -> std::io::Result<Signature>
     where
         T: Read,

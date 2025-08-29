@@ -6,7 +6,7 @@ use rsnano_nullable_lmdb::{
     WriteFlags,
     sys::{MDB_FIRST, MDB_NEXT},
 };
-use rsnano_types::{BlockTypeId, UnixMillisTimestamp, UnixTimestamp};
+use rsnano_types::{BlockType, BlockTypeId, UnixMillisTimestamp, UnixTimestamp};
 
 use crate::{
     FIRST_INCOMPATIBLE_STORE_VERSION, LmdbVersionStore, STORE_VERSION_CURRENT,
@@ -249,8 +249,11 @@ impl<'a> V24Sideband<'a> {
         v24_sideband_len(self.block_type())
     }
 
-    fn block_type(&self) -> BlockTypeId {
-        BlockTypeId::from_u8(self.data[0]).expect("invalid block type")
+    fn block_type(&self) -> BlockType {
+        BlockTypeId::from_u8(self.data[0])
+            .expect("Should be valid block type id")
+            .try_into()
+            .expect("Should be valid block type")
     }
 
     fn upgrade_timestamp_to_millis(&self, result: &mut [u8]) {
@@ -262,21 +265,20 @@ impl<'a> V24Sideband<'a> {
 
     fn timestamp_slice<'r>(&self, result: &'r mut [u8]) -> &'r mut [u8] {
         let mut start_index = result.len() - 8;
-        if self.block_type() == BlockTypeId::State {
+        if self.block_type() == BlockType::State {
             start_index -= 2; // details + source epoch bytes
         }
         &mut result[start_index..start_index + 8]
     }
 }
 
-fn v24_sideband_len(block_type: BlockTypeId) -> usize {
+fn v24_sideband_len(block_type: BlockType) -> usize {
     match block_type {
-        BlockTypeId::LegacySend => 48 + 32,
-        BlockTypeId::LegacyReceive => 64 + 32,
-        BlockTypeId::LegacyOpen => 24 + 32,
-        BlockTypeId::LegacyChange => 64 + 32,
-        BlockTypeId::State => 18 + 32,
-        blk_type => panic!("Got block type: {blk_type:?}"),
+        BlockType::LegacySend => 48 + 32,
+        BlockType::LegacyReceive => 64 + 32,
+        BlockType::LegacyOpen => 24 + 32,
+        BlockType::LegacyChange => 64 + 32,
+        BlockType::State => 18 + 32,
     }
 }
 
@@ -287,25 +289,25 @@ mod tests {
 
     #[test]
     fn old_sideband_len() {
-        let assert_len = |block_type: BlockTypeId| {
+        let assert_len = |block_type: BlockType| {
             assert_eq!(
                 v24_sideband_len(block_type),
                 BlockSideband::serialized_size(block_type) + 32,
                 "incorrect sideband len for {block_type:?}"
             );
         };
-        assert_len(BlockTypeId::LegacySend);
-        assert_len(BlockTypeId::LegacyReceive);
-        assert_len(BlockTypeId::LegacyOpen);
-        assert_len(BlockTypeId::LegacyChange);
-        assert_len(BlockTypeId::State);
+        assert_len(BlockType::LegacySend);
+        assert_len(BlockType::LegacyReceive);
+        assert_len(BlockType::LegacyOpen);
+        assert_len(BlockType::LegacyChange);
+        assert_len(BlockType::State);
     }
 
     #[test]
     fn get_successor_from_v24_sideband() {
         let mut buffer = Vec::new();
         let block = Block::new_test_instance();
-        assert_eq!(block.block_type_id(), BlockTypeId::State);
+        assert_eq!(block.block_type(), BlockType::State);
         block.serialize(&mut buffer).unwrap();
         let successor = BlockHash::from(12345);
         successor.serialize(&mut buffer).unwrap();

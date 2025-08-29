@@ -157,15 +157,15 @@ pub trait BlockBase {
     fn qualified_root(&self) -> QualifiedRoot {
         QualifiedRoot::new(self.root(), self.previous())
     }
-    fn valid_predecessor(&self, block_type: BlockTypeId) -> bool;
+    fn valid_predecessor(&self, block_type: BlockType) -> bool;
 }
 
 pub fn serialized_block_size(block_type: BlockType) -> usize {
     match block_type {
         BlockType::LegacySend => SendBlock::SERIALIZED_SIZE,
-        BlockType::LegacyReceive => ReceiveBlock::serialized_size(),
-        BlockType::LegacyOpen => OpenBlock::serialized_size(),
-        BlockType::LegacyChange => ChangeBlock::serialized_size(),
+        BlockType::LegacyReceive => ReceiveBlock::SERIALIZED_SIZE,
+        BlockType::LegacyOpen => OpenBlock::SERIALIZED_SIZE,
+        BlockType::LegacyChange => ChangeBlock::SERIALIZED_SIZE,
         BlockType::State => StateBlock::SERIALIZED_SIZE,
     }
 }
@@ -209,10 +209,6 @@ impl Block {
             work: 69420.into(),
         }
         .into()
-    }
-
-    pub fn block_type_id(&self) -> BlockTypeId {
-        self.as_block().block_type().into()
     }
 
     pub fn block_type(&self) -> BlockType {
@@ -273,8 +269,8 @@ impl Block {
     where
         T: std::io::Write,
     {
-        let block_type = self.block_type_id() as u8;
-        writer.write_all(&[block_type])?;
+        let block_type_id = BlockTypeId::from(self.block_type()) as u8;
+        writer.write_all(&[block_type_id])?;
         self.serialize_without_block_type(writer)
     }
 
@@ -571,7 +567,7 @@ impl SavedBlock {
             .serialize(&mut buffer)
             .expect("Should serialize block");
         self.sideband
-            .serialize(self.block.block_type_id(), &mut buffer)
+            .serialize(self.block.block_type(), &mut buffer)
             .expect("Should serialize sideband");
         buffer
     }
@@ -581,7 +577,7 @@ impl SavedBlock {
         T: Read,
     {
         let block = Block::deserialize(reader)?;
-        let mut sideband = BlockSideband::deserialize(reader, block.block_type_id())?;
+        let mut sideband = BlockSideband::deserialize(reader, block.block_type())?;
         // BlockSideband does not serialize all data depending on the block type.
         // That's why we fill in the missing data here:
         match &block {

@@ -162,7 +162,7 @@ impl BlockBase for StateBlock {
         Some(self.hashables.representative)
     }
 
-    fn valid_predecessor(&self, _block_type: BlockTypeId) -> bool {
+    fn valid_predecessor(&self, _block_type: BlockType) -> bool {
         true
     }
 

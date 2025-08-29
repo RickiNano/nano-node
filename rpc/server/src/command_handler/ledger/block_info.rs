@@ -4,7 +4,7 @@ use rsnano_ledger::AnySet;
 use rsnano_rpc_messages::{
     BlockInfoArgs, BlockInfoResponse, BlockSubTypeDto, unwrap_bool_or_false,
 };
-use rsnano_types::{BlockTypeId, SavedBlock, UnixTimestamp};
+use rsnano_types::{BlockType, SavedBlock, UnixTimestamp};
 
 use crate::command_handler::RpcCommandHandler;
 
@@ -43,7 +43,7 @@ impl RpcCommandHandler {
     }
 
     fn subtype_for(block: &SavedBlock) -> Option<BlockSubTypeDto> {
-        if block.block_type_id() == BlockTypeId::State {
+        if block.block_type() == BlockType::State {
             Some(block.subtype().into())
         } else {
             None

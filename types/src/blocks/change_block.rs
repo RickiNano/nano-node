@@ -1,8 +1,7 @@
 use super::{Block, BlockBase, BlockType};
 use crate::{
-    Account, Amount, Blake2HashBuilder, BlockHash, BlockTypeId, DependentBlocks,
-    DeserializationError, JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce,
-    read_u64_le,
+    Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
+    JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
 };
 use std::io::Read;
 
@@ -15,6 +14,9 @@ pub struct ChangeBlock {
 }
 
 impl ChangeBlock {
+    pub const SERIALIZED_SIZE: usize =
+        ChangeHashables::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE + std::mem::size_of::<u64>();
+
     pub fn new_test_instance() -> Self {
         let key = PrivateKey::from(42);
         ChangeBlockArgs {
@@ -28,12 +30,6 @@ impl ChangeBlock {
 
     pub fn mandatory_representative(&self) -> PublicKey {
         self.hashables.representative
-    }
-
-    pub fn serialized_size() -> usize {
-        ChangeHashables::serialized_size()
-            + Signature::serialized_size()
-            + std::mem::size_of::<u64>()
     }
 
     pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
@@ -71,13 +67,13 @@ impl ChangeBlock {
     }
 }
 
-pub fn valid_change_block_predecessor(predecessor: BlockTypeId) -> bool {
+pub fn valid_change_block_predecessor(predecessor: BlockType) -> bool {
     matches!(
         predecessor,
-        BlockTypeId::LegacySend
-            | BlockTypeId::LegacyReceive
-            | BlockTypeId::LegacyOpen
-            | BlockTypeId::LegacyChange
+        BlockType::LegacySend
+            | BlockType::LegacyReceive
+            | BlockType::LegacyOpen
+            | BlockType::LegacyChange
     )
 }
 
@@ -144,7 +140,7 @@ impl BlockBase for ChangeBlock {
         Some(self.hashables.representative)
     }
 
-    fn valid_predecessor(&self, block_type: BlockTypeId) -> bool {
+    fn valid_predecessor(&self, block_type: BlockType) -> bool {
         valid_change_block_predecessor(block_type)
     }
 
@@ -169,9 +165,7 @@ struct ChangeHashables {
 }
 
 impl ChangeHashables {
-    fn serialized_size() -> usize {
-        BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE
-    }
+    const SERIALIZED_SIZE: usize = BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE;
 
     fn hash(&self) -> BlockHash {
         Blake2HashBuilder::new()
@@ -271,7 +265,7 @@ mod tests {
         .into();
         let mut buffer = Vec::new();
         block1.serialize_without_block_type(&mut buffer).unwrap();
-        assert_eq!(ChangeBlock::serialized_size(), buffer.len());
+        assert_eq!(ChangeBlock::SERIALIZED_SIZE, buffer.len());
 
         let block2 = ChangeBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);

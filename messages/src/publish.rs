@@ -93,7 +93,8 @@ impl PartialEq for Publish {
 
 impl MessageVariant for Publish {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
-        let mut flags = (self.block.block_type_id() as u16) << 8;
+        let type_id = BlockTypeId::from(self.block.block_type());
+        let mut flags = (type_id as u16) << 8;
         if self.is_originator {
             flags |= Self::ORIGINATOR_FLAG;
         }

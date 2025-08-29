@@ -1,4 +1,4 @@
-use super::{Block, BlockBase, BlockType, BlockTypeId};
+use super::{Block, BlockBase, BlockType};
 use crate::{
     Account, Amount, Blake2HashBuilder, BlockHash, DependentBlocks, DeserializationError,
     JsonBlock, Link, PrivateKey, PublicKey, Root, Signature, WorkNonce, read_u64_le,
@@ -14,6 +14,9 @@ pub struct ReceiveBlock {
 }
 
 impl ReceiveBlock {
+    pub const SERIALIZED_SIZE: usize =
+        ReceiveHashables::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE + 8;
+
     pub fn new_test_instance() -> Self {
         let key = PrivateKey::from(42);
         ReceiveBlockArgs {
@@ -28,12 +31,6 @@ impl ReceiveBlock {
     // Receive blocks always have a source
     pub fn source(&self) -> BlockHash {
         self.hashables.source
-    }
-
-    pub fn serialized_size() -> usize {
-        ReceiveHashables::serialized_size()
-            + Signature::serialized_size()
-            + std::mem::size_of::<u64>()
     }
 
     pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
@@ -69,13 +66,13 @@ impl ReceiveBlock {
     }
 }
 
-pub fn valid_receive_block_predecessor(predecessor: BlockTypeId) -> bool {
+pub fn valid_receive_block_predecessor(predecessor: BlockType) -> bool {
     matches!(
         predecessor,
-        BlockTypeId::LegacySend
-            | BlockTypeId::LegacyReceive
-            | BlockTypeId::LegacyOpen
-            | BlockTypeId::LegacyChange
+        BlockType::LegacySend
+            | BlockType::LegacyReceive
+            | BlockType::LegacyOpen
+            | BlockType::LegacyChange
     )
 }
 
@@ -142,7 +139,7 @@ impl BlockBase for ReceiveBlock {
         None
     }
 
-    fn valid_predecessor(&self, block_type: BlockTypeId) -> bool {
+    fn valid_predecessor(&self, block_type: BlockType) -> bool {
         valid_receive_block_predecessor(block_type)
     }
 
@@ -167,9 +164,7 @@ struct ReceiveHashables {
 }
 
 impl ReceiveHashables {
-    const fn serialized_size() -> usize {
-        BlockHash::SERIALIZED_SIZE + BlockHash::SERIALIZED_SIZE
-    }
+    const SERIALIZED_SIZE: usize = BlockHash::SERIALIZED_SIZE + BlockHash::SERIALIZED_SIZE;
 
     fn hash(&self) -> BlockHash {
         Blake2HashBuilder::new()
@@ -270,7 +265,7 @@ mod tests {
         .into();
         let mut buffer = Vec::new();
         block1.serialize_without_block_type(&mut buffer).unwrap();
-        assert_eq!(ReceiveBlock::serialized_size(), buffer.len());
+        assert_eq!(ReceiveBlock::SERIALIZED_SIZE, buffer.len());
 
         let block2 = ReceiveBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
