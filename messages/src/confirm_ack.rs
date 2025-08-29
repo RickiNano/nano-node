@@ -69,7 +69,7 @@ impl ConfirmAck {
         extensions: BitArray<u16>,
         digest: u128,
     ) -> Result<Self, DeserializationError> {
-        let vote = Vote::deserialize_reader(bytes)?;
+        let vote = Vote::deserialize(bytes)?;
 
         let is_rebroadcasted = extensions[Self::REBROADCASTED_FLAG];
         let mut ack = if is_rebroadcasted {
@@ -82,11 +82,11 @@ impl ConfirmAck {
         Ok(ack)
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
-        self.vote.serialize_writer(writer)
+        self.vote.serialize(writer)
     }
 }
 
@@ -116,7 +116,7 @@ impl Display for ConfirmAck {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
     use rsnano_types::{BlockHash, PrivateKey, UnixMillisTimestamp};
 
     #[test]
@@ -175,7 +175,7 @@ mod tests {
     fn deserialize_set_rebroadcasted_flag() {
         let mut bytes = Vec::new();
         let vote = Vote::new_test_instance();
-        vote.serialize_writer(&mut bytes).unwrap();
+        vote.serialize(&mut bytes).unwrap();
 
         let mut extensions = BitArray::<u16>::new(0);
         extensions.set(ConfirmAck::REBROADCASTED_FLAG, true);
@@ -188,7 +188,7 @@ mod tests {
     fn deserialize_unset_rebroadcasted_flag() {
         let mut bytes = Vec::new();
         let vote = Vote::new_test_instance();
-        vote.serialize_writer(&mut bytes).unwrap();
+        vote.serialize(&mut bytes).unwrap();
 
         let mut extensions = BitArray::<u16>::new(0);
         extensions.set(ConfirmAck::REBROADCASTED_FLAG, false);

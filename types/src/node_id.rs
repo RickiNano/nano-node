@@ -20,7 +20,7 @@ impl NodeId {
         &self.0
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {

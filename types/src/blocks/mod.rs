@@ -230,23 +230,23 @@ impl Block {
             .unwrap_or_else(|| self.link_field().unwrap_or_default().into())
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         let block_type = self.block_type() as u8;
         writer.write_all(&[block_type])?;
-        self.serialize_without_block_type_writer(writer)
+        self.serialize_without_block_type(writer)
     }
 
-    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         match self {
             Block::LegacySend(b) => b.serialize_without_block_type(writer),
             Block::LegacyReceive(b) => b.serialize_without_block_type(writer),
-            Block::LegacyOpen(b) => b.serialize_without_block_type_writer(writer),
+            Block::LegacyOpen(b) => b.serialize_without_block_type(writer),
             Block::LegacyChange(b) => b.serialize_without_block_type(writer),
             Block::State(b) => b.serialize_without_block_type(writer),
         }
@@ -260,13 +260,11 @@ impl Block {
         T: Read,
     {
         let block = match block_type {
-            BlockType::LegacyReceive => {
-                Self::LegacyReceive(ReceiveBlock::deserialize_reader(reader)?)
-            }
-            BlockType::LegacyOpen => Self::LegacyOpen(OpenBlock::deserialize_reader(reader)?),
-            BlockType::LegacyChange => Self::LegacyChange(ChangeBlock::deserialize_reader(reader)?),
-            BlockType::State => Self::State(StateBlock::deserialize_reader(reader)?),
-            BlockType::LegacySend => Self::LegacySend(SendBlock::deserialize_reader(reader)?),
+            BlockType::LegacyReceive => Self::LegacyReceive(ReceiveBlock::deserialize(reader)?),
+            BlockType::LegacyOpen => Self::LegacyOpen(OpenBlock::deserialize(reader)?),
+            BlockType::LegacyChange => Self::LegacyChange(ChangeBlock::deserialize(reader)?),
+            BlockType::State => Self::State(StateBlock::deserialize(reader)?),
+            BlockType::LegacySend => Self::LegacySend(SendBlock::deserialize(reader)?),
             BlockType::Invalid | BlockType::NotABlock => {
                 return Err(DeserializationError::InvalidData);
             }
@@ -274,7 +272,7 @@ impl Block {
         Ok(block)
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Block, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Block, DeserializationError>
     where
         T: Read,
     {
@@ -531,7 +529,7 @@ impl SavedBlock {
     pub fn serialize_with_sideband(&self) -> Vec<u8> {
         let mut buffer = Vec::with_capacity(300);
         self.block
-            .serialize_writer(&mut buffer)
+            .serialize(&mut buffer)
             .expect("Should serialize block");
         self.sideband
             .serialize(self.block.block_type(), &mut buffer)
@@ -539,12 +537,12 @@ impl SavedBlock {
         buffer
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
-        let block = Block::deserialize_reader(reader)?;
-        let mut sideband = BlockSideband::deserialize_reader(reader, block.block_type())?;
+        let block = Block::deserialize(reader)?;
+        let mut sideband = BlockSideband::deserialize(reader, block.block_type())?;
         // BlockSideband does not serialize all data depending on the block type.
         // That's why we fill in the missing data here:
         match &block {
@@ -752,8 +750,8 @@ mod tests {
 
     fn assert_serializable(block: Block) {
         let mut buffer = Vec::new();
-        block.serialize_writer(&mut buffer).unwrap();
-        let deserialized = Block::deserialize_reader(&mut buffer.as_slice()).unwrap();
+        block.serialize(&mut buffer).unwrap();
+        let deserialized = Block::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(deserialized, block);
     }
 }

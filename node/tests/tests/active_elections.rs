@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc, thread::sleep, time::Duration, usize};
 
 use rsnano_ledger::{
-    BlockError, DEV_GENESIS_ACCOUNT, DEV_GENESIS_PUB_KEY, LedgerSet,
-    test_helpers::UnsavedBlockLatticeBuilder,
+    test_helpers::UnsavedBlockLatticeBuilder, BlockError, LedgerSet, DEV_GENESIS_ACCOUNT,
+    DEV_GENESIS_PUB_KEY,
 };
 use rsnano_node::{
     bootstrap::BootstrapConfig,
@@ -11,13 +11,13 @@ use rsnano_node::{
 };
 use rsnano_nullable_tcp::get_available_port;
 use rsnano_types::{
-    Account, Amount, DEV_GENESIS_KEY, PrivateKey, UnixMillisTimestamp, Vote, VoteError, VoteSource,
+    Account, Amount, PrivateKey, UnixMillisTimestamp, Vote, VoteError, VoteSource, DEV_GENESIS_KEY,
 };
 use rsnano_utils::stats::{DetailType, Direction, StatType};
 use test_helpers::{
-    System, assert_always_eq, assert_never, assert_timely_eq, assert_timely_eq2, assert_timely2,
+    assert_always_eq, assert_never, assert_timely2, assert_timely_eq, assert_timely_eq2,
     process_open_block, process_send_block, setup_independent_blocks, start_election,
-    start_elections,
+    start_elections, System,
 };
 
 /// What this test is doing:
@@ -117,15 +117,13 @@ fn fork_replacement_tally() {
     // it is only 9, because the intital block of the election does not get replaced
     assert_timely_eq2(|| count_rep_votes_in_election(), 9);
 
-    assert!(
-        node1
-            .active
-            .read()
-            .unwrap()
-            .election_for_root(&send_last.qualified_root())
-            .unwrap()
-            .has_max_blocks()
-    );
+    assert!(node1
+        .active
+        .read()
+        .unwrap()
+        .election_for_root(&send_last.qualified_root())
+        .unwrap()
+        .has_max_blocks());
 
     // Process correct block
     let node2 = system
@@ -207,15 +205,13 @@ fn fork_replacement_tally() {
             .contains_block(&send_last.hash())
     };
     assert_timely2(|| find_send_last_block());
-    assert!(
-        node1
-            .active
-            .read()
-            .unwrap()
-            .election_for_root(&send_last.qualified_root())
-            .unwrap()
-            .has_max_blocks()
-    );
+    assert!(node1
+        .active
+        .read()
+        .unwrap()
+        .election_for_root(&send_last.qualified_root())
+        .unwrap()
+        .has_max_blocks());
 
     assert_timely2(|| {
         node1
@@ -852,7 +848,7 @@ fn dropped_cleanup() {
 
     // Add to network filter to ensure proper cleanup after the election is dropped
     let mut block_bytes = Vec::new();
-    chain[0].serialize_writer(&mut block_bytes).unwrap();
+    chain[0].serialize(&mut block_bytes).unwrap();
     assert!(!node.network_filter.apply(&block_bytes).1);
     assert!(node.network_filter.apply(&block_bytes).1);
 
@@ -939,7 +935,7 @@ fn fork_filter_cleanup() {
     let key = PrivateKey::new();
     let send1 = lattice.genesis().send(&key, 1);
     let mut send_block_bytes = Vec::new();
-    send1.serialize_writer(&mut send_block_bytes).unwrap();
+    send1.serialize(&mut send_block_bytes).unwrap();
 
     // Generate 10 forks to prevent new block insertion to election
     for i in 0..10 {

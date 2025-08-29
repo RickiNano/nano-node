@@ -28,14 +28,14 @@ impl MessageSerializer {
         let payload_len;
         {
             message
-                .serialize_writer(&mut self.buffer)
+                .serialize(&mut self.buffer)
                 .expect("Writing message body should succeed");
             payload_len = self.buffer.len() - MessageHeader::SERIALIZED_SIZE;
 
             let mut header = MessageHeader::new(message.message_type(), self.protocol);
             header.extensions = message.header_extensions(payload_len as u16);
             header
-                .serialize_writer(&mut &mut self.buffer[..MessageHeader::SERIALIZED_SIZE])
+                .serialize(&mut &mut self.buffer[..MessageHeader::SERIALIZED_SIZE])
                 .expect("Writing header should succeed");
         }
         &self.buffer[..MessageHeader::SERIALIZED_SIZE + payload_len]

@@ -60,9 +60,9 @@ impl LmdbPendingStore {
     pub fn get(&self, txn: &dyn Transaction, key: &PendingKey) -> Option<PendingInfo> {
         let key_bytes = key.to_bytes();
         match txn.get(self.database, &key_bytes) {
-            Ok(mut bytes) => Some(
-                PendingInfo::deserialize_reader(&mut bytes).expect("Should be valid pending info"),
-            ),
+            Ok(mut bytes) => {
+                Some(PendingInfo::deserialize(&mut bytes).expect("Should be valid pending info"))
+            }
             Err(Error::NotFound) => None,
             Err(e) => {
                 panic!("Could not load pending info: {:?}", e);
@@ -139,7 +139,7 @@ impl ConfiguredPendingDatabaseBuilder {
 
 pub fn read_pending_record(mut key: &[u8], mut value: &[u8]) -> (PendingKey, PendingInfo) {
     let key = PendingKey::deserialize(&mut key).unwrap();
-    let info = PendingInfo::deserialize_reader(&mut value).unwrap();
+    let info = PendingInfo::deserialize(&mut value).unwrap();
     (key, info)
 }
 

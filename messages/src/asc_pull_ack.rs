@@ -6,7 +6,7 @@ use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 
 use rsnano_types::{
-    Account, Block, BlockHash, BlockType, DeserializationError, Frontier, read_u8, read_u64_be,
+    read_u64_be, read_u8, Account, Block, BlockHash, BlockType, DeserializationError, Frontier,
 };
 use rsnano_utils::stats::DetailType;
 
@@ -44,58 +44,11 @@ impl AscPullAck {
         }
     }
 
-    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
-        let pull_type_code = AscPullPayloadId::from_u8(read_u8(&mut bytes)?)
-            .ok_or(DeserializationError::InvalidData)?;
-        let id = read_u64_be(&mut bytes)?;
-        let pull_type = match pull_type_code {
-            AscPullPayloadId::Blocks => {
-                let payload = BlocksAckPayload::deserialize_reader(&mut bytes)?;
-                AscPullAckType::Blocks(payload)
-            }
-            AscPullPayloadId::AccountInfo => {
-                let payload = AccountInfoAckPayload::deserialize_reader(&mut bytes)?;
-                AscPullAckType::AccountInfo(payload)
-            }
-            AscPullPayloadId::Frontiers => {
-                let mut frontiers = Vec::new();
-                while frontiers.len() < Self::MAX_FRONTIERS {
-                    let current = Frontier::deserialize_reader(&mut bytes)?;
-                    if current == Default::default() {
-                        break;
-                    }
-                    frontiers.push(current);
-                }
-
-                AscPullAckType::Frontiers(frontiers)
-            }
-        };
-
-        Ok(AscPullAck { id, pull_type })
-    }
-
     pub fn payload_type(&self) -> AscPullPayloadId {
         match self.pull_type {
             AscPullAckType::Blocks(_) => AscPullPayloadId::Blocks,
             AscPullAckType::AccountInfo(_) => AscPullPayloadId::AccountInfo,
             AscPullAckType::Frontiers(_) => AscPullPayloadId::Frontiers,
-        }
-    }
-
-    fn serialize_pull_type<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        match &self.pull_type {
-            AscPullAckType::Blocks(blocks) => blocks.serialize_writer(writer),
-            AscPullAckType::AccountInfo(account_info) => account_info.serialize_writer(writer),
-            AscPullAckType::Frontiers(frontiers) => {
-                debug_assert!(frontiers.len() <= Self::MAX_FRONTIERS);
-                for frontier in frontiers {
-                    frontier.serialize_writer(writer)?;
-                }
-                Frontier::default().serialize_writer(writer)
-            }
         }
     }
 
@@ -107,13 +60,60 @@ impl AscPullAck {
         + payload_length
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         writer.write_all(&[self.payload_type() as u8])?;
         writer.write_all(&self.id.to_be_bytes())?;
         self.serialize_pull_type(writer)
+    }
+
+    fn serialize_pull_type<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match &self.pull_type {
+            AscPullAckType::Blocks(blocks) => blocks.serialize(writer),
+            AscPullAckType::AccountInfo(account_info) => account_info.serialize(writer),
+            AscPullAckType::Frontiers(frontiers) => {
+                debug_assert!(frontiers.len() <= Self::MAX_FRONTIERS);
+                for frontier in frontiers {
+                    frontier.serialize(writer)?;
+                }
+                Frontier::default().serialize(writer)
+            }
+        }
+    }
+
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let pull_type_code = AscPullPayloadId::from_u8(read_u8(&mut bytes)?)
+            .ok_or(DeserializationError::InvalidData)?;
+        let id = read_u64_be(&mut bytes)?;
+        let pull_type = match pull_type_code {
+            AscPullPayloadId::Blocks => {
+                let payload = BlocksAckPayload::deserialize(bytes)?;
+                AscPullAckType::Blocks(payload)
+            }
+            AscPullPayloadId::AccountInfo => {
+                let payload = AccountInfoAckPayload::deserialize(&mut bytes)?;
+                AscPullAckType::AccountInfo(payload)
+            }
+            AscPullPayloadId::Frontiers => {
+                let mut frontiers = Vec::new();
+                while frontiers.len() < Self::MAX_FRONTIERS {
+                    let current = Frontier::deserialize(&mut bytes)?;
+                    if current == Default::default() {
+                        break;
+                    }
+                    frontiers.push(current);
+                }
+
+                AscPullAckType::Frontiers(frontiers)
+            }
+        };
+
+        Ok(AscPullAck { id, pull_type })
     }
 }
 
@@ -185,21 +185,29 @@ impl BlocksAckPayload {
         &self.0
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
-        T: Read,
+        T: std::io::Write,
     {
+        for block in self.blocks() {
+            block.serialize(writer)?;
+        }
+        // For convenience, end with null block terminator
+        writer.write_all(&[BlockType::NotABlock as u8])
+    }
+
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let mut blocks = VecDeque::new();
 
-        loop {
-            let block_type =
-                BlockType::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
+        while bytes.len() > 0 {
+            let block_type = BlockType::from_u8(read_u8(&mut bytes)?)
+                .ok_or(DeserializationError::InvalidData)?;
 
             if block_type == BlockType::NotABlock {
                 break;
             }
 
-            let block = Block::deserialize_block_type(block_type, reader)?;
+            let block = Block::deserialize_block_type(block_type, &mut bytes)?;
             blocks.push_back(block);
 
             if blocks.len() > Self::MAX_BLOCKS as usize {
@@ -208,17 +216,6 @@ impl BlocksAckPayload {
         }
 
         Ok(Self::new(blocks))
-    }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        for block in self.blocks() {
-            block.serialize_writer(writer)?;
-        }
-        // For convenience, end with null block terminator
-        writer.write_all(&[BlockType::NotABlock as u8])
     }
 }
 
@@ -255,7 +252,7 @@ impl AccountInfoAckPayload {
         }
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
@@ -276,7 +273,7 @@ impl AccountInfoAckPayload {
         })
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -302,7 +299,7 @@ impl From<&AscPullAckType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
     use rsnano_types::TestBlockBuilder;
 
     #[test]

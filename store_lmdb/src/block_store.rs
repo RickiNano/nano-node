@@ -1,19 +1,19 @@
 use std::{
     ops::RangeBounds,
     sync::{
-        Arc,
         atomic::{AtomicU64, Ordering},
+        Arc,
     },
 };
 
 use rsnano_nullable_lmdb::{
-    ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
-    WriteFlags, WriteTransaction, sys::MDB_LAST,
+    sys::MDB_LAST, ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment,
+    Transaction, WriteFlags, WriteTransaction,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{BlockHash, SavedBlock};
 
-use crate::{BLOCK_DATA_DATABASE, BLOCK_INDEX_DATABASE, LmdbIterator, LmdbRangeIterator};
+use crate::{LmdbIterator, LmdbRangeIterator, BLOCK_DATA_DATABASE, BLOCK_INDEX_DATABASE};
 
 pub struct LmdbBlockStore {
     /// block hash => id
@@ -94,8 +94,8 @@ impl LmdbBlockStore {
 
     pub fn get(&self, txn: &dyn Transaction, hash: &BlockHash) -> Option<SavedBlock> {
         self.block_raw_get(txn, hash).map(|mut block_bytes| {
-            SavedBlock::deserialize_reader(&mut block_bytes)
-                .unwrap_or_else(|_| panic!("Could not deserialize block {}!", hash))
+            SavedBlock::deserialize(&mut block_bytes)
+                .unwrap_or_else(|e| panic!("Could not deserialize block {}: {:?}", hash, e))
         })
     }
 
@@ -129,7 +129,7 @@ impl LmdbBlockStore {
                 .get(self.block_db, &id.to_be_bytes())
                 .expect("Block data should exist");
 
-            SavedBlock::deserialize_reader(&mut data).expect("Block data should be valid")
+            SavedBlock::deserialize(&mut data).expect("Block data should be valid")
         })
     }
 
@@ -156,8 +156,7 @@ impl LmdbBlockStore {
                 .get(self.block_db, &id.to_be_bytes())
                 .expect("Block data should exist");
 
-            let block =
-                SavedBlock::deserialize_reader(&mut data).expect("Block data should be valid");
+            let block = SavedBlock::deserialize(&mut data).expect("Block data should be valid");
             block
         })
     }

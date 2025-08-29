@@ -41,32 +41,32 @@ impl AccountInfo {
 
     pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
         let mut buffer = [0; Self::SERIALIZED_SIZE];
-        self.serialize_writer(&mut buffer.as_mut())
+        self.serialize(&mut buffer.as_mut())
             .expect("Should serialize account info");
         buffer
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         self.head.serialize(writer)?;
         self.representative.serialize(writer)?;
         self.open_block.serialize(writer)?;
-        self.balance.serialize_writer(writer)?;
+        self.balance.serialize(writer)?;
         writer.write_all(&self.modified.as_u64().to_ne_bytes())?;
         writer.write_all(&self.block_count.to_ne_bytes())?;
         writer.write_all(&[self.epoch as u8])
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
         let head = BlockHash::deserialize(reader)?;
         let representative = PublicKey::deserialize(reader)?;
         let open_block = BlockHash::deserialize(reader)?;
-        let balance = Amount::deserialize_reader(reader)?;
+        let balance = Amount::deserialize(reader)?;
         let modified = read_u64_ne(reader)?.into();
         let block_count = read_u64_ne(reader)?;
         let epoch = Epoch::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;

@@ -2,7 +2,7 @@ use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use rsnano_types::{Account, DeserializationError};
 use serde_derive::Serialize;
-use std::{fmt::Display, io::Read, mem::size_of};
+use std::{fmt::Display, io::Read};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct FrontierReq {
@@ -13,6 +13,12 @@ pub struct FrontierReq {
 }
 
 impl FrontierReq {
+    pub const SERIALIZED_SIZE: usize =
+        Account::SERIALIZED_SIZE
+        + 4 // age
+        + 4 //count
+    ;
+
     pub fn new_test_instance() -> Self {
         Self {
             start: 1.into(),
@@ -22,13 +28,16 @@ impl FrontierReq {
         }
     }
 
-    pub const fn serialized_size() -> usize {
-        Account::SERIALIZED_SIZE
-        + size_of::<u32>() // age
-        + size_of::<u32>() //count
-    }
-
     pub const ONLY_CONFIRMED: usize = 1;
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.start.serialize(writer)?;
+        writer.write_all(&self.age.to_le_bytes())?;
+        writer.write_all(&self.count.to_le_bytes())
+    }
 
     pub fn deserialize(
         mut bytes: &[u8],
@@ -48,15 +57,6 @@ impl FrontierReq {
             count,
             only_confirmed,
         })
-    }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        self.start.serialize(writer)?;
-        writer.write_all(&self.age.to_le_bytes())?;
-        writer.write_all(&self.count.to_le_bytes())
     }
 }
 
@@ -81,7 +81,7 @@ impl Display for FrontierReq {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn serialize() {

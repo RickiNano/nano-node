@@ -30,11 +30,11 @@ impl SendBlock {
         .into()
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
-        let hashables = SendHashables::deserialize_reader(reader)?;
+        let hashables = SendHashables::deserialize(reader)?;
         let signature = Signature::deserialize(reader)?;
 
         let work = read_u64_le(reader)?;
@@ -85,8 +85,8 @@ impl SendBlock {
     where
         T: std::io::Write,
     {
-        self.hashables.serialize_writer(writer)?;
-        self.signature.serialize_writer(writer)?;
+        self.hashables.serialize(writer)?;
+        self.signature.serialize(writer)?;
         writer.write_all(&self.work.0.to_le_bytes())
     }
 }
@@ -213,22 +213,22 @@ impl SendHashables {
     pub const SERIALIZED_SIZE: usize =
         BlockHash::SERIALIZED_SIZE + Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE;
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         self.previous.serialize(writer)?;
         self.destination.serialize(writer)?;
-        self.balance.serialize_writer(writer)
+        self.balance.serialize(writer)
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
         let previous = BlockHash::deserialize(reader)?;
         let destination = Account::deserialize(reader)?;
-        let balance = Amount::deserialize_reader(reader)?;
+        let balance = Amount::deserialize(reader)?;
 
         Ok(Self {
             previous,
@@ -414,7 +414,7 @@ mod tests {
         block1.serialize_without_block_type(&mut buffer).unwrap();
         assert_eq!(SendBlock::SERIALIZED_SIZE, buffer.len());
 
-        let block2 = SendBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
+        let block2 = SendBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
     }
 

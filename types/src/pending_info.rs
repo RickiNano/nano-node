@@ -51,16 +51,16 @@ impl PendingInfo {
         T: Write,
     {
         self.source.serialize(writer)?;
-        self.amount.serialize_writer(writer)?;
+        self.amount.serialize(writer)?;
         writer.write_all(&[self.epoch as u8])
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
         let source = Account::deserialize(reader)?;
-        let amount = Amount::deserialize_reader(reader)?;
+        let amount = Amount::deserialize(reader)?;
         let epoch =
             FromPrimitive::from_u8(read_u8(reader)?).ok_or(DeserializationError::InvalidData)?;
         Ok(Self {

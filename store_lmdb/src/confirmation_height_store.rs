@@ -7,7 +7,7 @@ use rsnano_nullable_lmdb::{
 use rsnano_types::{Account, ConfirmationHeightInfo};
 
 use crate::{
-    CONFIRMATION_HEIGHT_TEST_DATABASE, LmdbIterator, LmdbRangeIterator, parallel_traversal,
+    parallel_traversal, LmdbIterator, LmdbRangeIterator, CONFIRMATION_HEIGHT_TEST_DATABASE,
 };
 
 pub struct LmdbConfirmationHeightStore {
@@ -44,7 +44,7 @@ impl LmdbConfirmationHeightStore {
         match txn.get(self.database, account.as_bytes()) {
             Err(Error::NotFound) => None,
             Ok(mut bytes) => Some(
-                ConfirmationHeightInfo::deserialize_reader(&mut bytes)
+                ConfirmationHeightInfo::deserialize(&mut bytes)
                     .expect("Should be valid conf height data"),
             ),
             Err(e) => {
@@ -147,7 +147,7 @@ impl ConfiguredConfirmationHeightDatabaseBuilder {
 
 fn read_conf_height_record(key: &[u8], mut value: &[u8]) -> (Account, ConfirmationHeightInfo) {
     let account = Account::from_bytes(key.try_into().unwrap());
-    let info = ConfirmationHeightInfo::deserialize_reader(&mut value).unwrap();
+    let info = ConfirmationHeightInfo::deserialize(&mut value).unwrap();
     (account, info)
 }
 

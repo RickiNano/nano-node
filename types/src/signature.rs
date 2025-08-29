@@ -55,7 +55,7 @@ impl Signature {
         Ok(Signature::from_bytes(bytes))
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {

@@ -2,17 +2,17 @@ use num_traits::FromPrimitive;
 use tracing::{debug, error, info};
 
 use rsnano_nullable_lmdb::{
+    sys::{MDB_FIRST, MDB_NEXT},
     DatabaseFlags, EnvironmentOptions, LmdbEnvironment, LmdbEnvironmentFactory, Transaction,
     WriteFlags,
-    sys::{MDB_FIRST, MDB_NEXT},
 };
 use rsnano_types::{BlockType, UnixMillisTimestamp, UnixTimestamp};
 
 use crate::{
-    FIRST_INCOMPATIBLE_STORE_VERSION, LmdbVersionStore, STORE_VERSION_CURRENT,
-    STORE_VERSION_MINIMUM,
     block_store::{BLOCK_DATA_DB_NAME, BLOCK_INDEX_DB_NAME},
     vacuum::vacuum,
+    LmdbVersionStore, FIRST_INCOMPATIBLE_STORE_VERSION, STORE_VERSION_CURRENT,
+    STORE_VERSION_MINIMUM,
 };
 
 pub fn create_and_update_lmdb_env(
@@ -306,7 +306,7 @@ mod tests {
         let mut buffer = Vec::new();
         let block = Block::new_test_instance();
         assert_eq!(block.block_type(), BlockType::State);
-        block.serialize_writer(&mut buffer).unwrap();
+        block.serialize(&mut buffer).unwrap();
         let successor = BlockHash::from(12345);
         successor.serialize(&mut buffer).unwrap();
         buffer.extend_from_slice(&123_u64.to_be_bytes()); // block height

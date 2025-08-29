@@ -93,7 +93,7 @@ impl LmdbFinalVoteStore {
 }
 
 fn read_final_vote_record(mut key: &[u8], mut value: &[u8]) -> (QualifiedRoot, BlockHash) {
-    let root = QualifiedRoot::deserialize_reader(&mut key).unwrap();
+    let root = QualifiedRoot::deserialize(&mut key).unwrap();
     let hash = BlockHash::deserialize(&mut value).unwrap();
     (root, hash)
 }

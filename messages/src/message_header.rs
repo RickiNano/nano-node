@@ -1,13 +1,12 @@
 use std::{
     fmt::{Debug, Display},
     io::Read,
-    mem::size_of,
 };
 
 use bitvec::prelude::*;
 use num_traits::FromPrimitive;
 
-use rsnano_types::{DeserializationError, Networks, ProtocolInfo, read_u8};
+use rsnano_types::{read_u8, DeserializationError, Networks, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
 
 use super::*;
@@ -106,6 +105,30 @@ impl MessageHeader {
         }
     }
 
+    pub fn set_extension(&mut self, position: usize, value: bool) {
+        self.extensions.set(position, value);
+    }
+
+    pub fn set_flag(&mut self, flag: u8) {
+        // Flags from 8 are block_type & count
+        debug_assert!(flag < 8);
+        self.extensions.set(flag as usize, true);
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&(self.protocol.network as u16).to_be_bytes())?;
+        writer.write_all(&[
+            self.protocol.version_max,
+            self.protocol.version_using,
+            self.protocol.version_min,
+            self.message_type as u8,
+        ])?;
+        writer.write_all(&self.extensions.data.to_le_bytes())
+    }
+
     pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
@@ -128,39 +151,6 @@ impl MessageHeader {
         Ok(header)
     }
 
-    pub fn set_extension(&mut self, position: usize, value: bool) {
-        self.extensions.set(position, value);
-    }
-
-    pub fn set_flag(&mut self, flag: u8) {
-        // Flags from 8 are block_type & count
-        debug_assert!(flag < 8);
-        self.extensions.set(flag as usize, true);
-    }
-
-    pub const fn serialized_size() -> usize {
-        size_of::<u8>() // version_using
-        + size_of::<u8>() // version_min
-        + size_of::<u8>() // version_max
-        + size_of::<Networks>()
-        + size_of::<MessageType>()
-        + size_of::<u16>() // extensions
-    }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        writer.write_all(&(self.protocol.network as u16).to_be_bytes())?;
-        writer.write_all(&[
-            self.protocol.version_max,
-            self.protocol.version_using,
-            self.protocol.version_min,
-            self.message_type as u8,
-        ])?;
-        writer.write_all(&self.extensions.data.to_le_bytes())
-    }
-
     const BULK_PULL_COUNT_PRESENT_FLAG: usize = 0;
 
     pub fn bulk_pull_is_count_present(&self) -> bool {
@@ -170,15 +160,15 @@ impl MessageHeader {
 
     pub fn payload_length(&self) -> usize {
         match self.message_type {
-            MessageType::Keepalive => Keepalive::serialized_size(),
+            MessageType::Keepalive => Keepalive::SERIALIZED_SIZE,
             MessageType::Publish => Publish::serialized_size(self.extensions),
             MessageType::ConfirmReq => ConfirmReq::serialized_size(self.extensions),
             MessageType::ConfirmAck => ConfirmAck::serialized_size(self.extensions),
             MessageType::BulkPull => BulkPull::serialized_size(self.extensions),
             MessageType::BulkPush | MessageType::TelemetryReq => 0,
-            MessageType::FrontierReq => FrontierReq::serialized_size(),
+            MessageType::FrontierReq => FrontierReq::SERIALIZED_SIZE,
             MessageType::NodeIdHandshake => NodeIdHandshake::serialized_size(self.extensions),
-            MessageType::BulkPullAccount => BulkPullAccount::serialized_size(),
+            MessageType::BulkPullAccount => BulkPullAccount::SERIALIZED_SIZE,
             MessageType::TelemetryAck => TelemetryAck::serialized_size(self.extensions),
             MessageType::AscPullReq => AscPullReq::serialized_size(self.extensions),
             MessageType::AscPullAck => AscPullAck::serialized_size(self.extensions),
@@ -261,7 +251,7 @@ mod tests {
     fn serialize_and_deserialize() {
         let original = test_header();
         let mut buffer = Vec::new();
-        original.serialize_writer(&mut buffer).unwrap();
+        original.serialize(&mut buffer).unwrap();
 
         let deserialized = MessageHeader::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(original, deserialized);
@@ -288,7 +278,7 @@ mod tests {
         header.extensions = 0xABCD.into();
 
         let mut buffer = Vec::new();
-        header.serialize_writer(&mut buffer).unwrap();
+        header.serialize(&mut buffer).unwrap();
 
         assert_eq!(buffer.len(), 8);
         assert_eq!(buffer[0], 0x52);

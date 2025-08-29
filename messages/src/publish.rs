@@ -1,7 +1,7 @@
 use super::MessageVariant;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{Block, BlockType, DeserializationError, serialized_block_size};
+use rsnano_types::{serialized_block_size, Block, BlockType, DeserializationError};
 use serde_derive::Serialize;
 use std::fmt::{Debug, Display};
 
@@ -45,11 +45,15 @@ impl Publish {
         }
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
+        serialized_block_size(Self::block_type(extensions))
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
-        self.block.serialize_without_block_type_writer(writer)
+        self.block.serialize_without_block_type(writer)
     }
 
     pub fn deserialize(
@@ -64,10 +68,6 @@ impl Publish {
         };
 
         Ok(payload)
-    }
-
-    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        serialized_block_size(Self::block_type(extensions))
     }
 
     fn block_type(extensions: BitArray<u16>) -> BlockType {
@@ -141,7 +141,7 @@ mod tests {
         publish1.digest = 123;
 
         let mut buffer = Vec::new();
-        publish1.serialize_writer(&mut buffer).unwrap();
+        publish1.serialize(&mut buffer).unwrap();
 
         let extensions = publish1.header_extensions(0);
         let publish2 = Publish::deserialize(&mut buffer.as_slice(), extensions, 123).unwrap();

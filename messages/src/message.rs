@@ -151,30 +151,30 @@ impl Message {
         }
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        match self {
-            Message::Keepalive(m) => m.serialize_writer(writer),
-            Message::Publish(m) => m.serialize_writer(writer),
-            Message::AscPullAck(m) => m.serialize_writer(writer),
-            Message::AscPullReq(m) => m.serialize_writer(writer),
-            Message::BulkPull(m) => m.serialize_writer(writer),
-            Message::BulkPullAccount(m) => m.serialize_writer(writer),
-            Message::ConfirmAck(m) => m.serialize_writer(writer),
-            Message::ConfirmReq(m) => m.serialize_writer(writer),
-            Message::FrontierReq(m) => m.serialize_writer(writer),
-            Message::NodeIdHandshake(m) => m.serialize_writer(writer),
-            Message::TelemetryAck(m) => m.serialize_writer(writer),
-            Message::BulkPush | Message::TelemetryReq => Ok(()),
-        }
-    }
-
     pub fn header_extensions(&self, payload_len: u16) -> BitArray<u16> {
         match self.as_message_variant() {
             Some(variant) => variant.header_extensions(payload_len),
             None => Default::default(),
+        }
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match self {
+            Message::Keepalive(m) => m.serialize(writer),
+            Message::Publish(m) => m.serialize(writer),
+            Message::AscPullAck(m) => m.serialize(writer),
+            Message::AscPullReq(m) => m.serialize(writer),
+            Message::BulkPull(m) => m.serialize(writer),
+            Message::BulkPullAccount(m) => m.serialize(writer),
+            Message::ConfirmAck(m) => m.serialize(writer),
+            Message::ConfirmReq(m) => m.serialize(writer),
+            Message::FrontierReq(m) => m.serialize(writer),
+            Message::NodeIdHandshake(m) => m.serialize(writer),
+            Message::TelemetryAck(m) => m.serialize(writer),
+            Message::BulkPush | Message::TelemetryReq => Ok(()),
         }
     }
 

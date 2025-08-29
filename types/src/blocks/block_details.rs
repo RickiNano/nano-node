@@ -26,7 +26,7 @@ impl BlockDetails {
         1
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<BlockDetails, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<BlockDetails, DeserializationError>
     where
         T: Read,
     {
@@ -147,7 +147,7 @@ mod test {
     fn serialize() {
         let details = BlockDetails::new(Epoch::Epoch2, false, true, false);
         let buffer = [details.packed()];
-        let deserialized = BlockDetails::deserialize_reader(&mut buffer.as_slice()).unwrap();
+        let deserialized = BlockDetails::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(deserialized, details);
     }
 }

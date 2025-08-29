@@ -15,6 +15,8 @@ pub struct Keepalive {
 }
 
 impl Keepalive {
+    pub const SERIALIZED_SIZE: usize = 8 * (16 + 2);
+
     pub const fn new_test_instance() -> Self {
         Self {
             peers: [
@@ -30,7 +32,7 @@ impl Keepalive {
         }
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -60,10 +62,6 @@ impl Keepalive {
         }
 
         Ok(Self { peers })
-    }
-
-    pub fn serialized_size() -> usize {
-        8 * (16 + 2)
     }
 }
 
@@ -95,7 +93,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn serialize_no_peers() {

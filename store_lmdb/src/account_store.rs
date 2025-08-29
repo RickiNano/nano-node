@@ -8,9 +8,8 @@ use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, AccountInfo};
 
 use crate::{
-    ACCOUNT_TEST_DATABASE,
     iterator::{LmdbIterator, LmdbRangeIterator},
-    parallel_traversal,
+    parallel_traversal, ACCOUNT_TEST_DATABASE,
 };
 
 pub struct LmdbAccountStore {
@@ -55,7 +54,7 @@ impl LmdbAccountStore {
         let result = transaction.get(self.database, account.as_bytes());
         match result {
             Err(Error::NotFound) => None,
-            Ok(mut bytes) => AccountInfo::deserialize_reader(&mut bytes).ok(),
+            Ok(mut bytes) => AccountInfo::deserialize(&mut bytes).ok(),
             Err(e) => panic!("Could not load account info {:?}", e),
         }
     }
@@ -150,7 +149,7 @@ impl ConfiguredAccountDatabaseBuilder {
 
 fn read_account_info_record(key: &[u8], mut value: &[u8]) -> (Account, AccountInfo) {
     let account = Account::from_bytes(key.try_into().unwrap());
-    let info = AccountInfo::deserialize_reader(&mut value).unwrap();
+    let info = AccountInfo::deserialize(&mut value).unwrap();
     (account, info)
 }
 

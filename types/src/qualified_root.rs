@@ -22,12 +22,12 @@ impl QualifiedRoot {
 
     pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
         let mut buffer = [0; Self::SERIALIZED_SIZE];
-        self.serialize_writer(&mut buffer.as_mut())
+        self.serialize(&mut buffer.as_mut())
             .expect("Should serialize qualified root");
         buffer
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: Write,
     {
@@ -35,7 +35,7 @@ impl QualifiedRoot {
         writer.write_all(self.previous.as_bytes())
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<QualifiedRoot, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<QualifiedRoot, DeserializationError>
     where
         T: Read,
     {

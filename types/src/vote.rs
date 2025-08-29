@@ -144,7 +144,7 @@ impl Vote {
         builder.update(self.timestamp.to_ne_bytes()).build()
     }
 
-    pub fn deserialize_reader(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let voter = PublicKey::deserialize(&mut bytes)?;
         let signature = Signature::deserialize(&mut bytes)?;
         let mut buffer = [0; 8];
@@ -173,12 +173,12 @@ impl Vote {
         + (BlockHash::SERIALIZED_SIZE * count)
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         self.voter.serialize(writer)?;
-        self.signature.serialize_writer(writer)?;
+        self.signature.serialize(writer)?;
         writer.write_all(&self.timestamp.to_le_bytes())?;
         for hash in &self.hashes {
             hash.serialize(writer)?;

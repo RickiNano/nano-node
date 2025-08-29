@@ -90,7 +90,7 @@ impl BlockSideband {
             || block_type == BlockType::LegacyChange
             || block_type == BlockType::LegacyOpen
         {
-            self.balance.serialize_writer(writer)?;
+            self.balance.serialize(writer)?;
         }
 
         writer.write_all(&self.timestamp.to_be_bytes())?;
@@ -101,7 +101,7 @@ impl BlockSideband {
         Ok(())
     }
 
-    pub fn deserialize_reader<T>(
+    pub fn deserialize<T>(
         reader: &mut T,
         block_type: BlockType,
     ) -> Result<Self, DeserializationError>
@@ -126,7 +126,7 @@ impl BlockSideband {
             || block_type == BlockType::LegacyChange
             || block_type == BlockType::LegacyOpen
         {
-            Amount::deserialize_reader(reader)?
+            Amount::deserialize(reader)?
         } else {
             Amount::zero()
         };
@@ -135,7 +135,7 @@ impl BlockSideband {
         let timestamp = UnixMillisTimestamp::from_be_bytes(buffer);
 
         let (details, source_epoch) = if block_type == BlockType::State {
-            let details = BlockDetails::deserialize_reader(reader)?;
+            let details = BlockDetails::deserialize(reader)?;
             let source_epoch = FromPrimitive::from_u8(read_u8(reader)?)
                 .ok_or(DeserializationError::InvalidData)?;
             (details, source_epoch)
@@ -177,8 +177,7 @@ mod tests {
             .unwrap();
 
         let deserialized =
-            BlockSideband::deserialize_reader(&mut buffer.as_slice(), BlockType::LegacyReceive)
-                .unwrap();
+            BlockSideband::deserialize(&mut buffer.as_slice(), BlockType::LegacyReceive).unwrap();
         assert_eq!(deserialized, sideband);
     }
 

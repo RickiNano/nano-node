@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, RwLock, mpsc::SyncSender};
+use std::sync::{mpsc::SyncSender, Arc, Mutex, RwLock};
 
 use tracing::debug;
 
@@ -9,18 +9,18 @@ use rsnano_types::{Block, VoteError, VoteSource};
 use rsnano_utils::stats::{Sample, Stats};
 
 use crate::{
-    NodeEvent,
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     cementation::ConfirmingSet,
     consensus::{
-        ActiveElectionsContainer, AecCooldownReason, AecEvent, BootstrapElectionActivator,
-        ForkProcessor, LocalVotesRemover, ReceivedVote, VoteCache, VoteCacheProcessor,
-        VoteProcessor, VoteRebroadcastQueue, WinnerBlockBroadcaster, aggregate_vote_results,
-        election_schedulers::ElectionSchedulers,
+        aggregate_vote_results, election_schedulers::ElectionSchedulers, ActiveElectionsContainer,
+        AecCooldownReason, AecEvent, BootstrapElectionActivator, ForkProcessor, LocalVotesRemover,
+        ReceivedVote, VoteCache, VoteCacheProcessor, VoteProcessor, VoteRebroadcastQueue,
+        WinnerBlockBroadcaster,
     },
     recently_cemented_inserter::RecentlyCementedInserter,
     representatives::{OnlineReps, RepCrawler},
     utils::BackpressureEventProcessor,
+    NodeEvent,
 };
 
 pub(crate) trait AecEventHandler {
@@ -172,7 +172,7 @@ impl AecEventProcessor {
     fn clear_network_filter(&mut self, block: &Block) {
         let mut buffer = Vec::new();
         block
-            .serialize_without_block_type_writer(&mut buffer)
+            .serialize_without_block_type(&mut buffer)
             .expect("Should serialize block successfully");
         self.network_filter.clear_bytes(&buffer);
     }

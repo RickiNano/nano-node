@@ -41,7 +41,7 @@ impl OpenBlock {
         OpenHashables::serialized_size() + Signature::serialized_size() + std::mem::size_of::<u64>()
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
@@ -69,14 +69,14 @@ impl OpenBlock {
         }
     }
 
-    pub fn serialize_without_block_type_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize_without_block_type<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         self.hashables.source.serialize(writer)?;
         self.hashables.representative.serialize(writer)?;
         self.hashables.account.serialize(writer)?;
-        self.signature.serialize_writer(writer)?;
+        self.signature.serialize(writer)?;
         writer.write_all(&self.work.0.to_le_bytes())
     }
 }
@@ -276,12 +276,10 @@ mod tests {
     fn serialize() {
         let block1 = OpenBlock::new_test_instance();
         let mut buffer = Vec::new();
-        block1
-            .serialize_without_block_type_writer(&mut buffer)
-            .unwrap();
+        block1.serialize_without_block_type(&mut buffer).unwrap();
         assert_eq!(OpenBlock::serialized_size(), buffer.len());
 
-        let block2 = OpenBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
+        let block2 = OpenBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
     }
 

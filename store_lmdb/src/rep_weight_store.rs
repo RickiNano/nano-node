@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use rsnano_nullable_lmdb::{
+    sys::{MDB_cursor_op, MDB_FIRST, MDB_NEXT},
     ConfiguredDatabase, DatabaseFlags, LmdbDatabase, LmdbEnvironment, RoCursor, Transaction,
     WriteFlags, WriteTransaction,
-    sys::{MDB_FIRST, MDB_NEXT, MDB_cursor_op},
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Amount, PublicKey};
@@ -37,9 +37,7 @@ impl LmdbRepWeightStore {
 
     pub fn get(&self, txn: &dyn Transaction, pub_key: &PublicKey) -> Option<Amount> {
         match txn.get(self.database, pub_key.as_bytes()) {
-            Ok(mut bytes) => {
-                Some(Amount::deserialize_reader(&mut bytes).expect("Should be valid amount"))
-            }
+            Ok(mut bytes) => Some(Amount::deserialize(&mut bytes).expect("Should be valid amount")),
             Err(rsnano_nullable_lmdb::Error::NotFound) => None,
             Err(e) => {
                 panic!("Could not load rep_weight: {:?}", e);

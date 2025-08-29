@@ -2,7 +2,7 @@ use super::MessageVariant;
 use anyhow::Result;
 use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
-use rsnano_types::{BlockHash, BlockType, DeserializationError, Root, serialized_block_size};
+use rsnano_types::{serialized_block_size, BlockHash, BlockType, DeserializationError, Root};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use std::fmt::{Debug, Display, Write};
 
@@ -67,51 +67,10 @@ impl ConfirmReq {
         }
     }
 
-    pub fn deserialize(
-        bytes: &[u8],
-        extensions: BitArray<u16>,
-    ) -> Result<Self, DeserializationError> {
-        let roots = Self::deserialize_roots(bytes, extensions)?;
-        Ok(Self::new(roots))
-    }
-
-    fn deserialize_roots(
-        mut bytes: &[u8],
-        extensions: BitArray<u16>,
-    ) -> Result<Vec<(BlockHash, Root)>, DeserializationError> {
-        let count = Self::count(extensions) as usize;
-        let mut roots_hashes = Vec::with_capacity(count);
-        for _ in 0..count {
-            let block_hash = BlockHash::deserialize(&mut bytes)?;
-            let root = Root::deserialize(&mut bytes)?;
-            if !block_hash.is_zero() || !root.is_zero() {
-                roots_hashes.push((block_hash, root));
-            }
-        }
-
-        if roots_hashes.is_empty() || roots_hashes.len() != count {
-            Err(DeserializationError::InvalidData)
-        } else {
-            Ok(roots_hashes)
-        }
-    }
-
     pub fn roots_string(&self) -> String {
         let mut result = String::new();
         for (hash, root) in &self.roots_hashes {
             write!(&mut result, "{}:{}, ", hash, root).unwrap();
-        }
-        result
-    }
-
-    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        let count = Self::count(extensions);
-        let mut result = 0;
-        let block_type = Self::block_type(extensions);
-        if block_type != BlockType::Invalid && block_type != BlockType::NotABlock {
-            result = serialized_block_size(block_type);
-        } else if block_type == BlockType::NotABlock {
-            result = count as usize * (BlockHash::SERIALIZED_SIZE + Root::SERIALIZED_SIZE);
         }
         result
     }
@@ -163,7 +122,19 @@ impl ConfirmReq {
         ((left << 4) | right) as u8
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
+        let count = Self::count(extensions);
+        let mut result = 0;
+        let block_type = Self::block_type(extensions);
+        if block_type != BlockType::Invalid && block_type != BlockType::NotABlock {
+            result = serialized_block_size(block_type);
+        } else if block_type == BlockType::NotABlock {
+            result = count as usize * (BlockHash::SERIALIZED_SIZE + Root::SERIALIZED_SIZE);
+        }
+        result
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -172,6 +143,35 @@ impl ConfirmReq {
             writer.write_all(root.as_bytes())?;
         }
         Ok(())
+    }
+
+    pub fn deserialize(
+        bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
+        let roots = Self::deserialize_roots(bytes, extensions)?;
+        Ok(Self::new(roots))
+    }
+
+    fn deserialize_roots(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Vec<(BlockHash, Root)>, DeserializationError> {
+        let count = Self::count(extensions) as usize;
+        let mut roots_hashes = Vec::with_capacity(count);
+        for _ in 0..count {
+            let block_hash = BlockHash::deserialize(&mut bytes)?;
+            let root = Root::deserialize(&mut bytes)?;
+            if !block_hash.is_zero() || !root.is_zero() {
+                roots_hashes.push((block_hash, root));
+            }
+        }
+
+        if roots_hashes.is_empty() || roots_hashes.len() != count {
+            Err(DeserializationError::InvalidData)
+        } else {
+            Ok(roots_hashes)
+        }
     }
 }
 
@@ -198,8 +198,8 @@ impl<'a> serde::Serialize for SerializableRootHash<'a> {
         S: serde::Serializer,
     {
         let mut seq = serializer.serialize_struct("RootHash", 2)?;
-        seq.serialize_field("hash", &self.0.0)?;
-        seq.serialize_field("root", &self.0.1.encode_hex())?;
+        seq.serialize_field("hash", &self.0 .0)?;
+        seq.serialize_field("root", &self.0 .1.encode_hex())?;
         seq.end()
     }
 }
@@ -239,7 +239,7 @@ impl Display for ConfirmReq {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn serialize() {

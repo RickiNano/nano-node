@@ -95,6 +95,35 @@ impl NodeIdHandshakeResponse {
         buffer
     }
 
+    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
+        if NodeIdHandshake::has_v2_flag(extensions) {
+            Account::SERIALIZED_SIZE
+                + 32 // salt
+                + BlockHash::SERIALIZED_SIZE
+                + Signature::SERIALIZED_SIZE
+        } else {
+            Account::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE
+        }
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        match &self.v2 {
+            Some(v2) => {
+                writer.write_all(self.node_id.as_bytes())?;
+                writer.write_all(&v2.salt)?;
+                v2.genesis.serialize(writer)?;
+                self.signature.serialize(writer)
+            }
+            None => {
+                writer.write_all(self.node_id.as_bytes())?;
+                self.signature.serialize(writer)
+            }
+        }
+    }
+
     pub fn deserialize(
         mut bytes: &[u8],
         extensions: BitArray<u16>,
@@ -118,35 +147,6 @@ impl NodeIdHandshakeResponse {
                 signature,
                 v2: None,
             })
-        }
-    }
-
-    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        if NodeIdHandshake::has_v2_flag(extensions) {
-            Account::SERIALIZED_SIZE
-                + 32 // salt
-                + BlockHash::SERIALIZED_SIZE
-                + Signature::SERIALIZED_SIZE
-        } else {
-            Account::SERIALIZED_SIZE + Signature::SERIALIZED_SIZE
-        }
-    }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        match &self.v2 {
-            Some(v2) => {
-                writer.write_all(self.node_id.as_bytes())?;
-                writer.write_all(&v2.salt)?;
-                v2.genesis.serialize(writer)?;
-                self.signature.serialize_writer(writer)
-            }
-            None => {
-                writer.write_all(self.node_id.as_bytes())?;
-                self.signature.serialize_writer(writer)
-            }
         }
     }
 }
@@ -198,40 +198,6 @@ impl NodeIdHandshake {
         extensions[NodeIdHandshake::V2_FLAG]
     }
 
-    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        let mut size = 0;
-        if Self::is_query(extensions) {
-            size += 32
-        }
-        if Self::is_response(extensions) {
-            size += NodeIdHandshakeResponse::serialized_size(extensions);
-        }
-        size
-    }
-
-    pub fn deserialize(
-        mut bytes: &[u8],
-        extensions: BitArray<u16>,
-    ) -> Result<Self, DeserializationError> {
-        let query = if NodeIdHandshake::is_query(extensions) {
-            let mut cookie = [0u8; 32];
-            bytes.read_exact(&mut cookie)?;
-            Some(NodeIdHandshakeQuery { cookie })
-        } else {
-            None
-        };
-        let response = if NodeIdHandshake::is_response(extensions) {
-            Some(NodeIdHandshakeResponse::deserialize(bytes, extensions)?)
-        } else {
-            None
-        };
-        Ok(Self {
-            query,
-            response,
-            is_v2: Self::has_v2_flag(extensions),
-        })
-    }
-
     pub fn new_test_query() -> Self {
         let query = NodeIdHandshakeQuery { cookie: [42; 32] };
         Self {
@@ -270,7 +236,18 @@ impl NodeIdHandshake {
         }
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
+        let mut size = 0;
+        if Self::is_query(extensions) {
+            size += 32
+        }
+        if Self::is_response(extensions) {
+            size += NodeIdHandshakeResponse::serialized_size(extensions);
+        }
+        size
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
@@ -278,9 +255,32 @@ impl NodeIdHandshake {
             writer.write_all(&query.cookie)?;
         }
         if let Some(response) = &self.response {
-            response.serialize_writer(writer)?;
+            response.serialize(writer)?;
         }
         Ok(())
+    }
+
+    pub fn deserialize(
+        mut bytes: &[u8],
+        extensions: BitArray<u16>,
+    ) -> Result<Self, DeserializationError> {
+        let query = if NodeIdHandshake::is_query(extensions) {
+            let mut cookie = [0u8; 32];
+            bytes.read_exact(&mut cookie)?;
+            Some(NodeIdHandshakeQuery { cookie })
+        } else {
+            None
+        };
+        let response = if NodeIdHandshake::is_response(extensions) {
+            Some(NodeIdHandshakeResponse::deserialize(bytes, extensions)?)
+        } else {
+            None
+        };
+        Ok(Self {
+            query,
+            response,
+            is_v2: Self::has_v2_flag(extensions),
+        })
     }
 }
 

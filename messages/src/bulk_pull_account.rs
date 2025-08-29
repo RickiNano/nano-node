@@ -4,7 +4,7 @@ use num_traits::FromPrimitive;
 use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 
-use rsnano_types::{Account, Amount, DeserializationError, read_u8};
+use rsnano_types::{read_u8, Account, Amount, DeserializationError};
 
 use super::MessageVariant;
 
@@ -25,6 +25,9 @@ pub struct BulkPullAccount {
 }
 
 impl BulkPullAccount {
+    pub const SERIALIZED_SIZE: usize =
+        Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE + size_of::<BulkPullAccountFlags>();
+
     pub fn new_test_instance() -> BulkPullAccount {
         Self {
             account: 1.into(),
@@ -33,9 +36,18 @@ impl BulkPullAccount {
         }
     }
 
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.account.serialize(writer)?;
+        self.minimum_amount.serialize(writer)?;
+        writer.write_all(&[self.flags as u8])
+    }
+
     pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let account = Account::deserialize(&mut bytes)?;
-        let minimum_amount = Amount::deserialize_reader(&mut bytes)?;
+        let minimum_amount = Amount::deserialize(&mut bytes)?;
         let flags = BulkPullAccountFlags::from_u8(read_u8(&mut bytes)?)
             .ok_or(DeserializationError::InvalidData)?;
 
@@ -44,19 +56,6 @@ impl BulkPullAccount {
             minimum_amount,
             flags,
         })
-    }
-
-    pub const fn serialized_size() -> usize {
-        Account::SERIALIZED_SIZE + Amount::SERIALIZED_SIZE + size_of::<BulkPullAccountFlags>()
-    }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        self.account.serialize(writer)?;
-        self.minimum_amount.serialize_writer(writer)?;
-        writer.write_all(&[self.flags as u8])
     }
 }
 

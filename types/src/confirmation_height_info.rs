@@ -21,14 +21,14 @@ impl ConfirmationHeightInfo {
         }
     }
 
-    pub fn to_bytes(&self) -> [u8; 40] {
+    pub fn to_bytes(&self) -> [u8; Self::SERIALIZED_SIZE] {
         let mut buffer = [0; Self::SERIALIZED_SIZE];
-        self.serialize_writer(&mut buffer.as_mut())
+        self.serialize(&mut buffer.as_mut())
             .expect("Should serialize conf height info");
         buffer
     }
 
-    fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: Write,
     {
@@ -36,7 +36,7 @@ impl ConfirmationHeightInfo {
         writer.write_all(self.frontier.as_bytes())
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {

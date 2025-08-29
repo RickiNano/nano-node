@@ -40,6 +40,23 @@ impl BulkPull {
             })
     }
 
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.start.serialize(writer)?;
+        self.end.serialize(writer)?;
+
+        if self.count > 0 {
+            let mut count_buffer = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];
+            const_assert!(size_of::<u32>() < (BulkPull::EXTENDED_PARAMETERS_SIZE - 1)); // count must fit within buffer
+
+            count_buffer[1..5].copy_from_slice(&self.count.to_le_bytes());
+            writer.write_all(&count_buffer)?;
+        }
+        Ok(())
+    }
+
     pub fn deserialize(
         mut bytes: &[u8],
         extensions: BitArray<u16>,
@@ -70,23 +87,6 @@ impl BulkPull {
             ascending,
         })
     }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        self.start.serialize(writer)?;
-        self.end.serialize(writer)?;
-
-        if self.count > 0 {
-            let mut count_buffer = [0u8; BulkPull::EXTENDED_PARAMETERS_SIZE];
-            const_assert!(size_of::<u32>() < (BulkPull::EXTENDED_PARAMETERS_SIZE - 1)); // count must fit within buffer
-
-            count_buffer[1..5].copy_from_slice(&self.count.to_le_bytes());
-            writer.write_all(&count_buffer)?;
-        }
-        Ok(())
-    }
 }
 
 impl MessageVariant for BulkPull {
@@ -111,7 +111,7 @@ impl Display for BulkPull {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn bulk_pull_serialization() {

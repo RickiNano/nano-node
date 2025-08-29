@@ -36,7 +36,7 @@ impl ReceiveBlock {
             + std::mem::size_of::<u64>()
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
@@ -64,7 +64,7 @@ impl ReceiveBlock {
     {
         self.hashables.previous.serialize(writer)?;
         self.hashables.source.serialize(writer)?;
-        self.signature.serialize_writer(writer)?;
+        self.signature.serialize(writer)?;
         writer.write_all(&self.work.0.to_le_bytes())
     }
 }
@@ -272,7 +272,7 @@ mod tests {
         block1.serialize_without_block_type(&mut buffer).unwrap();
         assert_eq!(ReceiveBlock::serialized_size(), buffer.len());
 
-        let block2 = ReceiveBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
+        let block2 = ReceiveBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, block2);
     }
 

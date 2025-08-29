@@ -54,14 +54,14 @@ impl StateBlock {
         Account::zero()
     }
 
-    pub fn deserialize_reader<T>(reader: &mut T) -> Result<Self, DeserializationError>
+    pub fn deserialize<T>(reader: &mut T) -> Result<Self, DeserializationError>
     where
         T: Read,
     {
         let account = Account::deserialize(reader)?;
         let previous = BlockHash::deserialize(reader)?;
         let representative = PublicKey::deserialize(reader)?;
-        let balance = Amount::deserialize_reader(reader)?;
+        let balance = Amount::deserialize(reader)?;
         let link = Link::deserialize(reader)?;
         let signature = Signature::deserialize(reader)?;
         let work = read_u64_be(reader)?;
@@ -88,9 +88,9 @@ impl StateBlock {
         self.hashables.account.serialize(writer)?;
         self.hashables.previous.serialize(writer)?;
         self.hashables.representative.serialize(writer)?;
-        self.hashables.balance.serialize_writer(writer)?;
+        self.hashables.balance.serialize(writer)?;
         self.hashables.link.serialize(writer)?;
-        self.signature.serialize_writer(writer)?;
+        self.signature.serialize(writer)?;
         writer.write_all(&self.work.0.to_be_bytes())
     }
 }
@@ -349,13 +349,11 @@ mod tests {
     fn serialization() {
         let block1 = TestBlockBuilder::state().work(5).build();
         let mut buffer = Vec::new();
-        block1
-            .serialize_without_block_type_writer(&mut buffer)
-            .unwrap();
+        block1.serialize_without_block_type(&mut buffer).unwrap();
         assert_eq!(StateBlock::SERIALIZED_SIZE, buffer.len());
         assert_eq!(buffer[215], 0x5); // Ensure work is serialized big-endian
 
-        let block2 = StateBlock::deserialize_reader(&mut buffer.as_slice()).unwrap();
+        let block2 = StateBlock::deserialize(&mut buffer.as_slice()).unwrap();
         assert_eq!(block1, Block::State(block2));
     }
 

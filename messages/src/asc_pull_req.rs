@@ -225,6 +225,30 @@ impl AscPullReq {
         }
     }
 
+    pub fn payload_type(&self) -> AscPullPayloadId {
+        match &self.req_type {
+            AscPullReqType::Blocks(_) => AscPullPayloadId::Blocks,
+            AscPullReqType::AccountInfo(_) => AscPullPayloadId::AccountInfo,
+            AscPullReqType::Frontiers(_) => AscPullPayloadId::Frontiers,
+        }
+    }
+
+    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
+        let payload_len = extensions.data as usize;
+        size_of::<u8>() // pull type
+        + size_of::<u64>() // id
+        + payload_len
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        writer.write_all(&[self.payload_type() as u8])?;
+        writer.write_all(&self.id.to_be_bytes())?;
+        self.req_type.serialize(writer)
+    }
+
     pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
         let pull_type = AscPullPayloadId::from_u8(read_u8(&mut bytes)?)
             .ok_or(DeserializationError::InvalidData)?;
@@ -245,30 +269,6 @@ impl AscPullReq {
             }
         };
         Ok(Self { id, req_type })
-    }
-
-    pub fn payload_type(&self) -> AscPullPayloadId {
-        match &self.req_type {
-            AscPullReqType::Blocks(_) => AscPullPayloadId::Blocks,
-            AscPullReqType::AccountInfo(_) => AscPullPayloadId::AccountInfo,
-            AscPullReqType::Frontiers(_) => AscPullPayloadId::Frontiers,
-        }
-    }
-
-    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
-        let payload_len = extensions.data as usize;
-        size_of::<u8>() // pull type
-        + size_of::<u64>() // id
-        + payload_len
-    }
-
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
-    where
-        T: std::io::Write,
-    {
-        writer.write_all(&[self.payload_type() as u8])?;
-        writer.write_all(&self.id.to_be_bytes())?;
-        self.req_type.serialize(writer)
     }
 }
 

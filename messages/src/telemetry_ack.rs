@@ -111,7 +111,7 @@ impl TelemetryData {
         T: std::io::Write,
     {
         // All values should be serialized in big endian
-        self.node_id.serialize_writer(writer)?;
+        self.node_id.serialize(writer)?;
         writer.write_all(&self.block_count.to_be_bytes())?;
         writer.write_all(&self.cemented_count.to_be_bytes())?;
         writer.write_all(&self.unchecked_count.to_be_bytes())?;
@@ -263,16 +263,16 @@ impl TelemetryAck {
         Self(Some(TelemetryData::new_test_instance()))
     }
 
-    pub fn serialized_size(extensions: BitArray<u16>) -> usize {
+    pub const fn serialized_size(extensions: BitArray<u16>) -> usize {
         (extensions.data & TelemetryData::SIZE_MASK) as usize
     }
 
-    pub fn serialize_writer<T>(&self, writer: &mut T) -> std::io::Result<()>
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
     {
         if let Some(data) = &self.0 {
-            data.signature.serialize_writer(writer)?;
+            data.signature.serialize(writer)?;
             data.serialize_without_signature(writer)?;
         }
         Ok(())
