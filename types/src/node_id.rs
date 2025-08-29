@@ -76,16 +76,16 @@ impl std::fmt::Debug for NodeId {
 }
 
 impl FromStr for NodeId {
-    type Err = anyhow::Error;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut node_id = s.to_string();
         if node_id.starts_with("node_") {
             node_id.replace_range(0..5, "nano_");
-            let account = Account::parse(node_id).ok_or_else(|| anyhow!("Invalid account"))?;
+            let account = Account::parse(node_id).ok_or_else(|| ())?;
             Ok(Self::from_bytes(*account.as_bytes()))
         } else {
-            bail!("Invalid node ID format")
+            Err(())
         }
     }
 }
@@ -173,8 +173,7 @@ mod tests {
 
     #[test]
     fn parse_fails() {
-        let err = "invalid".parse::<NodeId>().unwrap_err();
-        assert_eq!(err.to_string(), "Invalid node ID format");
+        assert!("invalid".parse::<NodeId>().is_err());
     }
 
     #[test]

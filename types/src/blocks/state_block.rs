@@ -24,11 +24,10 @@ impl StateBlock {
             + std::mem::size_of::<u64>() // Work
     ;
 
-    pub fn verify_signature(&self) -> anyhow::Result<()> {
+    pub fn verify_signature(&self) -> Result<(), ()> {
         self.account()
             .as_key()
             .verify(self.hash().as_bytes(), self.signature())
-            .map_err(|_| anyhow!("Invalid signature"))
     }
 
     pub fn account(&self) -> Account {
