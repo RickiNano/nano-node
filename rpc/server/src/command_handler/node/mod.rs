@@ -5,6 +5,8 @@ mod confirmation_history;
 mod confirmation_info;
 mod confirmation_quorum;
 mod keepalive;
+#[cfg(feature = "ledger_snapshots")]
+mod ledger_snapshots;
 mod node_id;
 mod peers;
 mod populate_backlog;
@@ -29,7 +31,5 @@ mod work_peer_add;
 mod work_peers;
 mod work_peers_clear;
 mod work_validate;
-#[cfg(feature = "ledger_snapshots")]
-mod ledger_snapshots;
 
 pub use block_create::*;

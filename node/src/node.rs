@@ -98,6 +98,9 @@ use crate::{
     work::WorkFactory,
 };
 
+#[cfg(feature = "ledger_snapshots")]
+use crate::ledger_snapshots::LedgerSnapshots;
+
 #[allow(dead_code)]
 pub struct Node {
     is_nulled: bool,
@@ -158,6 +161,8 @@ pub struct Node {
     aec_voter: TimerThread<AecVoter>,
     pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
     ticker_pool: TickerPool,
+    #[cfg(feature = "ledger_snapshots")]
+    pub ledger_snapshots: LedgerSnapshots,
 }
 
 pub(crate) struct NodeArgs {
@@ -1160,6 +1165,9 @@ impl Node {
             );
         }
 
+        #[cfg(feature = "ledger_snapshots")]
+        let ledger_snapshots = LedgerSnapshots::new();
+
         let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
         ticker_pool.insert(
             local_reps_computation,
@@ -1363,6 +1371,8 @@ impl Node {
             aec_voter: TimerThread::new("AEC voter", aec_voter),
             wallet_reps,
             ticker_pool,
+            #[cfg(feature = "ledger_snapshots")]
+            ledger_snapshots,
         }
     }
 
