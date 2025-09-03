@@ -147,6 +147,8 @@ impl RpcCommandHandler {
             RpcCommand::ConfirmationHistory(args) => to_value(self.confirmation_history(args)),
             RpcCommand::Version => to_value(self.version()),
             RpcCommand::ActiveDifficulty => to_value(self.active_difficulty()),
+            #[cfg(feature = "ledger_snapshots")]
+            RpcCommand::StartLedgerSnapshot => to_value(self.start_ledger_snapshot()?),
 
             // Not implemented:
             RpcCommand::AccountRepresentativeSet(_) => self.not_implemented(),

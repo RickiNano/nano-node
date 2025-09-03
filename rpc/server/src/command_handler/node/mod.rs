@@ -29,5 +29,7 @@ mod work_peer_add;
 mod work_peers;
 mod work_peers_clear;
 mod work_validate;
+#[cfg(feature = "ledger_snapshots")]
+mod ledger_snapshots;
 
 pub use block_create::*;
