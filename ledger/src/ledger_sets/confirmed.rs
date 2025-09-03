@@ -4,6 +4,7 @@ use rsnano_types::{
     Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey,
     SavedBlock,
 };
+use std::iter::empty;
 
 use super::{AnyReceivableIterator, LedgerSet};
 
@@ -64,6 +65,13 @@ impl<'a> OwningConfirmedSet<'a> {
             actual_account: None,
             next_hash: Some(BlockHash::ZERO),
         }
+    }
+
+    fn frontiers(&self) -> impl Iterator<Item = (Account, BlockHash)> {
+        self.store
+            .confirmation_height
+            .iter(&self.tx)
+            .map(|(account, conf_info)| (account, conf_info.frontier))
     }
 }
 
@@ -223,7 +231,8 @@ impl<'a> Iterator for ConfirmedReceivableIterator<'a> {
 mod tests {
     use crate::Ledger;
     use rsnano_types::{
-        Account, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey, SavedBlock,
+        Account, AccountInfo, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey,
+        SavedBlock,
     };
 
     #[test]
@@ -275,5 +284,30 @@ mod tests {
         expected.sort_by_key(|i| i.send_block_hash);
 
         assert_eq!(receivable, expected);
+    }
+
+    #[test]
+    fn iter_frontiers() {
+        let account1 = Account::from(1);
+        let account2 = Account::from(2);
+        let account3 = Account::from(3);
+
+        let hash1 = BlockHash::from(100);
+        let hash2 = BlockHash::from(200);
+        let hash3 = BlockHash::from(300);
+
+        let ledger = Ledger::new_null_builder()
+            .account_info(&account1, &AccountInfo::new_test_instance())
+            .account_info(&account2, &AccountInfo::new_test_instance())
+            .account_info(&account3, &AccountInfo::new_test_instance())
+            .confirmation_height(&account1, &ConfirmationHeightInfo::new(0, hash1))
+            .confirmation_height(&account2, &ConfirmationHeightInfo::new(0, hash2))
+            .confirmation_height(&account3, &ConfirmationHeightInfo::new(0, hash3))
+            .finish();
+
+        assert_eq!(
+            ledger.confirmed().frontiers().collect::<Vec<_>>(),
+            vec![(account1, hash1), (account2, hash2), (account3, hash3)]
+        );
     }
 }
