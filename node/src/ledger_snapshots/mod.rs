@@ -1,3 +1,5 @@
+pub mod preproposal;
+
 use rsnano_ledger::Ledger;
 use rsnano_types::{Account, BlockHash};
 use std::sync::Arc;

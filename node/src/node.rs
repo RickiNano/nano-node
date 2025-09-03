@@ -3,9 +3,9 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     sync::{
+        Arc, Mutex, MutexGuard, RwLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, SyncSender},
-        Arc, Mutex, MutexGuard, RwLock,
     },
     time::Duration,
 };
@@ -35,16 +35,17 @@ use rsnano_types::{
     SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
+    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},
     sync::backpressure_channel,
     thread_pool::ThreadPool,
     ticker::{Tickable, TickerPool, TimerThread},
-    CancellationToken,
 };
 use rsnano_wallet::{ReceivableSearch, WalletBackup, Wallets, WalletsTicker};
 
 use crate::{
+    NodeCallbacks, OnlineWeightSampler,
     aec_event_processor::AecEventProcessor,
     block_processing::{
         BacklogScan, BacklogWaiter, BlockContext, BlockProcessor, BlockProcessorQueue, BlockSource,
@@ -59,16 +60,17 @@ use crate::{
     cementation::{ConfirmingSet, TrackConfirmationTimes},
     config::{GlobalConfig, NetworkParams, NodeConfig, NodeFlags},
     consensus::{
+        ActiveElectionsContainer, AecTicker, AecVoter, BootstrapElectionActivator,
+        BootstrapStaleElections, ConfirmReqSender, ConfirmationSolicitorPlugin, CpsLimiter,
+        CurrentRepTiers, DependentElectionsConfirmer, ForkCache, ForkCacheUpdater, ForkProcessor,
+        ForkProcessorPlugin, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
+        RequestAggregator, RequestAggregatorCleanup, VoteApplier, VoteBroadcaster, VoteCache,
+        VoteCacheProcessor, VoteGenerators, VoteProcessor, VoteProcessorExt, VoteProcessorQueue,
+        VoteProcessorQueueCleanup, VoteRebroadcastQueue, VoteRebroadcaster, WalletRepsChecker,
+        WinnerBlockBroadcaster,
         election::ConfirmedElection,
         election_schedulers::{ElectionSchedulers, ElectionSchedulersPlugin},
-        get_bootstrap_weights, log_bootstrap_weights, ActiveElectionsContainer, AecTicker,
-        AecVoter, BootstrapElectionActivator, BootstrapStaleElections, ConfirmReqSender,
-        ConfirmationSolicitorPlugin, CpsLimiter, CurrentRepTiers, DependentElectionsConfirmer,
-        ForkCache, ForkCacheUpdater, ForkProcessor, ForkProcessorPlugin, LocalVoteHistory,
-        LocalVotesRemover, RepTiersCalculator, RequestAggregator, RequestAggregatorCleanup,
-        VoteApplier, VoteBroadcaster, VoteCache, VoteCacheProcessor, VoteGenerators, VoteProcessor,
-        VoteProcessorExt, VoteProcessorQueue, VoteProcessorQueueCleanup, VoteRebroadcastQueue,
-        VoteRebroadcaster, WalletRepsChecker, WinnerBlockBroadcaster,
+        get_bootstrap_weights, log_bootstrap_weights,
     },
     ledger_event_processor::{LedgerEventProcessor, LedgerEventProcessorPlugin},
     node_id_key_file::NodeIdKeyFile,
@@ -78,22 +80,22 @@ use crate::{
         OnlineReps, OnlineRepsCleanup, OnlineWeightCalculation, RepCrawler, RepCrawlerExt,
     },
     telemetry::{
-        rsnano_build_info, rsnano_version_string, TelementryConfig, TelementryExt, Telemetry,
-        TelemetryFactory,
+        TelementryConfig, TelementryExt, Telemetry, TelemetryFactory, rsnano_build_info,
+        rsnano_version_string,
     },
     tokio_runner::TokioRunner,
     transport::{
+        MessageFlooder, MessageProcessor, MessageSender, NetworkThreads, PeerCacheConnector,
+        PeerCacheUpdater, RealtimeMessageHandler,
         keepalive::{KeepaliveMessageFactory, KeepalivePublisher},
-        run_loopback_channel_adapter, MessageFlooder, MessageProcessor, MessageSender,
-        NetworkThreads, PeerCacheConnector, PeerCacheUpdater, RealtimeMessageHandler,
+        run_loopback_channel_adapter,
     },
     utils::spawn_backpressure_processor,
     wallets::{
-        block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
-        WalletRepresentatives,
+        LocalRepsComputation, WalletRepresentatives, block_processor::WalletBlockProcessor,
+        work::WalletWorkProvider,
     },
     work::WorkFactory,
-    NodeCallbacks, OnlineWeightSampler,
 };
 
 #[cfg(feature = "ledger_snapshots")]

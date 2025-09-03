@@ -45,7 +45,7 @@ use blake2::{
     Blake2bVar,
     digest::{Update, VariableOutput},
 };
-pub use block_hash::{Blake2HashBuilder, BlockHash};
+pub use block_hash::{Blake2Hash, Blake2HashBuilder, BlockHash};
 pub use blocks::*;
 pub use confirmation_height_info::ConfirmationHeightInfo;
 pub use difficulty::{Difficulty, DifficultyV1, StubDifficulty};
