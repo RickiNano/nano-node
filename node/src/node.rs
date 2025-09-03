@@ -1166,7 +1166,17 @@ impl Node {
         }
 
         #[cfg(feature = "ledger_snapshots")]
-        let ledger_snapshots = LedgerSnapshots::new(ledger.clone());
+        let ledger_snapshots = {
+            let wallet_reps2 = wallet_reps.clone();
+            LedgerSnapshots::new(ledger.clone(), move || {
+                // TODO: make this nice:
+                let mut keys = Vec::new();
+                wallet_reps2.lock().unwrap().rep_priv_keys(&mut keys);
+                // For simplicity only take the first key.
+                // TODO: allow multiple keys
+                keys.pop()
+            })
+        };
 
         let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
         ticker_pool.insert(

@@ -69,6 +69,15 @@ impl MessageFlooder {
         traffic_type: TrafficType,
         scale: f32,
     ) -> FloodCount {
+        if self.flood_listener.is_tracked() {
+            self.flood_listener.emit(FloodEvent {
+                message: message.clone(),
+                traffic_type,
+                scale,
+                all_prs: true,
+            });
+        }
+
         let mut flood_count = FloodCount::default();
         let peered_prs = self.online_reps.lock().unwrap().peered_principal_reps();
         for rep in peered_prs {
@@ -109,6 +118,7 @@ impl MessageFlooder {
                 message: message.clone(),
                 traffic_type,
                 scale,
+                all_prs: false,
             });
         }
 
@@ -166,6 +176,7 @@ pub struct FloodEvent {
     pub message: Message,
     pub traffic_type: TrafficType,
     pub scale: f32,
+    pub all_prs: bool,
 }
 
 impl Deref for MessageFlooder {
@@ -207,7 +218,29 @@ mod tests {
             vec![FloodEvent {
                 message,
                 traffic_type,
-                scale
+                scale,
+                all_prs: false
+            }]
+        );
+    }
+
+    #[test]
+    fn can_track_floods_to_all_prs() {
+        let mut flooder = MessageFlooder::new_null();
+        let tracker = flooder.track_floods();
+        let message = Message::BulkPush;
+        let traffic_type = TrafficType::Vote;
+        let scale = 0.5;
+        flooder.flood_prs_and_some_non_prs(&message, traffic_type, scale);
+
+        let floods = tracker.output();
+        assert_eq!(
+            floods,
+            vec![FloodEvent {
+                message,
+                traffic_type,
+                scale,
+                all_prs: true,
             }]
         );
     }

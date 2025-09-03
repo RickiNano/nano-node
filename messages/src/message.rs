@@ -21,6 +21,8 @@ pub enum Message {
     NodeIdHandshake(NodeIdHandshake),
     TelemetryAck(TelemetryAck),
     TelemetryReq,
+    #[cfg(feature = "ledger_snapshots")]
+    SnapshotPreproposal(Preproposal),
 }
 
 pub trait MessageVariant: Display {
@@ -90,6 +92,8 @@ impl From<&ParseMessageError> for DetailType {
                 Self::InvalidAscPullAckMessage
             }
             ParseMessageError::InvalidMessage(MessageType::BulkPush) => Self::InvalidMessageType,
+            #[cfg(feature = "ledger_snapshots")]
+            ParseMessageError::InvalidMessage(MessageType::Preproposal) => todo!(),
             ParseMessageError::InvalidMessage(MessageType::Invalid)
             | ParseMessageError::InvalidMessage(MessageType::NotAType) => Self::InvalidMessageType,
             ParseMessageError::InvalidNetwork => Self::InvalidNetwork,
@@ -131,6 +135,8 @@ impl Message {
             Message::NodeIdHandshake(_) => MessageType::NodeIdHandshake,
             Message::TelemetryAck(_) => MessageType::TelemetryAck,
             Message::TelemetryReq => MessageType::TelemetryReq,
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotPreproposal(_) => todo!(),
         }
     }
 
@@ -175,6 +181,8 @@ impl Message {
             Message::NodeIdHandshake(m) => m.serialize(writer),
             Message::TelemetryAck(m) => m.serialize(writer),
             Message::BulkPush | Message::TelemetryReq => Ok(()),
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotPreproposal(_) => todo!(),
         }
     }
 
@@ -213,6 +221,8 @@ impl Message {
                 Message::TelemetryAck(TelemetryAck::deserialize(payload, header.extensions)?)
             }
             MessageType::TelemetryReq => Message::TelemetryReq,
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Preproposal => todo!(),
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);
             }

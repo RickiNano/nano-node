@@ -169,7 +169,8 @@ mod tests {
             vec![FloodEvent {
                 message: Message::ConfirmAck(ConfirmAck::new_with_rebroadcasted_vote(vote)),
                 traffic_type: TrafficType::VoteRebroadcast,
-                scale: 1.0
+                scale: 1.0,
+                all_prs: false,
             }]
         )
     }

@@ -31,6 +31,8 @@ pub enum MessageType {
     TelemetryAck = 0x0d,
     AscPullReq = 0x0e,
     AscPullAck = 0x0f,
+    #[cfg(feature = "ledger_snapshots")]
+    Preproposal = 0x10,
 }
 
 impl MessageType {
@@ -51,11 +53,20 @@ impl MessageType {
             MessageType::TelemetryAck => "telemetry_ack",
             MessageType::AscPullReq => "asc_pull_req",
             MessageType::AscPullAck => "asc_pull_ack",
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Preproposal => "preproposal",
         }
     }
 
     pub const fn max_id() -> usize {
-        Self::AscPullAck as usize
+        #[cfg(feature = "ledger_snapshots")]
+        {
+            Self::Preproposal as usize
+        }
+        #[cfg(not(feature = "ledger_snapshots"))]
+        {
+            Self::AscPullAck as usize
+        }
     }
 }
 
@@ -172,6 +183,8 @@ impl MessageHeader {
             MessageType::TelemetryAck => TelemetryAck::serialized_size(self.extensions),
             MessageType::AscPullReq => AscPullReq::serialized_size(self.extensions),
             MessageType::AscPullAck => AscPullAck::serialized_size(self.extensions),
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Preproposal => 0,
             MessageType::Invalid | MessageType::NotAType => {
                 debug_assert!(false);
                 0
@@ -231,6 +244,8 @@ impl From<MessageType> for DetailType {
             MessageType::TelemetryAck => DetailType::TelemetryAck,
             MessageType::AscPullReq => DetailType::AscPullReq,
             MessageType::AscPullAck => DetailType::AscPullAck,
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Preproposal => todo!(),
         }
     }
 }

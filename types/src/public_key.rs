@@ -1,4 +1,4 @@
-use crate::{serialize_32_byte_string, u256_struct, Account, RawKey, Signature};
+use crate::{Account, RawKey, Signature, serialize_32_byte_string, u256_struct};
 use ed25519_dalek::Verifier;
 use thiserror::Error;
 

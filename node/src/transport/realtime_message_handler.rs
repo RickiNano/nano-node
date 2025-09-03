@@ -182,6 +182,8 @@ impl RealtimeMessageHandler {
             | Message::BulkPullAccount(_) => {
                 // obsolete messages
             }
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotPreproposal(_) => todo!(),
         }
     }
 }
