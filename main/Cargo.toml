@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Gustav Schauwecker <service@simpago.com>"]
 edition = "2024"
 
+[features]
+ledger_snapshots = ["rsnano_node/ledger_snapshots", "rsnano_rpc_server/ledger_snapshots"]
+
 [[bin]]
 name = "rsnano_node"
 path = "src/bin.rs"
