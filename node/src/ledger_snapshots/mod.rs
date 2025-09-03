@@ -3,6 +3,8 @@ pub mod preproposal;
 use rsnano_ledger::Ledger;
 use rsnano_types::{Account, BlockHash};
 use std::sync::Arc;
+use crate::ledger_snapshots::preproposal::PreProposal;
+use rsnano_types::PrivateKey;
 
 pub struct LedgerSnapshots {
     ledger: Arc<Ledger>,
@@ -15,6 +17,12 @@ impl LedgerSnapshots {
 
     pub fn collect_frontiers(&self) -> Vec<(Account, BlockHash)> {
         self.ledger.confirmed().frontiers().collect()
+    }
+
+    pub fn create_preproposal(&self, private_key: &PrivateKey) -> PreProposal {
+        let frontiers = self.collect_frontiers();
+
+        PreProposal::new(frontiers, private_key)
     }
 }
 
@@ -76,5 +84,28 @@ mod tests {
             snapshots.collect_frontiers(),
             [(account1, frontier1), (account2, frontier2)]
         );
+    }
+
+    #[test]
+    fn create_preproposal() {
+        let account = Account::from(10);
+        let frontier = BlockHash::from(2);
+        let ledger = Arc::new(
+            Ledger::new_null_builder()
+                .account_info(&account, &AccountInfo::new_test_instance())
+                .confirmation_height(
+                    &account,
+                    &ConfirmationHeightInfo {
+                        height: 0,
+                        frontier,
+                    },
+                )
+                .finish(),
+        );
+        let snapshots = LedgerSnapshots::new(ledger.clone());
+
+        let preproposal = snapshots.create_preproposal(&PrivateKey::from(1));
+
+        assert!(preproposal.frontiers.contains(&(account, frontier)));
     }
 }

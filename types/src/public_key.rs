@@ -1,4 +1,4 @@
-use crate::{Account, RawKey, Signature, serialize_32_byte_string, u256_struct};
+use crate::{serialize_32_byte_string, u256_struct, Account, RawKey, Signature};
 use ed25519_dalek::Verifier;
 use thiserror::Error;
 
@@ -35,7 +35,7 @@ impl From<RawKey> for PublicKey {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub struct SignatureError {}
 
 impl std::fmt::Display for SignatureError {
