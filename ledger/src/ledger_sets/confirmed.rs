@@ -4,7 +4,6 @@ use rsnano_types::{
     Account, AccountInfo, Amount, BlockHash, ConfirmationHeightInfo, PendingInfo, PendingKey,
     SavedBlock,
 };
-use std::iter::empty;
 
 use super::{AnyReceivableIterator, LedgerSet};
 
@@ -67,7 +66,7 @@ impl<'a> OwningConfirmedSet<'a> {
         }
     }
 
-    fn frontiers(&self) -> impl Iterator<Item = (Account, BlockHash)> {
+    pub fn frontiers(&self) -> impl Iterator<Item = (Account, BlockHash)> {
         self.store
             .confirmation_height
             .iter(&self.tx)

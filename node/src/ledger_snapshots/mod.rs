@@ -12,7 +12,7 @@ impl LedgerSnapshots {
     }
 
     pub fn collect_frontiers(&self) -> Vec<(Account, BlockHash)> {
-        vec![]
+        self.ledger.confirmed().frontiers().collect()
     }
 }
 
@@ -20,20 +20,22 @@ impl LedgerSnapshots {
 mod tests {
     use super::*;
     use rsnano_ledger::Ledger;
-    use rsnano_types::AccountInfo;
+    use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
 
     #[test]
-    #[ignore]
     fn ledger_with_one_account() {
         let account = Account::from(1);
         let frontier = BlockHash::from(2);
-        let account_info = AccountInfo {
-            head: frontier,
-            ..AccountInfo::new_test_instance()
-        };
         let ledger = Arc::new(
             Ledger::new_null_builder()
-                .account_info(&account, &account_info)
+                .account_info(&account, &AccountInfo::new_test_instance())
+                .confirmation_height(
+                    &account,
+                    &ConfirmationHeightInfo {
+                        height: 0,
+                        frontier,
+                    },
+                )
                 .finish(),
         );
         let snapshots = LedgerSnapshots::new(ledger.clone());
@@ -41,25 +43,30 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn ledger_with_multiple_accounts() {
         let account1 = Account::from(1);
         let frontier1 = BlockHash::from(100);
-        let account_info1 = AccountInfo {
-            head: frontier1,
-            ..AccountInfo::new_test_instance()
-        };
         let account2 = Account::from(2);
         let frontier2 = BlockHash::from(200);
-        let account_info2 = AccountInfo {
-            head: frontier2,
-            ..AccountInfo::new_test_instance()
-        };
 
         let ledger = Arc::new(
             Ledger::new_null_builder()
-                .account_info(&account1, &account_info1)
-                .account_info(&account2, &account_info2)
+                .account_info(&account1, &AccountInfo::new_test_instance())
+                .account_info(&account2, &AccountInfo::new_test_instance())
+                .confirmation_height(
+                    &account1,
+                    &ConfirmationHeightInfo {
+                        height: 0,
+                        frontier: frontier1,
+                    },
+                )
+                .confirmation_height(
+                    &account2,
+                    &ConfirmationHeightInfo {
+                        height: 0,
+                        frontier: frontier2,
+                    },
+                )
                 .finish(),
         );
         let snapshots = LedgerSnapshots::new(ledger.clone());
