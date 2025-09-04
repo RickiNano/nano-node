@@ -5,7 +5,7 @@ use std::sync::{
 
 use rsnano_ledger::Ledger;
 use rsnano_network::Channel;
-use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_nullable_clock::SteadyClock;
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::{
@@ -15,9 +15,8 @@ use super::{
 use crate::{
     block_processing::{BlockProcessorQueue, BlockSource},
     bootstrap::{
-        AscPullQuerySpec, BootstrapConfig, BootstrapPromise, PollResult,
+        AscPullQuerySpec, BootstrapConfig, BootstrapPromise, PollResult, PromiseContext,
         requesters::channel_waiter::{ChannelWaiter, ChannelWaiterStats},
-        state::BootstrapState,
     },
 };
 
@@ -76,12 +75,7 @@ enum PriorityState {
 }
 
 impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
-    fn poll(
-        &mut self,
-        state: &mut BootstrapState,
-        now: Timestamp,
-        id: u64,
-    ) -> PollResult<AscPullQuerySpec> {
+    fn poll(&mut self, context: &mut PromiseContext) -> PollResult<AscPullQuerySpec> {
         match self.state {
             PriorityState::Initial => {
                 self.stats.loop_count.fetch_add(1, Ordering::Relaxed);
@@ -99,7 +93,7 @@ impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
                     PollResult::Wait
                 }
             }
-            PriorityState::WaitChannel => match self.channel_waiter.poll(state, now, id) {
+            PriorityState::WaitChannel => match self.channel_waiter.poll(context) {
                 PollResult::Progress => PollResult::Progress,
                 PollResult::Wait => PollResult::Wait,
                 PollResult::Finished(channel) => {
@@ -109,7 +103,7 @@ impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
             },
             PriorityState::WaitPriority(ref channel) => {
                 match self.query_factory.next_priority_query(
-                    state,
+                    context.state,
                     channel.clone(),
                     self.clock.now(),
                 ) {
@@ -173,7 +167,7 @@ mod tests {
     use crate::{
         block_processing::BlockProcessorQueue,
         bootstrap::{
-            BootstrapConfig, PollResult, progress,
+            BootstrapConfig, PollResult, progress_state,
             requesters::{
                 channel_waiter::ChannelWaiter, priority::priority_requester::PriorityState,
             },
@@ -189,7 +183,7 @@ mod tests {
 
         let (mut requester, network) = create_requester();
         network.write().unwrap().add_test_channel();
-        let PollResult::Finished(result) = progress(&mut requester, &mut state) else {
+        let PollResult::Finished(result) = progress_state(&mut requester, &mut state) else {
             panic!("Finished expected");
         };
 
@@ -203,7 +197,7 @@ mod tests {
         let (mut requester, _) = create_requester();
         requester.block_processor_threshold = 0;
 
-        let result = progress(&mut requester, &mut state);
+        let result = progress_state(&mut requester, &mut state);
 
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(requester.state, PriorityState::WaitBlockProcessor));
@@ -214,7 +208,7 @@ mod tests {
         let mut state = BootstrapState::default();
         let (mut requester, _) = create_requester();
 
-        let result = progress(&mut requester, &mut state);
+        let result = progress_state(&mut requester, &mut state);
 
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(requester.state, PriorityState::WaitChannel));
@@ -226,7 +220,7 @@ mod tests {
         let (mut requester, network) = create_requester();
         network.write().unwrap().add_test_channel();
 
-        let result = progress(&mut requester, &mut state);
+        let result = progress_state(&mut requester, &mut state);
 
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(requester.state, PriorityState::WaitPriority(_)));

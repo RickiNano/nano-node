@@ -51,6 +51,7 @@ impl BootstrapState {
 
     fn create_blocking_query(next: BlockHash, channel: Arc<Channel>) -> AscPullQuerySpec {
         AscPullQuerySpec {
+            query_id: 0, // TODO
             channel,
             req_type: AscPullReqType::account_info_by_hash(next),
             account: Account::ZERO,

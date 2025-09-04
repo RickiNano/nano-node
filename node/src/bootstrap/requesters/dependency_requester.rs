@@ -4,8 +4,7 @@ use rsnano_network::Channel;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::channel_waiter::ChannelWaiter;
-use crate::bootstrap::{AscPullQuerySpec, BootstrapPromise, PollResult, state::BootstrapState};
-use rsnano_nullable_clock::Timestamp;
+use crate::bootstrap::{AscPullQuerySpec, BootstrapPromise, PollResult, PromiseContext};
 
 pub(super) struct DependencyRequester {
     state: DependencyState,
@@ -30,12 +29,7 @@ impl DependencyRequester {
 }
 
 impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
-    fn poll(
-        &mut self,
-        state: &mut BootstrapState,
-        now: Timestamp,
-        id: u64,
-    ) -> PollResult<AscPullQuerySpec> {
+    fn poll(&mut self, context: &mut PromiseContext) -> PollResult<AscPullQuerySpec> {
         match self.state {
             DependencyState::Initial => {
                 self.stats
@@ -43,7 +37,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
                 self.state = DependencyState::WaitChannel;
                 PollResult::Progress
             }
-            DependencyState::WaitChannel => match self.channel_waiter.poll(state, now, id) {
+            DependencyState::WaitChannel => match self.channel_waiter.poll(context) {
                 PollResult::Wait => PollResult::Wait,
                 PollResult::Progress => PollResult::Progress,
                 PollResult::Finished(channel) => {
@@ -52,7 +46,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
                 }
             },
             DependencyState::WaitBlocking(ref channel) => {
-                match state.next_blocking_query(channel) {
+                match context.state.next_blocking_query(channel) {
                     Some(spec) => {
                         self.stats
                             .inc(StatType::BootstrapNext, DetailType::NextBlocking);
@@ -69,7 +63,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bootstrap::progress;
+    use crate::bootstrap::{PromiseContext, progress, progress_state, state::BootstrapState};
     use rsnano_network::{Network, token_bucket::TokenBucket};
     use rsnano_nullable_clock::Timestamp;
     use rsnano_types::{Account, BlockHash};
@@ -89,7 +83,7 @@ mod tests {
             .candidate_accounts
             .block(account, dependency, Timestamp::new_test_instance());
 
-        let result = progress(&mut requester, &mut state);
+        let result = progress_state(&mut requester, &mut state);
 
         let PollResult::Finished(spec) = result else {
             panic!("poll did not finish");
@@ -104,13 +98,18 @@ mod tests {
         let mut requester = create_test_requester(network.clone());
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
+        let mut context = PromiseContext {
+            state: &mut state,
+            now,
+            id: 0,
+        };
 
-        let result = progress(&mut requester, &mut state);
+        let result = progress(&mut requester, &mut context);
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(requester.state, DependencyState::WaitChannel));
 
         network.write().unwrap().add_test_channel();
-        let result = requester.poll(&mut state, now, 0);
+        let result = requester.poll(&mut context);
         assert!(matches!(result, PollResult::Progress));
         assert!(matches!(requester.state, DependencyState::WaitBlocking(_)));
     }
@@ -123,7 +122,7 @@ mod tests {
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
 
-        let result = progress(&mut requester, &mut state);
+        let result = progress_state(&mut requester, &mut state);
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(requester.state, DependencyState::WaitBlocking(_)));
 
@@ -134,7 +133,12 @@ mod tests {
             .candidate_accounts
             .block(account, dependency, Timestamp::new_test_instance());
 
-        let result = requester.poll(&mut state, now, 0);
+        let mut context = PromiseContext {
+            state: &mut state,
+            now,
+            id: 0,
+        };
+        let result = requester.poll(&mut context);
         assert!(matches!(result, PollResult::Finished(_)));
         assert!(matches!(requester.state, DependencyState::Initial));
     }

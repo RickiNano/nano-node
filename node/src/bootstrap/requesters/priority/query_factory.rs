@@ -83,6 +83,7 @@ impl QueryFactory {
         let cooldown_account = next.fails == 0;
 
         AscPullQuerySpec {
+            query_id: 0, // TODO
             channel,
             req_type,
             hash: pull_start.hash,
@@ -176,6 +177,7 @@ mod tests {
             assert_eq!(
                 query,
                 AscPullQuerySpec {
+                    query_id: 0, // TODO
                     channel: test_channel(),
                     account,
                     hash: BlockHash::ZERO,
@@ -205,6 +207,7 @@ mod tests {
             assert_eq!(
                 query,
                 AscPullQuerySpec {
+                    query_id: 0, // TODO
                     channel: test_channel(),
                     account,
                     hash: head,
@@ -236,6 +239,7 @@ mod tests {
             assert_eq!(
                 query,
                 AscPullQuerySpec {
+                    query_id: 0, // TODO
                     channel: test_channel(),
                     account,
                     hash: BlockHash::ZERO,
@@ -265,6 +269,7 @@ mod tests {
             assert_eq!(
                 query,
                 AscPullQuerySpec {
+                    query_id: 0, // TODO
                     channel: test_channel(),
                     account,
                     hash: frontier,
@@ -293,6 +298,7 @@ mod tests {
             assert_eq!(
                 query,
                 AscPullQuerySpec {
+                    query_id: 0, // TODO
                     channel: test_channel(),
                     account,
                     hash: BlockHash::ZERO,

@@ -18,8 +18,7 @@ use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash};
 
 pub(self) trait BootstrapPromise<T> {
-    fn poll(&mut self, state: &mut state::BootstrapState, now: Timestamp, id: u64)
-    -> PollResult<T>;
+    fn poll(&mut self, context: &mut PromiseContext) -> PollResult<T>;
 }
 
 pub(self) enum PollResult<T> {
@@ -28,8 +27,25 @@ pub(self) enum PollResult<T> {
     Finished(T),
 }
 
+pub struct PromiseContext<'a> {
+    pub state: &'a mut state::BootstrapState,
+    pub now: Timestamp,
+    pub id: u64,
+}
+
+impl<'a> PromiseContext<'a> {
+    pub fn new_test_instance(state: &'a mut state::BootstrapState) -> Self {
+        Self {
+            state,
+            now: Timestamp::new_test_instance(),
+            id: 0,
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct AscPullQuerySpec {
+    pub query_id: u64,
     pub channel: Arc<Channel>,
     pub req_type: AscPullReqType,
     pub account: Account,
@@ -41,6 +57,7 @@ impl AscPullQuerySpec {
     #[allow(dead_code)]
     pub fn new_test_instance() -> Self {
         Self {
+            query_id: 123567,
             req_type: AscPullReqType::Frontiers(FrontiersReqPayload {
                 start: 100.into(),
                 count: 1000,
@@ -65,13 +82,26 @@ impl AscPullQuerySpec {
 }
 
 #[cfg(test)]
-pub(self) fn progress<T>(
+pub(self) fn progress_state<T>(
     requester: &mut impl BootstrapPromise<T>,
     state: &mut state::BootstrapState,
 ) -> PollResult<T> {
+    let mut context = PromiseContext {
+        state,
+        now: Timestamp::new_test_instance(),
+        id: 0,
+    };
+
+    progress(requester, &mut context)
+}
+
+#[cfg(test)]
+pub(self) fn progress<T>(
+    requester: &mut impl BootstrapPromise<T>,
+    context: &mut PromiseContext,
+) -> PollResult<T> {
     loop {
-        let now = Timestamp::new_test_instance();
-        match requester.poll(state, now, 0) {
+        match requester.poll(context) {
             PollResult::Progress => {}
             result => return result,
         }

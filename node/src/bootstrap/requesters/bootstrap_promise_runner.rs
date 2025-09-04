@@ -1,4 +1,4 @@
-use crate::bootstrap::{BootstrapPromise, PollResult, state::BootstrapState};
+use crate::bootstrap::{BootstrapPromise, PollResult, PromiseContext, state::BootstrapState};
 use rand::RngCore;
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_nullable_random::NullableRngFactory;
@@ -61,7 +61,14 @@ impl BootstrapPromiseRunner {
         let id = self.rng_factory.rng().next_u64();
         loop {
             poll_count = poll_count.overflowing_add(1).0;
-            match action.poll(&mut state, now, id) {
+
+            let mut context = PromiseContext {
+                state: &mut state,
+                now,
+                id,
+            };
+
+            match action.poll(&mut context) {
                 PollResult::Progress => {
                     if state.stopped {
                         return Err(Self::INITIAL_INTERVAL);
@@ -188,13 +195,8 @@ mod tests {
     }
 
     impl BootstrapPromise<i32> for StubPromise {
-        fn poll(
-            &mut self,
-            _state: &mut BootstrapState,
-            _now: Timestamp,
-            id: u64,
-        ) -> PollResult<i32> {
-            self.last_id.store(id, Ordering::SeqCst);
+        fn poll(&mut self, context: &mut PromiseContext) -> PollResult<i32> {
+            self.last_id.store(context.id, Ordering::SeqCst);
             self.polled.notify(());
             if let Some(result) = self.result.take() {
                 PollResult::Finished(result)
