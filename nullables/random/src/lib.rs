@@ -93,6 +93,30 @@ impl RngCore for RngStub {
     }
 }
 
+pub struct NullableRngFactory {
+    is_nulled: bool,
+}
+
+impl NullableRngFactory {
+    pub fn new_null() -> Self {
+        Self { is_nulled: true }
+    }
+
+    pub fn rng(&self) -> NullableRng {
+        if self.is_nulled {
+            NullableRng::new_null()
+        } else {
+            NullableRng::rng()
+        }
+    }
+}
+
+impl Default for NullableRngFactory {
+    fn default() -> Self {
+        Self { is_nulled: false }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -155,5 +179,22 @@ mod tests {
         let mut buffer = [0; 10];
         rng.fill_bytes(&mut buffer);
         assert_eq!(buffer, [1, 2, 3, 4, 5, 6, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn factory_can_create_nulled_rng() {
+        let rng_factory = NullableRngFactory::new_null();
+        let mut rng = rng_factory.rng();
+        assert_eq!(rng.next_u64(), 42);
+        assert_eq!(rng.next_u64(), 42);
+        assert_eq!(rng.next_u64(), 42);
+    }
+
+    #[test]
+    fn factory_can_create_real_rng() {
+        let rng_factory = NullableRngFactory::default();
+        let mut rng = rng_factory.rng();
+        let created = [rng.next_u64(), rng.next_u64(), rng.next_u64()];
+        assert_ne!(created, [42, 42, 42]);
     }
 }
