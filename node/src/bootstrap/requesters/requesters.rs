@@ -100,7 +100,6 @@ impl Requesters {
             let mut requester = PriorityRequester::new(
                 self.block_processor_queue.clone(),
                 channel_waiter.clone(),
-                self.clock.clone(),
                 self.ledger.clone(),
                 &self.config,
             );

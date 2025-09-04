@@ -1,17 +1,15 @@
+use std::sync::Arc;
+
+use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
+use rsnano_messages::{AscPullReqType, BlocksReqPayload, HashType};
+use rsnano_network::Channel;
+use rsnano_types::{Account, BlockHash, HashOrAccount};
+
 use super::{
     pull_count_decider::PullCountDecider,
     pull_type_decider::{PullType, PullTypeDecider},
 };
-use crate::bootstrap::{
-    AscPullQuerySpec,
-    state::{BootstrapState, PriorityResult},
-};
-use rsnano_ledger::{AnySet, ConfirmedSet, Ledger, LedgerSet};
-use rsnano_messages::{AscPullReqType, BlocksReqPayload, HashType};
-use rsnano_network::Channel;
-use rsnano_nullable_clock::Timestamp;
-use rsnano_types::{Account, BlockHash, HashOrAccount};
-use std::sync::Arc;
+use crate::bootstrap::{AscPullQuerySpec, PromiseContext};
 
 /// Creates a query for the next priority account
 pub(super) struct QueryFactory {
@@ -35,19 +33,40 @@ impl QueryFactory {
 
     pub fn next_priority_query(
         &mut self,
-        state: &mut BootstrapState,
+        context: &mut PromiseContext,
         channel: Arc<Channel>,
-        now: Timestamp,
     ) -> Option<AscPullQuerySpec> {
-        let next = state.next_priority(now);
+        let next = context.state.next_priority(context.now);
 
         if next.account.is_zero() {
             return None;
         }
+
         let (head, confirmed_frontier) = self.get_account_info(&next.account);
         let pull_type = self.pull_type_decider.decide_pull_type();
 
-        Some(self.create_priority_query(&next, channel, pull_type, head, confirmed_frontier))
+        let pull_start = PullStart::new(pull_type, next.account, head, confirmed_frontier);
+        let req_type = AscPullReqType::Blocks(BlocksReqPayload {
+            start_type: pull_start.start_type,
+            start: pull_start.start,
+            count: (&self).pull_count_decider.pull_count((&next).priority),
+        });
+
+        // Only cooldown accounts that are likely to have more blocks
+        // This is to avoid requesting blocks from the same frontier multiple times, before the block processor had a chance to process them
+        // Not throttling accounts that are probably up-to-date allows us to evict them from the priority set faster
+        let cooldown_account = next.fails == 0;
+
+        let query_spec = AscPullQuerySpec {
+            query_id: context.id,
+            channel: channel,
+            req_type,
+            hash: pull_start.hash,
+            account: (&next).account,
+            cooldown_account,
+        };
+
+        Some(query_spec)
     }
 
     fn get_account_info(&self, account: &Account) -> (BlockHash, BlockHash) {
@@ -59,36 +78,6 @@ impl QueryFactory {
             (head, conf_info.frontier)
         } else {
             (head, BlockHash::ZERO)
-        }
-    }
-
-    fn create_priority_query(
-        &self,
-        next: &PriorityResult,
-        channel: Arc<Channel>,
-        pull_type: PullType,
-        head: BlockHash,
-        confirmed_frontier: BlockHash,
-    ) -> AscPullQuerySpec {
-        let pull_start = { PullStart::new(pull_type, next.account, head, confirmed_frontier) };
-        let req_type = AscPullReqType::Blocks(BlocksReqPayload {
-            start_type: pull_start.start_type,
-            start: pull_start.start,
-            count: self.pull_count_decider.pull_count(next.priority),
-        });
-
-        // Only cooldown accounts that are likely to have more blocks
-        // This is to avoid requesting blocks from the same frontier multiple times, before the block processor had a chance to process them
-        // Not throttling accounts that are probably up-to-date allows us to evict them from the priority set faster
-        let cooldown_account = next.fails == 0;
-
-        AscPullQuerySpec {
-            query_id: 0, // TODO
-            channel,
-            req_type,
-            hash: pull_start.hash,
-            account: next.account,
-            cooldown_account,
         }
     }
 }
@@ -145,6 +134,7 @@ impl PullStart {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bootstrap::state::BootstrapState;
     use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
 
     #[test]
@@ -154,6 +144,7 @@ mod tests {
             head: None,
             confirmed: None,
             pull_type: PullType::Optimistic,
+            query_id: 42,
         });
 
         assert!(query.is_none());
@@ -166,18 +157,20 @@ mod tests {
         fn account_not_in_ledger() {
             let account = Account::from(42);
 
-            let query = create_query(&TestInput {
+            let input = TestInput {
                 prioritized_account: Some(account),
                 head: None,
                 confirmed: None,
                 pull_type: PullType::Optimistic,
-            })
-            .unwrap();
+                query_id: 42,
+            };
+
+            let query = create_query(&input).unwrap();
 
             assert_eq!(
                 query,
                 AscPullQuerySpec {
-                    query_id: 0, // TODO
+                    query_id: input.query_id,
                     channel: test_channel(),
                     account,
                     hash: BlockHash::ZERO,
@@ -196,18 +189,20 @@ mod tests {
             let account = Account::from(42);
             let head = BlockHash::from(7);
 
-            let query = create_query(&TestInput {
+            let input = TestInput {
                 prioritized_account: Some(account),
                 head: Some(head),
                 confirmed: None,
                 pull_type: PullType::Optimistic,
-            })
-            .unwrap();
+                query_id: 42,
+            };
+
+            let query = create_query(&input).unwrap();
 
             assert_eq!(
                 query,
                 AscPullQuerySpec {
-                    query_id: 0, // TODO
+                    query_id: input.query_id,
                     channel: test_channel(),
                     account,
                     hash: head,
@@ -228,18 +223,19 @@ mod tests {
         #[test]
         fn account_not_in_ledger() {
             let account = Account::from(42);
-            let query = create_query(&TestInput {
+            let input = TestInput {
                 prioritized_account: Some(account),
                 head: None,
                 confirmed: None,
                 pull_type: PullType::Safe,
-            })
-            .unwrap();
+                query_id: 42,
+            };
+            let query = create_query(&input).unwrap();
 
             assert_eq!(
                 query,
                 AscPullQuerySpec {
-                    query_id: 0, // TODO
+                    query_id: input.query_id,
                     channel: test_channel(),
                     account,
                     hash: BlockHash::ZERO,
@@ -258,18 +254,20 @@ mod tests {
             let account = Account::from(42);
             let frontier = BlockHash::from(7);
 
-            let query = create_query(&TestInput {
+            let input = TestInput {
                 prioritized_account: Some(account),
                 head: Some(BlockHash::from(111)),
                 confirmed: Some(frontier),
                 pull_type: PullType::Safe,
-            })
-            .unwrap();
+                query_id: 42,
+            };
+
+            let query = create_query(&input).unwrap();
 
             assert_eq!(
                 query,
                 AscPullQuerySpec {
-                    query_id: 0, // TODO
+                    query_id: input.query_id,
                     channel: test_channel(),
                     account,
                     hash: frontier,
@@ -287,18 +285,20 @@ mod tests {
         fn account_in_ledger_and_unconfirmed() {
             let account = Account::from(42);
 
-            let query = create_query(&TestInput {
+            let input = TestInput {
                 prioritized_account: Some(account),
                 head: Some(BlockHash::from(111)),
                 confirmed: None,
                 pull_type: PullType::Safe,
-            })
-            .unwrap();
+                query_id: 42,
+            };
+
+            let query = create_query(&input).unwrap();
 
             assert_eq!(
                 query,
                 AscPullQuerySpec {
-                    query_id: 0, // TODO
+                    query_id: input.query_id,
                     channel: test_channel(),
                     account,
                     hash: BlockHash::ZERO,
@@ -325,8 +325,9 @@ mod tests {
             state.candidate_accounts.priority_up(account);
         }
 
-        let now = Timestamp::new_test_instance();
-        factory.next_priority_query(&mut state, test_channel(), now)
+        let mut context = PromiseContext::new_test_instance(&mut state);
+        context.id = input.query_id;
+        factory.next_priority_query(&mut context, test_channel())
     }
 
     fn create_ledger(
@@ -364,6 +365,7 @@ mod tests {
         head: Option<BlockHash>,
         confirmed: Option<BlockHash>,
         pull_type: PullType,
+        query_id: u64,
     }
 
     fn test_channel() -> Arc<Channel> {

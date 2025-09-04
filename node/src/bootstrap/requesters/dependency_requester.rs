@@ -97,12 +97,7 @@ mod tests {
         let network = test_network();
         let mut requester = create_test_requester(network.clone());
         let mut state = BootstrapState::default();
-        let now = Timestamp::new_test_instance();
-        let mut context = PromiseContext {
-            state: &mut state,
-            now,
-            id: 0,
-        };
+        let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = progress(&mut requester, &mut context);
         assert!(matches!(result, PollResult::Wait));
@@ -120,7 +115,6 @@ mod tests {
         network.write().unwrap().add_test_channel();
         let mut requester = create_test_requester(network);
         let mut state = BootstrapState::default();
-        let now = Timestamp::new_test_instance();
 
         let result = progress_state(&mut requester, &mut state);
         assert!(matches!(result, PollResult::Wait));
@@ -133,11 +127,7 @@ mod tests {
             .candidate_accounts
             .block(account, dependency, Timestamp::new_test_instance());
 
-        let mut context = PromiseContext {
-            state: &mut state,
-            now,
-            id: 0,
-        };
+        let mut context = PromiseContext::new_test_instance(&mut state);
         let result = requester.poll(&mut context);
         assert!(matches!(result, PollResult::Finished(_)));
         assert!(matches!(requester.state, DependencyState::Initial));

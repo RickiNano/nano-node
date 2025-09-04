@@ -38,7 +38,7 @@ impl<'a> PromiseContext<'a> {
         Self {
             state,
             now: Timestamp::new_test_instance(),
-            id: 0,
+            id: 123,
         }
     }
 }
@@ -89,7 +89,7 @@ pub(self) fn progress_state<T>(
     let mut context = PromiseContext {
         state,
         now: Timestamp::new_test_instance(),
-        id: 0,
+        id: 123,
     };
 
     progress(requester, &mut context)

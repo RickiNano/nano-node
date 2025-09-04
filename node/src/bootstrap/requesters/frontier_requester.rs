@@ -43,10 +43,14 @@ impl FrontierRequester {
         }
     }
 
-    fn create_query_spec(channel: &Arc<Channel>, start: Account) -> AscPullQuerySpec {
+    fn create_query_spec(
+        channel: &Arc<Channel>,
+        start: Account,
+        query_id: u64,
+    ) -> AscPullQuerySpec {
         let request = Self::request_frontiers(start);
         AscPullQuerySpec {
-            query_id: 0, // TODO
+            query_id,
             channel: channel.clone(),
             req_type: request,
             account: Account::ZERO,
@@ -104,7 +108,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
                 if !start.is_zero() {
                     self.stats
                         .inc(StatType::BootstrapNext, DetailType::NextFrontier);
-                    let spec = Self::create_query_spec(channel, start);
+                    let spec = Self::create_query_spec(channel, start, context.id);
                     self.state = FrontierState::Initial;
                     return PollResult::Finished(spec);
                 } else {
@@ -125,7 +129,6 @@ mod tests {
         state::{BootstrapState, CandidateAccountsConfig, FrontierScan},
     };
     use rsnano_network::Network;
-    use rsnano_nullable_clock::Timestamp;
     use std::sync::{Mutex, RwLock};
 
     #[test]
@@ -133,23 +136,21 @@ mod tests {
         let (mut requester, network) = create_test_requester();
         let mut state = BootstrapState::default();
         network.write().unwrap().add_test_channel();
+        let mut context = PromiseContext::new_test_instance(&mut state);
 
-        let PollResult::Finished(result) = progress_state(&mut requester, &mut state) else {
+        let PollResult::Finished(result) = progress(&mut requester, &mut context) else {
             panic!("promise did not finish!")
         };
 
         assert!(matches!(result.req_type, AscPullReqType::Frontiers(_)));
+        assert_eq!(result.query_id, context.id);
     }
 
     #[test]
     fn wait_candidate_accounts() {
         let (mut requester, _) = create_test_requester();
         let mut state = state_with_max_priorities(1);
-        let mut context = PromiseContext {
-            state: &mut state,
-            now: Timestamp::new_test_instance(),
-            id: 0,
-        };
+        let mut context = PromiseContext::new_test_instance(&mut state);
 
         // Fill up candidate accounts
         context
@@ -180,11 +181,7 @@ mod tests {
     fn wait_limiter() {
         let (mut requester, _) = create_test_requester();
         let mut state = BootstrapState::default();
-        let mut context = PromiseContext {
-            state: &mut state,
-            now: Timestamp::new_test_instance(),
-            id: 0,
-        };
+        let mut context = PromiseContext::new_test_instance(&mut state);
 
         // Should wait because rate limit reached
         requester
@@ -210,11 +207,7 @@ mod tests {
     fn wait_channel() {
         let (mut requester, network) = create_test_requester();
         let mut state = BootstrapState::default();
-        let mut context = PromiseContext {
-            state: &mut state,
-            now: Timestamp::new_test_instance(),
-            id: 0,
-        };
+        let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = progress(&mut requester, &mut context);
         assert!(matches!(result, PollResult::Wait));
