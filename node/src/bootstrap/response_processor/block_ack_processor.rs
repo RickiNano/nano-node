@@ -6,7 +6,10 @@ use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
 use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
-    bootstrap::state::{BootstrapState, PriorityDownResult, RunningQuery, VerifyResult},
+    bootstrap::{
+        response_processor::block_queue::NotifiableBlockQueue,
+        state::{BootstrapState, PriorityDownResult, RunningQuery, VerifyResult},
+    },
 };
 use tracing::trace;
 
@@ -14,22 +17,25 @@ pub(crate) struct BlockAckProcessor {
     state: Arc<Mutex<BootstrapState>>,
     stats: Arc<Stats>,
     block_processor_queue: Arc<BlockProcessorQueue>,
+    block_queue: Arc<NotifiableBlockQueue>,
 }
 
 impl BlockAckProcessor {
     pub(crate) fn new(
         state: Arc<Mutex<BootstrapState>>,
         stats: Arc<Stats>,
+        block_queue: Arc<NotifiableBlockQueue>,
         block_processor_queue: Arc<BlockProcessorQueue>,
     ) -> Self {
         Self {
             state,
             stats,
+            block_queue,
             block_processor_queue,
         }
     }
 
-    pub fn process(&self, query: &RunningQuery, response: &BlocksAckPayload) -> bool {
+    pub fn process(&self, query: &RunningQuery, response: BlocksAckPayload) -> bool {
         trace!(
             query_id = query.id,
             blocks = response.blocks().len(),
@@ -39,7 +45,7 @@ impl BlockAckProcessor {
         self.stats
             .inc(StatType::BootstrapProcess, DetailType::Blocks);
 
-        let result = query.verify_blocks(response);
+        let result = query.verify_blocks(&response);
         match result {
             VerifyResult::Ok => {
                 self.process_valid_blocks(query, response);
@@ -57,7 +63,7 @@ impl BlockAckProcessor {
         }
     }
 
-    fn process_valid_blocks(&self, query: &RunningQuery, response: &BlocksAckPayload) {
+    fn process_valid_blocks(&self, query: &RunningQuery, response: BlocksAckPayload) {
         self.stats
             .inc(StatType::BootstrapVerifyBlocks, DetailType::Ok);
 
@@ -68,13 +74,18 @@ impl BlockAckProcessor {
             response.blocks().len() as u64,
         );
 
-        let mut blocks = response.blocks().clone();
+        let mut blocks = response.take_blocks();
 
         // Avoid re-processing the block we already have
         assert!(blocks.len() >= 1);
         if blocks.front().unwrap().hash() == query.start.into() {
             blocks.pop_front();
         }
+
+        self.block_queue
+            .insert_multiple(query.account, blocks.clone());
+
+        // TODO move this into a separate thread:
 
         while let Some(block) = blocks.pop_front() {
             trace!(block_hash = %block.hash(), query_id = query.id, "Process block");
@@ -154,11 +165,13 @@ mod tests {
         let state = Arc::new(Mutex::new(BootstrapState::default()));
         let stats = Arc::new(Stats::default());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
-        let processor = BlockAckProcessor::new(state, stats.clone(), block_processor_queue);
+        let block_queue = Arc::new(NotifiableBlockQueue::default());
+        let processor =
+            BlockAckProcessor::new(state, stats.clone(), block_queue, block_processor_queue);
 
         let query = RunningQuery::new_test_instance();
         let response = BlocksAckPayload::new_test_instance();
-        let ok = processor.process(&query, &response);
+        let ok = processor.process(&query, response);
         assert!(!ok);
         assert_eq!(
             stats.count(
@@ -183,7 +196,9 @@ mod tests {
         let state = Arc::new(Mutex::new(BootstrapState::default()));
         let stats = Arc::new(Stats::default());
         let block_processor_queue = Arc::new(BlockProcessorQueue::default());
-        let processor = BlockAckProcessor::new(state, stats.clone(), block_processor_queue);
+        let block_queue = Arc::new(NotifiableBlockQueue::default());
+        let processor =
+            BlockAckProcessor::new(state, stats.clone(), block_queue, block_processor_queue);
 
         let account = Account::from(42);
 
@@ -194,7 +209,7 @@ mod tests {
         };
 
         let response = BlocksAckPayload::empty();
-        let ok = processor.process(&query, &response);
+        let ok = processor.process(&query, response);
         assert!(ok);
         assert_eq!(
             stats.count(

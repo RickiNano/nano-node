@@ -24,6 +24,9 @@ use super::{
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
+    bootstrap::response_processor::{
+        block_processor_enqueuer::BlockProcessorEnqueuer, block_queue::NotifiableBlockQueue,
+    },
     transport::MessageSender,
 };
 
@@ -92,10 +95,13 @@ pub struct Bootstrapper {
     response_handler: ResponseProcessor,
     block_inspector: BlockInspector,
     requesters: Requesters,
+    block_queue: Arc<NotifiableBlockQueue>,
+    block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 struct Threads {
     cleanup: JoinHandle<()>,
+    block_enqueuer: JoinHandle<()>,
 }
 
 impl Bootstrapper {
@@ -111,11 +117,13 @@ impl Bootstrapper {
         let limiter = Arc::new(Mutex::new(TokenBucket::new(config.rate_limit)));
         let state = Arc::new(Mutex::new(BootstrapState::new(config.clone())));
         let state_changed = Arc::new(Condvar::new());
+        let block_queue = Arc::new(NotifiableBlockQueue::default());
 
         let mut response_handler = ResponseProcessor::new(
             state.clone(),
             stats.clone(),
             block_processor_queue.clone(),
+            block_queue.clone(),
             ledger.clone(),
         );
         response_handler.set_max_pending_frontiers(config.max_pending_frontier_responses);
@@ -132,7 +140,7 @@ impl Bootstrapper {
             state_changed.clone(),
             clock.clone(),
             ledger.clone(),
-            block_processor_queue,
+            block_processor_queue.clone(),
             network,
         );
 
@@ -146,6 +154,8 @@ impl Bootstrapper {
             response_handler,
             block_inspector,
             requesters,
+            block_queue,
+            block_processor_queue,
         }
     }
 
@@ -192,10 +202,12 @@ impl Bootstrapper {
         self.state_changed.notify_all();
 
         self.requesters.stop();
+        self.block_queue.stop();
 
         let threads = self.threads.lock().unwrap().take();
         if let Some(threads) = threads {
             threads.cleanup.join().unwrap();
+            threads.block_enqueuer.join().unwrap();
         }
     }
 
@@ -320,12 +332,28 @@ impl BootstrapExt for Arc<Bootstrapper> {
         self.requesters.start();
 
         let self_l = Arc::clone(self);
-        let timeout = std::thread::Builder::new()
+        let cleanup = std::thread::Builder::new()
             .name("Bootstrap clean".to_string())
             .spawn(Box::new(move || self_l.run_timeouts()))
             .unwrap();
 
-        *self.threads.lock().unwrap() = Some(Threads { cleanup: timeout });
+        let block_enqueuer = Arc::new(BlockProcessorEnqueuer::new(
+            self.block_queue.clone(),
+            self.block_processor_queue.clone(),
+        ));
+
+        let block_enqueuer = std::thread::Builder::new()
+            .name("Boot blk queue".to_string())
+            .spawn(move || {
+                // TODO enable:
+                //block_enqueuer.run();
+            })
+            .unwrap();
+
+        *self.threads.lock().unwrap() = Some(Threads {
+            cleanup,
+            block_enqueuer,
+        });
     }
 }
 

@@ -15,7 +15,10 @@ use super::{
     block_ack_processor::BlockAckProcessor,
     frontier_ack_processor::FrontierAckProcessor,
 };
-use crate::block_processing::BlockProcessorQueue;
+use crate::{
+    block_processing::BlockProcessorQueue,
+    bootstrap::response_processor::block_queue::NotifiableBlockQueue,
+};
 use tracing::trace;
 
 pub(crate) struct ResponseProcessor {
@@ -47,15 +50,17 @@ impl ProcessInfo {
 }
 
 impl ResponseProcessor {
-    pub fn new(
+    pub(crate) fn new(
         state: Arc<Mutex<BootstrapState>>,
         stats: Arc<Stats>,
         block_processor_queue: Arc<BlockProcessorQueue>,
+        block_queue: Arc<NotifiableBlockQueue>,
         ledger: Arc<Ledger>,
     ) -> Self {
         let frontiers = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());
         let accounts = AccountAckProcessor::new(stats.clone(), state.clone());
-        let blocks = BlockAckProcessor::new(state.clone(), stats, block_processor_queue);
+        let blocks =
+            BlockAckProcessor::new(state.clone(), stats, block_queue, block_processor_queue);
 
         Self {
             state,
@@ -111,7 +116,7 @@ impl ResponseProcessor {
         response: AscPullAck,
     ) -> Result<(), ProcessError> {
         let ok = match response.pull_type {
-            AscPullAckType::Blocks(blocks) => self.blocks.process(query, &blocks),
+            AscPullAckType::Blocks(blocks) => self.blocks.process(query, blocks),
             AscPullAckType::AccountInfo(info) => self.accounts.process(query, &info),
             AscPullAckType::Frontiers(frontiers) => self.frontiers.process(query, frontiers),
         };

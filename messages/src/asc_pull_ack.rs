@@ -186,6 +186,10 @@ impl BlocksAckPayload {
         &self.0
     }
 
+    pub fn take_blocks(self) -> VecDeque<Block> {
+        self.0
+    }
+
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
