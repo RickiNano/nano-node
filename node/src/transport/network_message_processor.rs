@@ -19,8 +19,8 @@ use crate::{
     wallets::WalletRepresentatives,
 };
 
-/// Handle realtime messages (as opposed to bootstrap messages)
-pub struct RealtimeMessageHandler {
+/// Process messages that were received from other nodes in the network
+pub struct NetworkMessageProcessor {
     stats: Arc<Stats>,
     network_filter: Arc<NetworkFilter>,
     network: Arc<RwLock<Network>>,
@@ -34,7 +34,7 @@ pub struct RealtimeMessageHandler {
     work_thresholds: WorkThresholds,
 }
 
-impl RealtimeMessageHandler {
+impl NetworkMessageProcessor {
     pub(crate) fn new(
         stats: Arc<Stats>,
         network: Arc<RwLock<Network>>,

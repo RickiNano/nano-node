@@ -60,6 +60,7 @@ impl BlockAckProcessor {
     fn process_valid_blocks(&self, query: &RunningQuery, response: &BlocksAckPayload) {
         self.stats
             .inc(StatType::BootstrapVerifyBlocks, DetailType::Ok);
+
         self.stats.add_dir(
             StatType::Bootstrap,
             DetailType::Blocks,

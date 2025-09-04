@@ -1,8 +1,8 @@
 use std::{
     collections::VecDeque,
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
     thread::JoinHandle,
     time::Instant,
@@ -14,7 +14,7 @@ use rsnano_messages::Message;
 use rsnano_network::{Channel, ChannelId};
 use rsnano_network_protocol::InboundMessageQueue;
 
-use super::RealtimeMessageHandler;
+use super::NetworkMessageProcessor;
 use crate::config::NodeConfig;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -43,14 +43,14 @@ impl MessageProcessor {
     pub fn new(
         config: NodeConfig,
         inbound_queue: Arc<InboundMessageQueue>,
-        realtime_handler: Arc<RealtimeMessageHandler>,
+        processor: Arc<NetworkMessageProcessor>,
     ) -> Self {
         Self {
             config,
             processing_threads: Vec::new(),
             state: Arc::new(State {
                 inbound_queue,
-                realtime_handler,
+                processor,
                 stopped: AtomicBool::new(false),
             }),
         }
@@ -87,7 +87,7 @@ impl Drop for MessageProcessor {
 
 struct State {
     stopped: AtomicBool,
-    realtime_handler: Arc<RealtimeMessageHandler>,
+    processor: Arc<NetworkMessageProcessor>,
     inbound_queue: Arc<InboundMessageQueue>,
 }
 
@@ -109,7 +109,7 @@ impl State {
         let start = Instant::now();
         let batch_size = batch.len();
         for (_, (message, channel)) in batch {
-            self.realtime_handler.process(message, &channel);
+            self.processor.process(message, &channel);
         }
 
         let elapsed_millis = start.elapsed().as_millis();
