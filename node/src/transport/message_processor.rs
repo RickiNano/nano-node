@@ -1,5 +1,4 @@
 use std::{
-    cmp::{max, min},
     collections::VecDeque,
     sync::{
         Arc,

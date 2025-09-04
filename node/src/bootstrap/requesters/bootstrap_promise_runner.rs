@@ -1,5 +1,7 @@
 use crate::bootstrap::{BootstrapPromise, PollResult, state::BootstrapState};
+use rand::RngCore;
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
+use rsnano_nullable_random::NullableRngFactory;
 use std::{
     cmp::min,
     sync::{Arc, Condvar, Mutex},
@@ -13,6 +15,7 @@ pub(crate) struct BootstrapPromiseRunner {
     pub throttle_wait: Duration,
     pub state_changed: Arc<Condvar>,
     pub clock: Arc<SteadyClock>,
+    pub rng_factory: NullableRngFactory,
 }
 
 impl BootstrapPromiseRunner {
@@ -55,9 +58,10 @@ impl BootstrapPromiseRunner {
         let mut state = self.state.lock().unwrap();
         let mut reset_wait_interval = false;
         let mut poll_count: usize = 0;
+        let id = self.rng_factory.rng().next_u64();
         loop {
             poll_count = poll_count.overflowing_add(1).0;
-            match action.poll(&mut state, now) {
+            match action.poll(&mut state, now, id) {
                 PollResult::Progress => {
                     if state.stopped {
                         return Err(Self::INITIAL_INTERVAL);
@@ -87,7 +91,10 @@ impl BootstrapPromiseRunner {
 mod tests {
     use super::*;
     use rsnano_utils::sync::OneShotNotification;
-    use std::thread::spawn;
+    use std::{
+        sync::atomic::{AtomicU64, Ordering},
+        thread::spawn,
+    };
 
     #[test]
     fn abort_promise_when_stopped() {
@@ -99,6 +106,7 @@ mod tests {
             throttle_wait: Duration::from_millis(100),
             state_changed: state_changed.clone(),
             clock: SteadyClock::new_null().into(),
+            rng_factory: NullableRngFactory::new_null(),
         };
 
         let promise = StubPromise::new();
@@ -130,6 +138,7 @@ mod tests {
             throttle_wait: Duration::from_millis(100),
             state_changed: state_changed.clone(),
             clock: SteadyClock::new_null().into(),
+            rng_factory: NullableRngFactory::new_null(),
         };
 
         let mut promise = StubPromise::new();
@@ -140,9 +149,32 @@ mod tests {
         assert_eq!(result, Some(42));
     }
 
+    #[test]
+    fn pass_random_id() {
+        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state_changed = Arc::new(Condvar::new());
+
+        let runner = BootstrapPromiseRunner {
+            state: state.clone(),
+            throttle_wait: Duration::from_millis(100),
+            state_changed: state_changed.clone(),
+            clock: SteadyClock::new_null().into(),
+            rng_factory: NullableRngFactory::new_null_u64(1234),
+        };
+
+        let mut promise = StubPromise::new();
+        promise.result = Some(1);
+        let last_id = promise.last_id.clone();
+
+        runner.run(promise);
+
+        assert_eq!(last_id.load(Ordering::SeqCst), 1234);
+    }
+
     struct StubPromise {
         polled: Arc<OneShotNotification<()>>,
         result: Option<i32>,
+        last_id: Arc<AtomicU64>,
     }
 
     impl StubPromise {
@@ -150,12 +182,19 @@ mod tests {
             Self {
                 polled: Arc::new(OneShotNotification::new()),
                 result: None,
+                last_id: Arc::new(AtomicU64::new(0)),
             }
         }
     }
 
     impl BootstrapPromise<i32> for StubPromise {
-        fn poll(&mut self, _state: &mut BootstrapState, _now: Timestamp) -> PollResult<i32> {
+        fn poll(
+            &mut self,
+            _state: &mut BootstrapState,
+            _now: Timestamp,
+            id: u64,
+        ) -> PollResult<i32> {
+            self.last_id.store(id, Ordering::SeqCst);
             self.polled.notify(());
             if let Some(result) = self.result.take() {
                 PollResult::Finished(result)

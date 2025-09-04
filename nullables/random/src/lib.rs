@@ -94,27 +94,41 @@ impl RngCore for RngStub {
 }
 
 pub struct NullableRngFactory {
-    is_nulled: bool,
+    strategy: RngFactoryStrategy,
 }
 
 impl NullableRngFactory {
     pub fn new_null() -> Self {
-        Self { is_nulled: true }
+        Self {
+            strategy: RngFactoryStrategy::Nulled(42),
+        }
+    }
+
+    pub fn new_null_u64(val: u64) -> Self {
+        Self {
+            strategy: RngFactoryStrategy::Nulled(val),
+        }
     }
 
     pub fn rng(&self) -> NullableRng {
-        if self.is_nulled {
-            NullableRng::new_null()
-        } else {
-            NullableRng::rng()
+        match &self.strategy {
+            RngFactoryStrategy::Real => NullableRng::rng(),
+            RngFactoryStrategy::Nulled(value) => NullableRng::new_null_u64(*value),
         }
     }
 }
 
 impl Default for NullableRngFactory {
     fn default() -> Self {
-        Self { is_nulled: false }
+        Self {
+            strategy: RngFactoryStrategy::Real,
+        }
     }
+}
+
+enum RngFactoryStrategy {
+    Real,
+    Nulled(u64),
 }
 
 #[cfg(test)]
@@ -188,6 +202,15 @@ mod tests {
         assert_eq!(rng.next_u64(), 42);
         assert_eq!(rng.next_u64(), 42);
         assert_eq!(rng.next_u64(), 42);
+    }
+
+    #[test]
+    fn nulled_factory_supports_configurable_responses() {
+        let rng_factory = NullableRngFactory::new_null_u64(123);
+        let mut rng = rng_factory.rng();
+        assert_eq!(rng.next_u64(), 123);
+        assert_eq!(rng.next_u64(), 123);
+        assert_eq!(rng.next_u64(), 123);
     }
 
     #[test]

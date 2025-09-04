@@ -28,8 +28,8 @@ impl<T> BootstrapPromise<()> for SendQueriesPromise<T>
 where
     T: BootstrapPromise<AscPullQuerySpec>,
 {
-    fn poll(&mut self, state: &mut BootstrapState, now: Timestamp) -> PollResult<()> {
-        match self.query_promise.poll(state, now) {
+    fn poll(&mut self, state: &mut BootstrapState, now: Timestamp, id: u64) -> PollResult<()> {
+        match self.query_promise.poll(state, now, id) {
             PollResult::Progress => PollResult::Progress,
             PollResult::Wait => PollResult::Wait,
             PollResult::Finished(spec) => {
@@ -52,7 +52,7 @@ mod tests {
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
 
-        let result = send_queries.poll(&mut state, now);
+        let result = send_queries.poll(&mut state, now, 0);
 
         assert!(matches!(result, PollResult::Progress));
     }
@@ -64,7 +64,7 @@ mod tests {
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
 
-        let result = send_queries.poll(&mut state, now);
+        let result = send_queries.poll(&mut state, now, 0);
 
         assert!(matches!(result, PollResult::Wait));
     }
@@ -79,7 +79,7 @@ mod tests {
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
 
-        let result = send_queries.poll(&mut state, now);
+        let result = send_queries.poll(&mut state, now, 0);
 
         assert!(matches!(result, PollResult::Progress));
         assert_eq!(send_tracker.output(), [spec]);
@@ -102,6 +102,7 @@ mod tests {
             &mut self,
             _state: &mut BootstrapState,
             _now: Timestamp,
+            _id: u64,
         ) -> PollResult<AscPullQuerySpec> {
             self.result.take().unwrap()
         }

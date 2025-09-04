@@ -76,7 +76,12 @@ enum PriorityState {
 }
 
 impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
-    fn poll(&mut self, state: &mut BootstrapState, now: Timestamp) -> PollResult<AscPullQuerySpec> {
+    fn poll(
+        &mut self,
+        state: &mut BootstrapState,
+        now: Timestamp,
+        id: u64,
+    ) -> PollResult<AscPullQuerySpec> {
         match self.state {
             PriorityState::Initial => {
                 self.stats.loop_count.fetch_add(1, Ordering::Relaxed);
@@ -94,7 +99,7 @@ impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
                     PollResult::Wait
                 }
             }
-            PriorityState::WaitChannel => match self.channel_waiter.poll(state, now) {
+            PriorityState::WaitChannel => match self.channel_waiter.poll(state, now, id) {
                 PollResult::Progress => PollResult::Progress,
                 PollResult::Wait => PollResult::Wait,
                 PollResult::Finished(channel) => {

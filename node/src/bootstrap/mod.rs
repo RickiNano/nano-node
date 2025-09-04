@@ -18,7 +18,8 @@ use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash};
 
 pub(self) trait BootstrapPromise<T> {
-    fn poll(&mut self, state: &mut state::BootstrapState, now: Timestamp) -> PollResult<T>;
+    fn poll(&mut self, state: &mut state::BootstrapState, now: Timestamp, id: u64)
+    -> PollResult<T>;
 }
 
 pub(self) enum PollResult<T> {
@@ -70,7 +71,7 @@ pub(self) fn progress<T>(
 ) -> PollResult<T> {
     loop {
         let now = Timestamp::new_test_instance();
-        match requester.poll(state, now) {
+        match requester.poll(state, now, 0) {
             PollResult::Progress => {}
             result => return result,
         }

@@ -20,6 +20,7 @@ use crate::{
     bootstrap::{AscPullQuerySpec, BootstrapConfig, BootstrapPromise, state::BootstrapState},
     transport::MessageSender,
 };
+use rsnano_nullable_random::NullableRngFactory;
 
 /// Manages the threads that send out AscPullReqs
 pub(crate) struct Requesters {
@@ -77,6 +78,7 @@ impl Requesters {
             throttle_wait: self.config.throttle_wait,
             state_changed: self.state_changed.clone(),
             clock: self.clock.clone(),
+            rng_factory: NullableRngFactory::default(),
         });
 
         let frontiers = if self.config.enable_frontier_scan {

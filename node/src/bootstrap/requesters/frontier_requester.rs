@@ -67,6 +67,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
         &mut self,
         boot_state: &mut BootstrapState,
         now: Timestamp,
+        id: u64,
     ) -> PollResult<AscPullQuerySpec> {
         match self.state {
             FrontierState::Initial => {
@@ -93,7 +94,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
                     return PollResult::Progress;
                 }
             }
-            FrontierState::WaitChannel => match self.channel_waiter.poll(boot_state, now) {
+            FrontierState::WaitChannel => match self.channel_waiter.poll(boot_state, now, id) {
                 PollResult::Wait => return PollResult::Wait,
                 PollResult::Progress => return PollResult::Progress,
                 PollResult::Finished(channel) => {
@@ -161,12 +162,12 @@ mod tests {
         ));
 
         // Running again continues waiting
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
 
         // If the accounts are cleared, continue
         state.candidate_accounts.clear();
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Progress));
         assert!(matches!(requester.state, FrontierState::WaitLimiter));
     }
@@ -187,12 +188,12 @@ mod tests {
         assert!(matches!(requester.state, FrontierState::WaitLimiter));
 
         // Running again continues waiting
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
 
         // Continue when the limiter is emptied
         requester.frontiers_limiter.reset();
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Progress));
         assert!(matches!(requester.state, FrontierState::WaitAckProcessor));
     }
@@ -208,11 +209,11 @@ mod tests {
         assert!(matches!(requester.state, FrontierState::WaitChannel));
 
         // Running again continues waiting
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
 
         network.write().unwrap().add_test_channel();
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Progress));
     }
 

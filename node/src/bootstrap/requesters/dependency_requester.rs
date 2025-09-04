@@ -30,7 +30,12 @@ impl DependencyRequester {
 }
 
 impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
-    fn poll(&mut self, state: &mut BootstrapState, now: Timestamp) -> PollResult<AscPullQuerySpec> {
+    fn poll(
+        &mut self,
+        state: &mut BootstrapState,
+        now: Timestamp,
+        id: u64,
+    ) -> PollResult<AscPullQuerySpec> {
         match self.state {
             DependencyState::Initial => {
                 self.stats
@@ -38,7 +43,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
                 self.state = DependencyState::WaitChannel;
                 PollResult::Progress
             }
-            DependencyState::WaitChannel => match self.channel_waiter.poll(state, now) {
+            DependencyState::WaitChannel => match self.channel_waiter.poll(state, now, id) {
                 PollResult::Wait => PollResult::Wait,
                 PollResult::Progress => PollResult::Progress,
                 PollResult::Finished(channel) => {
@@ -105,7 +110,7 @@ mod tests {
         assert!(matches!(requester.state, DependencyState::WaitChannel));
 
         network.write().unwrap().add_test_channel();
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Progress));
         assert!(matches!(requester.state, DependencyState::WaitBlocking(_)));
     }
@@ -129,7 +134,7 @@ mod tests {
             .candidate_accounts
             .block(account, dependency, Timestamp::new_test_instance());
 
-        let result = requester.poll(&mut state, now);
+        let result = requester.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Finished(_)));
         assert!(matches!(requester.state, DependencyState::Initial));
     }

@@ -57,6 +57,7 @@ impl BootstrapPromise<Arc<Channel>> for ChannelWaiter {
         &mut self,
         boot_state: &mut BootstrapState,
         now: Timestamp,
+        _id: u64,
     ) -> PollResult<Arc<Channel>> {
         match self.state {
             ChannelWaitState::Initial => {
@@ -148,7 +149,7 @@ mod tests {
 
         let found = loop {
             let now = Timestamp::new_test_instance();
-            match waiter.poll(&mut state, now) {
+            match waiter.poll(&mut state, now, 0) {
                 PollResult::Progress => {}
                 PollResult::Wait => {
                     panic!("Should never wait")
@@ -168,19 +169,25 @@ mod tests {
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
 
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress)); // initial
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        )); // initial
 
         state
             .running_queries
             .insert(RunningQuery::new_test_instance());
 
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Wait));
+        assert!(matches!(waiter.poll(&mut state, now, 0), PollResult::Wait));
         assert!(matches!(waiter.state, ChannelWaitState::WaitRunningQueries));
 
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Wait));
+        assert!(matches!(waiter.poll(&mut state, now, 0), PollResult::Wait));
 
         state.running_queries.clear();
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress));
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        ));
     }
 
     #[test]
@@ -192,18 +199,24 @@ mod tests {
         let mut waiter = ChannelWaiter::new(network, limiter.clone(), MAX_TEST_REQUESTS);
         let mut state = BootstrapState::default();
 
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress)); // initial
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress)); // running queries
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        )); // initial
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        )); // running queries
 
-        let result = waiter.poll(&mut state, now);
+        let result = waiter.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(waiter.state, ChannelWaitState::WaitLimiter));
 
-        let result = waiter.poll(&mut state, now);
+        let result = waiter.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
 
         limiter.lock().unwrap().reset();
-        let result = waiter.poll(&mut state, now);
+        let result = waiter.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Progress));
         assert!(matches!(waiter.state, ChannelWaitState::WaitChannel));
     }
@@ -216,15 +229,24 @@ mod tests {
         let mut state = BootstrapState::default();
         let now = Timestamp::new_test_instance();
 
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress)); // initial
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress)); // running queries
-        assert!(matches!(waiter.poll(&mut state, now), PollResult::Progress)); // limiter
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        )); // initial
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        )); // running queries
+        assert!(matches!(
+            waiter.poll(&mut state, now, 0),
+            PollResult::Progress
+        )); // limiter
 
-        let result = waiter.poll(&mut state, now);
+        let result = waiter.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
         assert!(matches!(waiter.state, ChannelWaitState::WaitChannel));
 
-        let result = waiter.poll(&mut state, now);
+        let result = waiter.poll(&mut state, now, 0);
         assert!(matches!(result, PollResult::Wait));
     }
 
