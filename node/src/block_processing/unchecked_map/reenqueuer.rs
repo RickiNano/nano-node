@@ -18,6 +18,7 @@ use rsnano_utils::{
 
 use super::UncheckedMap;
 use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource};
+use tracing::trace;
 
 /// Re-enqueues an unchecked block when its missing dependency block got inserted into the ledger
 #[derive(Clone)]
@@ -121,6 +122,8 @@ impl UncheckedBlockReenqueuer {
             self.stats
                 .unchecked_satisfied
                 .fetch_add(1, Ordering::Relaxed);
+
+            trace!(block_hash = ?block.hash(), "Reenqueue unchecked block");
 
             self.process_queue.push(BlockContext::new(
                 block,

@@ -76,12 +76,13 @@ impl BlockAckProcessor {
         }
 
         while let Some(block) = blocks.pop_front() {
+            trace!(block_hash = %block.hash(), query_id = query.id, "Process block");
+
             if blocks.is_empty() {
                 // It's the last block submitted for this account chain, reset timestamp to allow more requests
                 let stats = self.stats.clone();
                 let state = self.state.clone();
                 let account = query.account;
-                trace!(block_hash = %block.hash(), query_id = query.id, "Process block");
                 self.block_processor_queue
                     .push(BlockContext::new_with_callback(
                         block,

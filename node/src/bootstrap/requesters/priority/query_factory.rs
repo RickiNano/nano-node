@@ -10,6 +10,7 @@ use super::{
     pull_type_decider::{PullType, PullTypeDecider},
 };
 use crate::bootstrap::{AscPullQuerySpec, PromiseContext};
+use tracing::trace;
 
 /// Creates a query for the next priority account
 pub(super) struct QueryFactory {
@@ -65,6 +66,7 @@ impl QueryFactory {
             account: (&next).account,
             cooldown_account,
         };
+        trace!(query_id = context.id, ?pull_type, "Created pull query spec");
 
         Some(query_spec)
     }
