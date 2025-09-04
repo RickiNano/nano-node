@@ -15,7 +15,7 @@ use super::MessageVariant;
  * - account_info:
  */
 #[repr(u8)]
-#[derive(Clone, FromPrimitive)]
+#[derive(Clone, FromPrimitive, Debug)]
 pub enum AscPullPayloadId {
     Blocks = 0x1,
     AccountInfo = 0x2,
@@ -47,6 +47,14 @@ impl AscPullReqType {
             AscPullReqType::Blocks(i) => i.serialize(writer),
             AscPullReqType::AccountInfo(i) => i.serialize(writer),
             AscPullReqType::Frontiers(i) => i.serialize(writer),
+        }
+    }
+
+    pub const fn payload_type(&self) -> AscPullPayloadId {
+        match self {
+            AscPullReqType::Blocks(_) => AscPullPayloadId::Blocks,
+            AscPullReqType::AccountInfo(_) => AscPullPayloadId::AccountInfo,
+            AscPullReqType::Frontiers(_) => AscPullPayloadId::Frontiers,
         }
     }
 }
@@ -226,11 +234,7 @@ impl AscPullReq {
     }
 
     pub fn payload_type(&self) -> AscPullPayloadId {
-        match &self.req_type {
-            AscPullReqType::Blocks(_) => AscPullPayloadId::Blocks,
-            AscPullReqType::AccountInfo(_) => AscPullPayloadId::AccountInfo,
-            AscPullReqType::Frontiers(_) => AscPullPayloadId::Frontiers,
-        }
+        self.req_type.payload_type()
     }
 
     pub fn serialized_size(extensions: BitArray<u16>) -> usize {

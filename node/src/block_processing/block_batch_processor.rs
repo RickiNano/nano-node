@@ -7,7 +7,7 @@ use std::{
 };
 
 use strum::{EnumCount, IntoEnumIterator};
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 use rsnano_ledger::{BlockError, Ledger};
 use rsnano_nullable_clock::SteadyClock;
@@ -103,55 +103,29 @@ impl BlockBatchProcessor {
 
             match status {
                 Ok(()) => {
+                    trace!(block_hash = %hash, "Block processed");
                     self.unchecked_reenqueuer
                         .enqueue_blocks_with_dependency(hash);
                 }
-                Err(BlockError::GapPrevious) => {
-                    self.unchecked
-                        .lock()
-                        .unwrap()
-                        .put(block.previous(), block.clone(), now);
-                }
-                Err(BlockError::GapSource) => {
-                    self.unchecked
-                        .lock()
-                        .unwrap()
-                        .put(block.source_or_link(), block.clone(), now);
-                }
-                Err(BlockError::GapEpochOpenPending) => {}
-                Err(BlockError::Old) => {
-                    debug!("Block is old: {}", hash)
-                }
-                Err(BlockError::Conflict) => {
-                    debug!("Block conflict: {}", hash)
-                }
-                // These are unexpected and indicate erroneous/malicious behavior, log debug info to highlight the issue
-                Err(BlockError::BadSignature) => {
-                    debug!("Block signature is invalid: {}", hash)
-                }
-                Err(BlockError::NegativeSpend) => {
-                    debug!("Block spends negative amount: {}", hash)
-                }
-                Err(BlockError::Unreceivable) => {
-                    debug!("Block is unreceivable: {}", hash)
-                }
-                Err(BlockError::Fork) => {
-                    debug!("Block is a fork: {}", hash)
-                }
-                Err(BlockError::OpenedBurnAccount) => {
-                    debug!("Block opens burn account: {}", hash)
-                }
-                Err(BlockError::BalanceMismatch) => {
-                    debug!("Block balance mismatch: {}", hash)
-                }
-                Err(BlockError::RepresentativeMismatch) => {
-                    debug!("Block representative mismatch: {}", hash)
-                }
-                Err(BlockError::BlockPosition) => {
-                    debug!("Block is in incorrect position: {}", hash)
-                }
-                Err(BlockError::InsufficientWork) => {
-                    debug!("Block has insufficient work: {}", hash)
+                Err(error) => {
+                    trace!(block_hash = %hash, ?error, "Block processing failed");
+                    match error {
+                        BlockError::GapPrevious => {
+                            self.unchecked.lock().unwrap().put(
+                                block.previous(),
+                                block.clone(),
+                                now,
+                            );
+                        }
+                        BlockError::GapSource => {
+                            self.unchecked.lock().unwrap().put(
+                                block.source_or_link(),
+                                block.clone(),
+                                now,
+                            );
+                        }
+                        _ => {}
+                    }
                 }
             }
         }

@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use tracing::warn;
+use tracing::{trace, warn};
 
 use rsnano_ledger::Ledger;
 use rsnano_messages::{AscPullAck, BlocksAckPayload};
@@ -229,9 +229,11 @@ impl Bootstrapper {
     /// Process `asc_pull_ack` message coming from network
     pub fn process(&self, message: AscPullAck, channel_id: ChannelId) {
         let now = self.clock.now();
+        let query_id = message.id;
         let result = self.response_handler.process(message, channel_id, now);
         match result {
             Ok(info) => {
+                trace!(query_id, ?channel_id, "Response processed");
                 self.stats.inc(StatType::Bootstrap, DetailType::Reply);
                 self.stats
                     .inc(StatType::BootstrapReply, info.query_type.into());
@@ -241,16 +243,21 @@ impl Bootstrapper {
                     (0, self.config.request_timeout.as_millis() as i64),
                 );
             }
-            Err(ProcessError::NoRunningQueryFound) => {
-                self.stats.inc(StatType::Bootstrap, DetailType::MissingTag);
-            }
-            Err(ProcessError::InvalidResponseType) => {
-                self.stats
-                    .inc(StatType::Bootstrap, DetailType::InvalidResponseType);
-            }
-            Err(ProcessError::InvalidResponse) => {
-                self.stats
-                    .inc(StatType::Bootstrap, DetailType::InvalidResponse);
+            Err(error) => {
+                trace!(query_id, ?channel_id, ?error, "Response processing failed");
+                match error {
+                    ProcessError::NoRunningQueryFound => {
+                        self.stats.inc(StatType::Bootstrap, DetailType::MissingTag);
+                    }
+                    ProcessError::InvalidResponseType => {
+                        self.stats
+                            .inc(StatType::Bootstrap, DetailType::InvalidResponseType);
+                    }
+                    ProcessError::InvalidResponse => {
+                        self.stats
+                            .inc(StatType::Bootstrap, DetailType::InvalidResponse);
+                    }
+                }
             }
         }
     }

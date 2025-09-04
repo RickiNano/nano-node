@@ -16,6 +16,7 @@ use super::{
     frontier_ack_processor::FrontierAckProcessor,
 };
 use crate::block_processing::BlockProcessorQueue;
+use tracing::trace;
 
 pub(crate) struct ResponseProcessor {
     state: Arc<Mutex<BootstrapState>>,
@@ -24,6 +25,7 @@ pub(crate) struct ResponseProcessor {
     blocks: BlockAckProcessor,
 }
 
+#[derive(Debug)]
 pub(crate) enum ProcessError {
     NoRunningQueryFound,
     InvalidResponseType,
@@ -73,6 +75,7 @@ impl ResponseProcessor {
         channel_id: ChannelId,
         now: Timestamp,
     ) -> Result<ProcessInfo, ProcessError> {
+        trace!(query_id = response.id, ?channel_id, "Process response");
         let query = self.take_running_query_for(&response)?;
         self.process_response(&query, response)?;
         self.update_peer_scoring(channel_id);

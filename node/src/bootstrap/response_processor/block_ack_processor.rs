@@ -8,6 +8,7 @@ use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     bootstrap::state::{BootstrapState, PriorityDownResult, RunningQuery, VerifyResult},
 };
+use tracing::trace;
 
 pub(crate) struct BlockAckProcessor {
     state: Arc<Mutex<BootstrapState>>,
@@ -29,6 +30,12 @@ impl BlockAckProcessor {
     }
 
     pub fn process(&self, query: &RunningQuery, response: &BlocksAckPayload) -> bool {
+        trace!(
+            query_id = query.id,
+            blocks = response.blocks().len(),
+            "Process response"
+        );
+
         self.stats
             .inc(StatType::BootstrapProcess, DetailType::Blocks);
 
@@ -74,10 +81,12 @@ impl BlockAckProcessor {
                 let stats = self.stats.clone();
                 let state = self.state.clone();
                 let account = query.account;
+                trace!(block_hash = %block.hash(), query_id = query.id, "Process block");
                 self.block_processor_queue
                     .push(BlockContext::new_with_callback(
                         block,
                         BlockSource::Bootstrap,
+                        // TODO: Use the correct channel ID
                         ChannelId::LOOPBACK,
                         Box::new(move |_, _, _| {
                             stats.inc(StatType::Bootstrap, DetailType::TimestampReset);

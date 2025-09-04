@@ -5,6 +5,7 @@ use std::{
 };
 
 use strum::{EnumCount, IntoEnumIterator};
+use tracing::trace;
 
 use rsnano_ledger::BlockError;
 use rsnano_network::{ChannelId, DeadChannelCleanupStep};
@@ -133,10 +134,16 @@ impl BlockProcessorQueue {
 
     pub fn push(&self, context: impl Into<Arc<BlockContext>>) -> bool {
         let context = context.into();
+        let hash = context.block.hash();
+        let source = context.source;
+        let channel_id = context.channel_id;
         let added = self.queue.lock().unwrap().push(context);
 
         if added {
+            trace!(block_hash = %hash, ?source, ?channel_id, "Enqueued block");
             self.condition.notify_one();
+        } else {
+            trace!(block_hash = %hash, ?source, ?channel_id, "Overfill");
         }
 
         added

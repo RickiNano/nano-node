@@ -15,6 +15,7 @@ use crate::{
     },
     transport::MessageSender,
 };
+use tracing::trace;
 
 /// Sends an AscPullReq message
 pub(crate) struct QuerySender {
@@ -61,6 +62,7 @@ impl QuerySender {
         let id = rand::rng().next_u64();
         let now = self.clock.now();
         let query_type = spec.query_type();
+        let channel_id = spec.channel.channel_id();
         let mut query = RunningQuery::from_spec(id, &spec, now, self.request_timeout);
 
         let message = Message::AscPullReq(AscPullReq {
@@ -73,6 +75,7 @@ impl QuerySender {
                 .try_send(&spec.channel, &message, TrafficType::BootstrapRequests);
 
         if sent {
+            trace!(query_id = id, ?query_type, ?channel_id, "Pull request sent");
             self.stats.inc(StatType::Bootstrap, DetailType::Request);
             self.stats
                 .inc(StatType::BootstrapRequest, query_type.into());
@@ -89,6 +92,13 @@ impl QuerySender {
 
             Some(id)
         } else {
+            trace!(
+                query_id = id,
+                ?query_type,
+                ?channel_id,
+                "Pull request failed"
+            );
+
             self.stats
                 .inc(StatType::Bootstrap, DetailType::RequestFailed);
             None
