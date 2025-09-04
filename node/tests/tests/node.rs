@@ -108,7 +108,7 @@ fn vote_by_hash_bundle() {
     node.process(block);
 
     // Create a chain of blocks
-    for _ in 2..10 {
+    for _ in 2..20 {
         let block = lattice.genesis().send(&*DEV_GENESIS_KEY, 1);
         blocks.push(block.clone());
         node.process(block);
