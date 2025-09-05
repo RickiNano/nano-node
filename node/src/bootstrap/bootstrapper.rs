@@ -352,8 +352,7 @@ impl BootstrapExt for Arc<Bootstrapper> {
         let block_enqueuer = std::thread::Builder::new()
             .name("Boot blk queue".to_string())
             .spawn(move || {
-                // TODO enable:
-                //block_enqueuer.run();
+                block_enqueuer.run();
             })
             .unwrap();
 

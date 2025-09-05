@@ -87,39 +87,6 @@ impl BlockAckProcessor {
             query_id: query.id,
             blocks: blocks.clone(),
         });
-
-        // TODO move this into a separate thread:
-
-        while let Some(block) = blocks.pop_front() {
-            trace!(block_hash = %block.hash(), query_id = query.id, "Process block");
-
-            if blocks.is_empty() {
-                // It's the last block submitted for this account chain, reset timestamp to allow more requests
-                let stats = self.stats.clone();
-                let state = self.state.clone();
-                let account = query.account;
-                self.block_processor_queue
-                    .push(BlockContext::new_with_callback(
-                        block,
-                        BlockSource::Bootstrap,
-                        // TODO: Use the correct channel ID
-                        ChannelId::LOOPBACK,
-                        Box::new(move |_, _, _| {
-                            stats.inc(StatType::Bootstrap, DetailType::TimestampReset);
-                            {
-                                let mut guard = state.lock().unwrap();
-                                guard.candidate_accounts.reset_last_request(&account);
-                            }
-                        }),
-                    ));
-            } else {
-                self.block_processor_queue.push(BlockContext::new(
-                    block,
-                    BlockSource::Bootstrap,
-                    ChannelId::LOOPBACK,
-                ));
-            }
-        }
     }
 
     fn process_empty_response(&self, query: &RunningQuery) {

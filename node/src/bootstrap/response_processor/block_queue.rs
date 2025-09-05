@@ -27,14 +27,17 @@ impl BlockQueue {
         }
     }
 
+    #[allow(dead_code)]
     pub fn blocks(&self) -> usize {
         self.blocks
     }
 
+    #[allow(dead_code)]
     pub fn accounts(&self) -> usize {
         self.accounts.len()
     }
 
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.accounts() == 0
     }
@@ -70,6 +73,7 @@ impl BlockQueue {
         true
     }
 
+    #[allow(dead_code)]
     pub fn contains_account(&self, account: &Account) -> bool {
         self.accounts.contains_key(account)
     }
@@ -199,7 +203,7 @@ impl NotifiableBlockQueue {
             guard = self
                 .notify
                 .wait_timeout_while(guard, Duration::from_secs(1), |(queue, stopped)| {
-                    !*stopped && queue.next_to_process().is_some()
+                    !*stopped && queue.next_to_process().is_none()
                 })
                 .unwrap()
                 .0;
