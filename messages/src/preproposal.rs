@@ -1,6 +1,9 @@
 use rsnano_types::{
     Account, Blake2Hash, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature,
 };
+use rsnano_types::DeserializationError;
+use bitvec::prelude::BitArray;
+use crate::MessageVariant;
 
 pub type PreProposalHash = Blake2Hash;
 pub type FrontiersHash = Blake2Hash;
@@ -27,8 +30,8 @@ impl Preproposal {
     pub fn new_test_instance() -> Self {
         Self {
             frontiers: vec![(Account::from(1), BlockHash::from(100))],
-            signer: PublicKey::default(),
-            signature: Signature::default(),
+            signer: PublicKey::from(2),
+            signature: Signature::from_bytes([1; 64]),
         }
     }
 
@@ -41,11 +44,49 @@ impl Preproposal {
         }
         hash_builder.build()
     }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.signer.serialize(writer)?;
+        self.signature.serialize(writer)?;
+        for (account, hash) in &self.frontiers {
+            account.serialize(writer)?;
+            hash.serialize(writer)?;
+        }
+        Ok(())
+    }
+
+    pub const fn serialized_size(extensions: BitArray<u16>) -> usize {
+        extensions.data as usize
+    }
+
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let signer = PublicKey::deserialize(&mut bytes)?;
+        let signature = Signature::deserialize(&mut bytes)?;
+        let mut frontiers = Vec::new();
+
+        while !bytes.is_empty() {
+            let account = Account::deserialize(&mut bytes)?;
+            let hash = BlockHash::deserialize(&mut bytes)?;
+            frontiers.push((account, hash));
+        }
+
+        Ok(Preproposal { frontiers, signer, signature })
+    }
+}
+
+impl MessageVariant for Preproposal {
+    fn header_extensions(&self, payload_len: u16) -> BitArray<u16> {
+        BitArray::new(payload_len)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn sign_new_preproposal() {
@@ -79,5 +120,11 @@ mod tests {
             Preproposal::hash_frontiers(&[(Account::from(1), BlockHash::from(2))]),
             Preproposal::hash_frontiers(&[(Account::from(10), BlockHash::from(20))]),
         );
+    }
+
+    #[test]
+    fn preproposal_serialization() {
+        let message = Message::SnapshotPreproposal(Preproposal::new_test_instance());
+        assert_deserializable(&message);
     }
 }

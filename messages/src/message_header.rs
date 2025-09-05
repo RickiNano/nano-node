@@ -184,7 +184,7 @@ impl MessageHeader {
             MessageType::AscPullReq => AscPullReq::serialized_size(self.extensions),
             MessageType::AscPullAck => AscPullAck::serialized_size(self.extensions),
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Preproposal => 0,
+            MessageType::Preproposal => Preproposal::serialized_size(self.extensions),
             MessageType::Invalid | MessageType::NotAType => {
                 debug_assert!(false);
                 0

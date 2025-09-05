@@ -25,7 +25,7 @@ pub enum Message {
     SnapshotPreproposal(Preproposal),
 }
 
-pub trait MessageVariant: Display {
+pub trait MessageVariant {
     fn header_extensions(&self, _payload_len: u16) -> BitArray<u16> {
         Default::default()
     }
@@ -136,7 +136,7 @@ impl Message {
             Message::TelemetryAck(_) => MessageType::TelemetryAck,
             Message::TelemetryReq => MessageType::TelemetryReq,
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => todo!(),
+            Message::SnapshotPreproposal(_) => MessageType::Preproposal,
         }
     }
 
@@ -153,6 +153,8 @@ impl Message {
             Message::FrontierReq(x) => Some(x),
             Message::NodeIdHandshake(x) => Some(x),
             Message::TelemetryAck(x) => Some(x),
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotPreproposal(x) => Some(x),
             _ => None,
         }
     }
@@ -182,7 +184,7 @@ impl Message {
             Message::TelemetryAck(m) => m.serialize(writer),
             Message::BulkPush | Message::TelemetryReq => Ok(()),
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => todo!(),
+            Message::SnapshotPreproposal(m) => m.serialize(writer),
         }
     }
 
@@ -222,22 +224,13 @@ impl Message {
             }
             MessageType::TelemetryReq => Message::TelemetryReq,
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Preproposal => todo!(),
+            MessageType::Preproposal => Message::SnapshotPreproposal(Preproposal::deserialize(payload)?),
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);
             }
         };
 
         Ok(msg)
-    }
-}
-
-impl Display for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.as_message_variant() {
-            Some(variant) => variant.fmt(f),
-            None => Ok(()),
-        }
     }
 }
 
