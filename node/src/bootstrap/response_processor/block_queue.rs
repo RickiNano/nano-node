@@ -8,7 +8,7 @@ use std::{
 
 pub(crate) struct BlockQueue {
     max_accounts: usize,
-    accounts: FxHashMap<Account, VecDeque<Block>>,
+    accounts: FxHashMap<Account, AccountBlocks>,
     waiting_to_be_inserted_into_block_processor: FxHashMap<BlockHash, Account>,
     in_block_processor: FxHashMap<BlockHash, Account>,
     blocks: usize,
@@ -43,30 +43,21 @@ impl BlockQueue {
         self.max_accounts
     }
 
-    pub fn insert(&mut self, account: Account, block: Block) -> bool {
-        self.insert_multiple(account, [block])
-    }
-
-    pub fn insert_multiple(
-        &mut self,
-        account: Account,
-        blocks: impl Into<VecDeque<Block>>,
-    ) -> bool {
+    pub fn insert(&mut self, data: AccountBlocks) -> bool {
         if self.accounts.len() >= self.max_accounts() {
             return false;
         }
 
-        let blocks = blocks.into();
-
-        let Some(first_hash) = blocks.front().map(|b| b.hash()) else {
+        let Some(first_hash) = data.blocks.front().map(|b| b.hash()) else {
             return false;
         };
 
-        self.blocks += blocks.len();
+        self.blocks += data.blocks.len();
+        let account = data.account;
 
-        if let Some(old) = self.accounts.insert(account, blocks) {
-            self.blocks -= old.len();
-            if let Some(front) = old.front() {
+        if let Some(old) = self.accounts.insert(account, data) {
+            self.blocks -= old.blocks.len();
+            if let Some(front) = old.blocks.front() {
                 self.waiting_to_be_inserted_into_block_processor
                     .remove(&front.hash());
                 self.in_block_processor.remove(&front.hash());
@@ -83,21 +74,21 @@ impl BlockQueue {
         self.accounts.contains_key(account)
     }
 
-    pub fn next_to_process(&self) -> Option<&Block> {
+    pub fn next_to_process(&self) -> Option<(&Block, u64)> {
         let (hash, account) = self
             .waiting_to_be_inserted_into_block_processor
             .iter()
             .next()?;
 
-        let block = self
-            .accounts
-            .get(account)
-            .expect("account should be found")
+        let data = self.accounts.get(account).expect("account should be found");
+
+        let block = data
+            .blocks
             .front()
             .expect("There should be at least one block");
 
         debug_assert_eq!(*hash, block.hash());
-        Some(block)
+        Some((block, data.query_id))
     }
 
     pub fn enqueued_for_processing(&mut self, block_hash: &BlockHash) {
@@ -110,16 +101,19 @@ impl BlockQueue {
         }
     }
 
-    // TODO call
-    pub fn processed(&mut self, block_hash: &BlockHash) {
+    pub fn processed(&mut self, block_hash: &BlockHash) -> BlockInfo {
         let Some(account) = self.in_block_processor.remove(block_hash) else {
-            return;
+            return BlockInfo {
+                account: None,
+                was_last: false,
+            };
         };
 
-        let blocks = self
+        let blocks = &mut self
             .accounts
             .get_mut(&account)
-            .expect("account should be found");
+            .expect("account should be found")
+            .blocks;
 
         let front = blocks
             .pop_front()
@@ -128,26 +122,34 @@ impl BlockQueue {
         debug_assert_eq!(front.hash(), *block_hash);
         self.blocks -= 1;
 
-        if let Some(next) = blocks.front() {
+        let was_last = if let Some(next) = blocks.front() {
             self.waiting_to_be_inserted_into_block_processor
                 .insert(next.hash(), account);
+
+            false
         } else {
             self.accounts.remove(&account);
+            true
+        };
+
+        BlockInfo {
+            account: Some(account),
+            was_last,
         }
     }
 
-    // TODO call
-    pub fn processing_failed(&mut self, block_hash: &BlockHash) {
+    pub fn processing_failed(&mut self, block_hash: &BlockHash) -> bool {
         let Some(account) = self.in_block_processor.remove(block_hash) else {
-            return;
+            return false;
         };
 
-        let blocks = self
+        let data = self
             .accounts
             .remove(&account)
             .expect("account should be found");
 
-        self.blocks -= blocks.len();
+        self.blocks -= data.blocks.len();
+        true
     }
 }
 
@@ -157,21 +159,27 @@ impl Default for BlockQueue {
     }
 }
 
+pub(crate) struct AccountBlocks {
+    pub(crate) account: Account,
+    pub(crate) query_id: u64,
+    pub(crate) blocks: VecDeque<Block>,
+}
+
+pub(crate) struct BlockInfo {
+    pub account: Option<Account>,
+    pub was_last: bool,
+}
+
 #[derive(Default)]
 pub(crate) struct NotifiableBlockQueue {
     // queue + stopped
-    queue: Mutex<(BlockQueue, bool)>,
-    notify: Condvar,
+    pub queue: Mutex<(BlockQueue, bool)>,
+    pub notify: Condvar,
 }
 
 impl NotifiableBlockQueue {
-    pub fn insert_multiple(&self, account: Account, blocks: impl Into<VecDeque<Block>>) -> bool {
-        let inserted = self
-            .queue
-            .lock()
-            .unwrap()
-            .0
-            .insert_multiple(account, blocks);
+    pub fn insert(&self, blocks: AccountBlocks) -> bool {
+        let inserted = self.queue.lock().unwrap().0.insert(blocks);
 
         if inserted {
             self.notify.notify_one();
@@ -185,7 +193,7 @@ impl NotifiableBlockQueue {
         self.notify.notify_all();
     }
 
-    pub fn wait(&self) -> Option<Block> {
+    pub fn wait(&self) -> Option<(Block, u64)> {
         let mut guard = self.queue.lock().unwrap();
         loop {
             guard = self
@@ -200,8 +208,8 @@ impl NotifiableBlockQueue {
                 return None;
             }
 
-            if let Some(block) = guard.0.next_to_process() {
-                return Some(block.clone());
+            if let Some((block, query_id)) = guard.0.next_to_process() {
+                return Some((block.clone(), query_id));
             }
         }
     }
@@ -249,12 +257,16 @@ mod tests {
         let account = Account::from(1);
         let block = Block::new_test_instance();
 
-        queue.insert(account, block.clone());
+        queue.insert(AccountBlocks {
+            account,
+            query_id: 42,
+            blocks: [block.clone()].into(),
+        });
 
         assert_eq!(queue.accounts(), 1, "accounts");
         assert_eq!(queue.blocks(), 1, "blocks");
         assert!(queue.contains_account(&account));
-        assert_eq!(queue.next_to_process().unwrap().hash(), block.hash());
+        assert_eq!(queue.next_to_process().unwrap().0.hash(), block.hash());
     }
 
     #[test]
@@ -262,8 +274,16 @@ mod tests {
         let mut queue = BlockQueue::default();
         let account1 = Account::from(1);
         let account2 = Account::from(2);
-        queue.insert(account1, Block::new_test_instance());
-        queue.insert(account2, Block::new_test_instance());
+        queue.insert(AccountBlocks {
+            account: account1,
+            blocks: [Block::new_test_instance()].into(),
+            query_id: 1,
+        });
+        queue.insert(AccountBlocks {
+            account: account2,
+            blocks: [Block::new_test_instance()].into(),
+            query_id: 2,
+        });
         assert_eq!(queue.accounts(), 2, "accounts");
         assert_eq!(queue.blocks(), 2, "blocks");
         assert!(queue.contains_account(&account1), "Should contain account1");
@@ -276,11 +296,19 @@ mod tests {
         let account = Account::from(1);
         let block1 = Block::new_test_instance_with_key(1);
         let block2 = Block::new_test_instance_with_key(2);
-        queue.insert(account, block1);
-        queue.insert(account, block2.clone());
+        queue.insert(AccountBlocks {
+            account,
+            blocks: [block1].into(),
+            query_id: 1,
+        });
+        queue.insert(AccountBlocks {
+            account,
+            blocks: [block2.clone()].into(),
+            query_id: 2,
+        });
         assert_eq!(queue.accounts(), 1, "accounts");
         assert_eq!(queue.blocks(), 1, "blocks");
-        assert_eq!(queue.next_to_process().unwrap().hash(), block2.hash());
+        assert_eq!(queue.next_to_process().unwrap().0.hash(), block2.hash());
     }
 
     #[test]
@@ -290,11 +318,15 @@ mod tests {
         let block1 = Block::new_test_instance_with_key(1);
         let block2 = Block::new_test_instance_with_key(2);
 
-        queue.insert_multiple(account, [block1.clone(), block2]);
+        queue.insert(AccountBlocks {
+            account,
+            blocks: [block1.clone(), block2].into(),
+            query_id: 1,
+        });
 
         assert_eq!(queue.accounts(), 1, "accounts");
         assert_eq!(queue.blocks(), 2, "blocks");
-        assert_eq!(queue.next_to_process().unwrap().hash(), block1.hash());
+        assert_eq!(queue.next_to_process().unwrap().0.hash(), block1.hash());
     }
 
     #[test]
@@ -306,40 +338,48 @@ mod tests {
     #[test]
     fn dont_enqueue_when_max_accounts_reached() {
         let mut queue = BlockQueue::with_max_accounts(3);
-        let enqueued = queue.insert_multiple(
-            Account::from(1),
-            [
+        let enqueued = queue.insert(AccountBlocks {
+            account: Account::from(1),
+            blocks: [
                 Block::new_test_instance_with_key(10),
                 Block::new_test_instance_with_key(20),
-            ],
-        );
+            ]
+            .into(),
+            query_id: 0,
+        });
         assert!(enqueued, "Should enqueue account1");
 
-        let enqueued = queue.insert_multiple(
-            Account::from(2),
-            [
+        let enqueued = queue.insert(AccountBlocks {
+            account: Account::from(2),
+            blocks: [
                 Block::new_test_instance_with_key(30),
                 Block::new_test_instance_with_key(40),
-            ],
-        );
+            ]
+            .into(),
+            query_id: 0,
+        });
         assert!(enqueued, "Should enqueue account2");
 
-        let enqueued = queue.insert_multiple(
-            Account::from(3),
-            [
+        let enqueued = queue.insert(AccountBlocks {
+            account: Account::from(3),
+            blocks: [
                 Block::new_test_instance_with_key(50),
                 Block::new_test_instance_with_key(60),
-            ],
-        );
+            ]
+            .into(),
+            query_id: 0,
+        });
         assert!(enqueued, "Should enqueue account3");
 
-        let enqueued = queue.insert_multiple(
-            Account::from(4),
-            [
+        let enqueued = queue.insert(AccountBlocks {
+            account: Account::from(4),
+            blocks: [
                 Block::new_test_instance_with_key(70),
                 Block::new_test_instance_with_key(80),
-            ],
-        );
+            ]
+            .into(),
+            query_id: 0,
+        });
         assert_eq!(enqueued, false, "Should NOT enqueue account4");
 
         assert_eq!(queue.accounts(), 3, "accounts");
@@ -369,9 +409,13 @@ mod tests {
         let block1 = Block::new_test_instance_with_key(10);
         let block2 = Block::new_test_instance_with_key(20);
 
-        queue.insert_multiple(Account::from(1), [block1.clone(), block2.clone()]);
+        queue.insert(AccountBlocks {
+            account: Account::from(1),
+            blocks: [block1.clone(), block2.clone()].into(),
+            query_id: 0,
+        });
         assert_eq!(
-            queue.next_to_process().unwrap().hash(),
+            queue.next_to_process().unwrap().0.hash(),
             block1.hash(),
             "Should require processing for block1"
         );
@@ -386,7 +430,7 @@ mod tests {
 
         queue.processed(&block1.hash());
         assert_eq!(
-            queue.next_to_process().unwrap().hash(),
+            queue.next_to_process().unwrap().0.hash(),
             block2.hash(),
             "Should require processing for block2"
         );
@@ -414,7 +458,11 @@ mod tests {
         let block1 = Block::new_test_instance_with_key(10);
         let block2 = Block::new_test_instance_with_key(20);
 
-        queue.insert_multiple(Account::from(1), [block1.clone(), block2.clone()]);
+        queue.insert(AccountBlocks {
+            account: Account::from(1),
+            blocks: [block1.clone(), block2.clone()].into(),
+            query_id: 0,
+        });
         queue.enqueued_for_processing(&block1.hash());
         queue.processing_failed(&block1.hash());
 

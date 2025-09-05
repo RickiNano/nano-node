@@ -7,7 +7,7 @@ use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     bootstrap::{
-        response_processor::block_queue::NotifiableBlockQueue,
+        response_processor::block_queue::{AccountBlocks, NotifiableBlockQueue},
         state::{BootstrapState, PriorityDownResult, RunningQuery, VerifyResult},
     },
 };
@@ -82,8 +82,11 @@ impl BlockAckProcessor {
             blocks.pop_front();
         }
 
-        self.block_queue
-            .insert_multiple(query.account, blocks.clone());
+        self.block_queue.insert(AccountBlocks {
+            account: query.account,
+            query_id: query.id,
+            blocks: blocks.clone(),
+        });
 
         // TODO move this into a separate thread:
 

@@ -24,8 +24,11 @@ use super::{
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
-    bootstrap::response_processor::{
-        block_processor_enqueuer::BlockProcessorEnqueuer, block_queue::NotifiableBlockQueue,
+    bootstrap::{
+        ledger_event_proc::BootstrapLedgerEventProcessor,
+        response_processor::{
+            block_processor_enqueuer::BlockProcessorEnqueuer, block_queue::NotifiableBlockQueue,
+        },
     },
     transport::MessageSender,
 };
@@ -209,6 +212,10 @@ impl Bootstrapper {
             threads.cleanup.join().unwrap();
             threads.block_enqueuer.join().unwrap();
         }
+    }
+
+    pub(crate) fn ledger_event_processor(&self) -> BootstrapLedgerEventProcessor {
+        BootstrapLedgerEventProcessor::new(self.block_queue.clone(), self.state.clone())
     }
 
     pub fn state(&self) -> MutexGuard<'_, BootstrapState> {

@@ -4,6 +4,7 @@ use crate::{
 };
 use rsnano_network::ChannelId;
 use std::{sync::Arc, time::Duration};
+use tracing::trace;
 
 pub(crate) struct BlockProcessorEnqueuer {
     block_queue: Arc<NotifiableBlockQueue>,
@@ -22,8 +23,10 @@ impl BlockProcessorEnqueuer {
     }
 
     pub fn run(&self) {
-        while let Some(block) = self.block_queue.wait() {
-            let hash = block.hash();
+        while let Some((block, query_id)) = self.block_queue.wait() {
+            let block_hash = block.hash();
+
+            trace!(%block_hash, query_id, "Process block");
 
             let inserted = self.block_processor_queue.push(BlockContext::new(
                 block,
@@ -33,7 +36,7 @@ impl BlockProcessorEnqueuer {
             ));
 
             if inserted {
-                self.block_queue.enqueued_for_processing(&hash);
+                self.block_queue.enqueued_for_processing(&block_hash);
             } else {
                 // Give block processor some time to process the queued blocks...
                 std::thread::sleep(Duration::from_millis(10));
