@@ -1,8 +1,12 @@
+use std::sync::{Arc, Mutex};
+
 use rsnano_ledger::Ledger;
-use rsnano_messages::Preproposal;
+use rsnano_messages::{Message, Preproposal};
+use rsnano_network::TrafficType;
 use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
-use std::sync::Arc;
+
+use crate::transport::MessageFlooder;
 
 pub struct LedgerSnapshots {
     ledger: Arc<Ledger>,
@@ -10,22 +14,32 @@ pub struct LedgerSnapshots {
     /// one representative key!
     /// TODO: We have to extend this later to multiple representatives per node.
     get_private_key: Box<dyn Fn() -> Option<PrivateKey> + Send + Sync>,
+    flooder: Mutex<MessageFlooder>,
 }
 
 impl LedgerSnapshots {
     pub fn new(
         ledger: Arc<Ledger>,
         get_private_key: impl Fn() -> Option<PrivateKey> + Send + Sync + 'static,
+        flooder: MessageFlooder,
     ) -> Self {
         Self {
             ledger,
             get_private_key: Box::new(get_private_key),
+            flooder: flooder.into(),
         }
     }
 
     pub fn publish_preproposal(&self) {
-        // TODO create
-        // TODO publish
+        // TODO add test for no private key
+        let private_key = (self.get_private_key)().unwrap();
+        let preproposal = self.create_preproposal(&private_key);
+        let message = Message::SnapshotPreproposal(preproposal);
+        self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
+            &message,
+            TrafficType::Generic,
+            0.0,
+        );
     }
 
     pub fn create_preproposal(&self, private_key: &PrivateKey) -> Preproposal {
@@ -41,19 +55,19 @@ impl LedgerSnapshots {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transport::{FloodEvent, MessageFlooder};
-    use rsnano_ledger::Ledger;
+    use crate::transport::FloodEvent;
     use rsnano_messages::Message;
     use rsnano_network::TrafficType;
-    use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
+    use rsnano_output_tracker::OutputTrackerMt;
+    use rsnano_types::{AccountInfo, ConfirmationHeightInfo, PublicKey};
 
     #[test]
     fn ledger_with_one_account() {
         let account = Account::from(1);
         let frontier = BlockHash::from(2);
         let ledger = create_ledger_with_frontiers([(account, frontier)]);
-        let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key);
-        assert_eq!(snapshots.collect_frontiers(), [(account, frontier)]);
+        let fixture = Fixture::new(ledger);
+        assert_eq!(fixture.snapshots.collect_frontiers(), [(account, frontier)]);
     }
 
     #[test]
@@ -64,9 +78,9 @@ mod tests {
         let frontier2 = BlockHash::from(200);
 
         let ledger = create_ledger_with_frontiers([(account1, frontier1), (account2, frontier2)]);
-        let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key);
+        let fixture = Fixture::new(ledger);
         assert_eq!(
-            snapshots.collect_frontiers(),
+            fixture.snapshots.collect_frontiers(),
             [(account1, frontier1), (account2, frontier2)]
         );
     }
@@ -76,29 +90,29 @@ mod tests {
         let account = Account::from(10);
         let frontier = BlockHash::from(2);
         let ledger = create_ledger_with_frontiers([(account, frontier)]);
-        let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key);
+        let fixture = Fixture::new(ledger);
 
-        let preproposal = snapshots.create_preproposal(&PrivateKey::from(1));
+        let preproposal = fixture.snapshots.create_preproposal(&PrivateKey::from(1));
 
         assert!(preproposal.frontiers.contains(&(account, frontier)));
     }
 
     #[test]
-    #[ignore = "TODO"]
     fn publish_preproposal() {
         let account = Account::from(1);
         let frontier = BlockHash::from(100);
         let ledger = create_ledger_with_frontiers([(account, frontier)]);
-        let flooder = MessageFlooder::new_null();
-        let flood_tracker = flooder.track_floods();
-        let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key);
+        let fixture = Fixture::new(ledger.clone());
 
-        snapshots.publish_preproposal();
+        fixture.snapshots.publish_preproposal();
 
-        let flood_events = flood_tracker.output();
-        assert_eq!(flood_events.len(), 1);
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_preproposal = snapshots.create_preproposal(&get_test_key().unwrap());
+        let expected_preproposal = fixture
+            .snapshots
+            .create_preproposal(&get_test_key().unwrap());
+
         assert_eq!(
             flood_events[0],
             FloodEvent {
@@ -109,6 +123,23 @@ mod tests {
                 all_prs: true,
             }
         );
+    }
+
+    struct Fixture {
+        snapshots: LedgerSnapshots,
+        flood_tracker: Arc<OutputTrackerMt<FloodEvent>>,
+    }
+
+    impl Fixture {
+        fn new(ledger: Arc<Ledger>) -> Self {
+            let flooder = MessageFlooder::new_null();
+            let flood_tracker = flooder.track_floods();
+            let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key, flooder);
+            Self {
+                snapshots,
+                flood_tracker,
+            }
+        }
     }
 
     fn get_test_key() -> Option<PrivateKey> {
