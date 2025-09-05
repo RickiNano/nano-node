@@ -245,7 +245,7 @@ impl From<MessageType> for DetailType {
             MessageType::AscPullReq => DetailType::AscPullReq,
             MessageType::AscPullAck => DetailType::AscPullAck,
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Preproposal => todo!(),
+            MessageType::Preproposal => DetailType::Preproposal,
         }
     }
 }
