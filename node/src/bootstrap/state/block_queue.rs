@@ -69,7 +69,6 @@ impl BlockQueue {
         true
     }
 
-    #[allow(dead_code)]
     pub fn contains_account(&self, account: &Account) -> bool {
         self.accounts.contains_key(account)
     }

@@ -71,9 +71,11 @@ impl BootstrapState {
 
     pub fn next_priority(&mut self, now: Timestamp) -> PriorityResult {
         let next = self.candidate_accounts.next_priority(now, |account| {
-            self.running_queries
-                .count_by_account(account, QuerySource::Priority)
-                < 4
+            !self.block_queue.contains_account(account)
+                && self
+                    .running_queries
+                    .count_by_account(account, QuerySource::Priority)
+                    < 4
         });
 
         if next.account.is_zero() {
