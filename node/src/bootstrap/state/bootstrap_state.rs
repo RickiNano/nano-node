@@ -10,7 +10,7 @@ use super::{
     CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer,
     running_query::QuerySource,
 };
-use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig};
+use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig, state::block_queue::BlockQueue};
 
 pub struct BootstrapState {
     pub candidate_accounts: CandidateAccounts,
@@ -20,6 +20,7 @@ pub struct BootstrapState {
     pub counters: BootstrapCounters,
     pub(crate) frontier_ack_processor_busy: bool,
     pub last_outdated_accounts: VecDeque<Account>,
+    pub(crate) block_queue: BlockQueue,
     pub(crate) stopped: bool,
 }
 
@@ -36,6 +37,7 @@ impl BootstrapState {
             counters: BootstrapCounters::default(),
             frontier_ack_processor_busy: false,
             last_outdated_accounts: VecDeque::new(),
+            block_queue: BlockQueue::default(),
             stopped: false,
         }
     }

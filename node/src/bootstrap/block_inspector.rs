@@ -6,7 +6,9 @@ use rsnano_types::{Account, Block, BlockType, SavedBlock};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::state::{BootstrapState, PriorityUpResult};
-use crate::block_processing::{BlockSource, ProcessedResult};
+use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource, ProcessedResult};
+use rsnano_network::ChannelId;
+use tracing::trace;
 
 /// Inspects a processed block and adjusts the bootstrap state accordingly
 pub(super) struct BlockInspector {
@@ -14,6 +16,7 @@ pub(super) struct BlockInspector {
     ledger: Arc<Ledger>,
     stats: Arc<Stats>,
     clock: Arc<SteadyClock>,
+    block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 impl BlockInspector {
@@ -22,12 +25,14 @@ impl BlockInspector {
         ledger: Arc<Ledger>,
         stats: Arc<Stats>,
         clock: Arc<SteadyClock>,
+        block_processor_queue: Arc<BlockProcessorQueue>,
     ) -> Self {
         Self {
             state,
             ledger,
             stats,
             clock,
+            block_processor_queue,
         }
     }
 
@@ -37,6 +42,29 @@ impl BlockInspector {
         for result in batch {
             let account = self.get_account(&any, &result.block, &result.saved_block);
             self.inspect_block(&mut state, result, &account);
+        }
+        self.enqueue_next_blocks(&mut state);
+    }
+
+    fn enqueue_next_blocks(&self, state: &mut BootstrapState) {
+        while let Some((block, query_id)) = state.block_queue.next_to_process() {
+            let block_hash = block.hash();
+
+            trace!(%block_hash, query_id, "Process block");
+
+            let inserted = self.block_processor_queue.push(BlockContext::new(
+                block.clone(),
+                BlockSource::Bootstrap,
+                // TODO use real channel id
+                ChannelId::LOOPBACK,
+            ));
+
+            if inserted {
+                state.block_queue.enqueued_for_processing(&block_hash);
+            } else {
+                // block processor queue is full!
+                break;
+            }
         }
     }
 
