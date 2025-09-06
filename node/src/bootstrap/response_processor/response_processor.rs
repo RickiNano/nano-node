@@ -16,7 +16,7 @@ use super::{
     block_ack_processor::BlockAckProcessor,
     frontier_ack_processor::FrontierAckProcessor,
 };
-use crate::bootstrap::state::block_queue::NotifiableBlockQueue;
+use crate::block_processing::BlockProcessorQueue;
 
 pub(crate) struct ResponseProcessor {
     state: Arc<Mutex<BootstrapState>>,
@@ -50,7 +50,7 @@ impl ResponseProcessor {
     pub(crate) fn new(
         state: Arc<Mutex<BootstrapState>>,
         stats: Arc<Stats>,
-        block_queue: Arc<NotifiableBlockQueue>,
+        block_queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
     ) -> Self {
         let frontiers = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());

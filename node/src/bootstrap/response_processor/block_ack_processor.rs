@@ -4,27 +4,30 @@ use tracing::trace;
 use rsnano_messages::BlocksAckPayload;
 use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
-use crate::bootstrap::state::{
-    BootstrapState, PriorityDownResult, RunningQuery, VerifyResult,
-    block_queue::{AccountBlocks, NotifiableBlockQueue},
+use crate::{
+    block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
+    bootstrap::state::{
+        BootstrapState, PriorityDownResult, RunningQuery, VerifyResult, block_queue::AccountBlocks,
+    },
 };
+use rsnano_network::ChannelId;
 
 pub(crate) struct BlockAckProcessor {
     state: Arc<Mutex<BootstrapState>>,
     stats: Arc<Stats>,
-    block_queue: Arc<NotifiableBlockQueue>,
+    block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 impl BlockAckProcessor {
     pub(crate) fn new(
         state: Arc<Mutex<BootstrapState>>,
         stats: Arc<Stats>,
-        block_queue: Arc<NotifiableBlockQueue>,
+        block_processor_queue: Arc<BlockProcessorQueue>,
     ) -> Self {
         Self {
             state,
             stats,
-            block_queue,
+            block_processor_queue,
         }
     }
 
@@ -75,11 +78,38 @@ impl BlockAckProcessor {
             blocks.pop_front();
         }
 
-        self.block_queue.insert(AccountBlocks {
+        let mut state = self.state.lock().unwrap();
+        state.block_queue.insert(AccountBlocks {
             account: query.account,
             query_id: query.id,
             blocks: blocks.clone(),
         });
+
+        // TODO remove this duplication from BlockInspector
+        self.enqueue_next_blocks(&mut state);
+    }
+
+    // TODO Remeove duplication! Copied from BlockInspector
+    fn enqueue_next_blocks(&self, state: &mut BootstrapState) {
+        while let Some((block, query_id)) = state.block_queue.next_to_process() {
+            let block_hash = block.hash();
+
+            trace!(%block_hash, query_id, "Process block");
+
+            let inserted = self.block_processor_queue.push(BlockContext::new(
+                block.clone(),
+                BlockSource::Bootstrap,
+                // TODO use real channel id
+                ChannelId::LOOPBACK,
+            ));
+
+            if inserted {
+                state.block_queue.enqueued_for_processing(&block_hash);
+            } else {
+                // block processor queue is full!
+                break;
+            }
+        }
     }
 
     fn process_empty_response(&self, query: &RunningQuery) {
@@ -125,8 +155,8 @@ mod tests {
     fn response_doesnt_match_query() {
         let state = Arc::new(Mutex::new(BootstrapState::default()));
         let stats = Arc::new(Stats::default());
-        let block_queue = Arc::new(NotifiableBlockQueue::default());
-        let processor = BlockAckProcessor::new(state, stats.clone(), block_queue);
+        let block_processor_queue = Arc::new(BlockProcessorQueue::new_null());
+        let processor = BlockAckProcessor::new(state, stats.clone(), block_processor_queue);
 
         let query = RunningQuery::new_test_instance();
         let response = BlocksAckPayload::new_test_instance();
@@ -154,8 +184,8 @@ mod tests {
     fn handle_empty_response() {
         let state = Arc::new(Mutex::new(BootstrapState::default()));
         let stats = Arc::new(Stats::default());
-        let block_queue = Arc::new(NotifiableBlockQueue::default());
-        let processor = BlockAckProcessor::new(state, stats.clone(), block_queue);
+        let block_processor_queue = Arc::new(BlockProcessorQueue::new_null());
+        let processor = BlockAckProcessor::new(state, stats.clone(), block_processor_queue);
 
         let account = Account::from(42);
 

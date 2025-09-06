@@ -1,10 +1,6 @@
 use rsnano_types::{Account, Block, BlockHash};
 use rustc_hash::FxHashMap;
-use std::{
-    collections::VecDeque,
-    sync::{Condvar, Mutex},
-    time::Duration,
-};
+use std::collections::VecDeque;
 
 pub(crate) struct BlockQueue {
     max_accounts: usize,
@@ -172,59 +168,6 @@ pub(crate) struct AccountBlocks {
 pub(crate) struct BlockInfo {
     pub account: Option<Account>,
     pub was_last: bool,
-}
-
-#[derive(Default)]
-pub(crate) struct NotifiableBlockQueue {
-    // queue + stopped
-    pub queue: Mutex<(BlockQueue, bool)>,
-    pub notify: Condvar,
-}
-
-impl NotifiableBlockQueue {
-    pub fn insert(&self, blocks: AccountBlocks) -> bool {
-        let inserted = self.queue.lock().unwrap().0.insert(blocks);
-
-        if inserted {
-            self.notify.notify_one();
-        }
-
-        inserted
-    }
-
-    pub fn stop(&self) {
-        self.queue.lock().unwrap().1 = true;
-        self.notify.notify_all();
-    }
-
-    pub fn wait(&self) -> Option<(Block, u64)> {
-        let mut guard = self.queue.lock().unwrap();
-        loop {
-            guard = self
-                .notify
-                .wait_timeout_while(guard, Duration::from_secs(1), |(queue, stopped)| {
-                    !*stopped && queue.next_to_process().is_none()
-                })
-                .unwrap()
-                .0;
-
-            if guard.1 {
-                return None;
-            }
-
-            if let Some((block, query_id)) = guard.0.next_to_process() {
-                return Some((block.clone(), query_id));
-            }
-        }
-    }
-
-    pub fn enqueued_for_processing(&self, block_hash: &BlockHash) {
-        self.queue
-            .lock()
-            .unwrap()
-            .0
-            .enqueued_for_processing(block_hash)
-    }
 }
 
 #[cfg(test)]

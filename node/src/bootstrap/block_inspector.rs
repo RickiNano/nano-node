@@ -153,61 +153,80 @@ impl BlockInspector {
                         };
                     }
                 }
-            }
-            Err(BlockError::GapSource) => {
-                // Prevent malicious live traffic from filling up the blocked set
-                if result.source == BlockSource::Bootstrap {
-                    let source = result.block.source_or_link();
 
-                    if !account.is_zero() && !source.is_zero() {
-                        // Mark account as blocked because it is missing the source block
-                        let blocked =
-                            state
-                                .candidate_accounts
-                                .block(*account, source, self.clock.now());
-                        if blocked {
-                            self.stats.inc(
-                                StatType::BootstrapAccountSets,
-                                DetailType::PriorityEraseBlock,
-                            );
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::Block);
-                        } else {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::BlockFailed);
-                        }
+                let info = state.block_queue.processed(&hash);
+                if let Some(account) = info.account {
+                    if info.was_last {
+                        state.candidate_accounts.reset_last_request(&account);
                     }
                 }
             }
-            Err(BlockError::GapPrevious) => {
-                // Prevent live traffic from evicting accounts from the priority list
-                if result.source == BlockSource::Live
-                    && !state.candidate_accounts.priority_half_full()
-                    && !state.candidate_accounts.blocked_half_full()
-                {
-                    if result.block.block_type() == BlockType::State {
-                        let account = result.block.account_field().unwrap();
-                        if state.candidate_accounts.priority_set_initial(&account) {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::PriorityInsert);
-                        } else {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::PrioritizeFailed);
+            Err(error) => {
+                state.block_queue.processing_failed(&hash);
+                match error {
+                    BlockError::GapSource => {
+                        // Prevent malicious live traffic from filling up the blocked set
+                        if result.source == BlockSource::Bootstrap {
+                            let source = result.block.source_or_link();
+
+                            if !account.is_zero() && !source.is_zero() {
+                                // Mark account as blocked because it is missing the source block
+                                let blocked = state.candidate_accounts.block(
+                                    *account,
+                                    source,
+                                    self.clock.now(),
+                                );
+                                if blocked {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::PriorityEraseBlock,
+                                    );
+                                    self.stats
+                                        .inc(StatType::BootstrapAccountSets, DetailType::Block);
+                                } else {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::BlockFailed,
+                                    );
+                                }
+                            }
                         }
                     }
+                    BlockError::GapPrevious => {
+                        // Prevent live traffic from evicting accounts from the priority list
+                        if result.source == BlockSource::Live
+                            && !state.candidate_accounts.priority_half_full()
+                            && !state.candidate_accounts.blocked_half_full()
+                        {
+                            if result.block.block_type() == BlockType::State {
+                                let account = result.block.account_field().unwrap();
+                                if state.candidate_accounts.priority_set_initial(&account) {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::PriorityInsert,
+                                    );
+                                } else {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::PrioritizeFailed,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    BlockError::GapEpochOpenPending => {
+                        // Epoch open blocks for accounts that don't have any pending blocks yet
+                        if state.candidate_accounts.priority_erase(account) {
+                            self.stats
+                                .inc(StatType::BootstrapAccountSets, DetailType::PriorityErase);
+                        }
+                    }
+                    _ => {
+                        // No need to handle other cases
+                        // TODO: If we receive blocks that are invalid (bad signature, fork, etc.),
+                        // we should penalize the peer that sent them
+                    }
                 }
-            }
-            Err(BlockError::GapEpochOpenPending) => {
-                // Epoch open blocks for accounts that don't have any pending blocks yet
-                if state.candidate_accounts.priority_erase(account) {
-                    self.stats
-                        .inc(StatType::BootstrapAccountSets, DetailType::PriorityErase);
-                }
-            }
-            _ => {
-                // No need to handle other cases
-                // TODO: If we receive blocks that are invalid (bad signature, fork, etc.),
-                // we should penalize the peer that sent them
             }
         }
     }

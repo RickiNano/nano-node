@@ -835,7 +835,6 @@ impl Node {
             steady_clock.clone(),
         ));
         bootstrapper.initialize(&network_params.ledger.genesis_account);
-        ledger_event_processor_plugins.push(Box::new(bootstrapper.ledger_event_processor()));
 
         let mut aec_ticker = AecTicker::new(active_elections.clone(), steady_clock.clone());
 

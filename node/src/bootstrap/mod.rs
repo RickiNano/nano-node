@@ -2,7 +2,6 @@ mod block_inspector;
 mod bootstrap_server;
 mod bootstrapper;
 mod cleanup;
-pub(crate) mod ledger_event_proc;
 mod requesters;
 mod response_processor;
 
