@@ -26,9 +26,8 @@ use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
     bootstrap::{
         ledger_event_proc::BootstrapLedgerEventProcessor,
-        response_processor::{
-            block_processor_enqueuer::BlockProcessorEnqueuer, block_queue::NotifiableBlockQueue,
-        },
+        response_processor::block_processor_enqueuer::BlockProcessorEnqueuer,
+        state::block_queue::NotifiableBlockQueue,
     },
     transport::MessageSender,
 };
@@ -125,7 +124,6 @@ impl Bootstrapper {
         let mut response_handler = ResponseProcessor::new(
             state.clone(),
             stats.clone(),
-            block_processor_queue.clone(),
             block_queue.clone(),
             ledger.clone(),
         );

@@ -1,6 +1,5 @@
-use std::fmt::Display;
-
 use bitvec::prelude::BitArray;
+
 use rsnano_types::{DeserializationError, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
 

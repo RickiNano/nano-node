@@ -1,6 +1,6 @@
 use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
-    bootstrap::response_processor::block_queue::NotifiableBlockQueue,
+    bootstrap::state::block_queue::NotifiableBlockQueue,
 };
 use rsnano_network::ChannelId;
 use std::{sync::Arc, time::Duration};

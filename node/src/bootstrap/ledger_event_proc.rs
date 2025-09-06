@@ -1,6 +1,6 @@
 use crate::{
     block_processing::LedgerEvent,
-    bootstrap::{response_processor::block_queue::NotifiableBlockQueue, state::BootstrapState},
+    bootstrap::state::{BootstrapState, block_queue::NotifiableBlockQueue},
     ledger_event_processor::LedgerEventProcessorPlugin,
 };
 use std::sync::{Arc, Mutex};

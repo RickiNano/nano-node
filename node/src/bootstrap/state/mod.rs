@@ -1,3 +1,4 @@
+pub(crate) mod block_queue;
 mod bootstrap_state;
 mod candidate_accounts;
 mod frontier_scan;

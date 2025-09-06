@@ -1,7 +1,6 @@
 mod account_ack_processor;
 mod block_ack_processor;
 pub(crate) mod block_processor_enqueuer;
-pub(crate) mod block_queue;
 mod database_crawler;
 mod frontier_ack_processor;
 mod frontier_checker;
