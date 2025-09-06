@@ -224,7 +224,9 @@ impl Message {
             }
             MessageType::TelemetryReq => Message::TelemetryReq,
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Preproposal => Message::SnapshotPreproposal(Preproposal::deserialize(payload)?),
+            MessageType::Preproposal => {
+                Message::SnapshotPreproposal(Preproposal::deserialize(payload)?)
+            }
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);
             }

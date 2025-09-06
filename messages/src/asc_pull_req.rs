@@ -4,7 +4,7 @@ use bitvec::prelude::BitArray;
 use num_traits::FromPrimitive;
 use serde_derive::Serialize;
 
-use rsnano_types::{read_u64_be, read_u8, Account, BlockHash, DeserializationError, HashOrAccount};
+use rsnano_types::{Account, BlockHash, DeserializationError, HashOrAccount, read_u8, read_u64_be};
 use rsnano_utils::stats::DetailType;
 
 use super::MessageVariant;
@@ -299,7 +299,7 @@ impl From<&AscPullReqType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialize_blocks() {

@@ -7,7 +7,6 @@ pub(crate) struct BootstrapInfo {
     pub blocked_accounts: usize,
     pub unique_blocking_accounts: usize,
     pub known_dependencies: usize,
-    pub reinsertable: usize,
     pub priorities: Vec<(Priority, Account)>,
     pub blocked: Vec<BlockingEntry>,
     pub search: String,
@@ -22,7 +21,6 @@ impl BootstrapInfo {
         self.blocked_accounts = candidates.blocked_len();
         self.unique_blocking_accounts = candidates.unique_blocking_accounts();
         self.known_dependencies = candidates.known_dependencies();
-        self.reinsertable = candidates.blocking_reinsertable();
 
         self.priorities = candidates
             .iter_priorities()
