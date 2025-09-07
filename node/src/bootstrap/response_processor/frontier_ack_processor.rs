@@ -14,7 +14,7 @@ use crate::bootstrap::state::{BootstrapLogic, RunningQuery, VerifyResult};
 pub(crate) struct FrontierAckProcessor {
     stats: Arc<Stats>,
     ledger: Arc<Ledger>,
-    state: Arc<Mutex<BootstrapLogic>>,
+    logic: Arc<Mutex<BootstrapLogic>>,
     workers: Arc<ThreadPool>,
     pub max_pending: usize,
 }
@@ -29,7 +29,7 @@ impl FrontierAckProcessor {
         Self {
             stats,
             ledger,
-            state,
+            logic: state,
             workers,
             max_pending: 16,
         }
@@ -76,7 +76,7 @@ impl FrontierAckProcessor {
 
         let ledger = self.ledger.clone();
         let stats = self.stats.clone();
-        let state = self.state.clone();
+        let state = self.logic.clone();
         self.workers.execute(move || {
             let any = ledger.any();
             let mut worker = FrontierWorker::new(&any, &stats, &state);
@@ -86,9 +86,9 @@ impl FrontierAckProcessor {
 
     fn update_state(&self, query: &RunningQuery, frontiers: &[Frontier]) {
         let queued_tasks = self.workers.queued_count();
-        let mut guard = self.state.lock().unwrap();
+        let mut guard = self.logic.lock().unwrap();
         guard.frontier_scan.process(query.start.into(), &frontiers);
-        guard.frontier_ack_processor_busy = queued_tasks >= self.max_pending;
+        guard.set_frontier_checker_overfill(queued_tasks >= self.max_pending);
     }
 }
 

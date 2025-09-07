@@ -28,7 +28,7 @@ pub(self) enum PollResult<T> {
 }
 
 pub struct PromiseContext<'a> {
-    pub state: &'a mut state::BootstrapLogic,
+    pub logic: &'a mut state::BootstrapLogic,
     pub now: Timestamp,
     pub id: u64,
 }
@@ -36,7 +36,7 @@ pub struct PromiseContext<'a> {
 impl<'a> PromiseContext<'a> {
     pub fn new_test_instance(state: &'a mut state::BootstrapLogic) -> Self {
         Self {
-            state,
+            logic: state,
             now: Timestamp::new_test_instance(),
             id: 123,
         }
@@ -87,7 +87,7 @@ pub(self) fn progress_state<T>(
     state: &mut state::BootstrapLogic,
 ) -> PollResult<T> {
     let mut context = PromiseContext {
-        state,
+        logic: state,
         now: Timestamp::new_test_instance(),
         id: 123,
     };

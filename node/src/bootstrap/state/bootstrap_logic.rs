@@ -107,6 +107,10 @@ impl BootstrapLogic {
         }
     }
 
+    pub fn set_frontier_checker_overfill(&mut self, overfill: bool) {
+        self.frontier_ack_processor_busy = overfill;
+    }
+
     pub fn container_info(&self) -> ContainerInfo {
         ContainerInfo::builder()
             .leaf(

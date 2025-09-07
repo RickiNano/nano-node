@@ -62,7 +62,7 @@ impl BootstrapPromise<Arc<Channel>> for ChannelWaiter {
             }
             ChannelWaitState::WaitRunningQueries => {
                 // Limit the number of in-flight requests
-                if context.state.running_queries.len() < self.max_requests {
+                if context.logic.running_queries.len() < self.max_requests {
                     self.state = ChannelWaitState::WaitLimiter;
                     return PollResult::Progress;
                 }
@@ -81,7 +81,7 @@ impl BootstrapPromise<Arc<Channel>> for ChannelWaiter {
                 let network = self.network.read().unwrap();
                 let channel_ids = Self::candidate_channels(&network);
 
-                if let Some(channel_id) = context.state.scoring.channel(channel_ids) {
+                if let Some(channel_id) = context.logic.scoring.channel(channel_ids) {
                     if let Some(channel) = network.get(channel_id) {
                         self.state = ChannelWaitState::Initial;
                         return PollResult::Finished(channel.clone());
@@ -173,7 +173,7 @@ mod tests {
         assert!(matches!(waiter.poll(&mut context), PollResult::Progress)); // initial
 
         context
-            .state
+            .logic
             .running_queries
             .insert(RunningQuery::new_test_instance());
 
@@ -182,7 +182,7 @@ mod tests {
 
         assert!(matches!(waiter.poll(&mut context), PollResult::Wait));
 
-        context.state.running_queries.clear();
+        context.logic.running_queries.clear();
         assert!(matches!(waiter.poll(&mut context), PollResult::Progress));
     }
 

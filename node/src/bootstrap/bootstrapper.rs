@@ -92,7 +92,6 @@ pub struct Bootstrapper {
     response_handler: ResponseProcessor,
     block_inspector: BlockInspector,
     requesters: Requesters,
-    block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 struct Threads {
@@ -138,7 +137,7 @@ impl Bootstrapper {
             state_changed.clone(),
             clock.clone(),
             ledger.clone(),
-            block_processor_queue.clone(),
+            block_processor_queue,
             network,
         );
 
@@ -152,7 +151,6 @@ impl Bootstrapper {
             response_handler,
             block_inspector,
             requesters,
-            block_processor_queue,
         }
     }
 

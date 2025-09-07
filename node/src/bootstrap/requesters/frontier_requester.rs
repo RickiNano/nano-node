@@ -77,7 +77,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
                 return PollResult::Progress;
             }
             FrontierState::WaitCandidateAccounts => {
-                if !context.state.candidate_accounts.priority_half_full() {
+                if !context.logic.candidate_accounts.priority_half_full() {
                     self.state = FrontierState::WaitLimiter;
                     return PollResult::Progress;
                 }
@@ -89,7 +89,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
                 }
             }
             FrontierState::WaitAckProcessor => {
-                if !context.state.frontier_ack_processor_busy {
+                if !context.logic.frontier_ack_processor_busy {
                     self.state = FrontierState::WaitChannel;
                     return PollResult::Progress;
                 }
@@ -104,7 +104,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
             },
             FrontierState::WaitFrontier(ref channel) => {
                 let now = self.clock.now();
-                let start = context.state.frontier_scan.next(now);
+                let start = context.logic.frontier_scan.next(now);
                 if !start.is_zero() {
                     self.stats
                         .inc(StatType::BootstrapNext, DetailType::NextFrontier);
@@ -154,7 +154,7 @@ mod tests {
 
         // Fill up candidate accounts
         context
-            .state
+            .logic
             .candidate_accounts
             .priority_up(&Account::from(1));
 
@@ -171,7 +171,7 @@ mod tests {
         assert!(matches!(result, PollResult::Wait));
 
         // If the accounts are cleared, continue
-        context.state.candidate_accounts.clear();
+        context.logic.candidate_accounts.clear();
         let result = requester.poll(&mut context);
         assert!(matches!(result, PollResult::Progress));
         assert!(matches!(requester.state, FrontierState::WaitLimiter));

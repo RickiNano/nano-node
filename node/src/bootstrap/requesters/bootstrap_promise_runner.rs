@@ -63,7 +63,7 @@ impl BootstrapPromiseRunner {
             poll_count = poll_count.overflowing_add(1).0;
 
             let mut context = PromiseContext {
-                state: &mut state,
+                logic: &mut state,
                 now,
                 id,
             };

@@ -31,7 +31,7 @@ where
             PollResult::Progress => PollResult::Progress,
             PollResult::Wait => PollResult::Wait,
             PollResult::Finished(spec) => {
-                self.sender.send(spec, context.state);
+                self.sender.send(spec, context.logic);
                 PollResult::Progress
             }
         }
