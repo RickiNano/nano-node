@@ -134,6 +134,7 @@ impl Stats {
     }
 
     pub fn inc_dir(&self, stat_type: StatType, detail: DetailType, dir: Direction) {
+        println!("{:?}, {:?}, {:?}", stat_type, detail, dir);
         self.add_dir(stat_type, detail, dir, 1)
     }
 

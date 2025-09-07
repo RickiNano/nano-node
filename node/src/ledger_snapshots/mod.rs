@@ -1,11 +1,9 @@
 use std::sync::{Arc, Mutex};
-
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Message, Preproposal};
 use rsnano_network::TrafficType;
 use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
-
 use crate::transport::MessageFlooder;
 
 pub struct LedgerSnapshots {
@@ -37,7 +35,7 @@ impl LedgerSnapshots {
         let message = Message::SnapshotPreproposal(preproposal);
         self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
             &message,
-            TrafficType::Generic,
+            TrafficType::Preproposal,
             0.0,
         );
     }

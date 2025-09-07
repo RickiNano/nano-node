@@ -129,6 +129,8 @@ impl NanoDataReceiver {
             | Message::ConfirmReq(_)
             | Message::FrontierReq(_)
             | Message::TelemetryAck(_) => true,
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotPreproposal(_) => true,
             _ => false,
         };
 

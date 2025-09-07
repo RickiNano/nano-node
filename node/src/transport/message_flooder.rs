@@ -82,6 +82,7 @@ impl MessageFlooder {
         let peered_prs = self.online_reps.lock().unwrap().peered_principal_reps();
         for rep in peered_prs {
             if self.sender.try_send(&rep.channel, message, traffic_type) {
+                //println!("A: {}", scale);
                 flood_count.principal_reps += 1;
             }
         }
@@ -97,6 +98,7 @@ impl MessageFlooder {
         self.remove_principal_reps(&mut channels, fanout);
         for peer in channels {
             if self.sender.try_send(&peer, message, traffic_type) {
+                //println!("B: {}", scale);
                 flood_count.non_principal_reps += 1;
             }
         }

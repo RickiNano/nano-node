@@ -20,3 +20,5 @@ mod vote_processor;
 mod votes;
 mod wallet;
 mod wallets;
+#[cfg(feature = "ledger_snapshots")]
+mod ledger_snapshots;

@@ -64,12 +64,13 @@ impl NetworkMessageProcessor {
     }
 
     pub fn process(&self, message: Message, channel: &Arc<Channel>) {
+        let detail = message.message_type().into();
+        //println!("{:?}", detail);
         self.stats.inc_dir(
             StatType::Message,
-            message.message_type().into(),
+            detail,
             Direction::In,
         );
-        trace!(?message, "network processed");
 
         match message {
             Message::Keepalive(keepalive) => {
@@ -185,7 +186,9 @@ impl NetworkMessageProcessor {
                 // obsolete messages
             }
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => todo!(),
+            Message::SnapshotPreproposal(_) => {
+
+            },
         }
     }
 }
