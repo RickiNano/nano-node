@@ -1,13 +1,13 @@
 pub(crate) mod block_queue;
-mod bootstrap_state;
+mod bootstrap_logic;
 mod candidate_accounts;
 mod frontier_scan;
 mod peer_scoring;
 mod running_query;
 mod running_query_container;
 
-pub use bootstrap_state::BootstrapCounters;
-pub use bootstrap_state::{BootstrapLogic, OutdatedAccounts};
+pub use bootstrap_logic::BootstrapCounters;
+pub use bootstrap_logic::{BootstrapLogic, OutdatedAccounts};
 pub use candidate_accounts::*;
 pub(crate) use frontier_scan::FrontierScan;
 pub use frontier_scan::{FrontierHeadInfo, FrontierScanConfig};
