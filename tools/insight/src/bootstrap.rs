@@ -1,4 +1,4 @@
-use rsnano_node::bootstrap::state::{BlockingEntry, BootstrapState, Priority};
+use rsnano_node::bootstrap::state::{BlockingEntry, BootstrapLogic, Priority};
 use rsnano_types::Account;
 
 #[derive(Default)]
@@ -14,7 +14,7 @@ pub(crate) struct BootstrapInfo {
 }
 
 impl BootstrapInfo {
-    pub(crate) fn update(&mut self, state: &BootstrapState) {
+    pub(crate) fn update(&mut self, state: &BootstrapLogic) {
         let target_account = Account::parse(&self.search);
         let candidates = &state.candidate_accounts;
         self.priority_accounts = candidates.priority_len();

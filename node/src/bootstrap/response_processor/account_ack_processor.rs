@@ -4,16 +4,16 @@ use rsnano_messages::AccountInfoAckPayload;
 use rsnano_types::{Account, BlockHash};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use crate::bootstrap::state::{BootstrapState, CandidateAccounts, RunningQuery};
+use crate::bootstrap::state::{BootstrapLogic, CandidateAccounts, RunningQuery};
 
 /// Processes responses to an AscPullReq for account info
 pub(crate) struct AccountAckProcessor {
     stats: Arc<Stats>,
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
 }
 
 impl AccountAckProcessor {
-    pub(crate) fn new(stats: Arc<Stats>, state: Arc<Mutex<BootstrapState>>) -> Self {
+    pub(crate) fn new(stats: Arc<Stats>, state: Arc<Mutex<BootstrapLogic>>) -> Self {
         Self { stats, state }
     }
 
@@ -39,7 +39,7 @@ impl AccountAckProcessor {
 
     fn update_dependency(
         &self,
-        state: &mut BootstrapState,
+        state: &mut BootstrapLogic,
         hash: &BlockHash,
         dep_account: Account,
     ) {
@@ -61,7 +61,7 @@ impl AccountAckProcessor {
         }
     }
 
-    fn prioritize(&self, state: &mut BootstrapState, account: &Account) {
+    fn prioritize(&self, state: &mut BootstrapLogic, account: &Account) {
         // Use the lowest possible priority here
         if state
             .candidate_accounts
@@ -280,14 +280,14 @@ mod tests {
 
     struct Fixture {
         stats: Arc<Stats>,
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
         processor: AccountAckProcessor,
     }
 
     impl Fixture {
         fn new() -> Self {
             let stats = Arc::new(Stats::default());
-            let state = Arc::new(Mutex::new(BootstrapState::default()));
+            let state = Arc::new(Mutex::new(BootstrapLogic::default()));
             let processor = AccountAckProcessor::new(stats.clone(), state.clone());
 
             Self {

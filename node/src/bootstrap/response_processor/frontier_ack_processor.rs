@@ -8,13 +8,13 @@ use rsnano_utils::{
 };
 
 use super::frontier_worker::FrontierWorker;
-use crate::bootstrap::state::{BootstrapState, RunningQuery, VerifyResult};
+use crate::bootstrap::state::{BootstrapLogic, RunningQuery, VerifyResult};
 
 /// Processes responses to AscPullReqs by the frontier scan
 pub(crate) struct FrontierAckProcessor {
     stats: Arc<Stats>,
     ledger: Arc<Ledger>,
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     workers: Arc<ThreadPool>,
     pub max_pending: usize,
 }
@@ -23,7 +23,7 @@ impl FrontierAckProcessor {
     pub(crate) fn new(
         stats: Arc<Stats>,
         ledger: Arc<Ledger>,
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
     ) -> Self {
         let workers = Arc::new(ThreadPool::new(1, "Bootstrap work"));
         Self {
@@ -211,7 +211,7 @@ mod tests {
     fn create_fixture() -> Fixture {
         let stats = Arc::new(Stats::default());
         let ledger = Arc::new(Ledger::new_null());
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let processor = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());
 
         Fixture {
@@ -233,6 +233,6 @@ mod tests {
     struct Fixture {
         stats: Arc<Stats>,
         processor: FrontierAckProcessor,
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
     }
 }

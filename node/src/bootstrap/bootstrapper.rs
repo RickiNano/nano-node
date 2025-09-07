@@ -20,7 +20,7 @@ use super::{
     cleanup::BootstrapCleanup,
     requesters::Requesters,
     response_processor::{ProcessError, ResponseProcessor},
-    state::{BootstrapState, CandidateAccountsConfig},
+    state::{BootstrapLogic, CandidateAccountsConfig},
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
@@ -85,7 +85,7 @@ impl Default for BootstrapConfig {
 pub struct Bootstrapper {
     stats: Arc<Stats>,
     threads: Mutex<Option<Threads>>,
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     state_changed: Arc<Condvar>,
     config: BootstrapConfig,
     clock: Arc<SteadyClock>,
@@ -110,7 +110,7 @@ impl Bootstrapper {
         clock: Arc<SteadyClock>,
     ) -> Self {
         let limiter = Arc::new(Mutex::new(TokenBucket::new(config.rate_limit)));
-        let state = Arc::new(Mutex::new(BootstrapState::new(config.clone())));
+        let state = Arc::new(Mutex::new(BootstrapLogic::new(config.clone())));
         let state_changed = Arc::new(Condvar::new());
 
         let mut response_handler = ResponseProcessor::new(
@@ -206,7 +206,7 @@ impl Bootstrapper {
         }
     }
 
-    pub fn state(&self) -> MutexGuard<'_, BootstrapState> {
+    pub fn state(&self) -> MutexGuard<'_, BootstrapLogic> {
         self.state.lock().unwrap()
     }
 

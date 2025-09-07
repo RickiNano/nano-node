@@ -11,7 +11,7 @@ use rsnano_utils::stats::{DetailType, StatType, Stats};
 use crate::{
     bootstrap::{
         AscPullQuerySpec,
-        state::{BootstrapState, RunningQuery},
+        state::{BootstrapLogic, RunningQuery},
     },
     transport::MessageSender,
 };
@@ -54,7 +54,7 @@ impl QuerySender {
         self.request_timeout = timeout;
     }
 
-    pub fn send(&mut self, spec: AscPullQuerySpec, state: &mut BootstrapState) -> Option<u64> {
+    pub fn send(&mut self, spec: AscPullQuerySpec, state: &mut BootstrapLogic) -> Option<u64> {
         if self.send_listener.is_tracked() {
             self.send_listener.emit(spec.clone());
         }
@@ -124,7 +124,7 @@ mod tests {
 
         let spec = AscPullQuerySpec::new_test_instance();
         let channel_id = spec.channel.channel_id();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         let id = fixture.query_sender.send(spec, &mut state);
         assert!(id.is_some());
@@ -143,7 +143,7 @@ mod tests {
         let mut fixture = create_fixture();
 
         let spec = AscPullQuerySpec::new_test_instance();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         state.candidate_accounts.priority_up(&spec.account);
 
         let id = fixture.query_sender.send(spec.clone(), &mut state).unwrap();
@@ -163,7 +163,7 @@ mod tests {
         let mut spec = AscPullQuerySpec::new_test_instance();
         spec.cooldown_account = true;
 
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         state.candidate_accounts.priority_up(&spec.account);
 
         fixture.query_sender.send(spec.clone(), &mut state).unwrap();
@@ -178,7 +178,7 @@ mod tests {
     fn when_channel_unavailable_should_not_send() {
         let mut fixture = create_fixture();
         let spec = AscPullQuerySpec::new_test_instance();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         spec.channel.close();
         let id = fixture.query_sender.send(spec.clone(), &mut state);
@@ -193,7 +193,7 @@ mod tests {
     fn can_track_sends() {
         let mut fixture = create_fixture();
         let spec = AscPullQuerySpec::new_test_instance();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         let tracker = fixture.query_sender.track();
         fixture.query_sender.send(spec.clone(), &mut state);

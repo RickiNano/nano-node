@@ -5,14 +5,14 @@ use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Account, Block, BlockType, SavedBlock};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use super::state::{BootstrapState, PriorityUpResult};
+use super::state::{BootstrapLogic, PriorityUpResult};
 use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource, ProcessedResult};
 use rsnano_network::ChannelId;
 use tracing::trace;
 
 /// Inspects a processed block and adjusts the bootstrap state accordingly
 pub(super) struct BlockInspector {
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     ledger: Arc<Ledger>,
     stats: Arc<Stats>,
     clock: Arc<SteadyClock>,
@@ -21,7 +21,7 @@ pub(super) struct BlockInspector {
 
 impl BlockInspector {
     pub(super) fn new(
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
         ledger: Arc<Ledger>,
         stats: Arc<Stats>,
         clock: Arc<SteadyClock>,
@@ -46,7 +46,7 @@ impl BlockInspector {
         self.enqueue_next_blocks(&mut state);
     }
 
-    fn enqueue_next_blocks(&self, state: &mut BootstrapState) {
+    fn enqueue_next_blocks(&self, state: &mut BootstrapLogic) {
         while let Some((block, query_id)) = state.block_queue.next_to_process() {
             let block_hash = block.hash();
 
@@ -87,7 +87,7 @@ impl BlockInspector {
     /// - Marks an account as forwarded if it has been recently referenced by a block that has been inserted.
     fn inspect_block(
         &self,
-        state: &mut BootstrapState,
+        state: &mut BootstrapLogic,
         result: &ProcessedResult,
         account: &Account,
     ) {

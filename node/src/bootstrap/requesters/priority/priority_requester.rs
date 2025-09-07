@@ -165,13 +165,13 @@ mod tests {
             requesters::{
                 channel_waiter::ChannelWaiter, priority::priority_requester::PriorityState,
             },
-            state::BootstrapState,
+            state::BootstrapLogic,
         },
     };
 
     #[test]
     fn happy_path() {
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let account = Account::from(42);
         state.candidate_accounts.priority_up(&account);
 
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn wait_block_processor() {
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         let (mut requester, _) = create_requester();
         requester.block_processor_threshold = 0;
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn wait_channel() {
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let (mut requester, _) = create_requester();
 
         let result = progress_state(&mut requester, &mut state);
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn wait_priority() {
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let (mut requester, network) = create_requester();
         network.write().unwrap().add_test_channel();
 

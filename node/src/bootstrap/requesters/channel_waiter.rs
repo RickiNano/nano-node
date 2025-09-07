@@ -127,7 +127,7 @@ mod tests {
     use super::*;
     use crate::bootstrap::{
         PromiseContext,
-        state::{BootstrapState, RunningQuery},
+        state::{BootstrapLogic, RunningQuery},
     };
     use rsnano_nullable_clock::Timestamp;
 
@@ -145,7 +145,7 @@ mod tests {
         let channel = network.write().unwrap().add_test_channel();
         let limiter = Arc::new(Mutex::new(TokenBucket::new(TEST_RATE_LIMIT)));
         let mut waiter = ChannelWaiter::new(network, limiter, MAX_TEST_REQUESTS);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         let mut context = PromiseContext::new_test_instance(&mut state);
 
@@ -167,7 +167,7 @@ mod tests {
         let network = test_network();
         let limiter = Arc::new(Mutex::new(TokenBucket::new(TEST_RATE_LIMIT)));
         let mut waiter = ChannelWaiter::new(network, limiter, 1);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         assert!(matches!(waiter.poll(&mut context), PollResult::Progress)); // initial
@@ -193,7 +193,7 @@ mod tests {
         let now = Timestamp::new_test_instance();
         limiter.lock().unwrap().try_consume(TEST_RATE_LIMIT, now);
         let mut waiter = ChannelWaiter::new(network, limiter.clone(), MAX_TEST_REQUESTS);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         assert!(matches!(waiter.poll(&mut context), PollResult::Progress)); // initial
@@ -217,7 +217,7 @@ mod tests {
         let network = test_network();
         let limiter = Arc::new(Mutex::new(TokenBucket::new(TEST_RATE_LIMIT)));
         let mut waiter = ChannelWaiter::new(network, limiter, MAX_TEST_REQUESTS);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         assert!(matches!(waiter.poll(&mut context), PollResult::Progress)); // initial

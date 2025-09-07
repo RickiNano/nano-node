@@ -126,7 +126,7 @@ mod tests {
     use super::*;
     use crate::bootstrap::{
         BootstrapConfig, progress, progress_state,
-        state::{BootstrapState, CandidateAccountsConfig, FrontierScan},
+        state::{BootstrapLogic, CandidateAccountsConfig, FrontierScan},
     };
     use rsnano_network::Network;
     use std::sync::{Mutex, RwLock};
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn happy_path() {
         let (mut requester, network) = create_test_requester();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         network.write().unwrap().add_test_channel();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn wait_limiter() {
         let (mut requester, _) = create_test_requester();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         // Should wait because rate limit reached
@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn wait_channel() {
         let (mut requester, network) = create_test_requester();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = progress(&mut requester, &mut context);
@@ -225,7 +225,7 @@ mod tests {
     #[test]
     fn finish_request() {
         let (mut requester, network) = create_test_requester();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         network.write().unwrap().add_test_channel();
 
         let PollResult::Finished(spec) = progress_state(&mut requester, &mut state) else {
@@ -243,7 +243,7 @@ mod tests {
     #[test]
     fn wait_when_frontier_scan_rate_limited() {
         let (mut requester, network) = create_test_requester();
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         network.write().unwrap().add_test_channel();
         state.frontier_scan = FrontierScan::new_test_instance_blocked();
 
@@ -267,7 +267,7 @@ mod tests {
         (requester, network)
     }
 
-    fn state_with_max_priorities(max: usize) -> BootstrapState {
+    fn state_with_max_priorities(max: usize) -> BootstrapLogic {
         let config = BootstrapConfig {
             candidate_accounts: CandidateAccountsConfig {
                 priorities_max: max,
@@ -275,6 +275,6 @@ mod tests {
             },
             ..Default::default()
         };
-        BootstrapState::new(config)
+        BootstrapLogic::new(config)
     }
 }

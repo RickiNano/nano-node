@@ -6,7 +6,7 @@ use std::{
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use super::state::{BootstrapState, RunningQuery};
+use super::state::{BootstrapLogic, RunningQuery};
 
 pub(super) struct BootstrapCleanup {
     clock: Arc<SteadyClock>,
@@ -23,7 +23,7 @@ impl BootstrapCleanup {
         }
     }
 
-    pub fn cleanup(&mut self, state: &mut BootstrapState) {
+    pub fn cleanup(&mut self, state: &mut BootstrapLogic) {
         let now = self.clock.now();
         self.stats.inc(StatType::Bootstrap, DetailType::LoopCleanup);
         state.scoring.decay();
@@ -39,7 +39,7 @@ impl BootstrapCleanup {
         self.reinsert_known_dependencies(state);
     }
 
-    fn erase_timed_out_requests(&mut self, state: &mut BootstrapState, now: Timestamp) {
+    fn erase_timed_out_requests(&mut self, state: &mut BootstrapLogic, now: Timestamp) {
         let should_timeout = |query: &RunningQuery| query.response_cutoff < now;
 
         while let Some(front) = state.running_queries.front() {
@@ -54,7 +54,7 @@ impl BootstrapCleanup {
         }
     }
 
-    fn reinsert_known_dependencies(&mut self, state: &mut BootstrapState) {
+    fn reinsert_known_dependencies(&mut self, state: &mut BootstrapLogic) {
         if self.last_dependency_sync.elapsed() < Duration::from_secs(30) {
             return;
         }

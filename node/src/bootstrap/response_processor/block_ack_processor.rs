@@ -7,20 +7,20 @@ use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     bootstrap::state::{
-        BootstrapState, PriorityDownResult, RunningQuery, VerifyResult, block_queue::AccountBlocks,
+        BootstrapLogic, PriorityDownResult, RunningQuery, VerifyResult, block_queue::AccountBlocks,
     },
 };
 use rsnano_network::ChannelId;
 
 pub(crate) struct BlockAckProcessor {
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     stats: Arc<Stats>,
     block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 impl BlockAckProcessor {
     pub(crate) fn new(
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
         stats: Arc<Stats>,
         block_processor_queue: Arc<BlockProcessorQueue>,
     ) -> Self {
@@ -90,7 +90,7 @@ impl BlockAckProcessor {
     }
 
     // TODO Remeove duplication! Copied from BlockInspector
-    fn enqueue_next_blocks(&self, state: &mut BootstrapState) {
+    fn enqueue_next_blocks(&self, state: &mut BootstrapLogic) {
         while let Some((block, query_id)) = state.block_queue.next_to_process() {
             let block_hash = block.hash();
 
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn response_doesnt_match_query() {
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let stats = Arc::new(Stats::default());
         let block_processor_queue = Arc::new(BlockProcessorQueue::new_null());
         let processor = BlockAckProcessor::new(state, stats.clone(), block_processor_queue);
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn handle_empty_response() {
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let stats = Arc::new(Stats::default());
         let block_processor_queue = Arc::new(BlockProcessorQueue::new_null());
         let processor = BlockAckProcessor::new(state, stats.clone(), block_processor_queue);

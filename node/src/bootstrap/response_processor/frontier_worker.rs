@@ -5,12 +5,12 @@ use rsnano_types::Frontier;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::frontier_checker::FrontierChecker;
-use crate::bootstrap::state::{BootstrapState, OutdatedAccounts};
+use crate::bootstrap::state::{BootstrapLogic, OutdatedAccounts};
 
 /// Handles received frontiers
 pub(crate) struct FrontierWorker<'a> {
     stats: &'a Stats,
-    state: &'a Mutex<BootstrapState>,
+    state: &'a Mutex<BootstrapLogic>,
     checker: FrontierChecker<'a>,
 }
 
@@ -18,7 +18,7 @@ impl<'a> FrontierWorker<'a> {
     pub(crate) fn new(
         any: &'a OwningAnySet<'a>,
         stats: &'a Stats,
-        state: &'a Mutex<BootstrapState>,
+        state: &'a Mutex<BootstrapLogic>,
     ) -> Self {
         Self {
             stats,
@@ -69,7 +69,7 @@ mod tests {
         let ledger = Ledger::new_null();
         let any = ledger.any();
         let stats = Stats::default();
-        let state = Mutex::new(BootstrapState::default());
+        let state = Mutex::new(BootstrapLogic::default());
         let mut worker = FrontierWorker::new(&any, &stats, &state);
 
         worker.process(Vec::new());
@@ -91,7 +91,7 @@ mod tests {
             .finish();
         let any = ledger.any();
         let stats = Stats::default();
-        let state = Mutex::new(BootstrapState::default());
+        let state = Mutex::new(BootstrapLogic::default());
         let mut worker = FrontierWorker::new(&any, &stats, &state);
 
         worker.process(vec![Frontier::new(account, BlockHash::from(3))]);

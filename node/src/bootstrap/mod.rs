@@ -28,13 +28,13 @@ pub(self) enum PollResult<T> {
 }
 
 pub struct PromiseContext<'a> {
-    pub state: &'a mut state::BootstrapState,
+    pub state: &'a mut state::BootstrapLogic,
     pub now: Timestamp,
     pub id: u64,
 }
 
 impl<'a> PromiseContext<'a> {
-    pub fn new_test_instance(state: &'a mut state::BootstrapState) -> Self {
+    pub fn new_test_instance(state: &'a mut state::BootstrapLogic) -> Self {
         Self {
             state,
             now: Timestamp::new_test_instance(),
@@ -84,7 +84,7 @@ impl AscPullQuerySpec {
 #[cfg(test)]
 pub(self) fn progress_state<T>(
     requester: &mut impl BootstrapPromise<T>,
-    state: &mut state::BootstrapState,
+    state: &mut state::BootstrapLogic,
 ) -> PollResult<T> {
     let mut context = PromiseContext {
         state,

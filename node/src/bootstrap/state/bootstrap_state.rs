@@ -12,7 +12,7 @@ use super::{
 };
 use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig, state::block_queue::BlockQueue};
 
-pub struct BootstrapState {
+pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
@@ -24,7 +24,7 @@ pub struct BootstrapState {
     pub(crate) stopped: bool,
 }
 
-impl BootstrapState {
+impl BootstrapLogic {
     pub fn new(config: BootstrapConfig) -> Self {
         let mut scoring = PeerScoring::new();
         scoring.set_channel_limit(config.channel_limit);
@@ -121,7 +121,7 @@ impl BootstrapState {
     }
 }
 
-impl Default for BootstrapState {
+impl Default for BootstrapLogic {
     fn default() -> Self {
         Self::new(Default::default())
     }
