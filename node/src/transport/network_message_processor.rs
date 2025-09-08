@@ -186,8 +186,7 @@ impl NetworkMessageProcessor {
             }
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(_) => {
-                self.stats
-                    .inc_dir(StatType::Message, DetailType::Preproposal, Direction::In);
+
             }
         }
     }
