@@ -10,9 +10,9 @@ use super::{
     CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer,
     running_query::QuerySource,
 };
-use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig};
+use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig, state::block_queue::BlockQueue};
 
-pub struct BootstrapState {
+pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
@@ -20,10 +20,11 @@ pub struct BootstrapState {
     pub counters: BootstrapCounters,
     pub(crate) frontier_ack_processor_busy: bool,
     pub last_outdated_accounts: VecDeque<Account>,
+    pub(crate) block_queue: BlockQueue,
     pub(crate) stopped: bool,
 }
 
-impl BootstrapState {
+impl BootstrapLogic {
     pub fn new(config: BootstrapConfig) -> Self {
         let mut scoring = PeerScoring::new();
         scoring.set_channel_limit(config.channel_limit);
@@ -36,6 +37,7 @@ impl BootstrapState {
             counters: BootstrapCounters::default(),
             frontier_ack_processor_busy: false,
             last_outdated_accounts: VecDeque::new(),
+            block_queue: BlockQueue::default(),
             stopped: false,
         }
     }
@@ -69,9 +71,11 @@ impl BootstrapState {
 
     pub fn next_priority(&mut self, now: Timestamp) -> PriorityResult {
         let next = self.candidate_accounts.next_priority(now, |account| {
-            self.running_queries
-                .count_by_account(account, QuerySource::Priority)
-                < 2
+            !self.block_queue.contains_account(account)
+                && self
+                    .running_queries
+                    .count_by_account(account, QuerySource::Priority)
+                    < 4
         });
 
         if next.account.is_zero() {
@@ -103,6 +107,10 @@ impl BootstrapState {
         }
     }
 
+    pub fn set_frontier_checker_overfill(&mut self, overfill: bool) {
+        self.frontier_ack_processor_busy = overfill;
+    }
+
     pub fn container_info(&self) -> ContainerInfo {
         ContainerInfo::builder()
             .leaf(
@@ -117,7 +125,7 @@ impl BootstrapState {
     }
 }
 
-impl Default for BootstrapState {
+impl Default for BootstrapLogic {
     fn default() -> Self {
         Self::new(Default::default())
     }

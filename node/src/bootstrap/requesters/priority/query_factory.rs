@@ -37,7 +37,7 @@ impl QueryFactory {
         context: &mut PromiseContext,
         channel: Arc<Channel>,
     ) -> Option<AscPullQuerySpec> {
-        let next = context.state.next_priority(context.now);
+        let next = context.logic.next_priority(context.now);
 
         if next.account.is_zero() {
             return None;
@@ -136,7 +136,7 @@ impl PullStart {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bootstrap::state::BootstrapState;
+    use crate::bootstrap::state::BootstrapLogic;
     use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
 
     #[test]
@@ -321,7 +321,7 @@ mod tests {
         let pull_type_decider = PullTypeDecider::new_null_with(input.pull_type);
         let pull_count_decider = PullCountDecider::default();
         let mut factory = QueryFactory::new(ledger, pull_type_decider, pull_count_decider);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         if let Some(account) = &input.prioritized_account {
             state.candidate_accounts.priority_up(account);

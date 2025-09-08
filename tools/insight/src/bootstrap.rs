@@ -1,4 +1,4 @@
-use rsnano_node::bootstrap::state::{BlockingEntry, BootstrapState, Priority};
+use rsnano_node::bootstrap::state::{BlockingEntry, BootstrapLogic, Priority};
 use rsnano_types::Account;
 
 #[derive(Default)]
@@ -7,7 +7,6 @@ pub(crate) struct BootstrapInfo {
     pub blocked_accounts: usize,
     pub unique_blocking_accounts: usize,
     pub known_dependencies: usize,
-    pub reinsertable: usize,
     pub priorities: Vec<(Priority, Account)>,
     pub blocked: Vec<BlockingEntry>,
     pub search: String,
@@ -15,14 +14,13 @@ pub(crate) struct BootstrapInfo {
 }
 
 impl BootstrapInfo {
-    pub(crate) fn update(&mut self, state: &BootstrapState) {
+    pub(crate) fn update(&mut self, state: &BootstrapLogic) {
         let target_account = Account::parse(&self.search);
         let candidates = &state.candidate_accounts;
         self.priority_accounts = candidates.priority_len();
         self.blocked_accounts = candidates.blocked_len();
         self.unique_blocking_accounts = candidates.unique_blocking_accounts();
         self.known_dependencies = candidates.known_dependencies();
-        self.reinsertable = candidates.blocking_reinsertable();
 
         self.priorities = candidates
             .iter_priorities()

@@ -46,7 +46,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
                 }
             },
             DependencyState::WaitBlocking(ref channel) => {
-                match context.state.next_blocking_query(channel) {
+                match context.logic.next_blocking_query(channel) {
                     Some(spec) => {
                         self.stats
                             .inc(StatType::BootstrapNext, DetailType::NextBlocking);
@@ -63,7 +63,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bootstrap::{PromiseContext, progress, progress_state, state::BootstrapState};
+    use crate::bootstrap::{PromiseContext, progress, progress_state, state::BootstrapLogic};
     use rsnano_network::{Network, token_bucket::TokenBucket};
     use rsnano_nullable_clock::Timestamp;
     use rsnano_types::{Account, BlockHash};
@@ -74,7 +74,7 @@ mod tests {
         let network = test_network();
         network.write().unwrap().add_test_channel();
         let mut requester = create_test_requester(network);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         let account = Account::from(1);
         let dependency = BlockHash::from(2);
@@ -96,7 +96,7 @@ mod tests {
     fn wait_channel() {
         let network = test_network();
         let mut requester = create_test_requester(network.clone());
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = progress(&mut requester, &mut context);
@@ -114,7 +114,7 @@ mod tests {
         let network = test_network();
         network.write().unwrap().add_test_channel();
         let mut requester = create_test_requester(network);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
 
         let result = progress_state(&mut requester, &mut state);
         assert!(matches!(result, PollResult::Wait));

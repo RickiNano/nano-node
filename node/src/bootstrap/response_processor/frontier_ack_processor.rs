@@ -8,13 +8,13 @@ use rsnano_utils::{
 };
 
 use super::frontier_worker::FrontierWorker;
-use crate::bootstrap::state::{BootstrapState, RunningQuery, VerifyResult};
+use crate::bootstrap::state::{BootstrapLogic, RunningQuery, VerifyResult};
 
 /// Processes responses to AscPullReqs by the frontier scan
 pub(crate) struct FrontierAckProcessor {
     stats: Arc<Stats>,
     ledger: Arc<Ledger>,
-    state: Arc<Mutex<BootstrapState>>,
+    logic: Arc<Mutex<BootstrapLogic>>,
     workers: Arc<ThreadPool>,
     pub max_pending: usize,
 }
@@ -23,13 +23,13 @@ impl FrontierAckProcessor {
     pub(crate) fn new(
         stats: Arc<Stats>,
         ledger: Arc<Ledger>,
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
     ) -> Self {
         let workers = Arc::new(ThreadPool::new(1, "Bootstrap work"));
         Self {
             stats,
             ledger,
-            state,
+            logic: state,
             workers,
             max_pending: 16,
         }
@@ -76,7 +76,7 @@ impl FrontierAckProcessor {
 
         let ledger = self.ledger.clone();
         let stats = self.stats.clone();
-        let state = self.state.clone();
+        let state = self.logic.clone();
         self.workers.execute(move || {
             let any = ledger.any();
             let mut worker = FrontierWorker::new(&any, &stats, &state);
@@ -86,9 +86,9 @@ impl FrontierAckProcessor {
 
     fn update_state(&self, query: &RunningQuery, frontiers: &[Frontier]) {
         let queued_tasks = self.workers.queued_count();
-        let mut guard = self.state.lock().unwrap();
+        let mut guard = self.logic.lock().unwrap();
         guard.frontier_scan.process(query.start.into(), &frontiers);
-        guard.frontier_ack_processor_busy = queued_tasks >= self.max_pending;
+        guard.set_frontier_checker_overfill(queued_tasks >= self.max_pending);
     }
 }
 
@@ -211,7 +211,7 @@ mod tests {
     fn create_fixture() -> Fixture {
         let stats = Arc::new(Stats::default());
         let ledger = Arc::new(Ledger::new_null());
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let processor = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());
 
         Fixture {
@@ -233,6 +233,6 @@ mod tests {
     struct Fixture {
         stats: Arc<Stats>,
         processor: FrontierAckProcessor,
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
     }
 }

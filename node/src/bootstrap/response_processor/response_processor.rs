@@ -2,6 +2,7 @@ use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
+use tracing::trace;
 
 use rsnano_ledger::Ledger;
 use rsnano_messages::{AscPullAck, AscPullAckType};
@@ -10,19 +11,15 @@ use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::Stats;
 
 use super::{
-    super::state::{BootstrapState, QueryType, RunningQuery},
+    super::state::{BootstrapLogic, QueryType, RunningQuery},
     account_ack_processor::AccountAckProcessor,
     block_ack_processor::BlockAckProcessor,
     frontier_ack_processor::FrontierAckProcessor,
 };
-use crate::{
-    block_processing::BlockProcessorQueue,
-    bootstrap::response_processor::block_queue::NotifiableBlockQueue,
-};
-use tracing::trace;
+use crate::block_processing::BlockProcessorQueue;
 
 pub(crate) struct ResponseProcessor {
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     frontiers: FrontierAckProcessor,
     accounts: AccountAckProcessor,
     blocks: BlockAckProcessor,
@@ -51,16 +48,14 @@ impl ProcessInfo {
 
 impl ResponseProcessor {
     pub(crate) fn new(
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
         stats: Arc<Stats>,
-        block_processor_queue: Arc<BlockProcessorQueue>,
-        block_queue: Arc<NotifiableBlockQueue>,
+        block_queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
     ) -> Self {
         let frontiers = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());
         let accounts = AccountAckProcessor::new(stats.clone(), state.clone());
-        let blocks =
-            BlockAckProcessor::new(state.clone(), stats, block_queue, block_processor_queue);
+        let blocks = BlockAckProcessor::new(state.clone(), stats, block_queue);
 
         Self {
             state,

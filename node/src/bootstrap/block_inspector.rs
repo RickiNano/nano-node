@@ -5,29 +5,34 @@ use rsnano_nullable_clock::SteadyClock;
 use rsnano_types::{Account, Block, BlockType, SavedBlock};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use super::state::{BootstrapState, PriorityUpResult};
-use crate::block_processing::{BlockSource, ProcessedResult};
+use super::state::{BootstrapLogic, PriorityUpResult};
+use crate::block_processing::{BlockContext, BlockProcessorQueue, BlockSource, ProcessedResult};
+use rsnano_network::ChannelId;
+use tracing::trace;
 
 /// Inspects a processed block and adjusts the bootstrap state accordingly
 pub(super) struct BlockInspector {
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     ledger: Arc<Ledger>,
     stats: Arc<Stats>,
     clock: Arc<SteadyClock>,
+    block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 impl BlockInspector {
     pub(super) fn new(
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
         ledger: Arc<Ledger>,
         stats: Arc<Stats>,
         clock: Arc<SteadyClock>,
+        block_processor_queue: Arc<BlockProcessorQueue>,
     ) -> Self {
         Self {
             state,
             ledger,
             stats,
             clock,
+            block_processor_queue,
         }
     }
 
@@ -37,6 +42,29 @@ impl BlockInspector {
         for result in batch {
             let account = self.get_account(&any, &result.block, &result.saved_block);
             self.inspect_block(&mut state, result, &account);
+        }
+        self.enqueue_next_blocks(&mut state);
+    }
+
+    fn enqueue_next_blocks(&self, state: &mut BootstrapLogic) {
+        while let Some((block, query_id)) = state.block_queue.next_to_process() {
+            let block_hash = block.hash();
+
+            trace!(%block_hash, query_id, "Process block");
+
+            let inserted = self.block_processor_queue.push(BlockContext::new(
+                block.clone(),
+                BlockSource::Bootstrap,
+                // TODO use real channel id
+                ChannelId::LOOPBACK,
+            ));
+
+            if inserted {
+                state.block_queue.enqueued_for_processing(&block_hash);
+            } else {
+                // block processor queue is full!
+                break;
+            }
         }
     }
 
@@ -59,7 +87,7 @@ impl BlockInspector {
     /// - Marks an account as forwarded if it has been recently referenced by a block that has been inserted.
     fn inspect_block(
         &self,
-        state: &mut BootstrapState,
+        state: &mut BootstrapLogic,
         result: &ProcessedResult,
         account: &Account,
     ) {
@@ -125,61 +153,80 @@ impl BlockInspector {
                         };
                     }
                 }
-            }
-            Err(BlockError::GapSource) => {
-                // Prevent malicious live traffic from filling up the blocked set
-                if result.source == BlockSource::Bootstrap {
-                    let source = result.block.source_or_link();
 
-                    if !account.is_zero() && !source.is_zero() {
-                        // Mark account as blocked because it is missing the source block
-                        let blocked =
-                            state
-                                .candidate_accounts
-                                .block(*account, source, self.clock.now());
-                        if blocked {
-                            self.stats.inc(
-                                StatType::BootstrapAccountSets,
-                                DetailType::PriorityEraseBlock,
-                            );
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::Block);
-                        } else {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::BlockFailed);
-                        }
+                let info = state.block_queue.processed(&hash);
+                if let Some(account) = info.account {
+                    if info.was_last {
+                        state.candidate_accounts.reset_last_request(&account);
                     }
                 }
             }
-            Err(BlockError::GapPrevious) => {
-                // Prevent live traffic from evicting accounts from the priority list
-                if result.source == BlockSource::Live
-                    && !state.candidate_accounts.priority_half_full()
-                    && !state.candidate_accounts.blocked_half_full()
-                {
-                    if result.block.block_type() == BlockType::State {
-                        let account = result.block.account_field().unwrap();
-                        if state.candidate_accounts.priority_set_initial(&account) {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::PriorityInsert);
-                        } else {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::PrioritizeFailed);
+            Err(error) => {
+                state.block_queue.processing_failed(&hash);
+                match error {
+                    BlockError::GapSource => {
+                        // Prevent malicious live traffic from filling up the blocked set
+                        if result.source == BlockSource::Bootstrap {
+                            let source = result.block.source_or_link();
+
+                            if !account.is_zero() && !source.is_zero() {
+                                // Mark account as blocked because it is missing the source block
+                                let blocked = state.candidate_accounts.block(
+                                    *account,
+                                    source,
+                                    self.clock.now(),
+                                );
+                                if blocked {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::PriorityEraseBlock,
+                                    );
+                                    self.stats
+                                        .inc(StatType::BootstrapAccountSets, DetailType::Block);
+                                } else {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::BlockFailed,
+                                    );
+                                }
+                            }
                         }
                     }
+                    BlockError::GapPrevious => {
+                        // Prevent live traffic from evicting accounts from the priority list
+                        if result.source == BlockSource::Live
+                            && !state.candidate_accounts.priority_half_full()
+                            && !state.candidate_accounts.blocked_half_full()
+                        {
+                            if result.block.block_type() == BlockType::State {
+                                let account = result.block.account_field().unwrap();
+                                if state.candidate_accounts.priority_set_initial(&account) {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::PriorityInsert,
+                                    );
+                                } else {
+                                    self.stats.inc(
+                                        StatType::BootstrapAccountSets,
+                                        DetailType::PrioritizeFailed,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    BlockError::GapEpochOpenPending => {
+                        // Epoch open blocks for accounts that don't have any pending blocks yet
+                        if state.candidate_accounts.priority_erase(account) {
+                            self.stats
+                                .inc(StatType::BootstrapAccountSets, DetailType::PriorityErase);
+                        }
+                    }
+                    _ => {
+                        // No need to handle other cases
+                        // TODO: If we receive blocks that are invalid (bad signature, fork, etc.),
+                        // we should penalize the peer that sent them
+                    }
                 }
-            }
-            Err(BlockError::GapEpochOpenPending) => {
-                // Epoch open blocks for accounts that don't have any pending blocks yet
-                if state.candidate_accounts.priority_erase(account) {
-                    self.stats
-                        .inc(StatType::BootstrapAccountSets, DetailType::PriorityErase);
-                }
-            }
-            _ => {
-                // No need to handle other cases
-                // TODO: If we receive blocks that are invalid (bad signature, fork, etc.),
-                // we should penalize the peer that sent them
             }
         }
     }

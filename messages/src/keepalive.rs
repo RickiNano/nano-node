@@ -90,8 +90,6 @@ fn empty_peers() -> [SocketAddrV6; 8] {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
     use crate::{Message, assert_deserializable};
 

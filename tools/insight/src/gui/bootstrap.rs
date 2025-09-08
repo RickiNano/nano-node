@@ -73,8 +73,6 @@ pub(crate) fn view_bootstrap(ctx: &egui::Context, model: BootstrapViewModel, app
                                 "unique senders: {}",
                                 model.unique_blocking_accounts
                             ));
-                            ui.add_space(50.0);
-                            ui.label(format!("reinsertable: {}", model.reinsertable));
                         });
 
                         ui.horizontal(|ui| {
@@ -130,7 +128,6 @@ pub(crate) struct BootstrapViewModel {
     pub blocked_accounts: String,
     pub unique_blocking_accounts: usize,
     pub known_dependencies: usize,
-    pub reinsertable: usize,
     pub priorities: Vec<PriorityViewModel>,
     pub blocked: Vec<BlockedViewModel>,
 }

@@ -2,7 +2,6 @@ mod block_inspector;
 mod bootstrap_server;
 mod bootstrapper;
 mod cleanup;
-pub(crate) mod ledger_event_proc;
 mod requesters;
 mod response_processor;
 
@@ -29,15 +28,15 @@ pub(self) enum PollResult<T> {
 }
 
 pub struct PromiseContext<'a> {
-    pub state: &'a mut state::BootstrapState,
+    pub logic: &'a mut state::BootstrapLogic,
     pub now: Timestamp,
     pub id: u64,
 }
 
 impl<'a> PromiseContext<'a> {
-    pub fn new_test_instance(state: &'a mut state::BootstrapState) -> Self {
+    pub fn new_test_instance(state: &'a mut state::BootstrapLogic) -> Self {
         Self {
-            state,
+            logic: state,
             now: Timestamp::new_test_instance(),
             id: 123,
         }
@@ -85,10 +84,10 @@ impl AscPullQuerySpec {
 #[cfg(test)]
 pub(self) fn progress_state<T>(
     requester: &mut impl BootstrapPromise<T>,
-    state: &mut state::BootstrapState,
+    state: &mut state::BootstrapLogic,
 ) -> PollResult<T> {
     let mut context = PromiseContext {
-        state,
+        logic: state,
         now: Timestamp::new_test_instance(),
         id: 123,
     };

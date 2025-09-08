@@ -342,13 +342,6 @@ impl CandidateAccounts {
         self.blocking.known_dependencies()
     }
 
-    pub fn blocking_reinsertable(&self) -> usize {
-        self.blocking
-            .reinsertable()
-            .filter(|acc| !self.priorities.contains(acc))
-            .count()
-    }
-
     pub fn iter_priorities(&self) -> impl Iterator<Item = (Priority, &Account)> {
         self.priorities.iter()
     }

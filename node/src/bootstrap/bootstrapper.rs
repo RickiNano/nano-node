@@ -20,16 +20,10 @@ use super::{
     cleanup::BootstrapCleanup,
     requesters::Requesters,
     response_processor::{ProcessError, ResponseProcessor},
-    state::{BootstrapState, CandidateAccountsConfig},
+    state::{BootstrapLogic, CandidateAccountsConfig},
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
-    bootstrap::{
-        ledger_event_proc::BootstrapLedgerEventProcessor,
-        response_processor::{
-            block_processor_enqueuer::BlockProcessorEnqueuer, block_queue::NotifiableBlockQueue,
-        },
-    },
     transport::MessageSender,
 };
 
@@ -91,20 +85,17 @@ impl Default for BootstrapConfig {
 pub struct Bootstrapper {
     stats: Arc<Stats>,
     threads: Mutex<Option<Threads>>,
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     state_changed: Arc<Condvar>,
     config: BootstrapConfig,
     clock: Arc<SteadyClock>,
     response_handler: ResponseProcessor,
     block_inspector: BlockInspector,
     requesters: Requesters,
-    block_queue: Arc<NotifiableBlockQueue>,
-    block_processor_queue: Arc<BlockProcessorQueue>,
 }
 
 struct Threads {
     cleanup: JoinHandle<()>,
-    block_enqueuer: JoinHandle<()>,
 }
 
 impl Bootstrapper {
@@ -118,21 +109,24 @@ impl Bootstrapper {
         clock: Arc<SteadyClock>,
     ) -> Self {
         let limiter = Arc::new(Mutex::new(TokenBucket::new(config.rate_limit)));
-        let state = Arc::new(Mutex::new(BootstrapState::new(config.clone())));
+        let state = Arc::new(Mutex::new(BootstrapLogic::new(config.clone())));
         let state_changed = Arc::new(Condvar::new());
-        let block_queue = Arc::new(NotifiableBlockQueue::default());
 
         let mut response_handler = ResponseProcessor::new(
             state.clone(),
             stats.clone(),
             block_processor_queue.clone(),
-            block_queue.clone(),
             ledger.clone(),
         );
         response_handler.set_max_pending_frontiers(config.max_pending_frontier_responses);
 
-        let block_inspector =
-            BlockInspector::new(state.clone(), ledger.clone(), stats.clone(), clock.clone());
+        let block_inspector = BlockInspector::new(
+            state.clone(),
+            ledger.clone(),
+            stats.clone(),
+            clock.clone(),
+            block_processor_queue.clone(),
+        );
 
         let requesters = Requesters::new(
             limiter.clone(),
@@ -143,7 +137,7 @@ impl Bootstrapper {
             state_changed.clone(),
             clock.clone(),
             ledger.clone(),
-            block_processor_queue.clone(),
+            block_processor_queue,
             network,
         );
 
@@ -157,8 +151,6 @@ impl Bootstrapper {
             response_handler,
             block_inspector,
             requesters,
-            block_queue,
-            block_processor_queue,
         }
     }
 
@@ -205,20 +197,14 @@ impl Bootstrapper {
         self.state_changed.notify_all();
 
         self.requesters.stop();
-        self.block_queue.stop();
 
         let threads = self.threads.lock().unwrap().take();
         if let Some(threads) = threads {
             threads.cleanup.join().unwrap();
-            threads.block_enqueuer.join().unwrap();
         }
     }
 
-    pub(crate) fn ledger_event_processor(&self) -> BootstrapLedgerEventProcessor {
-        BootstrapLedgerEventProcessor::new(self.block_queue.clone(), self.state.clone())
-    }
-
-    pub fn state(&self) -> MutexGuard<'_, BootstrapState> {
+    pub fn state(&self) -> MutexGuard<'_, BootstrapLogic> {
         self.state.lock().unwrap()
     }
 
@@ -344,22 +330,7 @@ impl BootstrapExt for Arc<Bootstrapper> {
             .spawn(Box::new(move || self_l.run_timeouts()))
             .unwrap();
 
-        let block_enqueuer = Arc::new(BlockProcessorEnqueuer::new(
-            self.block_queue.clone(),
-            self.block_processor_queue.clone(),
-        ));
-
-        let block_enqueuer = std::thread::Builder::new()
-            .name("Boot blk queue".to_string())
-            .spawn(move || {
-                block_enqueuer.run();
-            })
-            .unwrap();
-
-        *self.threads.lock().unwrap() = Some(Threads {
-            cleanup,
-            block_enqueuer,
-        });
+        *self.threads.lock().unwrap() = Some(Threads { cleanup });
     }
 }
 

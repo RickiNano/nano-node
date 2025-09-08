@@ -17,7 +17,7 @@ use super::{
 };
 use crate::{
     block_processing::BlockProcessorQueue,
-    bootstrap::{AscPullQuerySpec, BootstrapConfig, BootstrapPromise, state::BootstrapState},
+    bootstrap::{AscPullQuerySpec, BootstrapConfig, BootstrapPromise, state::BootstrapLogic},
     transport::MessageSender,
 };
 use rsnano_nullable_random::NullableRngFactory;
@@ -28,7 +28,7 @@ pub(crate) struct Requesters {
     config: BootstrapConfig,
     stats: Arc<Stats>,
     message_sender: MessageSender,
-    state: Arc<Mutex<BootstrapState>>,
+    state: Arc<Mutex<BootstrapLogic>>,
     state_changed: Arc<Condvar>,
     clock: Arc<SteadyClock>,
     threads: Mutex<Option<RequesterThreads>>,
@@ -44,7 +44,7 @@ impl Requesters {
         config: BootstrapConfig,
         stats: Arc<Stats>,
         message_sender: MessageSender,
-        state: Arc<Mutex<BootstrapState>>,
+        state: Arc<Mutex<BootstrapLogic>>,
         state_changed: Arc<Condvar>,
         clock: Arc<SteadyClock>,
         ledger: Arc<Ledger>,

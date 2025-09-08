@@ -95,18 +95,6 @@ impl BlockingContainer {
         self.by_account.contains_key(account)
     }
 
-    pub fn reinsertable(&self) -> impl Iterator<Item = &Account> {
-        self.by_dependency_account
-            .range(Account::from(1)..)
-            .filter_map(|(acc, _)| {
-                if !self.by_account.contains_key(acc) {
-                    Some(acc)
-                } else {
-                    None
-                }
-            })
-    }
-
     pub fn count_by_dependency_account(&self, dep_account: &Account) -> usize {
         self.by_dependency_account
             .get(dep_account)

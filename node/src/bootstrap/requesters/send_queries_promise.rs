@@ -31,7 +31,7 @@ where
             PollResult::Progress => PollResult::Progress,
             PollResult::Wait => PollResult::Wait,
             PollResult::Finished(spec) => {
-                self.sender.send(spec, context.state);
+                self.sender.send(spec, context.logic);
                 PollResult::Progress
             }
         }
@@ -41,14 +41,14 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bootstrap::state::BootstrapState;
+    use crate::bootstrap::state::BootstrapLogic;
 
     #[test]
     fn progress() {
         let sender = QuerySender::new_null();
         let mut send_queries =
             SendQueriesPromise::new(StubPromise::new(PollResult::Progress), sender);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = send_queries.poll(&mut context);
@@ -60,7 +60,7 @@ mod tests {
     fn wait() {
         let sender = QuerySender::new_null();
         let mut send_queries = SendQueriesPromise::new(StubPromise::new(PollResult::Wait), sender);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = send_queries.poll(&mut context);
@@ -75,7 +75,7 @@ mod tests {
         let spec = AscPullQuerySpec::new_test_instance();
         let mut send_queries =
             SendQueriesPromise::new(StubPromise::new(PollResult::Finished(spec.clone())), sender);
-        let mut state = BootstrapState::default();
+        let mut state = BootstrapLogic::default();
         let mut context = PromiseContext::new_test_instance(&mut state);
 
         let result = send_queries.poll(&mut context);

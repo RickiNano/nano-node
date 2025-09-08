@@ -1,4 +1,4 @@
-use crate::bootstrap::{BootstrapPromise, PollResult, PromiseContext, state::BootstrapState};
+use crate::bootstrap::{BootstrapPromise, PollResult, PromiseContext, state::BootstrapLogic};
 use rand::RngCore;
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_nullable_random::NullableRngFactory;
@@ -11,7 +11,7 @@ use std::{
 /// Calls a requester to create a bootstrap request and then sends it to
 /// the peered node
 pub(crate) struct BootstrapPromiseRunner {
-    pub state: Arc<Mutex<BootstrapState>>,
+    pub state: Arc<Mutex<BootstrapLogic>>,
     pub throttle_wait: Duration,
     pub state_changed: Arc<Condvar>,
     pub clock: Arc<SteadyClock>,
@@ -63,7 +63,7 @@ impl BootstrapPromiseRunner {
             poll_count = poll_count.overflowing_add(1).0;
 
             let mut context = PromiseContext {
-                state: &mut state,
+                logic: &mut state,
                 now,
                 id,
             };
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn abort_promise_when_stopped() {
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let state_changed = Arc::new(Condvar::new());
 
         let runner = BootstrapPromiseRunner {
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn return_result_when_finished() {
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let state_changed = Arc::new(Condvar::new());
 
         let runner = BootstrapPromiseRunner {
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn pass_random_id() {
-        let state = Arc::new(Mutex::new(BootstrapState::default()));
+        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
         let state_changed = Arc::new(Condvar::new());
 
         let runner = BootstrapPromiseRunner {
