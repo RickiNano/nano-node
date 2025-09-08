@@ -93,7 +93,7 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn serialize_no_peers() {

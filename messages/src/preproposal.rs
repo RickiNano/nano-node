@@ -1,9 +1,9 @@
+use crate::MessageVariant;
+use bitvec::prelude::BitArray;
+use rsnano_types::DeserializationError;
 use rsnano_types::{
     Account, Blake2Hash, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature,
 };
-use rsnano_types::DeserializationError;
-use bitvec::prelude::BitArray;
-use crate::MessageVariant;
 
 pub type PreProposalHash = Blake2Hash;
 pub type FrontiersHash = Blake2Hash;
@@ -73,7 +73,11 @@ impl Preproposal {
             frontiers.push((account, hash));
         }
 
-        Ok(Preproposal { frontiers, signer, signature })
+        Ok(Preproposal {
+            frontiers,
+            signer,
+            signature,
+        })
     }
 }
 
@@ -86,7 +90,7 @@ impl MessageVariant for Preproposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
 
     #[test]
     fn sign_new_preproposal() {

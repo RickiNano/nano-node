@@ -1,10 +1,7 @@
-use std::fmt::Display;
-
+use super::*;
 use bitvec::prelude::BitArray;
 use rsnano_types::{DeserializationError, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
-
-use super::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Message {
@@ -224,7 +221,9 @@ impl Message {
             }
             MessageType::TelemetryReq => Message::TelemetryReq,
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Preproposal => Message::SnapshotPreproposal(Preproposal::deserialize(payload)?),
+            MessageType::Preproposal => {
+                Message::SnapshotPreproposal(Preproposal::deserialize(payload)?)
+            }
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);
             }

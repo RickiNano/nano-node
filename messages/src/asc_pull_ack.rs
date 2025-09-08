@@ -6,8 +6,8 @@ use serde::ser::SerializeStruct;
 use serde_derive::Serialize;
 
 use rsnano_types::{
-    read_u64_be, read_u8, Account, Block, BlockHash, BlockType, BlockTypeId, DeserializationError,
-    Frontier,
+    Account, Block, BlockHash, BlockType, BlockTypeId, DeserializationError, Frontier, read_u8,
+    read_u64_be,
 };
 use rsnano_utils::stats::DetailType;
 
@@ -307,7 +307,7 @@ impl From<&AscPullAckType> for DetailType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message};
+    use crate::{Message, assert_deserializable};
     use rsnano_types::TestBlockBuilder;
 
     #[test]

@@ -1,10 +1,10 @@
-use std::sync::{Arc, Mutex};
+use crate::transport::MessageFlooder;
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Message, Preproposal};
 use rsnano_network::TrafficType;
 use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
-use crate::transport::MessageFlooder;
+use std::sync::{Arc, Mutex};
 
 pub struct LedgerSnapshots {
     ledger: Arc<Ledger>,
@@ -57,7 +57,7 @@ mod tests {
     use rsnano_messages::Message;
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_types::{AccountInfo, ConfirmationHeightInfo, PublicKey};
+    use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
 
     #[test]
     fn ledger_with_one_account() {
@@ -116,7 +116,7 @@ mod tests {
             FloodEvent {
                 message: Message::SnapshotPreproposal(expected_preproposal),
                 // TODO: add new traffic type for snapshots
-                traffic_type: TrafficType::Generic,
+                traffic_type: TrafficType::Preproposal,
                 scale: 0.0,
                 all_prs: true,
             }

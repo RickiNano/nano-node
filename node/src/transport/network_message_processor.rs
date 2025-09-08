@@ -65,11 +65,7 @@ impl NetworkMessageProcessor {
 
     pub fn process(&self, message: Message, channel: &Arc<Channel>) {
         let detail = message.message_type().into();
-        self.stats.inc_dir(
-            StatType::Message,
-            detail,
-            Direction::In,
-        );
+        self.stats.inc_dir(StatType::Message, detail, Direction::In);
 
         match message {
             Message::Keepalive(keepalive) => {
@@ -186,8 +182,12 @@ impl NetworkMessageProcessor {
             }
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(_) => {
-
-            },
+                self.stats.inc_dir(
+                    StatType::Message,
+                    DetailType::Preproposal,
+                    Direction::In,
+                );
+            }
         }
     }
 }

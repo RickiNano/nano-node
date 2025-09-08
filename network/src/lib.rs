@@ -98,7 +98,7 @@ pub enum TrafficType {
     RepCrawler,
     Telemetry,
     #[cfg(feature = "ledger_snapshots")]
-    Preproposal
+    Preproposal,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug, FromPrimitive)]
