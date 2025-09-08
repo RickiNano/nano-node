@@ -1316,4 +1316,3 @@ fn activate_inactive() {
     // Cementing of send should activate open
     assert_timely2(|| node.is_active_root(&open.qualified_root()))
 }
-
