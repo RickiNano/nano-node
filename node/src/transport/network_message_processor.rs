@@ -64,8 +64,12 @@ impl NetworkMessageProcessor {
     }
 
     pub fn process(&self, message: Message, channel: &Arc<Channel>) {
-        let detail = message.message_type().into();
-        self.stats.inc_dir(StatType::Message, detail, Direction::In);
+        self.stats.inc_dir(
+            StatType::Message,
+            message.message_type().into(),
+            Direction::In,
+        );
+        trace!(?message, "network processed");
 
         match message {
             Message::Keepalive(keepalive) => {
