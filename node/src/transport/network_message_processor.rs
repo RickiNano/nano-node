@@ -65,7 +65,6 @@ impl NetworkMessageProcessor {
 
     pub fn process(&self, message: Message, channel: &Arc<Channel>) {
         let detail = message.message_type().into();
-        //println!("{:?}", detail);
         self.stats.inc_dir(
             StatType::Message,
             detail,
