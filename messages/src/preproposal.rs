@@ -35,8 +35,17 @@ impl Preproposal {
     }
 
     fn hash_frontiers(frontiers: &[(Account, BlockHash)]) -> PreproposalHash {
+        let mut sorted_frontiers: Vec<(Account, BlockHash)> = frontiers.to_vec();
+        sorted_frontiers.sort_by(|(account_a, hash_a), (account_b, hash_b)| {
+            let account_cmp = account_a.as_bytes().cmp(account_b.as_bytes());
+            if account_cmp != std::cmp::Ordering::Equal {
+                return account_cmp;
+            }
+            hash_a.as_bytes().cmp(hash_b.as_bytes())
+        });
+
         let mut hash_builder = Blake2HashBuilder::default();
-        for (account, hash) in frontiers {
+        for (account, hash) in sorted_frontiers.iter() {
             hash_builder = hash_builder
                 .update(account.as_bytes())
                 .update(hash.as_bytes());
@@ -132,5 +141,13 @@ mod tests {
     fn preproposal_serialization() {
         let message = Message::SnapshotPreproposal(Preproposal::new_test_instance());
         assert_deserializable(&message);
+    }
+
+    #[test]
+    fn hash_preproposals() {
+        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10)), (Account::from(2), BlockHash::from(20))], &PrivateKey::new());
+        let p2 = Preproposal::new(vec![(Account::from(2), BlockHash::from(20)), (Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+
+        assert_eq!(p1.hash(), p2.hash());
     }
 }

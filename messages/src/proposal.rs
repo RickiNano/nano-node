@@ -1,6 +1,6 @@
 use bitvec::array::BitArray;
 use rsnano_types::{Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature};
-use crate::{MessageVariant, PreproposalHash};
+use crate::{MessageVariant, Preproposal, PreproposalHash};
 
 pub type PreproposalsHash = Blake2Hash;
 
@@ -12,7 +12,8 @@ pub struct Proposal {
 }
 
 impl Proposal {
-    pub fn new(preproposals: Vec<PreproposalHash>, private_key: &PrivateKey) -> Self {
+    pub fn new(preproposals: Vec<Preproposal>, private_key: &PrivateKey) -> Self {
+        let preproposals: Vec<PreproposalHash> = preproposals.iter().map(|p| p.hash()).collect();
         let preproposals_hash = Proposal::hash_preproposals(&preproposals);
         let signature = private_key.sign(preproposals_hash.as_bytes());
 
@@ -34,7 +35,6 @@ impl Proposal {
     fn hash_preproposals(preproposals_hashes: &[PreproposalHash]) -> PreproposalsHash {
         let mut unique_sorted: Vec<PreproposalHash> = preproposals_hashes.to_vec();
         unique_sorted.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
-        unique_sorted.dedup_by(|a, b| a.as_bytes() == b.as_bytes());
 
         let mut hash_builder = Blake2HashBuilder::default();
         for hash in unique_sorted.iter() {
@@ -96,22 +96,11 @@ mod tests {
 
     #[test]
     fn hash_preproposals_is_order_invariant() {
-        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
-        let p2 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10)), (Account::from(2), BlockHash::from(20))], &PrivateKey::new());
+        let p2 = Preproposal::new(vec![(Account::from(2), BlockHash::from(20)), (Account::from(1), BlockHash::from(10))], &PrivateKey::new());
 
-        let h1 = Proposal::hash_preproposals(&[p1.hash(), p2.hash()]);
-        let h2 = Proposal::hash_preproposals(&[p2.hash(), p1.hash()]);
-
-        assert_eq!(h1, h2);
-    }
-
-    #[test]
-    fn hash_preproposals_deduplicates_inputs() {
-        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
-        let p2 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
-
-        let h1 = Proposal::hash_preproposals(&[p1.hash(), p2.hash(), p1.hash()]);
-        let h2 = Proposal::hash_preproposals(&[p2.hash(), p1.hash()]);
+        let h1 = Proposal::new(vec![p1.clone(), p2.clone()], &PrivateKey::new()).hash();
+        let h2 = Proposal::new(vec![p2, p1], &PrivateKey::new()).hash();
 
         assert_eq!(h1, h2);
     }
@@ -119,9 +108,9 @@ mod tests {
     #[test]
     fn sign_new_proposal() {
         let private_key = PrivateKey::from(42);
-        let preproposals_hashes = vec![Preproposal::new_test_instance().hash()];
+        let preproposals = vec![Preproposal::new_test_instance()];
 
-        let proposal = Proposal::new(preproposals_hashes, &private_key);
+        let proposal = Proposal::new(preproposals, &private_key);
 
         assert_eq!(proposal.signer, private_key.public_key());
 
