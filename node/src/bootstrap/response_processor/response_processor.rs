@@ -10,19 +10,16 @@ use rsnano_network::ChannelId;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::Stats;
 
-use super::{
-    super::state::{BootstrapLogic, QueryType, RunningQuery},
-    block_ack_processor::BlockAckProcessor,
-};
+use super::super::state::{BootstrapLogic, QueryType, RunningQuery};
 use crate::{
-    block_processing::BlockProcessorQueue,
+    block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     bootstrap::response_processor::frontier_check_pool::FrontierCheckPool,
 };
 
 pub(crate) struct ResponseProcessor {
     logic: Arc<Mutex<BootstrapLogic>>,
-    blocks: BlockAckProcessor,
     frontier_check_pool: FrontierCheckPool,
+    block_queue: Arc<BlockProcessorQueue>,
 }
 
 #[derive(Debug)]
@@ -54,12 +51,11 @@ impl ResponseProcessor {
         ledger: Arc<Ledger>,
     ) -> Self {
         let frontier_check_pool = FrontierCheckPool::new(stats.clone(), ledger, logic.clone());
-        let blocks = BlockAckProcessor::new(logic.clone(), stats, block_queue);
 
         Self {
             logic,
-            blocks,
             frontier_check_pool,
+            block_queue,
         }
     }
 
@@ -108,24 +104,43 @@ impl ResponseProcessor {
         query: &RunningQuery,
         response: AscPullAck,
     ) -> Result<(), ProcessError> {
+        let mut logic = self.logic.lock().unwrap();
         let ok = match response.pull_type {
-            AscPullAckType::Blocks(blocks) => self.blocks.process(query, blocks),
-            AscPullAckType::AccountInfo(info) => {
-                let mut logic = self.logic.lock().unwrap();
-                logic.process_account_ack(query, &info)
-            }
-            AscPullAckType::Frontiers(frontiers) => {
-                let mut logic = self.logic.lock().unwrap();
-                logic.process_frontiers(query, frontiers)
-            }
+            AscPullAckType::Blocks(blocks) => logic.process_blocks(query, blocks),
+            AscPullAckType::AccountInfo(info) => logic.process_account_ack(query, &info),
+            AscPullAckType::Frontiers(frontiers) => logic.process_frontiers(query, frontiers),
         };
 
+        self.enqueue_next_blocks(&mut logic);
+
         if ok {
-            let mut logic = self.logic.lock().unwrap();
             self.frontier_check_pool.enqueue_frontiers(&mut logic);
             Ok(())
         } else {
             Err(ProcessError::InvalidResponse)
+        }
+    }
+
+    // TODO Remeove duplication! Copied from BlockInspector
+    fn enqueue_next_blocks(&self, logic: &mut BootstrapLogic) {
+        while let Some((block, query_id)) = logic.block_queue.next_to_process() {
+            let block_hash = block.hash();
+
+            trace!(%block_hash, query_id, "Process block");
+
+            let inserted = self.block_queue.push(BlockContext::new(
+                block.clone(),
+                BlockSource::Bootstrap,
+                // TODO use real channel id
+                ChannelId::LOOPBACK,
+            ));
+
+            if inserted {
+                logic.block_queue.enqueued_for_processing(&block_hash);
+            } else {
+                // block processor queue is full!
+                break;
+            }
         }
     }
 }

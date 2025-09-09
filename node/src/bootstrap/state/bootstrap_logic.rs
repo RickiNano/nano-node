@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, sync::Arc};
 
-use rsnano_messages::{AccountInfoAckPayload, AscPullReqType};
+use rsnano_messages::{AccountInfoAckPayload, AscPullReqType, BlocksAckPayload};
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash, Frontier};
@@ -15,8 +15,12 @@ use super::{
 };
 use crate::bootstrap::{
     AscPullQuerySpec, BootstrapConfig,
-    state::{RunningQuery, VerifyResult, block_queue::BlockQueue},
+    state::{
+        PriorityDownResult, RunningQuery, VerifyResult,
+        block_queue::{AccountBlocks, BlockQueue},
+    },
 };
+use tracing::trace;
 
 pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
@@ -31,6 +35,7 @@ pub struct BootstrapLogic {
     pub(crate) block_queue: BlockQueue,
     pub(crate) frontiers_stats: FrontiersStats,
     pub(crate) account_ack_stats: AccountAckStats,
+    pub(crate) block_ack_stats: BlockAckStats,
     pub(crate) stopped: bool,
 }
 
@@ -51,6 +56,7 @@ impl BootstrapLogic {
             block_queue: BlockQueue::default(),
             frontiers_stats: Default::default(),
             account_ack_stats: Default::default(),
+            block_ack_stats: Default::default(),
             stopped: false,
         }
     }
@@ -201,6 +207,78 @@ impl BootstrapLogic {
         };
     }
 
+    // block ack handling:
+    //********************************************************************************
+    pub(crate) fn process_blocks(
+        &mut self,
+        query: &RunningQuery,
+        response: BlocksAckPayload,
+    ) -> bool {
+        trace!(
+            query_id = query.id,
+            blocks = response.blocks().len(),
+            "Process response"
+        );
+
+        self.block_ack_stats.process += 1;
+
+        let result = query.verify_blocks(&response);
+        match result {
+            VerifyResult::Ok => {
+                self.process_valid_blocks(query, response);
+                true
+            }
+            VerifyResult::NothingNew => {
+                self.process_empty_response(query);
+                true
+            }
+            VerifyResult::Invalid => {
+                self.block_ack_stats.invalid += 1;
+                false
+            }
+        }
+    }
+
+    fn process_valid_blocks(&mut self, query: &RunningQuery, response: BlocksAckPayload) {
+        self.block_ack_stats.verified += 1;
+        self.block_ack_stats.blocks += response.blocks().len() as u64;
+
+        let mut blocks = response.take_blocks();
+
+        // Avoid re-processing the block we already have
+        assert!(blocks.len() >= 1);
+        if blocks.front().unwrap().hash() == query.start.into() {
+            blocks.pop_front();
+        }
+
+        self.block_queue.insert(AccountBlocks {
+            account: query.account,
+            query_id: query.id,
+            blocks: blocks.clone(),
+        });
+    }
+
+    fn process_empty_response(&mut self, query: &RunningQuery) {
+        self.block_ack_stats.nothing_new += 1;
+        {
+            match self.candidate_accounts.priority_down(&query.account) {
+                PriorityDownResult::Deprioritized => {
+                    self.block_ack_stats.deprioritize += 1;
+                }
+                PriorityDownResult::Erased => {
+                    self.block_ack_stats.deprioritize += 1;
+                    self.block_ack_stats.priority_erase_theshold += 1;
+                }
+                PriorityDownResult::AccountNotFound => {
+                    self.block_ack_stats.deprioritize_failed += 1;
+                }
+                PriorityDownResult::InvalidAccount => {}
+            }
+
+            self.candidate_accounts.reset_last_request(&query.account);
+        }
+    }
+
     //********************************************************************************
 
     pub fn container_info(&self) -> ContainerInfo {
@@ -285,6 +363,39 @@ impl StatsSource for AccountAckStats {
             "bootstrap_account_sets",
             "prioritize_failed",
             self.prioritize_failed,
+        );
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct BlockAckStats {
+    process: u64,
+    invalid: u64,
+    verified: u64,
+    blocks: u64,
+    nothing_new: u64,
+    deprioritize: u64,
+    priority_erase_theshold: u64,
+    deprioritize_failed: u64,
+}
+
+impl StatsSource for BlockAckStats {
+    fn collect_stats(&self, result: &mut StatsCollection) {
+        result.insert("bootstrap_process", "blocks", self.process);
+        result.insert("bootstrap_verify_blocks", "invalid", self.invalid);
+        result.insert("bootstrap_verify_blocks", "ok", self.verified);
+        result.insert("bootstrap", "blocks", self.blocks);
+        result.insert("bootstrap_verify_blocks", "nothing_new", self.nothing_new);
+        result.insert("bootstrap_account_sets", "deprioritize", self.deprioritize);
+        result.insert(
+            "bootstrap_account_sets",
+            "priority_erase_threshold",
+            self.priority_erase_theshold,
+        );
+        result.insert(
+            "bootstrap_account_sets",
+            "deprioritize_failed",
+            self.deprioritize_failed,
         );
     }
 }
@@ -474,6 +585,40 @@ mod tests {
 
             assert_eq!(logic.account_ack_stats.dependency_update_failed, 1);
             assert_eq!(logic.account_ack_stats.prioritize_failed, 1);
+        }
+    }
+
+    mod block_ack {
+        use super::*;
+
+        #[test]
+        fn response_doesnt_match_query() {
+            let mut logic = BootstrapLogic::default();
+
+            let query = RunningQuery::new_test_instance();
+            let response = BlocksAckPayload::new_test_instance();
+            let ok = logic.process_blocks(&query, response);
+            assert!(!ok);
+            assert_eq!(logic.block_ack_stats.process, 1);
+            assert_eq!(logic.block_ack_stats.invalid, 1);
+        }
+
+        #[test]
+        fn handle_empty_response() {
+            let mut logic = BootstrapLogic::default();
+            let account = Account::from(42);
+
+            let query = RunningQuery {
+                query_type: QueryType::BlocksByAccount,
+                account,
+                ..RunningQuery::new_test_instance()
+            };
+
+            let response = BlocksAckPayload::empty();
+            let ok = logic.process_blocks(&query, response);
+            assert!(ok);
+            assert_eq!(logic.block_ack_stats.process, 1);
+            assert_eq!(logic.block_ack_stats.nothing_new, 1);
         }
     }
 }
