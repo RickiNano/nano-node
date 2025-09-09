@@ -186,6 +186,8 @@ impl NetworkMessageProcessor {
             }
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(_) => todo!(),
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotProposal(_) => todo!(),
         }
     }
 }
