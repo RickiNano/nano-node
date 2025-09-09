@@ -33,6 +33,8 @@ pub enum MessageType {
     AscPullAck = 0x0f,
     #[cfg(feature = "ledger_snapshots")]
     Preproposal = 0x10,
+    #[cfg(feature = "ledger_snapshots")]
+    Proposal = 0x11,
 }
 
 impl MessageType {
@@ -55,13 +57,15 @@ impl MessageType {
             MessageType::AscPullAck => "asc_pull_ack",
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Preproposal => "preproposal",
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Proposal => "proposal",
         }
     }
 
     pub const fn max_id() -> usize {
         #[cfg(feature = "ledger_snapshots")]
         {
-            Self::Preproposal as usize
+            Self::Proposal as usize
         }
         #[cfg(not(feature = "ledger_snapshots"))]
         {
@@ -185,6 +189,7 @@ impl MessageHeader {
             MessageType::AscPullAck => AscPullAck::serialized_size(self.extensions),
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Preproposal => Preproposal::serialized_size(self.extensions),
+            MessageType::Proposal => Proposal::serialized_size(self.extensions),
             MessageType::Invalid | MessageType::NotAType => {
                 debug_assert!(false);
                 0
@@ -246,6 +251,8 @@ impl From<MessageType> for DetailType {
             MessageType::AscPullAck => DetailType::AscPullAck,
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Preproposal => todo!(),
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Proposal => DetailType::Proposal,
         }
     }
 }

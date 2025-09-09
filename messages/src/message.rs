@@ -22,6 +22,8 @@ pub enum Message {
     TelemetryReq,
     #[cfg(feature = "ledger_snapshots")]
     SnapshotPreproposal(Preproposal),
+    #[cfg(feature = "ledger_snapshots")]
+    SnapshotProposal(Proposal),
 }
 
 pub trait MessageVariant {
@@ -93,6 +95,8 @@ impl From<&ParseMessageError> for DetailType {
             ParseMessageError::InvalidMessage(MessageType::BulkPush) => Self::InvalidMessageType,
             #[cfg(feature = "ledger_snapshots")]
             ParseMessageError::InvalidMessage(MessageType::Preproposal) => todo!(),
+            #[cfg(feature = "ledger_snapshots")]
+            ParseMessageError::InvalidMessage(MessageType::Proposal) => Self::InvalidMessageType,
             ParseMessageError::InvalidMessage(MessageType::Invalid)
             | ParseMessageError::InvalidMessage(MessageType::NotAType) => Self::InvalidMessageType,
             ParseMessageError::InvalidNetwork => Self::InvalidNetwork,
@@ -136,6 +140,8 @@ impl Message {
             Message::TelemetryReq => MessageType::TelemetryReq,
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(_) => MessageType::Preproposal,
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotProposal(_) => MessageType::Proposal,
         }
     }
 
@@ -154,6 +160,8 @@ impl Message {
             Message::TelemetryAck(x) => Some(x),
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(x) => Some(x),
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotProposal(x) => Some(x),
             _ => None,
         }
     }
@@ -184,6 +192,8 @@ impl Message {
             Message::BulkPush | Message::TelemetryReq => Ok(()),
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(m) => m.serialize(writer),
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotProposal(m) => m.serialize(writer),
         }
     }
 
@@ -225,6 +235,10 @@ impl Message {
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Preproposal => {
                 Message::SnapshotPreproposal(Preproposal::deserialize(payload)?)
+            }
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::Proposal => {
+                Message::SnapshotProposal(Proposal::deserialize(payload)?)
             }
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);

@@ -5,8 +5,7 @@ use rsnano_types::{
     Account, Blake2Hash, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature,
 };
 
-pub type PreProposalHash = Blake2Hash;
-pub type FrontiersHash = Blake2Hash;
+pub type PreproposalHash = Blake2Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Preproposal {
@@ -35,7 +34,7 @@ impl Preproposal {
         }
     }
 
-    fn hash_frontiers(frontiers: &[(Account, BlockHash)]) -> FrontiersHash {
+    fn hash_frontiers(frontiers: &[(Account, BlockHash)]) -> PreproposalHash {
         let mut hash_builder = Blake2HashBuilder::default();
         for (account, hash) in frontiers {
             hash_builder = hash_builder
@@ -43,6 +42,10 @@ impl Preproposal {
                 .update(hash.as_bytes());
         }
         hash_builder.build()
+    }
+
+    pub fn hash(&self) -> PreproposalHash {
+        Preproposal::hash_frontiers(&self.frontiers)
     }
 
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -101,10 +104,9 @@ mod tests {
 
         assert_eq!(preproposal.signer, private_key.public_key());
 
-        let frontiers_hash = Preproposal::hash_frontiers(&preproposal.frontiers);
         let result = preproposal
             .signer
-            .verify(frontiers_hash.as_bytes(), &preproposal.signature);
+            .verify(preproposal.hash().as_bytes(), &preproposal.signature);
         assert_eq!(result, Ok(()));
     }
 

@@ -1,0 +1,139 @@
+use bitvec::array::BitArray;
+use rsnano_types::{Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature};
+use crate::{MessageVariant, PreproposalHash};
+
+pub type PreproposalsHash = Blake2Hash;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Proposal {
+    pub preproposals: Vec<PreproposalHash>,
+    pub signer: PublicKey,
+    pub signature: Signature,
+}
+
+impl Proposal {
+    pub fn new(preproposals: Vec<PreproposalHash>, private_key: &PrivateKey) -> Self {
+        let preproposals_hash = Proposal::hash_preproposals(&preproposals);
+        let signature = private_key.sign(preproposals_hash.as_bytes());
+
+        Self {
+            preproposals,
+            signer: private_key.public_key(),
+            signature,
+        }
+    }
+
+    pub fn new_test_instance() -> Self {
+        Self {
+            preproposals: vec![PreproposalHash::from(1)],
+            signer: PublicKey::from(2),
+            signature: Signature::from_bytes([1; 64]),
+        }
+    }
+
+    fn hash_preproposals(preproposals_hashes: &[PreproposalHash]) -> PreproposalsHash {
+        let mut unique_sorted: Vec<PreproposalHash> = preproposals_hashes.to_vec();
+        unique_sorted.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
+        unique_sorted.dedup_by(|a, b| a.as_bytes() == b.as_bytes());
+
+        let mut hash_builder = Blake2HashBuilder::default();
+        for hash in unique_sorted.iter() {
+            hash_builder = hash_builder
+                .update(hash.as_bytes());
+        }
+        hash_builder.build()
+    }
+
+    pub fn hash(&self) -> PreproposalHash {
+        Proposal::hash_preproposals(&self.preproposals)
+    }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.signer.serialize(writer)?;
+        self.signature.serialize(writer)?;
+        for preproposal in &self.preproposals {
+            preproposal.serialize(writer)?;
+        }
+        Ok(())
+    }
+
+    pub const fn serialized_size(extensions: BitArray<u16>) -> usize {
+        extensions.data as usize
+    }
+
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let signer = PublicKey::deserialize(&mut bytes)?;
+        let signature = Signature::deserialize(&mut bytes)?;
+        let mut preproposals = Vec::new();
+
+        while !bytes.is_empty() {
+            let preproposal = PreproposalHash::deserialize(&mut bytes)?;
+            preproposals.push(preproposal);
+        }
+
+        Ok(Proposal {
+            preproposals,
+            signer,
+            signature,
+        })
+    }
+}
+
+impl MessageVariant for Proposal {
+    fn header_extensions(&self, payload_len: u16) -> BitArray<u16> {
+        BitArray::new(payload_len)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rsnano_types::{Account, BlockHash};
+    use crate::{assert_deserializable, Message, Preproposal};
+    use super::*;
+
+    #[test]
+    fn hash_preproposals_is_order_invariant() {
+        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+        let p2 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+
+        let h1 = Proposal::hash_preproposals(&[p1.hash(), p2.hash()]);
+        let h2 = Proposal::hash_preproposals(&[p2.hash(), p1.hash()]);
+
+        assert_eq!(h1, h2);
+    }
+
+    #[test]
+    fn hash_preproposals_deduplicates_inputs() {
+        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+        let p2 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+
+        let h1 = Proposal::hash_preproposals(&[p1.hash(), p2.hash(), p1.hash()]);
+        let h2 = Proposal::hash_preproposals(&[p2.hash(), p1.hash()]);
+
+        assert_eq!(h1, h2);
+    }
+
+    #[test]
+    fn sign_new_proposal() {
+        let private_key = PrivateKey::from(42);
+        let preproposals_hashes = vec![Preproposal::new_test_instance().hash()];
+
+        let proposal = Proposal::new(preproposals_hashes, &private_key);
+
+        assert_eq!(proposal.signer, private_key.public_key());
+
+        let result = proposal
+            .signer
+            .verify(proposal.hash().as_bytes(), &proposal.signature);
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn proposal_serialization() {
+        let message = Message::SnapshotProposal(Proposal::new_test_instance());
+        assert_deserializable(&message);
+    }
+}

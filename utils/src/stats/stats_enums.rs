@@ -166,6 +166,7 @@ pub enum DetailType {
     TelemetryAck,
     AscPullReq,
     AscPullAck,
+    Proposal,
 
     // dropped messages
     ConfirmAckZeroAccount,
