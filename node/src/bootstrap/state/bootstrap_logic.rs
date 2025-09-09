@@ -10,12 +10,12 @@ use rsnano_utils::{
 };
 
 use super::{
-    CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer,
-    running_query::QuerySource,
+    running_query::QuerySource, CandidateAccounts, FrontierScan, PeerScoring, PriorityResult,
+    RunningQueryContainer,
 };
 use crate::bootstrap::{
+    state::{block_queue::BlockQueue, RunningQuery, VerifyResult},
     AscPullQuerySpec, BootstrapConfig,
-    state::{RunningQuery, VerifyResult, block_queue::BlockQueue},
 };
 
 pub struct BootstrapLogic {
@@ -215,4 +215,63 @@ pub struct OutdatedAccounts {
     pub pending: usize,
     /// Total count of received frontiers
     pub fontiers_received: usize,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bootstrap::state::QueryType;
+
+    #[test]
+    fn empty_frontiers() {
+        let mut logic = BootstrapLogic::default();
+        let query = running_query();
+
+        let success = logic.process_frontiers(&query, Vec::new());
+
+        assert!(success);
+        assert_eq!(logic.frontiers_stats.processed, 1);
+        assert_eq!(logic.frontiers_stats.verified, 0);
+        assert_eq!(logic.frontiers_stats.nothing_new, 1);
+    }
+
+    #[test]
+    fn update_account_ranges() {
+        let mut logic = BootstrapLogic::default();
+        let query = running_query();
+
+        let success = logic.process_frontiers(&query, vec![Frontier::new_test_instance()]);
+
+        assert!(success);
+        assert_eq!(logic.frontier_scan.total_requests_completed(), 1);
+        assert_eq!(logic.frontiers_stats.processed, 1);
+        assert_eq!(logic.frontiers_stats.verified, 1);
+    }
+
+    #[test]
+    fn invalid_frontiers() {
+        let mut logic = BootstrapLogic::default();
+        let query = running_query();
+
+        let frontiers = vec![
+            Frontier::new(3.into(), 100.into()),
+            Frontier::new(1.into(), 200.into()), // descending order is invalid!
+        ];
+
+        let success = logic.process_frontiers(&query, frontiers);
+
+        assert!(!success);
+        assert_eq!(logic.frontier_scan.total_requests_completed(), 0);
+        assert_eq!(logic.frontiers_stats.frontiers, 1);
+        assert_eq!(logic.frontiers_stats.invalid, 1);
+    }
+
+    fn running_query() -> RunningQuery {
+        RunningQuery {
+            source: QuerySource::Frontiers,
+            query_type: QueryType::Frontiers,
+            start: 1.into(),
+            ..RunningQuery::new_test_instance()
+        }
+    }
 }
