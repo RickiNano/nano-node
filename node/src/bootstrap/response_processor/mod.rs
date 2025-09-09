@@ -1,4 +1,3 @@
-mod account_ack_processor;
 mod block_ack_processor;
 mod database_crawler;
 mod frontier_check_pool;

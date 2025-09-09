@@ -12,7 +12,6 @@ use rsnano_utils::stats::Stats;
 
 use super::{
     super::state::{BootstrapLogic, QueryType, RunningQuery},
-    account_ack_processor::AccountAckProcessor,
     block_ack_processor::BlockAckProcessor,
 };
 use crate::{
@@ -22,7 +21,6 @@ use crate::{
 
 pub(crate) struct ResponseProcessor {
     logic: Arc<Mutex<BootstrapLogic>>,
-    accounts: AccountAckProcessor,
     blocks: BlockAckProcessor,
     frontier_check_pool: FrontierCheckPool,
 }
@@ -56,12 +54,10 @@ impl ResponseProcessor {
         ledger: Arc<Ledger>,
     ) -> Self {
         let frontier_check_pool = FrontierCheckPool::new(stats.clone(), ledger, logic.clone());
-        let accounts = AccountAckProcessor::new(stats.clone(), logic.clone());
         let blocks = BlockAckProcessor::new(logic.clone(), stats, block_queue);
 
         Self {
             logic,
-            accounts,
             blocks,
             frontier_check_pool,
         }
@@ -114,7 +110,10 @@ impl ResponseProcessor {
     ) -> Result<(), ProcessError> {
         let ok = match response.pull_type {
             AscPullAckType::Blocks(blocks) => self.blocks.process(query, blocks),
-            AscPullAckType::AccountInfo(info) => self.accounts.process(query, &info),
+            AscPullAckType::AccountInfo(info) => {
+                let mut logic = self.logic.lock().unwrap();
+                logic.process_account_ack(query, &info)
+            }
             AscPullAckType::Frontiers(frontiers) => {
                 let mut logic = self.logic.lock().unwrap();
                 logic.process_frontiers(query, frontiers)
