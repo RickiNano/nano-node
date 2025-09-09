@@ -16,13 +16,17 @@ use super::{
     block_ack_processor::BlockAckProcessor,
     frontier_ack_processor::FrontierAckProcessor,
 };
-use crate::block_processing::BlockProcessorQueue;
+use crate::{
+    block_processing::BlockProcessorQueue,
+    bootstrap::response_processor::frontier_check_pool::FrontierCheckPool,
+};
 
 pub(crate) struct ResponseProcessor {
-    state: Arc<Mutex<BootstrapLogic>>,
+    logic: Arc<Mutex<BootstrapLogic>>,
     frontiers: FrontierAckProcessor,
     accounts: AccountAckProcessor,
     blocks: BlockAckProcessor,
+    frontier_check_pool: FrontierCheckPool,
 }
 
 #[derive(Debug)]
@@ -48,25 +52,27 @@ impl ProcessInfo {
 
 impl ResponseProcessor {
     pub(crate) fn new(
-        state: Arc<Mutex<BootstrapLogic>>,
+        logic: Arc<Mutex<BootstrapLogic>>,
         stats: Arc<Stats>,
         block_queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
     ) -> Self {
-        let frontiers = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());
-        let accounts = AccountAckProcessor::new(stats.clone(), state.clone());
-        let blocks = BlockAckProcessor::new(state.clone(), stats, block_queue);
+        let frontiers = FrontierAckProcessor::new(stats.clone(), logic.clone());
+        let frontier_check_pool = FrontierCheckPool::new(stats.clone(), ledger, logic.clone());
+        let accounts = AccountAckProcessor::new(stats.clone(), logic.clone());
+        let blocks = BlockAckProcessor::new(logic.clone(), stats, block_queue);
 
         Self {
-            state,
+            logic,
             frontiers,
             accounts,
             blocks,
+            frontier_check_pool,
         }
     }
 
     pub fn set_max_pending_frontiers(&mut self, max_pending: usize) {
-        self.frontiers.max_pending = max_pending;
+        self.frontier_check_pool.max_pending = max_pending;
     }
 
     pub fn process(
@@ -83,7 +89,7 @@ impl ResponseProcessor {
     }
 
     fn take_running_query_for(&self, response: &AscPullAck) -> Result<RunningQuery, ProcessError> {
-        let mut guard = self.state.lock().unwrap();
+        let mut guard = self.logic.lock().unwrap();
 
         // Only process messages that have a known running query
         let Some(query) = guard.running_queries.remove(response.id) else {
@@ -98,7 +104,7 @@ impl ResponseProcessor {
     }
 
     fn update_peer_scoring(&self, channel_id: ChannelId) {
-        self.state
+        self.logic
             .lock()
             .unwrap()
             .scoring
@@ -117,6 +123,8 @@ impl ResponseProcessor {
         };
 
         if ok {
+            let mut logic = self.logic.lock().unwrap();
+            self.frontier_check_pool.enqeue_frontiers(&mut logic);
             Ok(())
         } else {
             Err(ProcessError::InvalidResponse)

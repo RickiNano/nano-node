@@ -3,7 +3,7 @@ use std::{collections::VecDeque, sync::Arc};
 use rsnano_messages::AscPullReqType;
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
-use rsnano_types::{Account, BlockHash};
+use rsnano_types::{Account, BlockHash, Frontier};
 use rsnano_utils::container_info::ContainerInfo;
 
 use super::{
@@ -17,6 +17,8 @@ pub struct BootstrapLogic {
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
     pub frontier_scan: FrontierScan,
+    /// Frontiers that were received from other nodes and that we need to check against our ledger
+    pub(crate) frontiers_to_check: VecDeque<Vec<Frontier>>,
     pub counters: BootstrapCounters,
     pub(crate) frontier_ack_processor_busy: bool,
     pub last_outdated_accounts: VecDeque<Account>,
@@ -33,6 +35,7 @@ impl BootstrapLogic {
             candidate_accounts: CandidateAccounts::new(config.candidate_accounts.clone()),
             scoring,
             frontier_scan: FrontierScan::new(config.frontier_scan.clone()),
+            frontiers_to_check: VecDeque::new(),
             running_queries: RunningQueryContainer::default(),
             counters: BootstrapCounters::default(),
             frontier_ack_processor_busy: false,

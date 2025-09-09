@@ -1,37 +1,21 @@
 use std::sync::{Arc, Mutex};
 
-use rsnano_ledger::Ledger;
 use rsnano_types::Frontier;
-use rsnano_utils::{
-    stats::{DetailType, Direction, StatType, Stats},
-    thread_pool::ThreadPool,
-};
+use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 
-use super::frontier_worker::FrontierWorker;
 use crate::bootstrap::state::{BootstrapLogic, RunningQuery, VerifyResult};
 
 /// Processes responses to AscPullReqs by the frontier scan
 pub(crate) struct FrontierAckProcessor {
     stats: Arc<Stats>,
-    ledger: Arc<Ledger>,
     logic: Arc<Mutex<BootstrapLogic>>,
-    workers: Arc<ThreadPool>,
-    pub max_pending: usize,
 }
 
 impl FrontierAckProcessor {
-    pub(crate) fn new(
-        stats: Arc<Stats>,
-        ledger: Arc<Ledger>,
-        state: Arc<Mutex<BootstrapLogic>>,
-    ) -> Self {
-        let workers = Arc::new(ThreadPool::new(1, "Bootstrap work"));
+    pub(crate) fn new(stats: Arc<Stats>, state: Arc<Mutex<BootstrapLogic>>) -> Self {
         Self {
             stats,
-            ledger,
             logic: state,
-            workers,
-            max_pending: 16,
         }
     }
 
@@ -40,7 +24,7 @@ impl FrontierAckProcessor {
         self.stats
             .inc(StatType::BootstrapProcess, DetailType::Frontiers);
 
-        match query.verify_frontiers(&frontiers) {
+        let valid_frontiers = match query.verify_frontiers(&frontiers) {
             VerifyResult::Ok => {
                 self.stats
                     .inc(StatType::BootstrapVerifyFrontiers, DetailType::Ok);
@@ -58,7 +42,8 @@ impl FrontierAckProcessor {
                     .inc(StatType::BootstrapVerifyFrontiers, DetailType::Invalid);
                 false
             }
-        }
+        };
+        valid_frontiers
     }
 
     fn process_valid_frontiers(&self, query: &RunningQuery, frontiers: Vec<Frontier>) {
@@ -72,23 +57,9 @@ impl FrontierAckProcessor {
         self.stats
             .inc(StatType::BootstrapFrontierScan, DetailType::Process);
 
-        self.update_state(query, &frontiers);
-
-        let ledger = self.ledger.clone();
-        let stats = self.stats.clone();
-        let state = self.logic.clone();
-        self.workers.execute(move || {
-            let any = ledger.any();
-            let mut worker = FrontierWorker::new(&any, &stats, &state);
-            worker.process(frontiers);
-        });
-    }
-
-    fn update_state(&self, query: &RunningQuery, frontiers: &[Frontier]) {
-        let queued_tasks = self.workers.queued_count();
         let mut guard = self.logic.lock().unwrap();
         guard.frontier_scan.process(query.start.into(), &frontiers);
-        guard.set_frontier_checker_overfill(queued_tasks >= self.max_pending);
+        guard.frontiers_to_check.push_back(frontiers);
     }
 }
 
@@ -143,7 +114,7 @@ mod tests {
         assert!(success);
         assert_eq!(
             fixture
-                .state
+                .logic
                 .lock()
                 .unwrap()
                 .frontier_scan
@@ -183,7 +154,7 @@ mod tests {
         assert!(!success);
         assert_eq!(
             fixture
-                .state
+                .logic
                 .lock()
                 .unwrap()
                 .frontier_scan
@@ -210,14 +181,13 @@ mod tests {
 
     fn create_fixture() -> Fixture {
         let stats = Arc::new(Stats::default());
-        let ledger = Arc::new(Ledger::new_null());
-        let state = Arc::new(Mutex::new(BootstrapLogic::default()));
-        let processor = FrontierAckProcessor::new(stats.clone(), ledger, state.clone());
+        let logic = Arc::new(Mutex::new(BootstrapLogic::default()));
+        let processor = FrontierAckProcessor::new(stats.clone(), logic.clone());
 
         Fixture {
             stats,
             processor,
-            state,
+            logic,
         }
     }
 
@@ -233,6 +203,6 @@ mod tests {
     struct Fixture {
         stats: Arc<Stats>,
         processor: FrontierAckProcessor,
-        state: Arc<Mutex<BootstrapLogic>>,
+        logic: Arc<Mutex<BootstrapLogic>>,
     }
 }

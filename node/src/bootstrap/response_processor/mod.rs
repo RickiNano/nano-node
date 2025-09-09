@@ -2,6 +2,7 @@ mod account_ack_processor;
 mod block_ack_processor;
 mod database_crawler;
 mod frontier_ack_processor;
+mod frontier_check_pool;
 mod frontier_checker;
 mod frontier_worker;
 mod response_processor;

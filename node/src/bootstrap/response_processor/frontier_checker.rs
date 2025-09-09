@@ -15,7 +15,7 @@ pub(crate) enum FrontierCheckResult {
     Pending,
 }
 
-/// Checks if a given frontier is up to date or outdated
+/// Checks if given frontiers are up to date or outdated
 pub(crate) struct FrontierChecker<'a> {
     any: &'a OwningAnySet<'a>,
     account_crawler: DatabaseCrawler<'a, AccountCrawlSource<'a>>,
