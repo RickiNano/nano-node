@@ -4,13 +4,19 @@ use rsnano_messages::AscPullReqType;
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash, Frontier};
-use rsnano_utils::container_info::ContainerInfo;
+use rsnano_utils::{
+    container_info::ContainerInfo,
+    stats::{StatsCollection, StatsSource},
+};
 
 use super::{
     CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer,
     running_query::QuerySource,
 };
-use crate::bootstrap::{AscPullQuerySpec, BootstrapConfig, state::block_queue::BlockQueue};
+use crate::bootstrap::{
+    AscPullQuerySpec, BootstrapConfig,
+    state::{RunningQuery, VerifyResult, block_queue::BlockQueue},
+};
 
 pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
@@ -23,6 +29,7 @@ pub struct BootstrapLogic {
     pub(crate) frontier_ack_processor_busy: bool,
     pub last_outdated_accounts: VecDeque<Account>,
     pub(crate) block_queue: BlockQueue,
+    pub(crate) frontiers_stats: FrontiersStats,
     pub(crate) stopped: bool,
 }
 
@@ -41,6 +48,7 @@ impl BootstrapLogic {
             frontier_ack_processor_busy: false,
             last_outdated_accounts: VecDeque::new(),
             block_queue: BlockQueue::default(),
+            frontiers_stats: Default::default(),
             stopped: false,
         }
     }
@@ -114,6 +122,35 @@ impl BootstrapLogic {
         self.frontier_ack_processor_busy = overfill;
     }
 
+    /// Returns true if the frontiers were valid
+    pub(crate) fn process_frontiers(
+        &mut self,
+        query: &RunningQuery,
+        frontiers: Vec<Frontier>,
+    ) -> bool {
+        self.frontiers_stats.processed += 1;
+
+        let valid_frontiers = match query.verify_frontiers(&frontiers) {
+            VerifyResult::Ok => {
+                self.frontiers_stats.verified += 1;
+                self.frontiers_stats.frontiers += frontiers.len() as u64;
+                self.frontier_scan.process(query.start.into(), &frontiers);
+                self.frontiers_to_check.push_back(frontiers);
+                true
+            }
+            VerifyResult::NothingNew => {
+                self.frontiers_stats.nothing_new += 1;
+                // OK, but nothing to do
+                true
+            }
+            VerifyResult::Invalid => {
+                self.frontiers_stats.invalid += 1;
+                false
+            }
+        };
+        valid_frontiers
+    }
+
     pub fn container_info(&self) -> ContainerInfo {
         ContainerInfo::builder()
             .leaf(
@@ -131,6 +168,35 @@ impl BootstrapLogic {
 impl Default for BootstrapLogic {
     fn default() -> Self {
         Self::new(Default::default())
+    }
+}
+
+impl StatsSource for BootstrapLogic {
+    fn collect_stats(&self, result: &mut StatsCollection) {
+        self.frontiers_stats.collect_stats(result)
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct FrontiersStats {
+    pub(crate) processed: u64,
+    pub(crate) verified: u64,
+    pub(crate) nothing_new: u64,
+    pub(crate) invalid: u64,
+    pub(crate) frontiers: u64,
+}
+
+impl StatsSource for FrontiersStats {
+    fn collect_stats(&self, result: &mut StatsCollection) {
+        result.insert("bootstrap_process", "frontiers", self.processed);
+        result.insert("bootstrap_verify_frontiers", "ok", self.verified);
+        result.insert(
+            "bootstrap_verify_frontiers",
+            "nothing_new",
+            self.nothing_new,
+        );
+        result.insert("bootstrap_verify_frontiers", "invalid", self.invalid);
+        result.insert("bootstrap", "frontiers", self.frontiers);
     }
 }
 

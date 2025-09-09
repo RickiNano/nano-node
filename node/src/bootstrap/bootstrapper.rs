@@ -85,7 +85,7 @@ impl Default for BootstrapConfig {
 pub struct Bootstrapper {
     stats: Arc<Stats>,
     threads: Mutex<Option<Threads>>,
-    state: Arc<Mutex<BootstrapLogic>>,
+    logic: Arc<Mutex<BootstrapLogic>>,
     state_changed: Arc<Condvar>,
     config: BootstrapConfig,
     clock: Arc<SteadyClock>,
@@ -143,7 +143,7 @@ impl Bootstrapper {
 
         Self {
             threads: Mutex::new(None),
-            state,
+            logic: state,
             state_changed,
             config,
             stats,
@@ -176,7 +176,7 @@ impl Bootstrapper {
 
     pub fn initialize(&self, genesis_account: &Account) {
         let inserted = self
-            .state
+            .logic
             .lock()
             .unwrap()
             .candidate_accounts
@@ -191,7 +191,7 @@ impl Bootstrapper {
 
     pub fn stop(&self) {
         {
-            let mut guard = self.state.lock().unwrap();
+            let mut guard = self.logic.lock().unwrap();
             guard.stopped = true;
         }
         self.state_changed.notify_all();
@@ -205,11 +205,11 @@ impl Bootstrapper {
     }
 
     pub fn state(&self) -> MutexGuard<'_, BootstrapLogic> {
-        self.state.lock().unwrap()
+        self.logic.lock().unwrap()
     }
 
     pub fn prioritized(&self, account: &Account) -> bool {
-        self.state
+        self.logic
             .lock()
             .unwrap()
             .candidate_accounts
@@ -218,7 +218,7 @@ impl Bootstrapper {
 
     fn run_timeouts(&self) {
         let mut cleanup = BootstrapCleanup::new(self.clock.clone(), self.stats.clone());
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.logic.lock().unwrap();
         while !state.stopped {
             cleanup.cleanup(&mut state);
             self.state_changed.notify_all();
@@ -283,7 +283,7 @@ impl Bootstrapper {
     }
 
     pub fn unblock_batch(&self, accounts: impl IntoIterator<Item = Account>) {
-        let mut guard = self.state.lock().unwrap();
+        let mut guard = self.logic.lock().unwrap();
         for account in accounts {
             guard.candidate_accounts.unblock(account, None);
         }
@@ -299,12 +299,13 @@ impl Drop for Bootstrapper {
 
 impl ContainerInfoProvider for Bootstrapper {
     fn container_info(&self) -> ContainerInfo {
-        self.state.lock().unwrap().container_info()
+        self.logic.lock().unwrap().container_info()
     }
 }
 
 impl StatsSource for Bootstrapper {
     fn collect_stats(&self, result: &mut StatsCollection) {
+        self.logic.lock().unwrap().collect_stats(result);
         self.requesters.collect_stats(result);
     }
 }
@@ -339,7 +340,7 @@ pub(crate) struct BootstrapperCleanup(pub Arc<Bootstrapper>);
 impl DeadChannelCleanupStep for BootstrapperCleanup {
     fn clean_up_dead_channels(&self, dead_channel_ids: &[ChannelId]) {
         self.0
-            .state
+            .logic
             .lock()
             .unwrap()
             .scoring

@@ -14,7 +14,6 @@ use super::{
     super::state::{BootstrapLogic, QueryType, RunningQuery},
     account_ack_processor::AccountAckProcessor,
     block_ack_processor::BlockAckProcessor,
-    frontier_ack_processor::FrontierAckProcessor,
 };
 use crate::{
     block_processing::BlockProcessorQueue,
@@ -23,7 +22,6 @@ use crate::{
 
 pub(crate) struct ResponseProcessor {
     logic: Arc<Mutex<BootstrapLogic>>,
-    frontiers: FrontierAckProcessor,
     accounts: AccountAckProcessor,
     blocks: BlockAckProcessor,
     frontier_check_pool: FrontierCheckPool,
@@ -57,14 +55,12 @@ impl ResponseProcessor {
         block_queue: Arc<BlockProcessorQueue>,
         ledger: Arc<Ledger>,
     ) -> Self {
-        let frontiers = FrontierAckProcessor::new(stats.clone(), logic.clone());
         let frontier_check_pool = FrontierCheckPool::new(stats.clone(), ledger, logic.clone());
         let accounts = AccountAckProcessor::new(stats.clone(), logic.clone());
         let blocks = BlockAckProcessor::new(logic.clone(), stats, block_queue);
 
         Self {
             logic,
-            frontiers,
             accounts,
             blocks,
             frontier_check_pool,
@@ -119,12 +115,15 @@ impl ResponseProcessor {
         let ok = match response.pull_type {
             AscPullAckType::Blocks(blocks) => self.blocks.process(query, blocks),
             AscPullAckType::AccountInfo(info) => self.accounts.process(query, &info),
-            AscPullAckType::Frontiers(frontiers) => self.frontiers.process(query, frontiers),
+            AscPullAckType::Frontiers(frontiers) => {
+                let mut logic = self.logic.lock().unwrap();
+                logic.process_frontiers(query, frontiers)
+            }
         };
 
         if ok {
             let mut logic = self.logic.lock().unwrap();
-            self.frontier_check_pool.enqeue_frontiers(&mut logic);
+            self.frontier_check_pool.enqueue_frontiers(&mut logic);
             Ok(())
         } else {
             Err(ProcessError::InvalidResponse)

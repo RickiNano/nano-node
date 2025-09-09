@@ -31,7 +31,7 @@ impl FrontierCheckPool {
         }
     }
 
-    pub(crate) fn enqeue_frontiers(&self, logic: &mut BootstrapLogic) {
+    pub(crate) fn enqueue_frontiers(&self, logic: &mut BootstrapLogic) {
         while let Some(frontiers) = logic.frontiers_to_check.pop_front() {
             let ledger = self.ledger.clone();
             let stats = self.stats.clone();

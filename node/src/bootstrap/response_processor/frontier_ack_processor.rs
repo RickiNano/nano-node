@@ -70,73 +70,28 @@ mod tests {
 
     #[test]
     fn empty_frontiers() {
-        let fixture = create_fixture();
+        let mut logic = BootstrapLogic::default();
         let query = running_query();
 
-        let success = fixture.processor.process(&query, Vec::new());
+        let success = logic.process_frontiers(&query, Vec::new());
 
         assert!(success);
-        assert_eq!(
-            fixture.stats.count(
-                StatType::BootstrapProcess,
-                DetailType::Frontiers,
-                Direction::In
-            ),
-            1
-        );
-        assert_eq!(
-            fixture.stats.count(
-                StatType::BootstrapVerifyFrontiers,
-                DetailType::Ok,
-                Direction::In
-            ),
-            0
-        );
-        assert_eq!(
-            fixture.stats.count(
-                StatType::BootstrapVerifyFrontiers,
-                DetailType::NothingNew,
-                Direction::In
-            ),
-            1
-        );
+        assert_eq!(logic.frontiers_stats.processed, 1);
+        assert_eq!(logic.frontiers_stats.verified, 0);
+        assert_eq!(logic.frontiers_stats.nothing_new, 1);
     }
 
     #[test]
     fn update_account_ranges() {
-        let fixture = create_fixture();
+        let mut logic = BootstrapLogic::default();
         let query = running_query();
 
-        let success = fixture
-            .processor
-            .process(&query, vec![Frontier::new_test_instance()]);
+        let success = logic.process_frontiers(&query, vec![Frontier::new_test_instance()]);
 
         assert!(success);
-        assert_eq!(
-            fixture
-                .logic
-                .lock()
-                .unwrap()
-                .frontier_scan
-                .total_requests_completed(),
-            1
-        );
-        assert_eq!(
-            fixture.stats.count(
-                StatType::BootstrapProcess,
-                DetailType::Frontiers,
-                Direction::In
-            ),
-            1
-        );
-        assert_eq!(
-            fixture.stats.count(
-                StatType::BootstrapVerifyFrontiers,
-                DetailType::Ok,
-                Direction::In
-            ),
-            1
-        );
+        assert_eq!(logic.frontier_scan.total_requests_completed(), 1);
+        assert_eq!(logic.frontiers_stats.processed, 1);
+        assert_eq!(logic.frontiers_stats.verified, 1);
     }
 
     #[test]
