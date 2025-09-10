@@ -15,8 +15,12 @@ pub struct Proposal {
 }
 
 impl Proposal {
-    pub fn new(preproposals: Vec<Preproposal>, private_key: &PrivateKey) -> Self {
-        let preproposals: Vec<PreproposalHash> = preproposals.iter().map(|p| p.hash()).collect();
+    pub fn new<'a>(
+        preproposals: impl IntoIterator<Item = &'a Preproposal>,
+        private_key: &PrivateKey,
+    ) -> Self {
+        let preproposals: Vec<PreproposalHash> =
+            preproposals.into_iter().map(|p| p.hash()).collect();
 
         let mut proposal = Self {
             preproposal_hashes: preproposals,
@@ -124,8 +128,8 @@ mod tests {
             &PrivateKey::new(),
         );
 
-        let p1 = Proposal::new(vec![pre1.clone(), pre2.clone()], &PrivateKey::new());
-        let p2 = Proposal::new(vec![pre2, pre1], &PrivateKey::new());
+        let p1 = Proposal::new(&[pre1.clone(), pre2.clone()], &PrivateKey::new());
+        let p2 = Proposal::new(&[pre2, pre1], &PrivateKey::new());
 
         assert_eq!(p1.preproposals_hash(), p2.preproposals_hash());
     }
@@ -133,9 +137,9 @@ mod tests {
     #[test]
     fn sign_new_proposal() {
         let private_key = PrivateKey::from(42);
-        let preproposals = vec![Preproposal::new_test_instance()];
+        let preproposals = [Preproposal::new_test_instance()];
 
-        let proposal = Proposal::new(preproposals, &private_key);
+        let proposal = Proposal::new(&preproposals, &private_key);
 
         assert_eq!(proposal.signer, private_key.public_key());
 

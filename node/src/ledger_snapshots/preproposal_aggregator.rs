@@ -61,8 +61,7 @@ impl PreproposalAggregator {
     }
 
     pub(crate) fn create_proposal(&self, private_key: &PrivateKey) -> Proposal {
-        //Proposal::new(self.preproposals.keys(), private_key)
-        Proposal::new_test_instance()
+        Proposal::new(self.preproposals.values(), private_key)
     }
 }
 
@@ -149,6 +148,47 @@ mod tests {
         assert!(
             aggregator.contains(&preproposal1.hash()),
             "Should contain preproposal1"
+        );
+    }
+
+    #[test]
+    fn create_proposal() {
+        let rep_key1 = PrivateKey::from(1);
+        let rep_key2 = PrivateKey::from(2);
+
+        let weight1 = Amount::nano(100_000);
+        let weight2: Amount = Amount::nano(200_000);
+
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key1.public_key(), weight1);
+        rep_weights.insert(rep_key2.public_key(), weight2);
+
+        let mut aggregator = PreproposalAggregator::default();
+        aggregator.set_rep_weights(rep_weights, Amount::nano(300_000));
+
+        let preproposal1 =
+            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key1);
+        aggregator.add(preproposal1.clone());
+
+        let preproposal2 =
+            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key2);
+        aggregator.add(preproposal2.clone());
+
+        let proposal = aggregator.create_proposal(&rep_key1);
+
+        assert_eq!(
+            proposal.signer,
+            rep_key1.public_key(),
+            "Should be signed by rep_key1"
+        );
+        assert_eq!(proposal.preproposal_hashes.len(), 2, "prepropsal hashes");
+        assert!(
+            proposal.preproposal_hashes.contains(&preproposal1.hash()),
+            "Should contain preproposal1"
+        );
+        assert!(
+            proposal.preproposal_hashes.contains(&preproposal2.hash()),
+            "Should contain preproposal2"
         );
     }
 }

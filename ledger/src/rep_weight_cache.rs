@@ -119,7 +119,12 @@ impl RepWeightCache {
     }
 
     pub fn bootstrap_weights(&self) -> HashMap<PublicKey, Amount> {
-        self.bootstrap_weights.read().unwrap().deref().deref().clone()
+        self.bootstrap_weights
+            .read()
+            .unwrap()
+            .deref()
+            .deref()
+            .clone()
     }
 
     pub fn block_count(&self) -> u64 {
@@ -148,5 +153,5 @@ impl From<RepWeights> for RepWeightCache {
         let mut rep_weights_cache = RepWeightCache::new();
         rep_weights_cache.weights = RwLock::new(value).into();
         rep_weights_cache
-    }   
+    }
 }
