@@ -185,7 +185,7 @@ impl NetworkMessageProcessor {
                 // obsolete messages
             }
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => todo!(),
+            Message::SnapshotPreproposal(_) => {}
         }
     }
 }

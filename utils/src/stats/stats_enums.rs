@@ -166,6 +166,8 @@ pub enum DetailType {
     TelemetryAck,
     AscPullReq,
     AscPullAck,
+    #[cfg(feature = "ledger_snapshots")]
+    Preproposal,
 
     // dropped messages
     ConfirmAckZeroAccount,

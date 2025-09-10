@@ -1,9 +1,7 @@
+use super::*;
 use bitvec::prelude::BitArray;
-
 use rsnano_types::{DeserializationError, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
-
-use super::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Message {
