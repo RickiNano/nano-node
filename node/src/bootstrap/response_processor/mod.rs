@@ -4,4 +4,4 @@ mod frontier_checker;
 mod frontier_worker;
 mod response_processor;
 
-pub(crate) use response_processor::{ProcessError, ResponseProcessor};
+pub(crate) use response_processor::ResponseProcessor;

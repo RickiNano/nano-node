@@ -17,7 +17,6 @@ use super::{
 };
 use crate::bootstrap::{
     AscPullQuerySpec, BootstrapConfig,
-    response_processor::ProcessError,
     state::{
         PriorityDownResult, QueryType, RunningQuery, VerifyResult,
         block_queue::{AccountBlocks, BlockQueue},
@@ -355,7 +354,14 @@ impl StatsSource for BootstrapLogic {
     }
 }
 
-pub struct ProcessInfo {
+#[derive(Debug)]
+pub(crate) enum ProcessError {
+    NoRunningQueryFound,
+    InvalidResponseType,
+    InvalidResponse,
+}
+
+pub(crate) struct ProcessInfo {
     pub query_type: QueryType,
     pub response_time: Duration,
 }
