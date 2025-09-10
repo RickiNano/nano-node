@@ -2,6 +2,7 @@ use crate::transport::MessageFlooder;
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Message, Preproposal};
 use rsnano_network::TrafficType;
+use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
 use std::sync::{Arc, Mutex};
@@ -13,6 +14,7 @@ pub struct LedgerSnapshots {
     /// TODO: We have to extend this later to multiple representatives per node.
     get_private_key: Box<dyn Fn() -> Option<PrivateKey> + Send + Sync>,
     flooder: Mutex<MessageFlooder>,
+    receive_preproposal_listener: OutputListenerMt<Preproposal>,
 }
 
 impl LedgerSnapshots {
@@ -25,6 +27,7 @@ impl LedgerSnapshots {
             ledger,
             get_private_key: Box::new(get_private_key),
             flooder: flooder.into(),
+            receive_preproposal_listener: OutputListenerMt::new(),
         }
     }
 
@@ -47,6 +50,14 @@ impl LedgerSnapshots {
 
     pub fn collect_frontiers(&self) -> Vec<(Account, BlockHash)> {
         self.ledger.confirmed().frontiers().collect()
+    }
+
+    pub fn receive_preproposal(&self, preproposal: Preproposal) {
+        self.receive_preproposal_listener.emit(preproposal);
+    }
+
+    pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
+        self.receive_preproposal_listener.track()
     }
 }
 
@@ -123,9 +134,22 @@ mod tests {
         );
     }
 
+    #[test]
+    fn receive_preproposal_listener() {
+        let ledger = create_ledger_with_frontiers([]);
+        let fixture = Fixture::new(ledger.clone());
+        let preproposal = Preproposal::new_test_instance();
+        fixture.snapshots.receive_preproposal(preproposal.clone());
+
+        let receive_events = fixture.receive_preproposal_tracker.output();
+        assert_eq!(receive_events.len(), 1, "Should receive preproposal");
+        assert_eq!(receive_events[0], preproposal);
+    }
+
     struct Fixture {
         snapshots: LedgerSnapshots,
         flood_tracker: Arc<OutputTrackerMt<FloodEvent>>,
+        receive_preproposal_tracker: Arc<OutputTrackerMt<Preproposal>>,
     }
 
     impl Fixture {
@@ -133,9 +157,12 @@ mod tests {
             let flooder = MessageFlooder::new_null();
             let flood_tracker = flooder.track_floods();
             let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key, flooder);
+            let receive_preproposal_tracker = snapshots.track_received_preproposals();
+
             Self {
                 snapshots,
                 flood_tracker,
+                receive_preproposal_tracker,
             }
         }
     }

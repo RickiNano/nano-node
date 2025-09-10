@@ -12,11 +12,7 @@ use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use rsnano_work::WorkThresholds;
 
 use crate::{
-    block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
-    bootstrap::{BootstrapServer, Bootstrapper},
-    consensus::{AggregatorRequest, RequestAggregator, VoteProcessorQueue},
-    telemetry::Telemetry,
-    wallets::WalletRepresentatives,
+    block_processing::{BlockContext, BlockProcessorQueue, BlockSource}, bootstrap::{BootstrapServer, Bootstrapper}, consensus::{AggregatorRequest, RequestAggregator, VoteProcessorQueue}, ledger_snapshots::LedgerSnapshots, telemetry::Telemetry, wallets::WalletRepresentatives
 };
 
 /// Process messages that were received from other nodes in the network
@@ -32,6 +28,7 @@ pub struct NetworkMessageProcessor {
     bootstrap_server: Arc<BootstrapServer>,
     bootstrapper: Arc<Bootstrapper>,
     work_thresholds: WorkThresholds,
+    //ledger_snapshots: Arc<LedgerSnapshots>,
 }
 
 impl NetworkMessageProcessor {
