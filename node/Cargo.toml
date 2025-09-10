@@ -6,7 +6,12 @@ edition = "2024"
 
 [features]
 output_tracking = []
-ledger_snapshots = ["rsnano_messages/ledger_snapshots", "rsnano_network/ledger_snapshots", "rsnano_network_protocol/ledger_snapshots"]
+ledger_snapshots = [
+	"rsnano_messages/ledger_snapshots", 
+	"rsnano_network/ledger_snapshots", 
+	"rsnano_network_protocol/ledger_snapshots",
+	"rsnano_utils/ledger_snapshots"
+	]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
