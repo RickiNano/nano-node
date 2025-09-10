@@ -1,3 +1,6 @@
+mod preproposal_aggregator;
+
+use crate::ledger_snapshots::preproposal_aggregator::PreproposalAggregator;
 use crate::transport::MessageFlooder;
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Message, Preproposal};
@@ -15,6 +18,7 @@ pub struct LedgerSnapshots {
     get_private_key: Box<dyn Fn() -> Option<PrivateKey> + Send + Sync>,
     flooder: Mutex<MessageFlooder>,
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
+    preproposal_aggregator: PreproposalAggregator,
 }
 
 impl LedgerSnapshots {
@@ -28,6 +32,7 @@ impl LedgerSnapshots {
             get_private_key: Box::new(get_private_key),
             flooder: flooder.into(),
             receive_preproposal_listener: OutputListenerMt::new(),
+            preproposal_aggregator: Default::default(),
         }
     }
 
@@ -51,17 +56,18 @@ impl LedgerSnapshots {
         );
     }
 
-    pub fn create_preproposal(&self, private_key: &PrivateKey) -> Preproposal {
+    fn create_preproposal(&self, private_key: &PrivateKey) -> Preproposal {
         let frontiers = self.collect_frontiers();
         Preproposal::new(frontiers, private_key)
     }
 
-    pub fn collect_frontiers(&self) -> Vec<(Account, BlockHash)> {
+    fn collect_frontiers(&self) -> Vec<(Account, BlockHash)> {
         self.ledger.confirmed().frontiers().collect()
     }
 
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
         self.receive_preproposal_listener.emit(preproposal);
+        // TODO
     }
 
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
@@ -82,8 +88,7 @@ mod tests {
     fn ledger_with_one_account() {
         let account = Account::from(1);
         let frontier = BlockHash::from(2);
-        let ledger = create_ledger_with_frontiers([(account, frontier)]);
-        let fixture = Fixture::new(ledger);
+        let fixture = Fixture::with_frontiers([(account, frontier)]);
         assert_eq!(fixture.snapshots.collect_frontiers(), [(account, frontier)]);
     }
 
@@ -94,8 +99,7 @@ mod tests {
         let account2 = Account::from(2);
         let frontier2 = BlockHash::from(200);
 
-        let ledger = create_ledger_with_frontiers([(account1, frontier1), (account2, frontier2)]);
-        let fixture = Fixture::new(ledger);
+        let fixture = Fixture::with_frontiers([(account1, frontier1), (account2, frontier2)]);
         assert_eq!(
             fixture.snapshots.collect_frontiers(),
             [(account1, frontier1), (account2, frontier2)]
@@ -106,8 +110,7 @@ mod tests {
     fn create_preproposal() {
         let account = Account::from(10);
         let frontier = BlockHash::from(2);
-        let ledger = create_ledger_with_frontiers([(account, frontier)]);
-        let fixture = Fixture::new(ledger);
+        let fixture = Fixture::with_frontiers([(account, frontier)]);
 
         let preproposal = fixture.snapshots.create_preproposal(&PrivateKey::from(1));
 
@@ -118,8 +121,7 @@ mod tests {
     fn publish_preproposal() {
         let account = Account::from(1);
         let frontier = BlockHash::from(100);
-        let ledger = create_ledger_with_frontiers([(account, frontier)]);
-        let fixture = Fixture::new(ledger.clone());
+        let fixture = Fixture::with_frontiers([(account, frontier)]);
 
         fixture.snapshots.publish_preproposal();
 
@@ -144,14 +146,28 @@ mod tests {
 
     #[test]
     fn receive_preproposal_listener() {
-        let ledger = create_ledger_with_frontiers([]);
-        let fixture = Fixture::new(ledger.clone());
+        let fixture = Fixture::new();
         let preproposal = Preproposal::new_test_instance();
         fixture.snapshots.receive_preproposal(preproposal.clone());
 
         let receive_events = fixture.receive_preproposal_tracker.output();
         assert_eq!(receive_events.len(), 1, "Should receive preproposal");
         assert_eq!(receive_events[0], preproposal);
+    }
+
+    #[test]
+    fn a_received_preproposal_is_added_to_the_preproposal_aggregator() {
+        let fixture = Fixture::new();
+        let snapshots = &fixture.snapshots;
+        let preproposal = Preproposal::new_test_instance();
+
+        snapshots.receive_preproposal(preproposal.clone());
+
+        assert!(
+            snapshots
+                .preproposal_aggregator
+                .contains(&preproposal.hash())
+        );
     }
 
     struct Fixture {
@@ -161,7 +177,11 @@ mod tests {
     }
 
     impl Fixture {
-        fn new(ledger: Arc<Ledger>) -> Self {
+        fn new() -> Self {
+            Self::with_frontiers([])
+        }
+
+        fn with_ledger(ledger: Arc<Ledger>) -> Self {
             let flooder = MessageFlooder::new_null();
             let flood_tracker = flooder.track_floods();
             let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key, flooder);
@@ -172,6 +192,11 @@ mod tests {
                 flood_tracker,
                 receive_preproposal_tracker,
             }
+        }
+
+        fn with_frontiers(frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
+            let ledger = create_ledger_with_frontiers(frontiers);
+            Self::with_ledger(ledger)
         }
     }
 

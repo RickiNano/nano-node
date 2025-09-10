@@ -3,7 +3,6 @@ use std::{
     time::SystemTime,
 };
 
-use blake2::digest::typenum::Le;
 use rsnano_ledger::Ledger;
 use rsnano_messages::{TelemetryData, TelemetryMaker};
 use rsnano_network::{ChannelMode, Network};
