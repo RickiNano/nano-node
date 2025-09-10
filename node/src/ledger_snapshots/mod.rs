@@ -1,15 +1,17 @@
 mod preproposal_aggregator;
 
-use crate::ledger_snapshots::preproposal_aggregator::PreproposalAggregator;
-use crate::representatives::OnlineReps;
-use crate::transport::MessageFlooder;
-use rsnano_ledger::{Ledger, RepWeights};
-use rsnano_messages::{Message, Preproposal, Proposal};
+use std::sync::{Arc, Mutex};
+
+use rsnano_ledger::Ledger;
+use rsnano_messages::{Message, Preproposal};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
-use std::sync::{Arc, Mutex};
+
+use crate::ledger_snapshots::preproposal_aggregator::PreproposalAggregator;
+use crate::representatives::OnlineReps;
+use crate::transport::MessageFlooder;
 
 pub struct LedgerSnapshots {
     ledger: Arc<Ledger>,
@@ -72,21 +74,35 @@ impl LedgerSnapshots {
 
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
         self.receive_preproposal_listener.emit(preproposal.clone());
-        let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
-        preproposal_aggregator.add(preproposal);
-        let online_reps = self.online_reps.lock().unwrap();
-        preproposal_aggregator
-            .set_rep_weights(online_reps.get_rep_weights(), online_reps.quorum_delta());
 
-        if preproposal_aggregator.has_quorum() {
-            let proposal =
-                preproposal_aggregator.create_proposal(&(self.get_private_key)().unwrap());
+        let (rep_weights, quorum_weight) = {
+            let online_reps = self.online_reps.lock().unwrap();
+            let rep_weights = online_reps.get_rep_weights();
+            let quorum_weight = online_reps.quorum_delta();
+            (rep_weights, quorum_weight)
+        };
+
+        let proposal = {
+            let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
+            preproposal_aggregator.add(preproposal);
+            preproposal_aggregator.set_rep_weights(rep_weights, quorum_weight);
+
+            if preproposal_aggregator.has_quorum() {
+                let proposal =
+                    preproposal_aggregator.create_proposal(&(self.get_private_key)().unwrap());
+                Some(proposal)
+            } else {
+                None
+            }
+        };
+
+        if let Some(proposal) = proposal {
             self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
                 &Message::SnapshotProposal(proposal),
                 TrafficType::LedgerSnapshots,
                 0.0,
             );
-        }
+        };
     }
 
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
@@ -98,6 +114,7 @@ impl LedgerSnapshots {
 mod tests {
     use super::*;
     use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
+    use rsnano_ledger::RepWeights;
     use rsnano_messages::Message;
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;

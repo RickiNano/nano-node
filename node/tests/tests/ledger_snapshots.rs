@@ -46,4 +46,31 @@ fn publish_preproposal_integration_test() {
         },
         1,
     );
+
+    assert_timely_eq2(
+        || {
+            node1
+                .stats
+                .count(StatType::Message, DetailType::Preproposal, Direction::In)
+        },
+        1,
+    );
+
+    assert_timely_eq2(
+        || {
+            node1
+                .stats
+                .count(StatType::Message, DetailType::Proposal, Direction::In)
+        },
+        1,
+    );
+
+    assert_timely_eq2(
+        || {
+            node2
+                .stats
+                .count(StatType::Message, DetailType::Proposal, Direction::In)
+        },
+        1,
+    );
 }
