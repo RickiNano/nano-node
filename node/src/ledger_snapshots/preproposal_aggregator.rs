@@ -90,7 +90,7 @@ mod tests {
         let mut aggregator = PreproposalAggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::MAX);
 
-        let preproposal = Preproposal::new(vec![(Account::from(1), BlockHash::from(2))], &rep_key);
+        let preproposal = Preproposal::new(test_frontiers(), &rep_key);
         aggregator.add(preproposal.clone());
 
         assert_eq!(aggregator.len(), 1);
@@ -106,20 +106,16 @@ mod tests {
         let rep_key1 = PrivateKey::from(1);
         let rep_key2 = PrivateKey::from(2);
 
-        let weight1 = Amount::nano(100_000);
-        let weight2: Amount = Amount::nano(200_000);
         let mut rep_weights = RepWeights::new();
-        rep_weights.insert(rep_key1.public_key(), weight1);
-        rep_weights.insert(rep_key2.public_key(), weight2);
+        rep_weights.insert(rep_key1.public_key(), Amount::nano(100_000));
+        rep_weights.insert(rep_key2.public_key(), Amount::nano(200_000));
 
         let mut aggregator = PreproposalAggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::nano(300_000));
 
-        let preproposal1 =
-            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key1);
+        let preproposal1 = Preproposal::new(test_frontiers(), &rep_key1);
         aggregator.add(preproposal1.clone());
-        let preproposal2 =
-            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key2);
+        let preproposal2 = Preproposal::new(test_frontiers(), &rep_key2);
         aggregator.add(preproposal2.clone());
 
         assert_eq!(aggregator.has_quorum(), true);
@@ -128,9 +124,8 @@ mod tests {
     #[test]
     fn only_allow_one_preproposal_per_signer() {
         let rep_key = PrivateKey::from(1);
-        let weight = Amount::nano(100_000);
         let mut rep_weights = RepWeights::new();
-        rep_weights.insert(rep_key.public_key(), weight);
+        rep_weights.insert(rep_key.public_key(), Amount::nano(100_000));
 
         let mut aggregator = PreproposalAggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::nano(150_000));
@@ -156,22 +151,17 @@ mod tests {
         let rep_key1 = PrivateKey::from(1);
         let rep_key2 = PrivateKey::from(2);
 
-        let weight1 = Amount::nano(100_000);
-        let weight2: Amount = Amount::nano(200_000);
-
         let mut rep_weights = RepWeights::new();
-        rep_weights.insert(rep_key1.public_key(), weight1);
-        rep_weights.insert(rep_key2.public_key(), weight2);
+        rep_weights.insert(rep_key1.public_key(), Amount::nano(100_000));
+        rep_weights.insert(rep_key2.public_key(), Amount::nano(200_000));
 
         let mut aggregator = PreproposalAggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::nano(300_000));
 
-        let preproposal1 =
-            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key1);
+        let preproposal1 = Preproposal::new(test_frontiers(), &rep_key1);
         aggregator.add(preproposal1.clone());
 
-        let preproposal2 =
-            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key2);
+        let preproposal2 = Preproposal::new(test_frontiers(), &rep_key2);
         aggregator.add(preproposal2.clone());
 
         let proposal = aggregator.create_proposal(&rep_key1);
@@ -190,5 +180,9 @@ mod tests {
             proposal.preproposal_hashes.contains(&preproposal2.hash()),
             "Should contain preproposal2"
         );
+    }
+
+    fn test_frontiers() -> Vec<(Account, BlockHash)> {
+        vec![(Account::from(1), BlockHash::from(10))]
     }
 }
