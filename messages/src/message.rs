@@ -1,9 +1,7 @@
+use super::*;
 use bitvec::prelude::BitArray;
-
 use rsnano_types::{DeserializationError, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
-
-use super::*;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Message {
@@ -237,9 +235,7 @@ impl Message {
                 Message::SnapshotPreproposal(Preproposal::deserialize(payload)?)
             }
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Proposal => {
-                Message::SnapshotProposal(Proposal::deserialize(payload)?)
-            }
+            MessageType::Proposal => Message::SnapshotProposal(Proposal::deserialize(payload)?),
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);
             }

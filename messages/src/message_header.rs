@@ -6,7 +6,7 @@ use std::{
 use bitvec::prelude::*;
 use num_traits::FromPrimitive;
 
-use rsnano_types::{DeserializationError, Networks, ProtocolInfo, read_u8};
+use rsnano_types::{read_u8, DeserializationError, Networks, ProtocolInfo};
 use rsnano_utils::stats::DetailType;
 
 use super::*;
@@ -189,6 +189,7 @@ impl MessageHeader {
             MessageType::AscPullAck => AscPullAck::serialized_size(self.extensions),
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Preproposal => Preproposal::serialized_size(self.extensions),
+            #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => Proposal::serialized_size(self.extensions),
             MessageType::Invalid | MessageType::NotAType => {
                 debug_assert!(false);
@@ -250,7 +251,7 @@ impl From<MessageType> for DetailType {
             MessageType::AscPullReq => DetailType::AscPullReq,
             MessageType::AscPullAck => DetailType::AscPullAck,
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::Preproposal => todo!(),
+            MessageType::Preproposal => DetailType::Preproposal,
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => DetailType::Proposal,
         }

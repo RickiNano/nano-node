@@ -1,6 +1,8 @@
-use bitvec::array::BitArray;
-use rsnano_types::{Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature};
 use crate::{MessageVariant, Preproposal, PreproposalHash};
+use bitvec::array::BitArray;
+use rsnano_types::{
+    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+};
 
 pub type PreproposalsHash = Blake2Hash;
 
@@ -38,8 +40,7 @@ impl Proposal {
 
         let mut hash_builder = Blake2HashBuilder::default();
         for hash in unique_sorted.iter() {
-            hash_builder = hash_builder
-                .update(hash.as_bytes());
+            hash_builder = hash_builder.update(hash.as_bytes());
         }
         hash_builder.build()
     }
@@ -90,14 +91,26 @@ impl MessageVariant for Proposal {
 
 #[cfg(test)]
 mod tests {
-    use rsnano_types::{Account, BlockHash};
-    use crate::{assert_deserializable, Message, Preproposal};
     use super::*;
+    use crate::{Message, Preproposal, assert_deserializable};
+    use rsnano_types::{Account, BlockHash};
 
     #[test]
     fn hash_preproposals_is_order_invariant() {
-        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10)), (Account::from(2), BlockHash::from(20))], &PrivateKey::new());
-        let p2 = Preproposal::new(vec![(Account::from(2), BlockHash::from(20)), (Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+        let p1 = Preproposal::new(
+            vec![
+                (Account::from(1), BlockHash::from(10)),
+                (Account::from(2), BlockHash::from(20)),
+            ],
+            &PrivateKey::new(),
+        );
+        let p2 = Preproposal::new(
+            vec![
+                (Account::from(2), BlockHash::from(20)),
+                (Account::from(1), BlockHash::from(10)),
+            ],
+            &PrivateKey::new(),
+        );
 
         let h1 = Proposal::new(vec![p1.clone(), p2.clone()], &PrivateKey::new()).hash();
         let h2 = Proposal::new(vec![p2, p1], &PrivateKey::new()).hash();

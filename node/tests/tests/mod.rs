@@ -8,6 +8,8 @@ mod election;
 mod election_scheduler;
 mod ledger;
 mod ledger_confirm;
+#[cfg(feature = "ledger_snapshots")]
+mod ledger_snapshots;
 mod network;
 mod node;
 mod online_reps;

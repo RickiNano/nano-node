@@ -185,9 +185,15 @@ impl NetworkMessageProcessor {
                 // obsolete messages
             }
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => todo!(),
+            Message::SnapshotPreproposal(_) => {
+                use tracing::warn;
+                warn!("Snapshot preproposal received")
+            }
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotProposal(_) => todo!(),
+            Message::SnapshotProposal(_) => {
+                use tracing::warn;
+                warn!("Snapshot proposal received")
+            }
         }
     }
 }

@@ -19,11 +19,12 @@ use super::{
     block_inspector::BlockInspector,
     cleanup::BootstrapCleanup,
     requesters::Requesters,
-    response_processor::{ProcessError, ResponseProcessor},
+    response_processor::ResponseProcessor,
     state::{BootstrapLogic, CandidateAccountsConfig},
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
+    bootstrap::state::bootstrap_logic::ProcessError,
     transport::MessageSender,
 };
 

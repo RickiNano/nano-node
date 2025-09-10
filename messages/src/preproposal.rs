@@ -145,8 +145,20 @@ mod tests {
 
     #[test]
     fn hash_preproposals() {
-        let p1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10)), (Account::from(2), BlockHash::from(20))], &PrivateKey::new());
-        let p2 = Preproposal::new(vec![(Account::from(2), BlockHash::from(20)), (Account::from(1), BlockHash::from(10))], &PrivateKey::new());
+        let p1 = Preproposal::new(
+            vec![
+                (Account::from(1), BlockHash::from(10)),
+                (Account::from(2), BlockHash::from(20)),
+            ],
+            &PrivateKey::new(),
+        );
+        let p2 = Preproposal::new(
+            vec![
+                (Account::from(2), BlockHash::from(20)),
+                (Account::from(1), BlockHash::from(10)),
+            ],
+            &PrivateKey::new(),
+        );
 
         assert_eq!(p1.hash(), p2.hash());
     }

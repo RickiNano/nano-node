@@ -1,49 +1,25 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 use tracing::trace;
 
 use rsnano_ledger::Ledger;
-use rsnano_messages::{AscPullAck, AscPullAckType};
+use rsnano_messages::AscPullAck;
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::Stats;
 
-use super::{
-    super::state::{BootstrapLogic, QueryType, RunningQuery},
-    block_ack_processor::BlockAckProcessor,
-};
+use super::super::state::BootstrapLogic;
 use crate::{
-    block_processing::BlockProcessorQueue,
-    bootstrap::response_processor::frontier_check_pool::FrontierCheckPool,
+    block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
+    bootstrap::{
+        response_processor::frontier_check_pool::FrontierCheckPool,
+        state::bootstrap_logic::{ProcessError, ProcessInfo},
+    },
 };
 
 pub(crate) struct ResponseProcessor {
     logic: Arc<Mutex<BootstrapLogic>>,
-    blocks: BlockAckProcessor,
     frontier_check_pool: FrontierCheckPool,
-}
-
-#[derive(Debug)]
-pub(crate) enum ProcessError {
-    NoRunningQueryFound,
-    InvalidResponseType,
-    InvalidResponse,
-}
-
-pub(crate) struct ProcessInfo {
-    pub query_type: QueryType,
-    pub response_time: Duration,
-}
-
-impl ProcessInfo {
-    pub fn new(query: &RunningQuery, now: Timestamp) -> Self {
-        Self {
-            query_type: query.query_type,
-            response_time: query.sent.elapsed(now),
-        }
-    }
+    block_queue: Arc<BlockProcessorQueue>,
 }
 
 impl ResponseProcessor {
@@ -54,12 +30,11 @@ impl ResponseProcessor {
         ledger: Arc<Ledger>,
     ) -> Self {
         let frontier_check_pool = FrontierCheckPool::new(stats.clone(), ledger, logic.clone());
-        let blocks = BlockAckProcessor::new(logic.clone(), stats, block_queue);
 
         Self {
             logic,
-            blocks,
             frontier_check_pool,
+            block_queue,
         }
     }
 
@@ -74,25 +49,18 @@ impl ResponseProcessor {
         now: Timestamp,
     ) -> Result<ProcessInfo, ProcessError> {
         trace!(query_id = response.id, ?channel_id, "Process response");
-        let query = self.take_running_query_for(&response)?;
-        self.process_response(&query, response)?;
-        self.update_peer_scoring(channel_id);
-        Ok(ProcessInfo::new(&query, now))
-    }
 
-    fn take_running_query_for(&self, response: &AscPullAck) -> Result<RunningQuery, ProcessError> {
-        let mut guard = self.logic.lock().unwrap();
-
-        // Only process messages that have a known running query
-        let Some(query) = guard.running_queries.remove(response.id) else {
-            return Err(ProcessError::NoRunningQueryFound);
+        let process_info = {
+            let mut logic = self.logic.lock().unwrap();
+            let process_info = logic.process_response(response, now)?;
+            self.enqueue_next_blocks(&mut logic);
+            self.frontier_check_pool.enqueue_frontiers(&mut logic);
+            process_info
         };
 
-        if !query.is_valid_response_type(response) {
-            return Err(ProcessError::InvalidResponseType);
-        }
+        self.update_peer_scoring(channel_id);
 
-        Ok(query)
+        Ok(process_info)
     }
 
     fn update_peer_scoring(&self, channel_id: ChannelId) {
@@ -103,29 +71,26 @@ impl ResponseProcessor {
             .received_message(channel_id);
     }
 
-    fn process_response(
-        &self,
-        query: &RunningQuery,
-        response: AscPullAck,
-    ) -> Result<(), ProcessError> {
-        let ok = match response.pull_type {
-            AscPullAckType::Blocks(blocks) => self.blocks.process(query, blocks),
-            AscPullAckType::AccountInfo(info) => {
-                let mut logic = self.logic.lock().unwrap();
-                logic.process_account_ack(query, &info)
-            }
-            AscPullAckType::Frontiers(frontiers) => {
-                let mut logic = self.logic.lock().unwrap();
-                logic.process_frontiers(query, frontiers)
-            }
-        };
+    // TODO Remeove duplication! Copied from BlockInspector
+    fn enqueue_next_blocks(&self, logic: &mut BootstrapLogic) {
+        while let Some((block, query_id)) = logic.block_queue.next_to_process() {
+            let block_hash = block.hash();
 
-        if ok {
-            let mut logic = self.logic.lock().unwrap();
-            self.frontier_check_pool.enqueue_frontiers(&mut logic);
-            Ok(())
-        } else {
-            Err(ProcessError::InvalidResponse)
+            trace!(%block_hash, query_id, "Process block");
+
+            let inserted = self.block_queue.push(BlockContext::new(
+                block.clone(),
+                BlockSource::Bootstrap,
+                // TODO use real channel id
+                ChannelId::LOOPBACK,
+            ));
+
+            if inserted {
+                logic.block_queue.enqueued_for_processing(&block_hash);
+            } else {
+                // block processor queue is full!
+                break;
+            }
         }
     }
 }
