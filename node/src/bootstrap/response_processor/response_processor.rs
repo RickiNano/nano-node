@@ -1,19 +1,16 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 use tracing::trace;
 
 use rsnano_ledger::Ledger;
-use rsnano_messages::{AscPullAck, AscPullAckType};
+use rsnano_messages::AscPullAck;
 use rsnano_network::ChannelId;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_utils::stats::Stats;
 
-use super::super::state::{BootstrapLogic, QueryType, RunningQuery};
+use super::super::state::BootstrapLogic;
 use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
-    bootstrap::response_processor::frontier_check_pool::FrontierCheckPool,
+    bootstrap::{response_processor::frontier_check_pool::FrontierCheckPool, state::ProcessInfo},
 };
 
 pub(crate) struct ResponseProcessor {
@@ -27,20 +24,6 @@ pub(crate) enum ProcessError {
     NoRunningQueryFound,
     InvalidResponseType,
     InvalidResponse,
-}
-
-pub(crate) struct ProcessInfo {
-    pub query_type: QueryType,
-    pub response_time: Duration,
-}
-
-impl ProcessInfo {
-    pub fn new(query: &RunningQuery, now: Timestamp) -> Self {
-        Self {
-            query_type: query.query_type,
-            response_time: query.sent.elapsed(now),
-        }
-    }
 }
 
 impl ResponseProcessor {
@@ -70,25 +53,18 @@ impl ResponseProcessor {
         now: Timestamp,
     ) -> Result<ProcessInfo, ProcessError> {
         trace!(query_id = response.id, ?channel_id, "Process response");
-        let query = self.take_running_query_for(&response)?;
-        self.process_response(&query, response)?;
-        self.update_peer_scoring(channel_id);
-        Ok(ProcessInfo::new(&query, now))
-    }
 
-    fn take_running_query_for(&self, response: &AscPullAck) -> Result<RunningQuery, ProcessError> {
-        let mut guard = self.logic.lock().unwrap();
-
-        // Only process messages that have a known running query
-        let Some(query) = guard.running_queries.remove(response.id) else {
-            return Err(ProcessError::NoRunningQueryFound);
+        let process_info = {
+            let mut logic = self.logic.lock().unwrap();
+            let process_info = logic.process_response(response, now)?;
+            self.enqueue_next_blocks(&mut logic);
+            self.frontier_check_pool.enqueue_frontiers(&mut logic);
+            process_info
         };
 
-        if !query.is_valid_response_type(response) {
-            return Err(ProcessError::InvalidResponseType);
-        }
+        self.update_peer_scoring(channel_id);
 
-        Ok(query)
+        Ok(process_info)
     }
 
     fn update_peer_scoring(&self, channel_id: ChannelId) {
@@ -97,28 +73,6 @@ impl ResponseProcessor {
             .unwrap()
             .scoring
             .received_message(channel_id);
-    }
-
-    fn process_response(
-        &self,
-        query: &RunningQuery,
-        response: AscPullAck,
-    ) -> Result<(), ProcessError> {
-        let mut logic = self.logic.lock().unwrap();
-        let ok = match response.pull_type {
-            AscPullAckType::Blocks(blocks) => logic.process_blocks(query, blocks),
-            AscPullAckType::AccountInfo(info) => logic.process_account_ack(query, &info),
-            AscPullAckType::Frontiers(frontiers) => logic.process_frontiers(query, frontiers),
-        };
-
-        self.enqueue_next_blocks(&mut logic);
-
-        if ok {
-            self.frontier_check_pool.enqueue_frontiers(&mut logic);
-            Ok(())
-        } else {
-            Err(ProcessError::InvalidResponse)
-        }
     }
 
     // TODO Remeove duplication! Copied from BlockInspector

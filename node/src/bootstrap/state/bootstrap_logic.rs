@@ -1,6 +1,8 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::VecDeque, sync::Arc, time::Duration};
 
-use rsnano_messages::{AccountInfoAckPayload, AscPullReqType, BlocksAckPayload};
+use rsnano_messages::{
+    AccountInfoAckPayload, AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload,
+};
 use rsnano_network::Channel;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash, Frontier};
@@ -15,8 +17,9 @@ use super::{
 };
 use crate::bootstrap::{
     AscPullQuerySpec, BootstrapConfig,
+    response_processor::ProcessError,
     state::{
-        PriorityDownResult, RunningQuery, VerifyResult,
+        PriorityDownResult, QueryType, RunningQuery, VerifyResult,
         block_queue::{AccountBlocks, BlockQueue},
     },
 };
@@ -109,6 +112,51 @@ impl BootstrapLogic {
         self.candidate_accounts
             .next_blocking(|hash| self.count_queries_by_hash(hash, QuerySource::Dependencies) == 0)
     }
+
+    pub(crate) fn take_running_query_for(
+        &mut self,
+        response: &AscPullAck,
+    ) -> Result<RunningQuery, ProcessError> {
+        // Only process messages that have a known running query
+        let Some(query) = self.running_queries.remove(response.id) else {
+            return Err(ProcessError::NoRunningQueryFound);
+        };
+
+        if !query.is_valid_response_type(response) {
+            return Err(ProcessError::InvalidResponseType);
+        }
+
+        Ok(query)
+    }
+
+    pub(crate) fn process_response(
+        &mut self,
+        response: AscPullAck,
+        now: Timestamp,
+    ) -> Result<ProcessInfo, ProcessError> {
+        let query = self.take_running_query_for(&response)?;
+        self.process_response_for_query(&query, response)
+            .map(|_| ProcessInfo::new(&query, now))
+    }
+
+    pub(crate) fn process_response_for_query(
+        &mut self,
+        query: &RunningQuery,
+        response: AscPullAck,
+    ) -> Result<(), ProcessError> {
+        let ok = match response.pull_type {
+            AscPullAckType::Blocks(blocks) => self.process_blocks(query, blocks),
+            AscPullAckType::AccountInfo(info) => self.process_account_ack(query, &info),
+            AscPullAckType::Frontiers(frontiers) => self.process_frontiers(query, frontiers),
+        };
+
+        if ok {
+            Ok(())
+        } else {
+            Err(ProcessError::InvalidResponse)
+        }
+    }
+
     // Frontiers ack handling:
     //********************************************************************************
 
@@ -304,6 +352,20 @@ impl Default for BootstrapLogic {
 impl StatsSource for BootstrapLogic {
     fn collect_stats(&self, result: &mut StatsCollection) {
         self.frontiers_stats.collect_stats(result)
+    }
+}
+
+pub struct ProcessInfo {
+    pub query_type: QueryType,
+    pub response_time: Duration,
+}
+
+impl ProcessInfo {
+    pub fn new(query: &RunningQuery, now: Timestamp) -> Self {
+        Self {
+            query_type: query.query_type,
+            response_time: query.sent.elapsed(now),
+        }
     }
 }
 
