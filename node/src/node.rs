@@ -162,7 +162,7 @@ pub struct Node {
     pub wallet_reps: Arc<Mutex<WalletRepresentatives>>,
     ticker_pool: TickerPool,
     #[cfg(feature = "ledger_snapshots")]
-    pub ledger_snapshots: LedgerSnapshots,
+    pub ledger_snapshots: Arc<LedgerSnapshots>,
 }
 
 pub(crate) struct NodeArgs {
@@ -947,6 +947,23 @@ impl Node {
         ));
         dead_channel_cleanup.add_step(BootstrapperCleanup(bootstrapper.clone()));
 
+        #[cfg(feature = "ledger_snapshots")]
+        let ledger_snapshots = {
+            let wallet_reps2 = wallet_reps.clone();
+            Arc::new(LedgerSnapshots::new(
+                ledger.clone(),
+                move || {
+                    // TODO: make this nice:
+                    let mut keys = Vec::new();
+                    wallet_reps2.lock().unwrap().rep_priv_keys(&mut keys);
+                    // For simplicity only take the first key.
+                    // TODO: allow multiple keys
+                    keys.pop()
+                },
+                message_flooder.clone(),
+            ))
+        };
+
         let network_message_processor = Arc::new(NetworkMessageProcessor::new(
             stats.clone(),
             network.clone(),
@@ -959,6 +976,8 @@ impl Node {
             bootstrap_server.clone(),
             bootstrapper.clone(),
             network_params.work.clone(),
+            #[cfg(feature = "ledger_snapshots")]
+            ledger_snapshots.clone(),
         ));
 
         let network_threads = Arc::new(Mutex::new(NetworkThreads::new(
@@ -1164,23 +1183,6 @@ impl Node {
                 },
             );
         }
-
-        #[cfg(feature = "ledger_snapshots")]
-        let ledger_snapshots = {
-            let wallet_reps2 = wallet_reps.clone();
-            LedgerSnapshots::new(
-                ledger.clone(),
-                move || {
-                    // TODO: make this nice:
-                    let mut keys = Vec::new();
-                    wallet_reps2.lock().unwrap().rep_priv_keys(&mut keys);
-                    // For simplicity only take the first key.
-                    // TODO: allow multiple keys
-                    keys.pop()
-                },
-                message_flooder.clone(),
-            )
-        };
 
         let local_reps_computation = LocalRepsComputation::new(wallet_reps.clone());
         ticker_pool.insert(

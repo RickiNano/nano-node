@@ -1,5 +1,6 @@
 mod telemetry_factory;
 
+use rsnano_ledger::DEV_GENESIS_HASH;
 pub use telemetry_factory::TelemetryFactory;
 
 use std::{
@@ -19,7 +20,10 @@ use rsnano_types::BlockHash;
 use rsnano_utils::container_info::{ContainerInfo, ContainerInfoProvider};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
-use crate::{config::NetworkParams, transport::MessageSender};
+use crate::{
+    config::{DEV_NETWORK_PARAMS, NetworkParams},
+    transport::MessageSender,
+};
 
 /**
  * This class periodically broadcasts and requests telemetry from peers.
@@ -78,6 +82,19 @@ impl Telemetry {
             clock,
             genesis_hash,
         }
+    }
+
+    pub fn new_null() -> Self {
+        Telemetry::new(
+            TelemetryFactory::new_null(),
+            TelementryConfig::default(),
+            Stats::default().into(),
+            *DEV_GENESIS_HASH,
+            DEV_NETWORK_PARAMS.clone(),
+            RwLock::new(Network::new_test_instance()).into(),
+            MessageSender::new_null(),
+            SteadyClock::new_null().into(),
+        )
     }
 
     pub fn stop(&self) {
@@ -352,6 +369,14 @@ impl ContainerInfoProvider for Telemetry {
 
 pub struct TelementryConfig {
     pub enable_ongoing_broadcasts: bool,
+}
+
+impl Default for TelementryConfig {
+    fn default() -> Self {
+        Self {
+            enable_ongoing_broadcasts: true,
+        }
+    }
 }
 
 pub trait TelementryExt {

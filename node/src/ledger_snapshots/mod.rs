@@ -31,6 +31,14 @@ impl LedgerSnapshots {
         }
     }
 
+    pub fn new_null() -> Self {
+        Self::new(
+            Ledger::new_null().into(),
+            || None,
+            MessageFlooder::new_null(),
+        )
+    }
+
     pub fn publish_preproposal(&self) {
         // TODO add test for no private key
         let private_key = (self.get_private_key)().unwrap();

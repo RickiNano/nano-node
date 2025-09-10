@@ -57,6 +57,10 @@ impl VoteProcessorQueue {
         }
     }
 
+    pub fn new_null() -> Self {
+        Self::new(VoteProcessorConfig::new(1), Stats::default().into())
+    }
+
     pub fn len(&self) -> usize {
         self.data.lock().unwrap().queue.len()
     }

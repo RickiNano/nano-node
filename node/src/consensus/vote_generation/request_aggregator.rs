@@ -76,6 +76,15 @@ impl RequestAggregator {
         }
     }
 
+    pub fn new_null() -> Self {
+        Self::new(
+            RequestAggregatorConfig::new(1),
+            Stats::default().into(),
+            VoteGenerators::new_null().into(),
+            Ledger::new_null().into(),
+        )
+    }
+
     pub fn start(&self) {
         let mut guard = self.threads.lock().unwrap();
         for _ in 0..self.config.threads {

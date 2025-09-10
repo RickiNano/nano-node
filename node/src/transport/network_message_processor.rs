@@ -11,8 +11,14 @@ use rsnano_types::VoteSource;
 use rsnano_utils::stats::{DetailType, Direction, StatType, Stats};
 use rsnano_work::WorkThresholds;
 
+#[cfg(feature = "ledger_snapshots")]
+use crate::ledger_snapshots::LedgerSnapshots;
 use crate::{
-    block_processing::{BlockContext, BlockProcessorQueue, BlockSource}, bootstrap::{BootstrapServer, Bootstrapper}, consensus::{AggregatorRequest, RequestAggregator, VoteProcessorQueue}, ledger_snapshots::LedgerSnapshots, telemetry::Telemetry, wallets::WalletRepresentatives
+    block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
+    bootstrap::{BootstrapServer, Bootstrapper},
+    consensus::{AggregatorRequest, RequestAggregator, VoteProcessorQueue},
+    telemetry::Telemetry,
+    wallets::WalletRepresentatives,
 };
 
 /// Process messages that were received from other nodes in the network
@@ -28,7 +34,8 @@ pub struct NetworkMessageProcessor {
     bootstrap_server: Arc<BootstrapServer>,
     bootstrapper: Arc<Bootstrapper>,
     work_thresholds: WorkThresholds,
-    //ledger_snapshots: Arc<LedgerSnapshots>,
+    #[cfg(feature = "ledger_snapshots")]
+    ledger_snapshots: Arc<LedgerSnapshots>,
 }
 
 impl NetworkMessageProcessor {
@@ -44,6 +51,7 @@ impl NetworkMessageProcessor {
         bootstrap_server: Arc<BootstrapServer>,
         bootstrapper: Arc<Bootstrapper>,
         work_thresholds: WorkThresholds,
+        #[cfg(feature = "ledger_snapshots")] ledger_snapshots: Arc<LedgerSnapshots>,
     ) -> Self {
         Self {
             stats,
@@ -57,6 +65,8 @@ impl NetworkMessageProcessor {
             bootstrap_server,
             bootstrapper,
             work_thresholds,
+            #[cfg(feature = "ledger_snapshots")]
+            ledger_snapshots,
         }
     }
 
@@ -182,9 +192,11 @@ impl NetworkMessageProcessor {
                 // obsolete messages
             }
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => {
+            Message::SnapshotPreproposal(preproposal) => {
                 use tracing::warn;
-                warn!("Snapshot preproposal received")
+                warn!("Snapshot preproposal received");
+
+                self.ledger_snapshots.receive_preproposal(preproposal);
             }
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotProposal(_) => {
@@ -192,5 +204,41 @@ impl NetworkMessageProcessor {
                 warn!("Snapshot proposal received")
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "ledger_snapshots")]
+    fn preproposal_is_received() {
+        use rsnano_messages::Preproposal;
+
+        let ledgner_snapshots = LedgerSnapshots::new_null();
+        let receive_preproposal_tracker = ledgner_snapshots.track_received_preproposals();
+
+        let network_message_processor = NetworkMessageProcessor::new(
+            Stats::default().into(),
+            RwLock::new(Network::new_test_instance()).into(),
+            NetworkFilter::default().into(),
+            BlockProcessorQueue::new_null().into(),
+            Mutex::new(WalletRepresentatives::new_null()).into(),
+            RequestAggregator::new_null().into(),
+            VoteProcessorQueue::new_null().into(),
+            Telemetry::new_null().into(),
+            BootstrapServer::new_null().into(),
+            Bootstrapper::new_null().into(),
+            WorkThresholds::new_stub(),
+            ledgner_snapshots.into(),
+        );
+
+        let preproposal = Preproposal::new_test_instance();
+        network_message_processor.process(
+            Message::SnapshotPreproposal(preproposal.clone()),
+            &Channel::new_test_instance().into(),
+        );
+        assert_eq!(receive_preproposal_tracker.output(), vec![preproposal]);
     }
 }

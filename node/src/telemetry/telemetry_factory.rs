@@ -3,6 +3,7 @@ use std::{
     time::SystemTime,
 };
 
+use blake2::digest::typenum::Le;
 use rsnano_ledger::Ledger;
 use rsnano_messages::{TelemetryData, TelemetryMaker};
 use rsnano_network::{ChannelMode, Network};
@@ -24,6 +25,17 @@ pub struct TelemetryFactory {
 }
 
 impl TelemetryFactory {
+    pub fn new_null() -> Self {
+        Self {
+            ledger: Ledger::new_null().into(),
+            network: RwLock::new(Network::new_test_instance()).into(),
+            node_id_key: PrivateKey::from(1),
+            unchecked: Mutex::new(UncheckedMap::default()).into(),
+            startup_time: Timestamp::new_test_instance(),
+            clock: SteadyClock::new_null().into(),
+        }
+    }
+
     pub fn get_telemetry(&self) -> TelemetryData {
         let peer_count;
         let protocol_version;

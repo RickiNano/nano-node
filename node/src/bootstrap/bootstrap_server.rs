@@ -91,6 +91,16 @@ impl BootstrapServer {
         }
     }
 
+    pub fn new_null() -> Self {
+        BootstrapServer::new(
+            BootstrapServerConfig::default(),
+            Stats::default().into(),
+            Ledger::new_null().into(),
+            SteadyClock::new_null().into(),
+            MessageSender::new_null(),
+        )
+    }
+
     pub fn start(&self) {
         debug_assert!(self.threads.lock().unwrap().is_empty());
 
