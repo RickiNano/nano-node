@@ -1,11 +1,12 @@
 use rsnano_ledger::RepWeights;
 use rsnano_messages::{Preproposal, PreproposalHash};
-use rsnano_types::Amount;
-use std::collections::HashMap;
+use rsnano_types::{Amount, PublicKey};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub(super) struct PreproposalAggregator {
     preproposals: HashMap<PreproposalHash, Preproposal>,
+    signers: HashSet<PublicKey>,
     rep_weights: RepWeights,
     quorum_weight: Amount,
 }
@@ -24,7 +25,9 @@ impl PreproposalAggregator {
     }
 
     pub fn add(&mut self, preproposal: Preproposal) {
-        self.preproposals.insert(preproposal.hash(), preproposal);
+        if self.signers.insert(preproposal.signer) {
+            self.preproposals.insert(preproposal.hash(), preproposal);
+        }
     }
 
     fn set_rep_weights(&mut self, rep_weights: RepWeights, quorum_weight: Amount) {
@@ -44,7 +47,7 @@ impl PreproposalAggregator {
         for (_, preproposal) in &self.preproposals {
             preproposals_weight += self.rep_weights.weight(&preproposal.signer);
         }
-        preproposals_weight >= self.quorum_weight 
+        preproposals_weight >= self.quorum_weight
     }
 }
 
@@ -97,11 +100,39 @@ mod tests {
         let mut aggregator = PreproposalAggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::nano(300_000));
 
-        let preproposal1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key1);
+        let preproposal1 =
+            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key1);
         aggregator.add(preproposal1.clone());
-        let preproposal2 = Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key2);
+        let preproposal2 =
+            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key2);
         aggregator.add(preproposal2.clone());
 
         assert_eq!(aggregator.has_quorum(), true);
+    }
+
+    #[test]
+    fn only_allow_one_preproposal_per_signer() {
+        let rep_key = PrivateKey::from(1);
+        let weight = Amount::nano(100_000);
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key.public_key(), weight);
+
+        let mut aggregator = PreproposalAggregator::default();
+        aggregator.set_rep_weights(rep_weights, Amount::nano(150_000));
+
+        let preproposal1 =
+            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key);
+        aggregator.add(preproposal1.clone());
+
+        let preproposal2 =
+            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key);
+        aggregator.add(preproposal2.clone());
+
+        assert_eq!(aggregator.has_quorum(), false, "Should not reach quorum");
+        assert_eq!(aggregator.len(), 1, "Should only contain one preproposal");
+        assert!(
+            aggregator.contains(&preproposal1.hash()),
+            "Should contain preproposal1"
+        );
     }
 }
