@@ -3,12 +3,22 @@ use rsnano_messages::{Preproposal, PreproposalHash};
 use rsnano_types::{Amount, PublicKey};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Default)]
 pub(super) struct PreproposalAggregator {
     preproposals: HashMap<PreproposalHash, Preproposal>,
     signers: HashSet<PublicKey>,
-    rep_weights: RepWeights,
-    quorum_weight: Amount,
+    pub(crate) rep_weights: RepWeights,
+    pub(crate) quorum_weight: Amount,
+}
+
+impl Default for PreproposalAggregator {
+    fn default() -> Self {
+        Self {
+            preproposals: Default::default(),
+            signers: Default::default(),
+            rep_weights: Default::default(),
+            quorum_weight: Amount::MAX,
+        }
+    }
 }
 
 impl PreproposalAggregator {
@@ -30,7 +40,7 @@ impl PreproposalAggregator {
         }
     }
 
-    fn set_rep_weights(&mut self, rep_weights: RepWeights, quorum_weight: Amount) {
+    pub(crate) fn set_rep_weights(&mut self, rep_weights: RepWeights, quorum_weight: Amount) {
         self.rep_weights = rep_weights;
         self.quorum_weight = quorum_weight;
     }
@@ -63,6 +73,7 @@ mod tests {
         assert_eq!(aggregator.len(), 0);
         assert!(aggregator.is_empty());
         assert_eq!(aggregator.contains(&PreproposalHash::from(123)), false);
+        assert_eq!(aggregator.quorum_weight, Amount::MAX);
     }
 
     #[test]

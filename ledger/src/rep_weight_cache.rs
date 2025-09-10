@@ -12,7 +12,7 @@ use rsnano_store_lmdb::LedgerCache;
 use rsnano_types::{Account, Amount, PublicKey};
 use rsnano_utils::container_info::ContainerInfo;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct RepWeights(HashMap<PublicKey, Amount>);
 
 impl RepWeights {
@@ -119,7 +119,7 @@ impl RepWeightCache {
     }
 
     pub fn bootstrap_weights(&self) -> HashMap<PublicKey, Amount> {
-        self.bootstrap_weights.read().unwrap().clone()
+        self.bootstrap_weights.read().unwrap().deref().deref().clone()
     }
 
     pub fn block_count(&self) -> u64 {

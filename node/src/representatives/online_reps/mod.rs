@@ -9,7 +9,7 @@ use std::{cmp::max, sync::Arc, time::Duration};
 use primitive_types::U256;
 use tracing::debug;
 
-use rsnano_ledger::RepWeightCache;
+use rsnano_ledger::{RepWeightCache, RepWeights};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Amount, Networks, PublicKey};
@@ -283,6 +283,10 @@ impl OnlineReps {
 
     pub fn remove_peer(&mut self, channel_id: ChannelId) -> Vec<PublicKey> {
         self.peered_reps.remove(channel_id)
+    }
+
+    pub fn get_rep_weights(&self) -> RepWeights {
+        self.rep_weights.read().clone()
     }
 }
 

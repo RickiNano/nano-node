@@ -1,8 +1,9 @@
 mod preproposal_aggregator;
 
 use crate::ledger_snapshots::preproposal_aggregator::PreproposalAggregator;
+use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
-use rsnano_ledger::Ledger;
+use rsnano_ledger::{Ledger, RepWeights};
 use rsnano_messages::{Message, Preproposal};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
@@ -18,7 +19,8 @@ pub struct LedgerSnapshots {
     get_private_key: Box<dyn Fn() -> Option<PrivateKey> + Send + Sync>,
     flooder: Mutex<MessageFlooder>,
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
-    preproposal_aggregator: PreproposalAggregator,
+    preproposal_aggregator: Mutex<PreproposalAggregator>,
+    online_reps: Arc<Mutex<OnlineReps>>,
 }
 
 impl LedgerSnapshots {
@@ -26,6 +28,7 @@ impl LedgerSnapshots {
         ledger: Arc<Ledger>,
         get_private_key: impl Fn() -> Option<PrivateKey> + Send + Sync + 'static,
         flooder: MessageFlooder,
+        online_reps: Arc<Mutex<OnlineReps>>,
     ) -> Self {
         Self {
             ledger,
@@ -33,6 +36,7 @@ impl LedgerSnapshots {
             flooder: flooder.into(),
             receive_preproposal_listener: OutputListenerMt::new(),
             preproposal_aggregator: Default::default(),
+            online_reps,
         }
     }
 
@@ -41,6 +45,7 @@ impl LedgerSnapshots {
             Ledger::new_null().into(),
             || None,
             MessageFlooder::new_null(),
+            Mutex::new(OnlineReps::default()).into(),
         )
     }
 
@@ -66,8 +71,11 @@ impl LedgerSnapshots {
     }
 
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
-        self.receive_preproposal_listener.emit(preproposal);
-        // TODO
+        self.receive_preproposal_listener.emit(preproposal.clone());
+        let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
+        preproposal_aggregator.add(preproposal);
+        let online_reps = self.online_reps.lock().unwrap();
+        preproposal_aggregator.set_rep_weights(online_reps.get_rep_weights(), online_reps.quorum_delta());
     }
 
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
@@ -156,7 +164,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "TODO"]
     fn a_received_preproposal_is_added_to_the_preproposal_aggregator() {
         let fixture = Fixture::new();
         let snapshots = &fixture.snapshots;
@@ -164,11 +171,26 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
 
-        assert!(
-            snapshots
-                .preproposal_aggregator
-                .contains(&preproposal.hash())
-        );
+        assert!(snapshots
+            .preproposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&preproposal.hash()));
+    }
+
+
+    #[test]
+    fn rep_weights_are_initialized() {
+        let fixture = Fixture::new();
+        let snapshots = &fixture.snapshots;
+        let preproposal = Preproposal::new_test_instance();
+
+        snapshots.receive_preproposal(preproposal.clone());
+        let online_reps = snapshots.online_reps.lock().unwrap();
+        let preproposal_aggregator = snapshots.preproposal_aggregator.lock().unwrap();
+
+        assert_eq!(preproposal_aggregator.quorum_weight, online_reps.quorum_delta());
+        assert_eq!(preproposal_aggregator.rep_weights, online_reps.get_rep_weights());
     }
 
     struct Fixture {
@@ -185,7 +207,9 @@ mod tests {
         fn with_ledger(ledger: Arc<Ledger>) -> Self {
             let flooder = MessageFlooder::new_null();
             let flood_tracker = flooder.track_floods();
-            let snapshots = LedgerSnapshots::new(ledger.clone(), get_test_key, flooder);
+            let online_reps = Arc::new(Mutex::new(OnlineReps::new_test_instance()));
+            let snapshots =
+                LedgerSnapshots::new(ledger.clone(), get_test_key, flooder, online_reps);
             let receive_preproposal_tracker = snapshots.track_received_preproposals();
 
             Self {
