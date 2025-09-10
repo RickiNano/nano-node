@@ -98,7 +98,7 @@ pub enum TrafficType {
     RepCrawler,
     Telemetry,
     #[cfg(feature = "ledger_snapshots")]
-    Preproposal,
+    LedgerSnapshots,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug, FromPrimitive)]
@@ -197,7 +197,7 @@ impl From<TrafficType> for DetailType {
             TrafficType::VoteReply => DetailType::VoteReply,
             TrafficType::Telemetry => DetailType::Telemetry,
             #[cfg(feature = "ledger_snapshots")]
-            TrafficType::Preproposal => DetailType::Preproposal,
+            TrafficType::LedgerSnapshots => DetailType::Preproposal,
         }
     }
 }

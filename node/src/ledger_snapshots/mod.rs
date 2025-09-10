@@ -4,7 +4,7 @@ use crate::ledger_snapshots::preproposal_aggregator::PreproposalAggregator;
 use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
 use rsnano_ledger::{Ledger, RepWeights};
-use rsnano_messages::{Message, Preproposal};
+use rsnano_messages::{Message, Preproposal, Proposal};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::PrivateKey;
@@ -56,7 +56,7 @@ impl LedgerSnapshots {
         let message = Message::SnapshotPreproposal(preproposal);
         self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
             &message,
-            TrafficType::Preproposal,
+            TrafficType::LedgerSnapshots,
             0.0,
         );
     }
@@ -75,7 +75,18 @@ impl LedgerSnapshots {
         let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
         preproposal_aggregator.add(preproposal);
         let online_reps = self.online_reps.lock().unwrap();
-        preproposal_aggregator.set_rep_weights(online_reps.get_rep_weights(), online_reps.quorum_delta());
+        preproposal_aggregator
+            .set_rep_weights(online_reps.get_rep_weights(), online_reps.quorum_delta());
+
+        if preproposal_aggregator.has_quorum() {
+            let proposal =
+                preproposal_aggregator.create_proposal(&(self.get_private_key)().unwrap());
+            self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
+                &Message::SnapshotProposal(proposal),
+                TrafficType::LedgerSnapshots,
+                0.0,
+            );
+        }
     }
 
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
@@ -86,11 +97,12 @@ impl LedgerSnapshots {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transport::FloodEvent;
+    use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
     use rsnano_messages::Message;
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_types::{AccountInfo, ConfirmationHeightInfo};
+    use rsnano_types::{AccountInfo, Amount, ConfirmationHeightInfo};
+    use std::time::Duration;
 
     #[test]
     fn ledger_with_one_account() {
@@ -145,7 +157,7 @@ mod tests {
             FloodEvent {
                 message: Message::SnapshotPreproposal(expected_preproposal),
                 // TODO: add new traffic type for snapshots
-                traffic_type: TrafficType::Preproposal,
+                traffic_type: TrafficType::LedgerSnapshots,
                 scale: 0.0,
                 all_prs: true,
             }
@@ -171,13 +183,14 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
 
-        assert!(snapshots
-            .preproposal_aggregator
-            .lock()
-            .unwrap()
-            .contains(&preproposal.hash()));
+        assert!(
+            snapshots
+                .preproposal_aggregator
+                .lock()
+                .unwrap()
+                .contains(&preproposal.hash())
+        );
     }
-
 
     #[test]
     fn rep_weights_are_initialized() {
@@ -189,8 +202,48 @@ mod tests {
         let online_reps = snapshots.online_reps.lock().unwrap();
         let preproposal_aggregator = snapshots.preproposal_aggregator.lock().unwrap();
 
-        assert_eq!(preproposal_aggregator.quorum_weight, online_reps.quorum_delta());
-        assert_eq!(preproposal_aggregator.rep_weights, online_reps.get_rep_weights());
+        assert_eq!(
+            preproposal_aggregator.quorum_weight,
+            online_reps.quorum_delta()
+        );
+        assert_eq!(
+            preproposal_aggregator.rep_weights,
+            online_reps.get_rep_weights()
+        );
+    }
+
+    #[test]
+    fn publish_proposal() {
+        let mut rep_weights = RepWeights::new();
+        let private_key = get_test_key().unwrap();
+        let quorum_weight = Amount::nano(100_000);
+
+        rep_weights.insert(private_key.public_key(), quorum_weight);
+        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+
+        let preproposal = Preproposal::new(vec![], &private_key);
+        fixture.snapshots.receive_preproposal(preproposal);
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should flood the message");
+
+        let expected_proposal = fixture
+            .snapshots
+            .preproposal_aggregator
+            .lock()
+            .unwrap()
+            .create_proposal(&private_key);
+
+        assert_eq!(
+            flood_events[0],
+            FloodEvent {
+                message: Message::SnapshotProposal(expected_proposal),
+                // TODO: add new traffic type for snapshots
+                traffic_type: TrafficType::LedgerSnapshots,
+                scale: 0.0,
+                all_prs: true,
+            }
+        );
     }
 
     struct Fixture {
@@ -204,12 +257,40 @@ mod tests {
             Self::with_frontiers([])
         }
 
+        fn with_frontiers(frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
+            let ledger = create_ledger_with_frontiers(frontiers);
+            Self::with_ledger(ledger)
+        }
+
         fn with_ledger(ledger: Arc<Ledger>) -> Self {
+            Self::with_ledger_and_weights(ledger, RepWeights::new(), Amount::nano(60_000_000))
+        }
+
+        fn with_rep_weights(rep_weights: RepWeights, quorum_weight: Amount) -> Self {
+            let ledger = create_ledger_with_frontiers([]);
+            Self::with_ledger_and_weights(ledger, rep_weights, quorum_weight)
+        }
+
+        fn with_ledger_and_weights(
+            ledger: Arc<Ledger>,
+            rep_weights: RepWeights,
+            quorum_weight: Amount,
+        ) -> Self {
             let flooder = MessageFlooder::new_null();
             let flood_tracker = flooder.track_floods();
-            let online_reps = Arc::new(Mutex::new(OnlineReps::new_test_instance()));
+
+            let mut online_reps = OnlineReps::new(
+                Arc::new(rep_weights.into()),
+                Duration::ZERO,
+                Amount::ZERO,
+                Amount::ZERO,
+            );
+            online_reps.set_trended(quorum_weight / ONLINE_WEIGHT_QUORUM as u128 * 100);
+            let online_reps = Arc::new(Mutex::new(online_reps));
+
             let snapshots =
                 LedgerSnapshots::new(ledger.clone(), get_test_key, flooder, online_reps);
+
             let receive_preproposal_tracker = snapshots.track_received_preproposals();
 
             Self {
@@ -217,11 +298,6 @@ mod tests {
                 flood_tracker,
                 receive_preproposal_tracker,
             }
-        }
-
-        fn with_frontiers(frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
-            let ledger = create_ledger_with_frontiers(frontiers);
-            Self::with_ledger(ledger)
         }
     }
 

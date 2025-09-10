@@ -24,7 +24,7 @@ pub use peered_container::InsertResult;
 pub use peered_rep::PeeredRep;
 use {online_container::OnlineContainer, peered_container::PeeredContainer};
 
-const ONLINE_WEIGHT_QUORUM: u8 = 67;
+pub const ONLINE_WEIGHT_QUORUM: u8 = 67;
 
 /// Keeps track of all representatives that are online
 /// and all representatives to which we have a direct connection

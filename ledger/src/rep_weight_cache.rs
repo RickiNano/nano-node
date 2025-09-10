@@ -142,3 +142,11 @@ impl RepWeightCache {
         [("rep_weights", self.len(), size_of::<(Account, Amount)>())].into()
     }
 }
+
+impl From<RepWeights> for RepWeightCache {
+    fn from(value: RepWeights) -> Self {
+        let mut rep_weights_cache = RepWeightCache::new();
+        rep_weights_cache.weights = RwLock::new(value).into();
+        rep_weights_cache
+    }   
+}

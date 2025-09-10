@@ -1,6 +1,6 @@
 use rsnano_ledger::RepWeights;
-use rsnano_messages::{Preproposal, PreproposalHash};
-use rsnano_types::{Amount, PublicKey};
+use rsnano_messages::{Preproposal, PreproposalHash, Proposal};
+use rsnano_types::{Amount, PrivateKey, PublicKey};
 use std::collections::{HashMap, HashSet};
 
 pub(super) struct PreproposalAggregator {
@@ -52,12 +52,17 @@ impl PreproposalAggregator {
         self.rep_weights.weight(&preproposal.signer)
     }
 
-    fn has_quorum(&self) -> bool {
+    pub(crate) fn has_quorum(&self) -> bool {
         let mut preproposals_weight = Amount::ZERO;
         for (_, preproposal) in &self.preproposals {
             preproposals_weight += self.rep_weights.weight(&preproposal.signer);
         }
         preproposals_weight >= self.quorum_weight
+    }
+
+    pub(crate) fn create_proposal(&self, private_key: &PrivateKey) -> Proposal {
+        //Proposal::new(self.preproposals.keys(), private_key)
+        Proposal::new_test_instance()
     }
 }
 
