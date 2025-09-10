@@ -6,6 +6,7 @@ use rsnano_types::{
 };
 
 pub type PreproposalHash = Blake2Hash;
+pub type FrontiersHash = Blake2Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Preproposal {
@@ -16,14 +17,14 @@ pub struct Preproposal {
 
 impl Preproposal {
     pub fn new(frontiers: Vec<(Account, BlockHash)>, private_key: &PrivateKey) -> Self {
-        let frontiers_hash = Preproposal::hash_frontiers(&frontiers);
-        let signature = private_key.sign(frontiers_hash.as_bytes());
-
-        Self {
+        let mut preproposal = Self {
             frontiers,
             signer: private_key.public_key(),
-            signature,
-        }
+            signature: Signature::default(),
+        };
+        preproposal.signature = private_key.sign(preproposal.hash().as_bytes());
+
+        preproposal
     }
 
     pub fn new_test_instance() -> Self {
@@ -34,7 +35,11 @@ impl Preproposal {
         }
     }
 
-    fn hash_frontiers(frontiers: &[(Account, BlockHash)]) -> PreproposalHash {
+    fn frontiers_hash(&self) -> FrontiersHash {
+        Preproposal::hash_frontiers(&self.frontiers)
+    }
+
+    pub fn hash_frontiers(frontiers: &[(Account, BlockHash)]) -> FrontiersHash {
         let mut sorted_frontiers: Vec<(Account, BlockHash)> = frontiers.to_vec();
         sorted_frontiers.sort_by(|(account_a, hash_a), (account_b, hash_b)| {
             let account_cmp = account_a.as_bytes().cmp(account_b.as_bytes());
@@ -54,7 +59,12 @@ impl Preproposal {
     }
 
     pub fn hash(&self) -> PreproposalHash {
-        Preproposal::hash_frontiers(&self.frontiers)
+        let frontiers_hash = self.frontiers_hash();
+        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
+        hash_builder = hash_builder
+            .update(frontiers_hash.as_bytes())
+            .update(self.signer.as_bytes());
+        hash_builder.build()
     }
 
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -160,6 +170,6 @@ mod tests {
             &PrivateKey::new(),
         );
 
-        assert_eq!(p1.hash(), p2.hash());
+        assert_eq!(p1.frontiers_hash(), p2.frontiers_hash());
     }
 }

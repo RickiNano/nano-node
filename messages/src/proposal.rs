@@ -5,10 +5,11 @@ use rsnano_types::{
 };
 
 pub type PreproposalsHash = Blake2Hash;
+pub type ProposalHash = Blake2Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
-    pub preproposals: Vec<PreproposalHash>,
+    pub preproposal_hashes: Vec<PreproposalHash>,
     pub signer: PublicKey,
     pub signature: Signature,
 }
@@ -16,22 +17,28 @@ pub struct Proposal {
 impl Proposal {
     pub fn new(preproposals: Vec<Preproposal>, private_key: &PrivateKey) -> Self {
         let preproposals: Vec<PreproposalHash> = preproposals.iter().map(|p| p.hash()).collect();
-        let preproposals_hash = Proposal::hash_preproposals(&preproposals);
-        let signature = private_key.sign(preproposals_hash.as_bytes());
 
-        Self {
-            preproposals,
+        let mut proposal = Self {
+            preproposal_hashes: preproposals,
             signer: private_key.public_key(),
-            signature,
-        }
+            signature: Signature::default(),
+        };
+
+        proposal.signature = private_key.sign(proposal.hash().as_bytes());
+
+        proposal
     }
 
     pub fn new_test_instance() -> Self {
         Self {
-            preproposals: vec![PreproposalHash::from(1)],
+            preproposal_hashes: vec![PreproposalHash::from(1)],
             signer: PublicKey::from(2),
             signature: Signature::from_bytes([1; 64]),
         }
+    }
+
+    fn preproposals_hash(&self) -> PreproposalsHash {
+        Proposal::hash_preproposals(&self.preproposal_hashes)
     }
 
     fn hash_preproposals(preproposals_hashes: &[PreproposalHash]) -> PreproposalsHash {
@@ -45,8 +52,13 @@ impl Proposal {
         hash_builder.build()
     }
 
-    pub fn hash(&self) -> PreproposalHash {
-        Proposal::hash_preproposals(&self.preproposals)
+    pub fn hash(&self) -> ProposalHash {
+        let preproposals_hash = self.preproposals_hash();
+        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
+        hash_builder = hash_builder
+            .update(preproposals_hash.as_bytes())
+            .update(self.signer.as_bytes());
+        hash_builder.build()
     }
 
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
@@ -55,7 +67,7 @@ impl Proposal {
     {
         self.signer.serialize(writer)?;
         self.signature.serialize(writer)?;
-        for preproposal in &self.preproposals {
+        for preproposal in &self.preproposal_hashes {
             preproposal.serialize(writer)?;
         }
         Ok(())
@@ -76,7 +88,7 @@ impl Proposal {
         }
 
         Ok(Proposal {
-            preproposals,
+            preproposal_hashes: preproposals,
             signer,
             signature,
         })
@@ -97,14 +109,14 @@ mod tests {
 
     #[test]
     fn hash_preproposals_is_order_invariant() {
-        let p1 = Preproposal::new(
+        let pre1 = Preproposal::new(
             vec![
                 (Account::from(1), BlockHash::from(10)),
                 (Account::from(2), BlockHash::from(20)),
             ],
             &PrivateKey::new(),
         );
-        let p2 = Preproposal::new(
+        let pre2 = Preproposal::new(
             vec![
                 (Account::from(2), BlockHash::from(20)),
                 (Account::from(1), BlockHash::from(10)),
@@ -112,10 +124,10 @@ mod tests {
             &PrivateKey::new(),
         );
 
-        let h1 = Proposal::new(vec![p1.clone(), p2.clone()], &PrivateKey::new()).hash();
-        let h2 = Proposal::new(vec![p2, p1], &PrivateKey::new()).hash();
+        let p1 = Proposal::new(vec![pre1.clone(), pre2.clone()], &PrivateKey::new());
+        let p2 = Proposal::new(vec![pre2, pre1], &PrivateKey::new());
 
-        assert_eq!(h1, h2);
+        assert_eq!(p1.preproposals_hash(), p2.preproposals_hash());
     }
 
     #[test]
