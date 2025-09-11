@@ -100,7 +100,7 @@ mod tests {
         assert_eq!(guard.candidate_accounts.priority_len(), 1);
         assert_eq!(
             guard.candidate_accounts.priority(&account),
-            CandidateAccounts::PRIORITY_CUTOFF
+            CandidateAccounts::PRIORITY_INITIAL
         );
         assert_eq!(guard.frontiers_processor.stats.outdated_accounts_found, 1);
         assert_eq!(guard.frontiers_processor.stats.processed_frontiers, 1);

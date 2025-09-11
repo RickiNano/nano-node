@@ -1,14 +1,20 @@
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use rsnano_network::Channel;
-use rsnano_utils::stats::{DetailType, StatType, Stats};
+use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::channel_waiter::ChannelWaiter;
-use crate::bootstrap::{AscPullQuerySpec, BootstrapPromise, PollResult, PromiseContext};
+use crate::bootstrap::{
+    AscPullQuerySpec, BootstrapPromise, PollResult, PromiseContext,
+    requesters::channel_waiter::ChannelWaiterStats,
+};
 
 pub(super) struct DependencyRequester {
     state: DependencyState,
-    stats: Arc<Stats>,
+    stats: Arc<DependencyRequesterStats>,
     channel_waiter: ChannelWaiter,
 }
 
@@ -19,12 +25,20 @@ enum DependencyState {
 }
 
 impl DependencyRequester {
-    pub(super) fn new(stats: Arc<Stats>, channel_waiter: ChannelWaiter) -> Self {
+    pub(super) fn new(channel_waiter: ChannelWaiter) -> Self {
         Self {
             state: DependencyState::Initial,
-            stats,
+            stats: DependencyRequesterStats {
+                channel_waiter: channel_waiter.stats(),
+                ..Default::default()
+            }
+            .into(),
             channel_waiter,
         }
+    }
+
+    pub(crate) fn stats(&self) -> Arc<DependencyRequesterStats> {
+        self.stats.clone()
     }
 }
 
@@ -32,8 +46,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
     fn poll(&mut self, context: &mut PromiseContext) -> PollResult<AscPullQuerySpec> {
         match self.state {
             DependencyState::Initial => {
-                self.stats
-                    .inc(StatType::Bootstrap, DetailType::LoopDependencies);
+                self.stats.loop_count.fetch_add(1, Ordering::Relaxed);
                 self.state = DependencyState::WaitChannel;
                 PollResult::Progress
             }
@@ -48,15 +61,45 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
             DependencyState::WaitBlocking(ref channel) => {
                 match context.logic.next_blocking_query(context.id, channel) {
                     Some(spec) => {
-                        self.stats
-                            .inc(StatType::BootstrapNext, DetailType::NextBlocking);
                         self.state = DependencyState::Initial;
                         PollResult::Finished(spec)
                     }
-                    _ => PollResult::Wait,
+                    _ => {
+                        self.stats.wait_blocking.fetch_add(1, Ordering::Relaxed);
+                        PollResult::Wait
+                    }
                 }
             }
         }
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct DependencyRequesterStats {
+    pub loop_count: AtomicU64,
+    pub wait_blocking: AtomicU64,
+    pub channel_waiter: Arc<ChannelWaiterStats>,
+    pub next: AtomicU64,
+}
+
+impl StatsSource for DependencyRequesterStats {
+    fn collect_stats(&self, result: &mut StatsCollection) {
+        const STAT_NAME: &'static str = "boot_requester_dep";
+
+        result.insert(STAT_NAME, "loop", self.loop_count.load(Ordering::Relaxed));
+        result.insert(
+            STAT_NAME,
+            "wait_blocking",
+            self.wait_blocking.load(Ordering::Relaxed),
+        );
+
+        result.insert(
+            "bootstrap_next",
+            "next_blocking",
+            self.next.load(Ordering::Relaxed),
+        );
+
+        self.channel_waiter.collect_stats(STAT_NAME, result);
     }
 }
 
@@ -134,10 +177,9 @@ mod tests {
     }
 
     fn create_test_requester(network: Arc<RwLock<Network>>) -> DependencyRequester {
-        let stats = Arc::new(Stats::default());
         let limiter = Arc::new(Mutex::new(TokenBucket::new(1024)));
         let channel_waiter = ChannelWaiter::new(network, limiter, 1024);
-        DependencyRequester::new(stats, channel_waiter)
+        DependencyRequester::new(channel_waiter)
     }
 
     fn test_network() -> Arc<RwLock<Network>> {

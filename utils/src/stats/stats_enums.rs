@@ -319,7 +319,6 @@ pub enum DetailType {
     Reply,
     Timeout,
     AccountInfoEmpty,
-    LoopDependencies,
     LoopFrontiers,
     InvalidResponseType,
     InvalidResponse,
@@ -331,7 +330,6 @@ pub enum DetailType {
     Unblock,
 
     NextNone,
-    NextBlocking,
     NextFrontier,
 
     PriorityInsert,

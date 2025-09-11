@@ -141,14 +141,22 @@ impl BlockInspector {
                                 StatType::BootstrapAccountSets,
                                 DetailType::PriorityUnblocked,
                             );
-                        }
-                        if state.candidate_accounts.priority_set_initial(&destination) {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::PriorityInsert);
                         } else {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::PrioritizeFailed);
-                        };
+                            if matches!(
+                                state.candidate_accounts.priority_up(&destination),
+                                PriorityUpResult::Inserted | PriorityUpResult::Updated
+                            ) {
+                                self.stats.inc(
+                                    StatType::BootstrapAccountSets,
+                                    DetailType::PriorityInsert,
+                                );
+                            } else {
+                                self.stats.inc(
+                                    StatType::BootstrapAccountSets,
+                                    DetailType::PrioritizeFailed,
+                                );
+                            };
+                        }
                     }
                 }
 
@@ -202,7 +210,10 @@ impl BlockInspector {
                         {
                             if result.block.block_type() == BlockType::State {
                                 let account = result.block.account_field().unwrap();
-                                if state.candidate_accounts.priority_set_initial(&account) {
+                                if matches!(
+                                    state.candidate_accounts.priority_up(&account),
+                                    PriorityUpResult::Updated | PriorityUpResult::Inserted
+                                ) {
                                     self.stats.inc(
                                         StatType::BootstrapAccountSets,
                                         DetailType::PriorityInsert,

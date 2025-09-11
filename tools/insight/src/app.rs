@@ -126,7 +126,7 @@ impl InsightApp {
                 node.bootstrapper
                     .state()
                     .candidate_accounts
-                    .priority_set_initial(&account);
+                    .priority_up(&account);
             }
         }
     }

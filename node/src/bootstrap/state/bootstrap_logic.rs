@@ -31,6 +31,10 @@ pub struct BootstrapLogic {
     account_ack_processor: AccountAckProcessor,
     pub frontiers_processor: FrontiersProcessor,
     pub block_ack_processor: BlockAckProcessor,
+
+    response_blocks: u64,
+    response_account: u64,
+    response_frontiers: u64,
 }
 
 impl BootstrapLogic {
@@ -46,7 +50,29 @@ impl BootstrapLogic {
             account_ack_processor: Default::default(),
             frontiers_processor: FrontiersProcessor::new(config.frontier_scan.clone()),
             block_ack_processor: Default::default(),
+            response_blocks: 0,
+            response_account: 0,
+            response_frontiers: 0,
         }
+    }
+
+    pub fn next_priority(&mut self, now: Timestamp) -> PriorityResult {
+        let next = self.candidate_accounts.next_priority(now, |account| {
+            !self
+                .block_ack_processor
+                .block_queue
+                .contains_account(account)
+                && self
+                    .running_queries
+                    .count_by_account(account, QuerySource::Priority)
+                    < 4
+        });
+
+        if next.account.is_zero() {
+            return Default::default();
+        }
+
+        next
     }
 
     pub fn next_blocking_query(
@@ -75,29 +101,22 @@ impl BootstrapLogic {
             .count()
     }
 
-    pub fn next_priority(&mut self, now: Timestamp) -> PriorityResult {
-        let next = self.candidate_accounts.next_priority(now, |account| {
-            !self
-                .block_ack_processor
-                .block_queue
-                .contains_account(account)
-                && self
-                    .running_queries
-                    .count_by_account(account, QuerySource::Priority)
-                    < 4
-        });
-
-        if next.account.is_zero() {
-            return Default::default();
-        }
-
-        next
-    }
-
     /* Waits for next available blocking block */
     pub fn next_blocking(&self) -> BlockHash {
         self.candidate_accounts
             .next_blocking(|hash| self.count_queries_by_hash(hash, QuerySource::Dependencies) == 0)
+    }
+
+    pub(crate) fn process_response(
+        &mut self,
+        response: AscPullAck,
+        channel_id: ChannelId,
+        now: Timestamp,
+    ) -> Result<ProcessInfo, ProcessError> {
+        let query = self.take_running_query_for(&response)?;
+        self.scoring.received_message(channel_id);
+        self.process_response_for_query(&query, response)
+            .map(|_| ProcessInfo::new(&query, now))
     }
 
     fn take_running_query_for(
@@ -116,18 +135,6 @@ impl BootstrapLogic {
         Ok(query)
     }
 
-    pub(crate) fn process_response(
-        &mut self,
-        response: AscPullAck,
-        channel_id: ChannelId,
-        now: Timestamp,
-    ) -> Result<ProcessInfo, ProcessError> {
-        let query = self.take_running_query_for(&response)?;
-        self.scoring.received_message(channel_id);
-        self.process_response_for_query(&query, response)
-            .map(|_| ProcessInfo::new(&query, now))
-    }
-
     fn process_response_for_query(
         &mut self,
         query: &RunningQuery,
@@ -135,14 +142,17 @@ impl BootstrapLogic {
     ) -> Result<(), ProcessError> {
         let ok = match response.pull_type {
             AscPullAckType::Blocks(blocks) => {
+                self.response_blocks += 1;
                 self.block_ack_processor
                     .process(&mut self.candidate_accounts, query, blocks)
             }
             AscPullAckType::AccountInfo(info) => {
+                self.response_account += 1;
                 self.account_ack_processor
                     .process(&mut self.candidate_accounts, query, &info)
             }
             AscPullAckType::Frontiers(frontiers) => {
+                self.response_frontiers += 1;
                 self.frontiers_processor.process(query, frontiers)
             }
         };
@@ -181,6 +191,11 @@ impl Default for BootstrapLogic {
 
 impl StatsSource for BootstrapLogic {
     fn collect_stats(&self, result: &mut StatsCollection) {
+        const BOOTSTRAP_PROCESS: &'static str = "bootstrap_process";
+        result.insert(BOOTSTRAP_PROCESS, "blocks", self.response_blocks);
+        result.insert(BOOTSTRAP_PROCESS, "account_info", self.response_account);
+        result.insert(BOOTSTRAP_PROCESS, "frontiers", self.response_frontiers);
+
         self.frontiers_processor.collect_stats(result);
         self.account_ack_processor.collect_stats(result);
         self.block_ack_processor.collect_stats(result);

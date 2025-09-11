@@ -27,8 +27,6 @@ impl BlockAckProcessor {
             "Process response"
         );
 
-        self.stats.process += 1;
-
         let result = query.verify_blocks(&response);
         match result {
             VerifyResult::Ok => {
@@ -93,7 +91,6 @@ impl StatsSource for BlockAckProcessor {
 
 #[derive(Default)]
 pub(crate) struct BlockAckStats {
-    process: u64,
     invalid: u64,
     verified: u64,
     blocks: u64,
@@ -105,7 +102,6 @@ pub(crate) struct BlockAckStats {
 
 impl StatsSource for BlockAckStats {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "blocks", self.process);
         result.insert("bootstrap_verify_blocks", "invalid", self.invalid);
         result.insert("bootstrap_verify_blocks", "ok", self.verified);
         result.insert("bootstrap", "blocks", self.blocks);
@@ -139,7 +135,6 @@ mod tests {
         let response = BlocksAckPayload::new_test_instance();
         let ok = processor.process(&mut candidates, &query, response);
         assert!(!ok);
-        assert_eq!(processor.stats.process, 1);
         assert_eq!(processor.stats.invalid, 1);
     }
 
@@ -159,7 +154,6 @@ mod tests {
         let ok = processor.process(&mut candidates, &query, response);
 
         assert!(ok);
-        assert_eq!(processor.stats.process, 1);
         assert_eq!(processor.stats.nothing_new, 1);
     }
 }

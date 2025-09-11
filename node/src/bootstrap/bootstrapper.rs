@@ -24,7 +24,7 @@ use super::{
 };
 use crate::{
     block_processing::{BlockProcessorQueue, ProcessedResult},
-    bootstrap::state::bootstrap_logic::ProcessError,
+    bootstrap::state::{PriorityUpResult, bootstrap_logic::ProcessError},
     transport::MessageSender,
 };
 
@@ -181,9 +181,9 @@ impl Bootstrapper {
             .lock()
             .unwrap()
             .candidate_accounts
-            .priority_set_initial(genesis_account);
+            .priority_up(&genesis_account);
 
-        if inserted {
+        if inserted == PriorityUpResult::Inserted {
             self.priority_inserted()
         } else {
             self.priority_insertion_failed()

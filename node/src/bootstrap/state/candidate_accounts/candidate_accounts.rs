@@ -56,7 +56,7 @@ pub struct CandidateAccounts {
 }
 
 impl CandidateAccounts {
-    pub const PRIORITY_INITIAL: Priority = Priority::new(2.0);
+    pub const PRIORITY_INITIAL: Priority = Priority::new(1.0);
     pub const PRIORITY_INCREASE: Priority = Priority::new(2.0);
     pub const PRIORITY_DIVIDE: f64 = 2.0;
     pub const PRIORITY_MAX: Priority = Priority::new(128.0);
@@ -134,7 +134,7 @@ impl CandidateAccounts {
         self.priority_set(account, Self::PRIORITY_INITIAL)
     }
 
-    pub fn priority_set(&mut self, account: &Account, priority: Priority) -> bool {
+    fn priority_set(&mut self, account: &Account, priority: Priority) -> bool {
         let inserted =
             Self::priority_set_impl(account, priority, &self.blocking, &mut self.priorities);
         self.trim_overflow();

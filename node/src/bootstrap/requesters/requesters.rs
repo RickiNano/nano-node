@@ -112,11 +112,9 @@ impl Requesters {
         };
 
         let dependencies = if self.config.enable_dependency_walker {
-            Some(self.spawn_query(
-                "Bootstrap walkr",
-                DependencyRequester::new(self.stats.clone(), channel_waiter),
-                runner.clone(),
-            ))
+            let requester = DependencyRequester::new(channel_waiter);
+            self.stats_sources.lock().unwrap().push(requester.stats());
+            Some(self.spawn_query("Bootstrap walkr", requester, runner.clone()))
         } else {
             None
         };

@@ -103,6 +103,7 @@ impl BootstrapPromise<AscPullQuerySpec> for PriorityRequester {
                     .next_priority_query(context, channel.clone())
                 {
                     Some(query) => {
+                        self.stats.next.fetch_add(1, Ordering::Relaxed);
                         self.state = PriorityState::Initial;
                         PollResult::Finished(query)
                     }
@@ -122,6 +123,7 @@ pub(crate) struct PriorityRequesterStats {
     pub wait_block_processor: AtomicU64,
     pub wait_priority: AtomicU64,
     pub channel_waiter: Arc<ChannelWaiterStats>,
+    pub next: AtomicU64,
 }
 
 impl StatsSource for PriorityRequesterStats {
@@ -136,13 +138,14 @@ impl StatsSource for PriorityRequesterStats {
         );
         result.insert(
             STAT_NAME,
-            "wait_block_processor",
-            self.wait_block_processor.load(Ordering::Relaxed),
-        );
-        result.insert(
-            STAT_NAME,
             "wait_priority",
             self.wait_priority.load(Ordering::Relaxed),
+        );
+
+        result.insert(
+            "bootstrap_next",
+            "next_priority",
+            self.next.load(Ordering::Relaxed),
         );
 
         self.channel_waiter.collect_stats(STAT_NAME, result);

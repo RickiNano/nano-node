@@ -2,7 +2,7 @@ use rsnano_messages::AccountInfoAckPayload;
 use rsnano_types::{Account, BlockHash};
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 
-use crate::bootstrap::state::{CandidateAccounts, RunningQuery};
+use crate::bootstrap::state::{CandidateAccounts, PriorityUpResult, RunningQuery};
 
 #[derive(Default)]
 pub(super) struct AccountAckProcessor {
@@ -22,8 +22,6 @@ impl AccountAckProcessor {
             return true;
         }
 
-        self.stats.process += 1;
-
         // Prioritize account containing the dependency
         self.update_dependency(candidates, &query.hash, response.account);
         self.prioritize(candidates, &response.account);
@@ -35,10 +33,10 @@ impl AccountAckProcessor {
     fn update_dependency(
         &mut self,
         candidates: &mut CandidateAccounts,
-        hash: &BlockHash,
-        dep_account: Account,
+        dependency: &BlockHash,
+        dependency_account: Account,
     ) {
-        let updated = candidates.dependency_update(hash, dep_account);
+        let updated = candidates.dependency_update(dependency, dependency_account);
 
         if updated > 0 {
             self.stats.dependency_update += updated as u64;
@@ -48,8 +46,10 @@ impl AccountAckProcessor {
     }
 
     fn prioritize(&mut self, candidates: &mut CandidateAccounts, account: &Account) {
-        // Use the lowest possible priority here
-        if candidates.priority_set(account, CandidateAccounts::PRIORITY_CUTOFF) {
+        if matches!(
+            candidates.priority_up(account),
+            PriorityUpResult::Inserted | PriorityUpResult::Updated
+        ) {
             self.stats.priority_insert += 1;
         } else {
             self.stats.prioritize_failed += 1;
@@ -66,7 +66,6 @@ impl StatsSource for AccountAckProcessor {
 #[derive(Default)]
 pub(super) struct AccountAckStats {
     pub empty: u64,
-    pub process: u64,
     pub dependency_update: u64,
     pub dependency_update_failed: u64,
     pub priority_insert: u64,
@@ -75,28 +74,17 @@ pub(super) struct AccountAckStats {
 
 impl StatsSource for AccountAckStats {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "account_info", self.process);
-        result.insert("bootstrap_process", "account_info_empty", self.empty);
+        const PROCESSOR: &'static str = "bootstr_acc_ack_proc";
+
+        result.insert(PROCESSOR, "account_info_empty", self.empty);
+        result.insert(PROCESSOR, "dependency_update", self.dependency_update);
         result.insert(
-            "bootstrap_account_sets",
-            "dependency_update",
-            self.dependency_update,
-        );
-        result.insert(
-            "bootstrap_account_sets",
+            PROCESSOR,
             "dependency_update_failed",
             self.dependency_update_failed,
         );
-        result.insert(
-            "bootstrap_account_sets",
-            "priority_insert",
-            self.priority_insert,
-        );
-        result.insert(
-            "bootstrap_account_sets",
-            "prioritize_failed",
-            self.prioritize_failed,
-        );
+        result.insert(PROCESSOR, "priority_insert", self.priority_insert);
+        result.insert(PROCESSOR, "prioritize_failed", self.prioritize_failed);
     }
 }
 
@@ -119,7 +107,6 @@ mod tests {
         assert!(processor.process(&mut candidates, &query, &response));
 
         assert_eq!(processor.stats.empty, 1);
-        assert_eq!(processor.stats.process, 0);
         assert_eq!(candidates.priority_len(), 0);
     }
 
@@ -132,7 +119,6 @@ mod tests {
 
         assert!(processor.process(&mut candidates, &query, &response));
 
-        assert_eq!(processor.stats.process, 1);
         assert!(candidates.prioritized(&response.account));
         assert_eq!(processor.stats.dependency_update_failed, 1);
         assert_eq!(processor.stats.priority_insert, 1);
@@ -193,18 +179,17 @@ mod tests {
             ..AccountInfoAckPayload::new_test_instance()
         };
 
-        candidates.priority_set_initial(&blocked_account);
+        candidates.priority_up(&blocked_account);
         candidates.block(
             blocked_account,
             unknown_source,
             Timestamp::new_test_instance(),
         );
         candidates.dependency_update(&unknown_source, source_account);
-        candidates.priority_set_initial(&source_account);
+        candidates.priority_up(&source_account);
 
         assert!(processor.process(&mut candidates, &query, &response));
 
         assert_eq!(processor.stats.dependency_update_failed, 1);
-        assert_eq!(processor.stats.prioritize_failed, 1);
     }
 }

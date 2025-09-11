@@ -84,8 +84,7 @@ impl FrontiersProcessor {
         self.stats.outdated_accounts_found += outdated.accounts.len() as u64;
 
         for account in &outdated.accounts {
-            // Use the lowest possible priority here
-            candidates.priority_set(account, CandidateAccounts::PRIORITY_CUTOFF);
+            candidates.priority_up(account);
 
             self.last_outdated_accounts.push_back(*account);
             if self.last_outdated_accounts.len() > 20 {
@@ -136,7 +135,6 @@ pub struct FrontiersStats {
 
 impl StatsSource for FrontiersStats {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "frontiers", self.processed_responses);
         result.insert("bootstrap_verify_frontiers", "ok", self.verified);
         result.insert(
             "bootstrap_verify_frontiers",
