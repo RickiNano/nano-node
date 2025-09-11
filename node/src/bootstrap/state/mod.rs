@@ -1,3 +1,4 @@
+mod account_ack_processor;
 pub(crate) mod block_queue;
 pub(crate) mod bootstrap_logic;
 mod candidate_accounts;

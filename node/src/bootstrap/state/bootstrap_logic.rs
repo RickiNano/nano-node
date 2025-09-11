@@ -1,8 +1,6 @@
 use std::{collections::VecDeque, sync::Arc, time::Duration};
 
-use rsnano_messages::{
-    AccountInfoAckPayload, AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload,
-};
+use rsnano_messages::{AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash, Frontier};
@@ -19,6 +17,7 @@ use crate::bootstrap::{
     AscPullQuerySpec, BootstrapConfig,
     state::{
         PriorityDownResult, QueryType, RunningQuery, VerifyResult,
+        account_ack_processor::AccountAckProcessor,
         block_queue::{AccountBlocks, BlockQueue},
     },
 };
@@ -36,9 +35,9 @@ pub struct BootstrapLogic {
     pub last_outdated_accounts: VecDeque<Account>,
     pub(crate) block_queue: BlockQueue,
     pub(crate) frontiers_stats: FrontiersStats,
-    pub(crate) account_ack_stats: AccountAckStats,
     pub(crate) block_ack_stats: BlockAckStats,
     pub(crate) stopped: bool,
+    account_ack_processor: AccountAckProcessor,
 }
 
 impl BootstrapLogic {
@@ -57,9 +56,9 @@ impl BootstrapLogic {
             last_outdated_accounts: VecDeque::new(),
             block_queue: BlockQueue::default(),
             frontiers_stats: Default::default(),
-            account_ack_stats: Default::default(),
             block_ack_stats: Default::default(),
             stopped: false,
+            account_ack_processor: Default::default(),
         }
     }
 
@@ -147,7 +146,10 @@ impl BootstrapLogic {
     ) -> Result<(), ProcessError> {
         let ok = match response.pull_type {
             AscPullAckType::Blocks(blocks) => self.process_blocks(query, blocks),
-            AscPullAckType::AccountInfo(info) => self.process_account_ack(query, &info),
+            AscPullAckType::AccountInfo(info) => {
+                self.account_ack_processor
+                    .process(&mut self.candidate_accounts, query, &info)
+            }
             AscPullAckType::Frontiers(frontiers) => self.process_frontiers(query, frontiers),
         };
 
@@ -204,52 +206,6 @@ impl BootstrapLogic {
             }
         };
         valid_frontiers
-    }
-
-    // account ack handling:
-    //********************************************************************************
-
-    fn process_account_ack(
-        &mut self,
-        query: &RunningQuery,
-        response: &AccountInfoAckPayload,
-    ) -> bool {
-        if response.account.is_zero() {
-            self.account_ack_stats.empty += 1;
-            // OK, but nothing to do
-            return true;
-        }
-
-        self.account_ack_stats.process += 1;
-
-        // Prioritize account containing the dependency
-        self.update_dependency(&query.hash, response.account);
-        self.prioritize(&response.account);
-
-        // OK, no way to verify the response
-        true
-    }
-
-    fn update_dependency(&mut self, hash: &BlockHash, dep_account: Account) {
-        let updated = self.candidate_accounts.dependency_update(hash, dep_account);
-
-        if updated > 0 {
-            self.account_ack_stats.dependency_update += updated as u64;
-        } else {
-            self.account_ack_stats.dependency_update_failed += 1;
-        }
-    }
-
-    fn prioritize(&mut self, account: &Account) {
-        // Use the lowest possible priority here
-        if self
-            .candidate_accounts
-            .priority_set(account, CandidateAccounts::PRIORITY_CUTOFF)
-        {
-            self.account_ack_stats.priority_insert += 1;
-        } else {
-            self.account_ack_stats.prioritize_failed += 1;
-        };
     }
 
     // block ack handling:
@@ -344,7 +300,10 @@ impl Default for BootstrapLogic {
 
 impl StatsSource for BootstrapLogic {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        self.frontiers_stats.collect_stats(result)
+        self.frontiers_stats.collect_stats(result);
+        self.account_ack_processor.collect_stats(result);
+        self.frontiers_stats.collect_stats(result);
+        self.block_ack_stats.collect_stats(result);
     }
 }
 
@@ -389,43 +348,6 @@ impl StatsSource for FrontiersStats {
         );
         result.insert("bootstrap_verify_frontiers", "invalid", self.invalid);
         result.insert("bootstrap", "frontiers", self.frontiers);
-    }
-}
-
-#[derive(Default)]
-pub(crate) struct AccountAckStats {
-    empty: u64,
-    process: u64,
-    dependency_update: u64,
-    dependency_update_failed: u64,
-    priority_insert: u64,
-    prioritize_failed: u64,
-}
-
-impl StatsSource for AccountAckStats {
-    fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "account_info", self.process);
-        result.insert("bootstrap_process", "account_info_empty", self.empty);
-        result.insert(
-            "bootstrap_account_sets",
-            "dependency_update",
-            self.dependency_update,
-        );
-        result.insert(
-            "bootstrap_account_sets",
-            "dependency_update_failed",
-            self.dependency_update_failed,
-        );
-        result.insert(
-            "bootstrap_account_sets",
-            "priority_insert",
-            self.priority_insert,
-        );
-        result.insert(
-            "bootstrap_account_sets",
-            "prioritize_failed",
-            self.prioritize_failed,
-        );
     }
 }
 
@@ -538,115 +460,6 @@ mod tests {
                 start: 1.into(),
                 ..RunningQuery::new_test_instance()
             }
-        }
-    }
-
-    mod account_ack {
-        use super::*;
-        #[test]
-        fn empty_response() {
-            let mut logic = BootstrapLogic::default();
-            let query = RunningQuery::new_test_instance();
-
-            let response = AccountInfoAckPayload {
-                account: Account::ZERO,
-                ..AccountInfoAckPayload::new_test_instance()
-            };
-
-            assert!(logic.process_account_ack(&query, &response));
-            assert_eq!(logic.account_ack_stats.empty, 1);
-            assert_eq!(logic.account_ack_stats.process, 0);
-            assert_eq!(logic.candidate_accounts.priority_len(), 0);
-        }
-
-        #[test]
-        fn when_not_blocked_should_only_prioritize() {
-            let mut logic = BootstrapLogic::default();
-            let query = RunningQuery::new_test_instance();
-            let response = AccountInfoAckPayload::new_test_instance();
-
-            assert!(logic.process_account_ack(&query, &response));
-
-            assert_eq!(logic.account_ack_stats.process, 1);
-            assert!(logic.candidate_accounts.prioritized(&response.account));
-            assert_eq!(logic.account_ack_stats.dependency_update_failed, 1);
-            assert_eq!(logic.account_ack_stats.priority_insert, 1);
-        }
-
-        #[test]
-        fn update_dependency() {
-            let mut logic = BootstrapLogic::default();
-            let blocked_account = Account::from(100);
-            let unknown_source = BlockHash::from(42);
-            let source_account = Account::from(200);
-
-            let query = RunningQuery {
-                hash: unknown_source,
-                ..RunningQuery::new_test_instance()
-            };
-
-            let response = AccountInfoAckPayload {
-                account: source_account,
-                ..AccountInfoAckPayload::new_test_instance()
-            };
-
-            logic
-                .candidate_accounts
-                .priority_set_initial(&blocked_account);
-
-            logic.candidate_accounts.block(
-                blocked_account,
-                unknown_source,
-                Timestamp::new_test_instance(),
-            );
-
-            assert!(logic.process_account_ack(&query, &response));
-
-            assert!(logic.candidate_accounts.blocked(&blocked_account));
-            assert!(logic.candidate_accounts.prioritized(&source_account));
-            let query = logic.next_priority(Timestamp::new_test_instance());
-            assert_eq!(query.account, source_account);
-            assert_eq!(logic.account_ack_stats.dependency_update, 1);
-            assert_eq!(logic.account_ack_stats.priority_insert, 1);
-        }
-
-        #[test]
-        fn dependency_update_fails() {
-            let mut logic = BootstrapLogic::default();
-
-            let blocked_account = Account::from(100);
-            let unknown_source = BlockHash::from(42);
-            let source_account = Account::from(200);
-
-            let query = RunningQuery {
-                hash: unknown_source,
-                ..RunningQuery::new_test_instance()
-            };
-
-            let response = AccountInfoAckPayload {
-                account: source_account,
-                ..AccountInfoAckPayload::new_test_instance()
-            };
-
-            logic
-                .candidate_accounts
-                .priority_set_initial(&blocked_account);
-            logic.candidate_accounts.block(
-                blocked_account,
-                unknown_source,
-                Timestamp::new_test_instance(),
-            );
-            logic
-                .candidate_accounts
-                .dependency_update(&unknown_source, source_account);
-            logic
-                .candidate_accounts
-                .priority_set_initial(&source_account);
-
-            assert!(logic.process_account_ack(&query, &response));
-
-            assert_eq!(logic.account_ack_stats.dependency_update_failed, 1);
-            assert_eq!(logic.account_ack_stats.prioritize_failed, 1);
         }
     }
 
