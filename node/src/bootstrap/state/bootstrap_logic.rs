@@ -3,7 +3,7 @@ use std::{collections::VecDeque, sync::Arc, time::Duration};
 use rsnano_messages::{
     AccountInfoAckPayload, AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload,
 };
-use rsnano_network::Channel;
+use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash, Frontier};
 use rsnano_utils::{
@@ -112,7 +112,7 @@ impl BootstrapLogic {
             .next_blocking(|hash| self.count_queries_by_hash(hash, QuerySource::Dependencies) == 0)
     }
 
-    pub(crate) fn take_running_query_for(
+    fn take_running_query_for(
         &mut self,
         response: &AscPullAck,
     ) -> Result<RunningQuery, ProcessError> {
@@ -131,14 +131,16 @@ impl BootstrapLogic {
     pub(crate) fn process_response(
         &mut self,
         response: AscPullAck,
+        channel_id: ChannelId,
         now: Timestamp,
     ) -> Result<ProcessInfo, ProcessError> {
         let query = self.take_running_query_for(&response)?;
+        self.scoring.received_message(channel_id);
         self.process_response_for_query(&query, response)
             .map(|_| ProcessInfo::new(&query, now))
     }
 
-    pub(crate) fn process_response_for_query(
+    fn process_response_for_query(
         &mut self,
         query: &RunningQuery,
         response: AscPullAck,
@@ -180,11 +182,7 @@ impl BootstrapLogic {
     }
 
     /// Returns true if the frontiers were valid
-    pub(crate) fn process_frontiers(
-        &mut self,
-        query: &RunningQuery,
-        frontiers: Vec<Frontier>,
-    ) -> bool {
+    fn process_frontiers(&mut self, query: &RunningQuery, frontiers: Vec<Frontier>) -> bool {
         self.frontiers_stats.processed += 1;
 
         let valid_frontiers = match query.verify_frontiers(&frontiers) {
@@ -211,7 +209,7 @@ impl BootstrapLogic {
     // account ack handling:
     //********************************************************************************
 
-    pub(crate) fn process_account_ack(
+    fn process_account_ack(
         &mut self,
         query: &RunningQuery,
         response: &AccountInfoAckPayload,
@@ -256,11 +254,7 @@ impl BootstrapLogic {
 
     // block ack handling:
     //********************************************************************************
-    pub(crate) fn process_blocks(
-        &mut self,
-        query: &RunningQuery,
-        response: BlocksAckPayload,
-    ) -> bool {
+    fn process_blocks(&mut self, query: &RunningQuery, response: BlocksAckPayload) -> bool {
         trace!(
             query_id = query.id,
             blocks = response.blocks().len(),

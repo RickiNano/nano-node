@@ -50,25 +50,11 @@ impl ResponseProcessor {
     ) -> Result<ProcessInfo, ProcessError> {
         trace!(query_id = response.id, ?channel_id, "Process response");
 
-        let process_info = {
-            let mut logic = self.logic.lock().unwrap();
-            let process_info = logic.process_response(response, now)?;
-            self.enqueue_next_blocks(&mut logic);
-            self.frontier_check_pool.enqueue_frontiers(&mut logic);
-            process_info
-        };
-
-        self.update_peer_scoring(channel_id);
-
+        let mut logic = self.logic.lock().unwrap();
+        let process_info = logic.process_response(response, channel_id, now)?;
+        self.enqueue_next_blocks(&mut logic);
+        self.frontier_check_pool.enqueue_frontiers(&mut logic);
         Ok(process_info)
-    }
-
-    fn update_peer_scoring(&self, channel_id: ChannelId) {
-        self.logic
-            .lock()
-            .unwrap()
-            .scoring
-            .received_message(channel_id);
     }
 
     // TODO Remeove duplication! Copied from BlockInspector
