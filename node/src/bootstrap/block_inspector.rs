@@ -47,7 +47,8 @@ impl BlockInspector {
     }
 
     fn enqueue_next_blocks(&self, state: &mut BootstrapLogic) {
-        while let Some((block, query_id)) = state.block_queue.next_to_process() {
+        while let Some((block, query_id)) = state.block_ack_processor.block_queue.next_to_process()
+        {
             let block_hash = block.hash();
 
             trace!(%block_hash, query_id, "Process block");
@@ -60,7 +61,10 @@ impl BlockInspector {
             ));
 
             if inserted {
-                state.block_queue.enqueued_for_processing(&block_hash);
+                state
+                    .block_ack_processor
+                    .block_queue
+                    .enqueued_for_processing(&block_hash);
             } else {
                 // block processor queue is full!
                 break;
@@ -154,7 +158,7 @@ impl BlockInspector {
                     }
                 }
 
-                let info = state.block_queue.processed(&hash);
+                let info = state.block_ack_processor.block_queue.processed(&hash);
                 if let Some(account) = info.account {
                     if info.was_last {
                         state.candidate_accounts.reset_last_request(&account);
@@ -162,7 +166,11 @@ impl BlockInspector {
                 }
             }
             Err(error) => {
-                state.block_queue.processing_failed(&hash);
+                state
+                    .block_ack_processor
+                    .block_queue
+                    .processing_failed(&hash);
+
                 match error {
                     BlockError::GapSource => {
                         // Prevent malicious live traffic from filling up the blocked set

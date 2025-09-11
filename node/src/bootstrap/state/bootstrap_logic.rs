@@ -1,7 +1,6 @@
 use std::{sync::Arc, time::Duration};
-use tracing::trace;
 
-use rsnano_messages::{AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload};
+use rsnano_messages::{AscPullAck, AscPullAckType, AscPullReqType};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash};
@@ -17,9 +16,9 @@ use super::{
 use crate::bootstrap::{
     AscPullQuerySpec, BootstrapConfig,
     state::{
-        PriorityDownResult, QueryType, RunningQuery, VerifyResult,
+        QueryType, RunningQuery,
         account_ack_processor::AccountAckProcessor,
-        block_queue::{AccountBlocks, BlockQueue},
+        block_ack_processor::BlockAckProcessor,
         frontiers_processor::{FrontiersProcessor, OutdatedAccounts},
     },
 };
@@ -28,11 +27,10 @@ pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
-    pub(crate) block_queue: BlockQueue,
-    pub(crate) block_ack_stats: BlockAckStats,
     pub(crate) stopped: bool,
     account_ack_processor: AccountAckProcessor,
     pub frontiers_processor: FrontiersProcessor,
+    pub block_ack_processor: BlockAckProcessor,
 }
 
 impl BootstrapLogic {
@@ -44,32 +42,30 @@ impl BootstrapLogic {
             candidate_accounts: CandidateAccounts::new(config.candidate_accounts.clone()),
             scoring,
             running_queries: RunningQueryContainer::default(),
-            block_queue: BlockQueue::default(),
-            block_ack_stats: Default::default(),
             stopped: false,
             account_ack_processor: Default::default(),
             frontiers_processor: FrontiersProcessor::new(config.frontier_scan.clone()),
+            block_ack_processor: Default::default(),
         }
     }
 
-    pub fn next_blocking_query(&self, channel: &Arc<Channel>) -> Option<AscPullQuerySpec> {
+    pub fn next_blocking_query(
+        &self,
+        query_id: u64,
+        channel: &Arc<Channel>,
+    ) -> Option<AscPullQuerySpec> {
         let next = self.next_blocking();
-        if !next.is_zero() {
-            Some(Self::create_blocking_query(next, channel.clone()))
-        } else {
-            None
+        if next.is_zero() {
+            return None;
         }
-    }
-
-    fn create_blocking_query(next: BlockHash, channel: Arc<Channel>) -> AscPullQuerySpec {
-        AscPullQuerySpec {
-            query_id: 0, // TODO
-            channel,
+        Some(AscPullQuerySpec {
+            query_id,
+            channel: channel.clone(),
             req_type: AscPullReqType::account_info_by_hash(next),
             account: Account::ZERO,
             hash: next,
             cooldown_account: false,
-        }
+        })
     }
 
     fn count_queries_by_hash(&self, hash: &BlockHash, source: QuerySource) -> usize {
@@ -81,7 +77,10 @@ impl BootstrapLogic {
 
     pub fn next_priority(&mut self, now: Timestamp) -> PriorityResult {
         let next = self.candidate_accounts.next_priority(now, |account| {
-            !self.block_queue.contains_account(account)
+            !self
+                .block_ack_processor
+                .block_queue
+                .contains_account(account)
                 && self
                     .running_queries
                     .count_by_account(account, QuerySource::Priority)
@@ -135,7 +134,10 @@ impl BootstrapLogic {
         response: AscPullAck,
     ) -> Result<(), ProcessError> {
         let ok = match response.pull_type {
-            AscPullAckType::Blocks(blocks) => self.process_blocks(query, blocks),
+            AscPullAckType::Blocks(blocks) => {
+                self.block_ack_processor
+                    .process(&mut self.candidate_accounts, query, blocks)
+            }
             AscPullAckType::AccountInfo(info) => {
                 self.account_ack_processor
                     .process(&mut self.candidate_accounts, query, &info)
@@ -156,76 +158,6 @@ impl BootstrapLogic {
         self.frontiers_processor
             .frontiers_processed(outdated, &mut self.candidate_accounts);
     }
-
-    // block ack handling:
-    //********************************************************************************
-    fn process_blocks(&mut self, query: &RunningQuery, response: BlocksAckPayload) -> bool {
-        trace!(
-            query_id = query.id,
-            blocks = response.blocks().len(),
-            "Process response"
-        );
-
-        self.block_ack_stats.process += 1;
-
-        let result = query.verify_blocks(&response);
-        match result {
-            VerifyResult::Ok => {
-                self.process_valid_blocks(query, response);
-                true
-            }
-            VerifyResult::NothingNew => {
-                self.process_empty_response(query);
-                true
-            }
-            VerifyResult::Invalid => {
-                self.block_ack_stats.invalid += 1;
-                false
-            }
-        }
-    }
-
-    fn process_valid_blocks(&mut self, query: &RunningQuery, response: BlocksAckPayload) {
-        self.block_ack_stats.verified += 1;
-        self.block_ack_stats.blocks += response.blocks().len() as u64;
-
-        let mut blocks = response.take_blocks();
-
-        // Avoid re-processing the block we already have
-        assert!(blocks.len() >= 1);
-        if blocks.front().unwrap().hash() == query.start.into() {
-            blocks.pop_front();
-        }
-
-        self.block_queue.insert(AccountBlocks {
-            account: query.account,
-            query_id: query.id,
-            blocks: blocks.clone(),
-        });
-    }
-
-    fn process_empty_response(&mut self, query: &RunningQuery) {
-        self.block_ack_stats.nothing_new += 1;
-        {
-            match self.candidate_accounts.priority_down(&query.account) {
-                PriorityDownResult::Deprioritized => {
-                    self.block_ack_stats.deprioritize += 1;
-                }
-                PriorityDownResult::Erased => {
-                    self.block_ack_stats.deprioritize += 1;
-                    self.block_ack_stats.priority_erase_theshold += 1;
-                }
-                PriorityDownResult::AccountNotFound => {
-                    self.block_ack_stats.deprioritize_failed += 1;
-                }
-                PriorityDownResult::InvalidAccount => {}
-            }
-
-            self.candidate_accounts.reset_last_request(&query.account);
-        }
-    }
-
-    //********************************************************************************
 
     pub fn container_info(&self) -> ContainerInfo {
         ContainerInfo::builder()
@@ -251,7 +183,7 @@ impl StatsSource for BootstrapLogic {
     fn collect_stats(&self, result: &mut StatsCollection) {
         self.frontiers_processor.collect_stats(result);
         self.account_ack_processor.collect_stats(result);
-        self.block_ack_stats.collect_stats(result);
+        self.block_ack_processor.collect_stats(result);
     }
 }
 
@@ -272,79 +204,6 @@ impl ProcessInfo {
         Self {
             query_type: query.query_type,
             response_time: query.sent.elapsed(now),
-        }
-    }
-}
-
-#[derive(Default)]
-pub(crate) struct BlockAckStats {
-    process: u64,
-    invalid: u64,
-    verified: u64,
-    blocks: u64,
-    nothing_new: u64,
-    deprioritize: u64,
-    priority_erase_theshold: u64,
-    deprioritize_failed: u64,
-}
-
-impl StatsSource for BlockAckStats {
-    fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "blocks", self.process);
-        result.insert("bootstrap_verify_blocks", "invalid", self.invalid);
-        result.insert("bootstrap_verify_blocks", "ok", self.verified);
-        result.insert("bootstrap", "blocks", self.blocks);
-        result.insert("bootstrap_verify_blocks", "nothing_new", self.nothing_new);
-        result.insert("bootstrap_account_sets", "deprioritize", self.deprioritize);
-        result.insert(
-            "bootstrap_account_sets",
-            "priority_erase_threshold",
-            self.priority_erase_theshold,
-        );
-        result.insert(
-            "bootstrap_account_sets",
-            "deprioritize_failed",
-            self.deprioritize_failed,
-        );
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::bootstrap::state::QueryType;
-
-    mod block_ack {
-        use super::*;
-
-        #[test]
-        fn response_doesnt_match_query() {
-            let mut logic = BootstrapLogic::default();
-
-            let query = RunningQuery::new_test_instance();
-            let response = BlocksAckPayload::new_test_instance();
-            let ok = logic.process_blocks(&query, response);
-            assert!(!ok);
-            assert_eq!(logic.block_ack_stats.process, 1);
-            assert_eq!(logic.block_ack_stats.invalid, 1);
-        }
-
-        #[test]
-        fn handle_empty_response() {
-            let mut logic = BootstrapLogic::default();
-            let account = Account::from(42);
-
-            let query = RunningQuery {
-                query_type: QueryType::BlocksByAccount,
-                account,
-                ..RunningQuery::new_test_instance()
-            };
-
-            let response = BlocksAckPayload::empty();
-            let ok = logic.process_blocks(&query, response);
-            assert!(ok);
-            assert_eq!(logic.block_ack_stats.process, 1);
-            assert_eq!(logic.block_ack_stats.nothing_new, 1);
         }
     }
 }

@@ -59,7 +59,8 @@ impl ResponseProcessor {
 
     // TODO Remeove duplication! Copied from BlockInspector
     fn enqueue_next_blocks(&self, logic: &mut BootstrapLogic) {
-        while let Some((block, query_id)) = logic.block_queue.next_to_process() {
+        while let Some((block, query_id)) = logic.block_ack_processor.block_queue.next_to_process()
+        {
             let block_hash = block.hash();
 
             trace!(%block_hash, query_id, "Process block");
@@ -72,7 +73,10 @@ impl ResponseProcessor {
             ));
 
             if inserted {
-                logic.block_queue.enqueued_for_processing(&block_hash);
+                logic
+                    .block_ack_processor
+                    .block_queue
+                    .enqueued_for_processing(&block_hash);
             } else {
                 // block processor queue is full!
                 break;

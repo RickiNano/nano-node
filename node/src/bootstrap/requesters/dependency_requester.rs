@@ -46,7 +46,7 @@ impl BootstrapPromise<AscPullQuerySpec> for DependencyRequester {
                 }
             },
             DependencyState::WaitBlocking(ref channel) => {
-                match context.logic.next_blocking_query(channel) {
+                match context.logic.next_blocking_query(context.id, channel) {
                     Some(spec) => {
                         self.stats
                             .inc(StatType::BootstrapNext, DetailType::NextBlocking);
