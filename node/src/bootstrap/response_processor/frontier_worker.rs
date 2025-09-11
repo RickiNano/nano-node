@@ -5,7 +5,7 @@ use rsnano_types::Frontier;
 use rsnano_utils::stats::{DetailType, StatType, Stats};
 
 use super::frontier_checker::FrontierChecker;
-use crate::bootstrap::state::{BootstrapLogic, OutdatedAccounts};
+use crate::bootstrap::state::{BootstrapLogic, frontiers_processor::OutdatedAccounts};
 
 /// Handles received frontiers
 pub(crate) struct FrontierWorker<'a> {

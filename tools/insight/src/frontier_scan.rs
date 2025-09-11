@@ -24,7 +24,7 @@ impl FrontierScanInfo {
     pub(crate) fn update(&mut self, state: &BootstrapLogic, now: Timestamp) {
         self.update_counters(&state.frontiers_processor.stats, now);
         self.frontier_heads = state.frontiers_processor.heads();
-        self.outdated_accounts = state.last_outdated_accounts.clone();
+        self.outdated_accounts = state.frontiers_processor.last_outdated_accounts.clone();
     }
 
     fn update_counters(&mut self, stats: &FrontiersStats, now: Timestamp) {

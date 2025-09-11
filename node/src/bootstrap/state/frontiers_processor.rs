@@ -1,6 +1,6 @@
 use crate::bootstrap::{
     FrontierHeadInfo, FrontierScanConfig,
-    state::{FrontierScan, RunningQuery, VerifyResult},
+    state::{CandidateAccounts, FrontierScan, RunningQuery, VerifyResult},
 };
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, Frontier};
@@ -16,6 +16,8 @@ pub struct FrontiersProcessor {
 
     /// Frontiers that were received from other nodes and that we need to check against our ledger
     frontiers_to_check: VecDeque<Vec<Frontier>>,
+    frontier_checker_overfill: bool,
+    pub last_outdated_accounts: VecDeque<Account>,
 }
 
 impl FrontiersProcessor {
@@ -24,11 +26,21 @@ impl FrontiersProcessor {
             frontier_scan: FrontierScan::new(config),
             stats: Default::default(),
             frontiers_to_check: Default::default(),
+            frontier_checker_overfill: false,
+            last_outdated_accounts: Default::default(),
         }
     }
 
     pub fn heads(&self) -> Vec<FrontierHeadInfo> {
         self.frontier_scan.heads()
+    }
+
+    pub fn set_frontier_checker_overfill(&mut self, overfill: bool) {
+        self.frontier_checker_overfill = overfill;
+    }
+
+    pub fn frontier_checker_overfill(&self) -> bool {
+        self.frontier_checker_overfill
     }
 
     pub fn next(&mut self, now: Timestamp) -> Account {
@@ -63,6 +75,25 @@ impl FrontiersProcessor {
     pub fn pop_frontiers_to_check(&mut self) -> Option<Vec<Frontier>> {
         self.frontiers_to_check.pop_front()
     }
+
+    pub fn frontiers_processed(
+        &mut self,
+        outdated: &OutdatedAccounts,
+        candidates: &mut CandidateAccounts,
+    ) {
+        self.stats.processed_frontiers += outdated.frontiers_received as u64;
+        self.stats.outdated_accounts_found += outdated.accounts.len() as u64;
+
+        for account in &outdated.accounts {
+            // Use the lowest possible priority here
+            candidates.priority_set(account, CandidateAccounts::PRIORITY_CUTOFF);
+
+            self.last_outdated_accounts.push_back(*account);
+            if self.last_outdated_accounts.len() > 20 {
+                self.last_outdated_accounts.pop_front();
+            }
+        }
+    }
 }
 
 impl Default for FrontiersProcessor {
@@ -81,6 +112,17 @@ impl ContainerInfoProvider for FrontiersProcessor {
     fn container_info(&self) -> ContainerInfo {
         self.frontier_scan.container_info()
     }
+}
+
+#[derive(Default, Debug, PartialEq, Eq)]
+pub struct OutdatedAccounts {
+    pub accounts: Vec<Account>,
+    /// Accounts that exist but are outdated
+    pub outdated: usize,
+    /// Accounts that don't exist but have pending blocks in the ledger
+    pub pending: usize,
+    /// Total count of received frontiers
+    pub frontiers_received: usize,
 }
 
 #[derive(Default)]

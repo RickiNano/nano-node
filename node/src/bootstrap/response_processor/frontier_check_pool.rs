@@ -32,7 +32,7 @@ impl FrontierCheckPool {
     }
 
     pub(crate) fn enqueue_frontiers(&self, logic: &mut BootstrapLogic) {
-        while let Some(frontiers) = logic.pop_frontiers_to_check() {
+        while let Some(frontiers) = logic.frontiers_processor.pop_frontiers_to_check() {
             let ledger = self.ledger.clone();
             let stats = self.stats.clone();
             let state = self.logic.clone();
@@ -43,6 +43,8 @@ impl FrontierCheckPool {
             });
         }
         let queued_tasks = self.workers.queued_count();
-        logic.set_frontier_checker_overfill(queued_tasks >= self.max_pending);
+        logic
+            .frontiers_processor
+            .set_frontier_checker_overfill(queued_tasks >= self.max_pending);
     }
 }

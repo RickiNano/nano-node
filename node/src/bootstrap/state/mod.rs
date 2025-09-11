@@ -8,7 +8,7 @@ mod peer_scoring;
 mod running_query;
 mod running_query_container;
 
-pub use bootstrap_logic::{BootstrapLogic, OutdatedAccounts};
+pub use bootstrap_logic::BootstrapLogic;
 pub use candidate_accounts::*;
 pub(crate) use frontier_scan::FrontierScan;
 pub use frontier_scan::{FrontierHeadInfo, FrontierScanConfig};

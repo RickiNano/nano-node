@@ -1,10 +1,10 @@
-use std::{collections::VecDeque, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 use tracing::trace;
 
 use rsnano_messages::{AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
-use rsnano_types::{Account, BlockHash, Frontier};
+use rsnano_types::{Account, BlockHash};
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{StatsCollection, StatsSource},
@@ -20,7 +20,7 @@ use crate::bootstrap::{
         PriorityDownResult, QueryType, RunningQuery, VerifyResult,
         account_ack_processor::AccountAckProcessor,
         block_queue::{AccountBlocks, BlockQueue},
-        frontiers_processor::FrontiersProcessor,
+        frontiers_processor::{FrontiersProcessor, OutdatedAccounts},
     },
 };
 
@@ -28,8 +28,6 @@ pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
-    pub(crate) frontier_ack_processor_busy: bool,
-    pub last_outdated_accounts: VecDeque<Account>,
     pub(crate) block_queue: BlockQueue,
     pub(crate) block_ack_stats: BlockAckStats,
     pub(crate) stopped: bool,
@@ -46,8 +44,6 @@ impl BootstrapLogic {
             candidate_accounts: CandidateAccounts::new(config.candidate_accounts.clone()),
             scoring,
             running_queries: RunningQueryContainer::default(),
-            frontier_ack_processor_busy: false,
-            last_outdated_accounts: VecDeque::new(),
             block_queue: BlockQueue::default(),
             block_ack_stats: Default::default(),
             stopped: false,
@@ -105,14 +101,6 @@ impl BootstrapLogic {
             .next_blocking(|hash| self.count_queries_by_hash(hash, QuerySource::Dependencies) == 0)
     }
 
-    pub fn next_frontier_scan_start(&mut self, now: Timestamp) -> Account {
-        self.frontiers_processor.next(now)
-    }
-
-    pub fn pop_frontiers_to_check(&mut self) -> Option<Vec<Frontier>> {
-        self.frontiers_processor.pop_frontiers_to_check()
-    }
-
     fn take_running_query_for(
         &mut self,
         response: &AscPullAck,
@@ -164,27 +152,9 @@ impl BootstrapLogic {
         }
     }
 
-    // Frontiers ack handling:
-    //********************************************************************************
-
     pub fn frontiers_processed(&mut self, outdated: &OutdatedAccounts) {
-        self.frontiers_processor.stats.processed_frontiers += outdated.frontiers_received as u64;
-        self.frontiers_processor.stats.outdated_accounts_found += outdated.accounts.len() as u64;
-
-        for account in &outdated.accounts {
-            // Use the lowest possible priority here
-            self.candidate_accounts
-                .priority_set(account, CandidateAccounts::PRIORITY_CUTOFF);
-
-            self.last_outdated_accounts.push_back(*account);
-            if self.last_outdated_accounts.len() > 20 {
-                self.last_outdated_accounts.pop_front();
-            }
-        }
-    }
-
-    pub fn set_frontier_checker_overfill(&mut self, overfill: bool) {
-        self.frontier_ack_processor_busy = overfill;
+        self.frontiers_processor
+            .frontiers_processed(outdated, &mut self.candidate_accounts);
     }
 
     // block ack handling:
@@ -337,17 +307,6 @@ impl StatsSource for BlockAckStats {
             self.deprioritize_failed,
         );
     }
-}
-
-#[derive(Default, Debug, PartialEq, Eq)]
-pub struct OutdatedAccounts {
-    pub accounts: Vec<Account>,
-    /// Accounts that exist but are outdated
-    pub outdated: usize,
-    /// Accounts that don't exist but have pending blocks in the ledger
-    pub pending: usize,
-    /// Total count of received frontiers
-    pub frontiers_received: usize,
 }
 
 #[cfg(test)]

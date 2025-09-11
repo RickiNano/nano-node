@@ -89,7 +89,11 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
                 }
             }
             FrontierState::WaitAckProcessor => {
-                if !context.logic.frontier_ack_processor_busy {
+                if !context
+                    .logic
+                    .frontiers_processor
+                    .frontier_checker_overfill()
+                {
                     self.state = FrontierState::WaitChannel;
                     return PollResult::Progress;
                 }
@@ -104,7 +108,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
             },
             FrontierState::WaitFrontier(ref channel) => {
                 let now = self.clock.now();
-                let start = context.logic.next_frontier_scan_start(now);
+                let start = context.logic.frontiers_processor.next(now);
                 if !start.is_zero() {
                     self.stats
                         .inc(StatType::BootstrapNext, DetailType::NextFrontier);
