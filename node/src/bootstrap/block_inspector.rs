@@ -111,9 +111,6 @@ impl BlockInspector {
                             StatType::BootstrapAccountSets,
                             DetailType::PriorityUnblocked,
                         );
-                    } else {
-                        self.stats
-                            .inc(StatType::BootstrapAccountSets, DetailType::UnblockFailed);
                     }
 
                     match state.candidate_accounts.priority_up(&account) {
@@ -144,9 +141,6 @@ impl BlockInspector {
                                 StatType::BootstrapAccountSets,
                                 DetailType::PriorityUnblocked,
                             );
-                        } else {
-                            self.stats
-                                .inc(StatType::BootstrapAccountSets, DetailType::UnblockFailed);
                         }
                         if state.candidate_accounts.priority_set_initial(&destination) {
                             self.stats

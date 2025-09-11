@@ -54,7 +54,6 @@ impl FrontiersProcessor {
         let valid_frontiers = match query.verify_frontiers(&frontiers) {
             VerifyResult::Ok => {
                 self.stats.verified += 1;
-                self.stats.frontiers_received += frontiers.len() as u64;
                 self.frontier_scan.process(query.start.into(), &frontiers);
                 self.frontiers_to_check.push_back(frontiers);
                 true
@@ -132,7 +131,6 @@ pub struct FrontiersStats {
     pub verified: u64,
     pub nothing_new: u64,
     pub invalid: u64,
-    pub frontiers_received: u64,
     pub outdated_accounts_found: u64,
 }
 
@@ -146,7 +144,6 @@ impl StatsSource for FrontiersStats {
             self.nothing_new,
         );
         result.insert("bootstrap_verify_frontiers", "invalid", self.invalid);
-        result.insert("bootstrap", "frontiers", self.frontiers_received);
     }
 }
 

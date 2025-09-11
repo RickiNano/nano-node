@@ -28,10 +28,10 @@ impl FrontierScanInfo {
     }
 
     fn update_counters(&mut self, stats: &FrontiersStats, now: Timestamp) {
-        self.frontiers_rate.sample(stats.frontiers_received, now);
+        self.frontiers_rate.sample(stats.processed_frontiers, now);
         self.outdated_rate
             .sample(stats.outdated_accounts_found, now);
-        self.frontiers_total = stats.frontiers_received;
+        self.frontiers_total = stats.processed_frontiers;
         self.outdated_total = stats.outdated_accounts_found;
     }
 
