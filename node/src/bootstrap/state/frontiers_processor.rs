@@ -10,9 +10,9 @@ use rsnano_utils::{
 };
 use std::collections::VecDeque;
 
-pub(crate) struct FrontiersProcessor {
+pub struct FrontiersProcessor {
     pub(crate) frontier_scan: FrontierScan,
-    frontiers_stats: FrontiersStats,
+    pub stats: FrontiersStats,
 
     /// Frontiers that were received from other nodes and that we need to check against our ledger
     frontiers_to_check: VecDeque<Vec<Frontier>>,
@@ -22,7 +22,7 @@ impl FrontiersProcessor {
     pub fn new(config: FrontierScanConfig) -> Self {
         Self {
             frontier_scan: FrontierScan::new(config),
-            frontiers_stats: Default::default(),
+            stats: Default::default(),
             frontiers_to_check: Default::default(),
         }
     }
@@ -36,24 +36,24 @@ impl FrontiersProcessor {
     }
 
     /// Returns true if the frontiers were valid
-    pub fn process(&mut self, query: &RunningQuery, frontiers: Vec<Frontier>) -> bool {
-        self.frontiers_stats.processed += 1;
+    pub(crate) fn process(&mut self, query: &RunningQuery, frontiers: Vec<Frontier>) -> bool {
+        self.stats.processed_responses += 1;
 
         let valid_frontiers = match query.verify_frontiers(&frontiers) {
             VerifyResult::Ok => {
-                self.frontiers_stats.verified += 1;
-                self.frontiers_stats.frontiers += frontiers.len() as u64;
+                self.stats.verified += 1;
+                self.stats.frontiers_received += frontiers.len() as u64;
                 self.frontier_scan.process(query.start.into(), &frontiers);
                 self.frontiers_to_check.push_back(frontiers);
                 true
             }
             VerifyResult::NothingNew => {
-                self.frontiers_stats.nothing_new += 1;
+                self.stats.nothing_new += 1;
                 // OK, but nothing to do
                 true
             }
             VerifyResult::Invalid => {
-                self.frontiers_stats.invalid += 1;
+                self.stats.invalid += 1;
                 false
             }
         };
@@ -73,7 +73,7 @@ impl Default for FrontiersProcessor {
 
 impl StatsSource for FrontiersProcessor {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        self.frontiers_stats.collect_stats(result);
+        self.stats.collect_stats(result);
     }
 }
 
@@ -84,17 +84,19 @@ impl ContainerInfoProvider for FrontiersProcessor {
 }
 
 #[derive(Default)]
-struct FrontiersStats {
-    pub processed: u64,
+pub struct FrontiersStats {
+    pub processed_responses: u64,
+    pub processed_frontiers: u64,
     pub verified: u64,
     pub nothing_new: u64,
     pub invalid: u64,
-    pub frontiers: u64,
+    pub frontiers_received: u64,
+    pub outdated_accounts_found: u64,
 }
 
 impl StatsSource for FrontiersStats {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "frontiers", self.processed);
+        result.insert("bootstrap_process", "frontiers", self.processed_responses);
         result.insert("bootstrap_verify_frontiers", "ok", self.verified);
         result.insert(
             "bootstrap_verify_frontiers",
@@ -102,7 +104,7 @@ impl StatsSource for FrontiersStats {
             self.nothing_new,
         );
         result.insert("bootstrap_verify_frontiers", "invalid", self.invalid);
-        result.insert("bootstrap", "frontiers", self.frontiers);
+        result.insert("bootstrap", "frontiers", self.frontiers_received);
     }
 }
 
@@ -119,9 +121,9 @@ mod tests {
         let success = processor.process(&query, Vec::new());
 
         assert!(success);
-        assert_eq!(processor.frontiers_stats.processed, 1);
-        assert_eq!(processor.frontiers_stats.verified, 0);
-        assert_eq!(processor.frontiers_stats.nothing_new, 1);
+        assert_eq!(processor.stats.processed_responses, 1);
+        assert_eq!(processor.stats.verified, 0);
+        assert_eq!(processor.stats.nothing_new, 1);
     }
 
     #[test]
@@ -133,8 +135,8 @@ mod tests {
 
         assert!(success);
         assert_eq!(processor.frontier_scan.total_requests_completed(), 1);
-        assert_eq!(processor.frontiers_stats.processed, 1);
-        assert_eq!(processor.frontiers_stats.verified, 1);
+        assert_eq!(processor.stats.processed_responses, 1);
+        assert_eq!(processor.stats.verified, 1);
     }
 
     #[test]
@@ -151,8 +153,8 @@ mod tests {
 
         assert!(!success);
         assert_eq!(processor.frontier_scan.total_requests_completed(), 0);
-        assert_eq!(processor.frontiers_stats.processed, 1);
-        assert_eq!(processor.frontiers_stats.invalid, 1);
+        assert_eq!(processor.stats.processed_responses, 1);
+        assert_eq!(processor.stats.invalid, 1);
     }
 
     fn running_query() -> RunningQuery {

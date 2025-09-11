@@ -15,7 +15,7 @@ use super::{
     running_query::QuerySource,
 };
 use crate::bootstrap::{
-    AscPullQuerySpec, BootstrapConfig, FrontierHeadInfo,
+    AscPullQuerySpec, BootstrapConfig,
     state::{
         PriorityDownResult, QueryType, RunningQuery, VerifyResult,
         account_ack_processor::AccountAckProcessor,
@@ -28,14 +28,13 @@ pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
-    pub counters: BootstrapCounters,
     pub(crate) frontier_ack_processor_busy: bool,
     pub last_outdated_accounts: VecDeque<Account>,
     pub(crate) block_queue: BlockQueue,
     pub(crate) block_ack_stats: BlockAckStats,
     pub(crate) stopped: bool,
     account_ack_processor: AccountAckProcessor,
-    pub(crate) frontiers_processor: FrontiersProcessor,
+    pub frontiers_processor: FrontiersProcessor,
 }
 
 impl BootstrapLogic {
@@ -47,7 +46,6 @@ impl BootstrapLogic {
             candidate_accounts: CandidateAccounts::new(config.candidate_accounts.clone()),
             scoring,
             running_queries: RunningQueryContainer::default(),
-            counters: BootstrapCounters::default(),
             frontier_ack_processor_busy: false,
             last_outdated_accounts: VecDeque::new(),
             block_queue: BlockQueue::default(),
@@ -56,10 +54,6 @@ impl BootstrapLogic {
             account_ack_processor: Default::default(),
             frontiers_processor: FrontiersProcessor::new(config.frontier_scan.clone()),
         }
-    }
-
-    pub fn frontier_heads(&self) -> Vec<FrontierHeadInfo> {
-        self.frontiers_processor.heads()
     }
 
     pub fn next_blocking_query(&self, channel: &Arc<Channel>) -> Option<AscPullQuerySpec> {
@@ -174,8 +168,8 @@ impl BootstrapLogic {
     //********************************************************************************
 
     pub fn frontiers_processed(&mut self, outdated: &OutdatedAccounts) {
-        self.counters.received_frontiers += outdated.fontiers_received;
-        self.counters.outdated_accounts_found += outdated.accounts.len();
+        self.frontiers_processor.stats.processed_frontiers += outdated.frontiers_received as u64;
+        self.frontiers_processor.stats.outdated_accounts_found += outdated.accounts.len() as u64;
 
         for account in &outdated.accounts {
             // Use the lowest possible priority here
@@ -345,12 +339,6 @@ impl StatsSource for BlockAckStats {
     }
 }
 
-#[derive(Default, Clone)]
-pub struct BootstrapCounters {
-    pub received_frontiers: usize,
-    pub outdated_accounts_found: usize,
-}
-
 #[derive(Default, Debug, PartialEq, Eq)]
 pub struct OutdatedAccounts {
     pub accounts: Vec<Account>,
@@ -359,7 +347,7 @@ pub struct OutdatedAccounts {
     /// Accounts that don't exist but have pending blocks in the ledger
     pub pending: usize,
     /// Total count of received frontiers
-    pub fontiers_received: usize,
+    pub frontiers_received: usize,
 }
 
 #[cfg(test)]

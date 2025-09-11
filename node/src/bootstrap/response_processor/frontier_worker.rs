@@ -102,7 +102,7 @@ mod tests {
             guard.candidate_accounts.priority(&account),
             CandidateAccounts::PRIORITY_CUTOFF
         );
-        assert_eq!(guard.counters.outdated_accounts_found, 1);
-        assert_eq!(guard.counters.received_frontiers, 1);
+        assert_eq!(guard.frontiers_processor.stats.outdated_accounts_found, 1);
+        assert_eq!(guard.frontiers_processor.stats.processed_frontiers, 1);
     }
 }

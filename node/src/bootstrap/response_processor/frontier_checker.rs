@@ -59,7 +59,7 @@ impl<'a> FrontierChecker<'a> {
             accounts,
             outdated,
             pending,
-            fontiers_received: frontiers.len(),
+            frontiers_received: frontiers.len(),
         }
     }
 
@@ -121,7 +121,7 @@ mod tests {
                 accounts: Vec::new(),
                 outdated: 0,
                 pending: 0,
-                fontiers_received: 1,
+                frontiers_received: 1,
             },
         );
     }
@@ -138,7 +138,7 @@ mod tests {
             accounts: vec![account],
             outdated: 1,
             pending: 0,
-            fontiers_received: 1,
+            frontiers_received: 1,
         };
         assert_frontier_check(ledger, &frontiers, expected);
     }
@@ -154,7 +154,7 @@ mod tests {
             accounts: Vec::new(),
             outdated: 0,
             pending: 0,
-            fontiers_received: 1,
+            frontiers_received: 1,
         };
         assert_frontier_check(ledger, &[frontier], expected);
     }
@@ -171,7 +171,7 @@ mod tests {
             accounts: vec![account],
             outdated: 0,
             pending: 1,
-            fontiers_received: 1,
+            frontiers_received: 1,
         };
         assert_frontier_check(ledger, &frontiers, expected);
     }
@@ -192,7 +192,7 @@ mod tests {
             accounts: Vec::new(),
             outdated: 0,
             pending: 0,
-            fontiers_received: 1,
+            frontiers_received: 1,
         };
         assert_frontier_check(ledger, &frontiers, expected);
     }
@@ -208,7 +208,7 @@ mod tests {
             accounts: Vec::new(),
             outdated: 0,
             pending: 0,
-            fontiers_received: 1,
+            frontiers_received: 1,
         };
         assert_frontier_check(ledger, &frontiers, expected);
     }
@@ -224,7 +224,7 @@ mod tests {
             accounts: Vec::new(),
             outdated: 0,
             pending: 0,
-            fontiers_received: 1,
+            frontiers_received: 1,
         };
         assert_frontier_check(ledger, &frontiers, expected);
     }
