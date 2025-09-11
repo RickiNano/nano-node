@@ -1,43 +1,41 @@
 use std::{collections::VecDeque, sync::Arc, time::Duration};
+use tracing::trace;
 
 use rsnano_messages::{AscPullAck, AscPullAckType, AscPullReqType, BlocksAckPayload};
 use rsnano_network::{Channel, ChannelId};
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Account, BlockHash, Frontier};
 use rsnano_utils::{
-    container_info::ContainerInfo,
+    container_info::{ContainerInfo, ContainerInfoProvider},
     stats::{StatsCollection, StatsSource},
 };
 
 use super::{
-    CandidateAccounts, FrontierScan, PeerScoring, PriorityResult, RunningQueryContainer,
+    CandidateAccounts, PeerScoring, PriorityResult, RunningQueryContainer,
     running_query::QuerySource,
 };
 use crate::bootstrap::{
-    AscPullQuerySpec, BootstrapConfig,
+    AscPullQuerySpec, BootstrapConfig, FrontierHeadInfo,
     state::{
         PriorityDownResult, QueryType, RunningQuery, VerifyResult,
         account_ack_processor::AccountAckProcessor,
         block_queue::{AccountBlocks, BlockQueue},
+        frontiers_processor::FrontiersProcessor,
     },
 };
-use tracing::trace;
 
 pub struct BootstrapLogic {
     pub candidate_accounts: CandidateAccounts,
     pub(crate) scoring: PeerScoring,
     pub(crate) running_queries: RunningQueryContainer,
-    pub frontier_scan: FrontierScan,
-    /// Frontiers that were received from other nodes and that we need to check against our ledger
-    pub(crate) frontiers_to_check: VecDeque<Vec<Frontier>>,
     pub counters: BootstrapCounters,
     pub(crate) frontier_ack_processor_busy: bool,
     pub last_outdated_accounts: VecDeque<Account>,
     pub(crate) block_queue: BlockQueue,
-    pub(crate) frontiers_stats: FrontiersStats,
     pub(crate) block_ack_stats: BlockAckStats,
     pub(crate) stopped: bool,
     account_ack_processor: AccountAckProcessor,
+    pub(crate) frontiers_processor: FrontiersProcessor,
 }
 
 impl BootstrapLogic {
@@ -48,18 +46,20 @@ impl BootstrapLogic {
         Self {
             candidate_accounts: CandidateAccounts::new(config.candidate_accounts.clone()),
             scoring,
-            frontier_scan: FrontierScan::new(config.frontier_scan.clone()),
-            frontiers_to_check: VecDeque::new(),
             running_queries: RunningQueryContainer::default(),
             counters: BootstrapCounters::default(),
             frontier_ack_processor_busy: false,
             last_outdated_accounts: VecDeque::new(),
             block_queue: BlockQueue::default(),
-            frontiers_stats: Default::default(),
             block_ack_stats: Default::default(),
             stopped: false,
             account_ack_processor: Default::default(),
+            frontiers_processor: FrontiersProcessor::new(config.frontier_scan.clone()),
         }
+    }
+
+    pub fn frontier_heads(&self) -> Vec<FrontierHeadInfo> {
+        self.frontiers_processor.heads()
     }
 
     pub fn next_blocking_query(&self, channel: &Arc<Channel>) -> Option<AscPullQuerySpec> {
@@ -111,6 +111,14 @@ impl BootstrapLogic {
             .next_blocking(|hash| self.count_queries_by_hash(hash, QuerySource::Dependencies) == 0)
     }
 
+    pub fn next_frontier_scan_start(&mut self, now: Timestamp) -> Account {
+        self.frontiers_processor.next(now)
+    }
+
+    pub fn pop_frontiers_to_check(&mut self) -> Option<Vec<Frontier>> {
+        self.frontiers_processor.pop_frontiers_to_check()
+    }
+
     fn take_running_query_for(
         &mut self,
         response: &AscPullAck,
@@ -150,7 +158,9 @@ impl BootstrapLogic {
                 self.account_ack_processor
                     .process(&mut self.candidate_accounts, query, &info)
             }
-            AscPullAckType::Frontiers(frontiers) => self.process_frontiers(query, frontiers),
+            AscPullAckType::Frontiers(frontiers) => {
+                self.frontiers_processor.process(query, frontiers)
+            }
         };
 
         if ok {
@@ -181,31 +191,6 @@ impl BootstrapLogic {
 
     pub fn set_frontier_checker_overfill(&mut self, overfill: bool) {
         self.frontier_ack_processor_busy = overfill;
-    }
-
-    /// Returns true if the frontiers were valid
-    fn process_frontiers(&mut self, query: &RunningQuery, frontiers: Vec<Frontier>) -> bool {
-        self.frontiers_stats.processed += 1;
-
-        let valid_frontiers = match query.verify_frontiers(&frontiers) {
-            VerifyResult::Ok => {
-                self.frontiers_stats.verified += 1;
-                self.frontiers_stats.frontiers += frontiers.len() as u64;
-                self.frontier_scan.process(query.start.into(), &frontiers);
-                self.frontiers_to_check.push_back(frontiers);
-                true
-            }
-            VerifyResult::NothingNew => {
-                self.frontiers_stats.nothing_new += 1;
-                // OK, but nothing to do
-                true
-            }
-            VerifyResult::Invalid => {
-                self.frontiers_stats.invalid += 1;
-                false
-            }
-        };
-        valid_frontiers
     }
 
     // block ack handling:
@@ -286,7 +271,7 @@ impl BootstrapLogic {
                 RunningQueryContainer::ELEMENT_SIZE,
             )
             .node("accounts", self.candidate_accounts.container_info())
-            .node("frontiers", self.frontier_scan.container_info())
+            .node("frontiers", self.frontiers_processor.container_info())
             .node("peers", self.scoring.container_info())
             .finish()
     }
@@ -300,9 +285,8 @@ impl Default for BootstrapLogic {
 
 impl StatsSource for BootstrapLogic {
     fn collect_stats(&self, result: &mut StatsCollection) {
-        self.frontiers_stats.collect_stats(result);
+        self.frontiers_processor.collect_stats(result);
         self.account_ack_processor.collect_stats(result);
-        self.frontiers_stats.collect_stats(result);
         self.block_ack_stats.collect_stats(result);
     }
 }
@@ -325,29 +309,6 @@ impl ProcessInfo {
             query_type: query.query_type,
             response_time: query.sent.elapsed(now),
         }
-    }
-}
-
-#[derive(Default)]
-pub(crate) struct FrontiersStats {
-    pub(crate) processed: u64,
-    pub(crate) verified: u64,
-    pub(crate) nothing_new: u64,
-    pub(crate) invalid: u64,
-    pub(crate) frontiers: u64,
-}
-
-impl StatsSource for FrontiersStats {
-    fn collect_stats(&self, result: &mut StatsCollection) {
-        result.insert("bootstrap_process", "frontiers", self.processed);
-        result.insert("bootstrap_verify_frontiers", "ok", self.verified);
-        result.insert(
-            "bootstrap_verify_frontiers",
-            "nothing_new",
-            self.nothing_new,
-        );
-        result.insert("bootstrap_verify_frontiers", "invalid", self.invalid);
-        result.insert("bootstrap", "frontiers", self.frontiers);
     }
 }
 
@@ -405,63 +366,6 @@ pub struct OutdatedAccounts {
 mod tests {
     use super::*;
     use crate::bootstrap::state::QueryType;
-
-    mod frontiers {
-        use super::*;
-
-        #[test]
-        fn empty_frontiers() {
-            let mut logic = BootstrapLogic::default();
-            let query = running_query();
-
-            let success = logic.process_frontiers(&query, Vec::new());
-
-            assert!(success);
-            assert_eq!(logic.frontiers_stats.processed, 1);
-            assert_eq!(logic.frontiers_stats.verified, 0);
-            assert_eq!(logic.frontiers_stats.nothing_new, 1);
-        }
-
-        #[test]
-        fn update_account_ranges() {
-            let mut logic = BootstrapLogic::default();
-            let query = running_query();
-
-            let success = logic.process_frontiers(&query, vec![Frontier::new_test_instance()]);
-
-            assert!(success);
-            assert_eq!(logic.frontier_scan.total_requests_completed(), 1);
-            assert_eq!(logic.frontiers_stats.processed, 1);
-            assert_eq!(logic.frontiers_stats.verified, 1);
-        }
-
-        #[test]
-        fn invalid_frontiers() {
-            let mut logic = BootstrapLogic::default();
-            let query = running_query();
-
-            let frontiers = vec![
-                Frontier::new(3.into(), 100.into()),
-                Frontier::new(1.into(), 200.into()), // descending order is invalid!
-            ];
-
-            let success = logic.process_frontiers(&query, frontiers);
-
-            assert!(!success);
-            assert_eq!(logic.frontier_scan.total_requests_completed(), 0);
-            assert_eq!(logic.frontiers_stats.processed, 1);
-            assert_eq!(logic.frontiers_stats.invalid, 1);
-        }
-
-        fn running_query() -> RunningQuery {
-            RunningQuery {
-                source: QuerySource::Frontiers,
-                query_type: QueryType::Frontiers,
-                start: 1.into(),
-                ..RunningQuery::new_test_instance()
-            }
-        }
-    }
 
     mod block_ack {
         use super::*;

@@ -3,6 +3,7 @@ pub(crate) mod block_queue;
 pub(crate) mod bootstrap_logic;
 mod candidate_accounts;
 mod frontier_scan;
+mod frontiers_processor;
 mod peer_scoring;
 mod running_query;
 mod running_query_container;

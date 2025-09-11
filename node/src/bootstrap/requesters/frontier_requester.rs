@@ -104,7 +104,7 @@ impl BootstrapPromise<AscPullQuerySpec> for FrontierRequester {
             },
             FrontierState::WaitFrontier(ref channel) => {
                 let now = self.clock.now();
-                let start = context.logic.frontier_scan.next(now);
+                let start = context.logic.next_frontier_scan_start(now);
                 if !start.is_zero() {
                     self.stats
                         .inc(StatType::BootstrapNext, DetailType::NextFrontier);
@@ -245,7 +245,7 @@ mod tests {
         let (mut requester, network) = create_test_requester();
         let mut state = BootstrapLogic::default();
         network.write().unwrap().add_test_channel();
-        state.frontier_scan = FrontierScan::new_test_instance_blocked();
+        state.frontiers_processor.frontier_scan = FrontierScan::new_test_instance_blocked();
 
         let result = progress_state(&mut requester, &mut state);
 

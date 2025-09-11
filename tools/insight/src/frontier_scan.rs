@@ -20,7 +20,7 @@ pub(crate) struct FrontierScanInfo {
 impl FrontierScanInfo {
     pub(crate) fn update(&mut self, state: &BootstrapLogic, now: Timestamp) {
         self.update_counters(&state.counters, now);
-        self.frontier_heads = state.frontier_scan.heads();
+        self.frontier_heads = state.frontier_heads();
         self.outdated_accounts = state.last_outdated_accounts.clone();
     }
 

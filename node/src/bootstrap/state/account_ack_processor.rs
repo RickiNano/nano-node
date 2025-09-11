@@ -6,7 +6,7 @@ use crate::bootstrap::state::{CandidateAccounts, RunningQuery};
 
 #[derive(Default)]
 pub(super) struct AccountAckProcessor {
-    pub stats: AccountAckStats,
+    stats: AccountAckStats,
 }
 
 impl AccountAckProcessor {
