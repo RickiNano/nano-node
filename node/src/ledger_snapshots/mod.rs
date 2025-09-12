@@ -12,7 +12,9 @@ use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
-use crate::ledger_snapshots::tally::{ConsensusParams, has_quantitative_quorum};
+use crate::ledger_snapshots::tally::{
+    ConsensusParams, find_winner_proposal, has_quantitative_quorum,
+};
 use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
 
@@ -176,14 +178,19 @@ impl LedgerSnapshots {
     }
 
     pub fn receive_proposal_vote(&self, proposal_vote: ProposalVote) {
-        self.receive_proposal_vote_listener.emit(proposal_vote.clone());
+        self.receive_proposal_vote_listener
+            .emit(proposal_vote.clone());
 
         let (rep_weights, quorum_weight) = self.get_consensus_info();
         let mut consensus_params = self.consensus_params.lock().unwrap();
         consensus_params.set_rep_weights(rep_weights, quorum_weight);
 
-        let mut proposal_vote_aggregator = self.proposal_vote_aggregator.lock().unwrap();
-        proposal_vote_aggregator.add(proposal_vote);
+        let mut vote_aggregator = self.proposal_vote_aggregator.lock().unwrap();
+        vote_aggregator.add(proposal_vote);
+
+        if let Some(winner) = find_winner_proposal(&consensus_params, vote_aggregator.values()) {
+            tracing::warn!(proposal_hash=?winner, "Found a winner!");
+        }
     }
 }
 

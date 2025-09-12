@@ -210,6 +210,7 @@ impl NetworkMessageProcessor {
 
                 self.ledger_snapshots.receive_proposal(proposal);
             }
+            #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotProposalVote(proposal_vote) => {
                 use tracing::warn;
                 warn!("Snapshot proposal vote received");

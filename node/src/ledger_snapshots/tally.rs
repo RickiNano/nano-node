@@ -38,7 +38,10 @@ pub(crate) fn has_quantitative_quorum<T: Aggregatable>(
     weight >= params.quorum_weight
 }
 
-pub(crate) fn find_winner_proposal<'a>(params: &ConsensusParams, votes: impl IntoIterator<Item = &'a ProposalVote>) -> Option<ProposalHash> {
+pub(crate) fn find_winner_proposal<'a>(
+    params: &ConsensusParams,
+    votes: impl IntoIterator<Item = &'a ProposalVote>,
+) -> Option<ProposalHash> {
     let mut tallies: HashMap<ProposalHash, Amount> = HashMap::new();
 
     for vote in votes {
@@ -46,7 +49,10 @@ pub(crate) fn find_winner_proposal<'a>(params: &ConsensusParams, votes: impl Int
         *weight += params.rep_weights.weight(&vote.voter);
     }
 
-    tallies.into_iter().find(|(p, w)| *w >= params.quorum_weight).map(|(p, w)| p)
+    tallies
+        .into_iter()
+        .find(|(p, w)| *w >= params.quorum_weight)
+        .map(|(p, w)| p)
 }
 
 #[cfg(test)]
@@ -106,7 +112,10 @@ mod tests {
 
     #[test]
     fn a_winner_proposal_is_not_found_if_there_are_no_votes() {
-        assert_eq!(find_winner_proposal(&ConsensusParams::default(), vec![]), None);
+        assert_eq!(
+            find_winner_proposal(&ConsensusParams::default(), vec![]),
+            None
+        );
     }
 
     #[test]
@@ -117,7 +126,7 @@ mod tests {
         let mut rep_weights = RepWeights::new();
         rep_weights.insert(rep_key.public_key(), weight);
         params.set_rep_weights(rep_weights, Amount::MAX);
-        
+
         let proposal_hash = ProposalHash::from(1);
         let proposal_vote = ProposalVote::new(proposal_hash, &rep_key);
 
@@ -136,12 +145,15 @@ mod tests {
         rep_weights.insert(rep_key1.public_key(), weight);
         rep_weights.insert(rep_key2.public_key(), weight);
         params.set_rep_weights(rep_weights, weight * 2);
-        
+
         let proposal_hash = ProposalHash::from(1);
         let proposal_vote1 = ProposalVote::new(proposal_hash, &rep_key1);
         let proposal_vote2 = ProposalVote::new(proposal_hash, &rep_key2);
 
-        assert_eq!(find_winner_proposal(&params, &[proposal_vote1, proposal_vote2]), Some(proposal_hash));
+        assert_eq!(
+            find_winner_proposal(&params, &[proposal_vote1, proposal_vote2]),
+            Some(proposal_hash)
+        );
     }
 
     fn test_frontiers() -> Vec<(Account, BlockHash)> {

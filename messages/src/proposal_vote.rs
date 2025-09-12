@@ -1,6 +1,8 @@
 use crate::{Aggregatable, MessageVariant, ProposalHash};
 use bitvec::prelude::BitArray;
-use rsnano_types::{Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature};
+use rsnano_types::{
+    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProposalVote {
