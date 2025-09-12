@@ -3,7 +3,7 @@ mod aggregator;
 use std::sync::{Arc, Mutex};
 
 use rsnano_ledger::Ledger;
-use rsnano_messages::{Message, Preproposal, Proposal};
+use rsnano_messages::{Aggregatable, Message, Preproposal, Proposal, ProposalVote};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::PrivateKey;
@@ -23,6 +23,7 @@ pub struct LedgerSnapshots {
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
     preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
+    proposal_aggregator: Mutex<Aggregator<Proposal>>,
     online_reps: Arc<Mutex<OnlineReps>>,
 }
 
@@ -40,6 +41,7 @@ impl LedgerSnapshots {
             receive_preproposal_listener: OutputListenerMt::new(),
             receive_proposal_listener: OutputListenerMt::new(),
             preproposal_aggregator: Default::default(),
+            proposal_aggregator: Default::default(),
             online_reps,
         }
     }
@@ -77,12 +79,7 @@ impl LedgerSnapshots {
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
         self.receive_preproposal_listener.emit(preproposal.clone());
 
-        let (rep_weights, quorum_weight) = {
-            let online_reps = self.online_reps.lock().unwrap();
-            let rep_weights = online_reps.get_rep_weights();
-            let quorum_weight = online_reps.quorum_delta();
-            (rep_weights, quorum_weight)
-        };
+        let (rep_weights, quorum_weight) = self.get_consensus_info();
 
         let proposal = {
             let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
@@ -90,8 +87,10 @@ impl LedgerSnapshots {
             preproposal_aggregator.set_rep_weights(rep_weights, quorum_weight);
 
             if preproposal_aggregator.has_quorum() {
-                let proposal =
-                    Proposal::new(preproposal_aggregator.values(), &(self.get_private_key)().unwrap());
+                let proposal = Proposal::new(
+                    preproposal_aggregator.values(),
+                    &(self.get_private_key)().unwrap(),
+                );
                 Some(proposal)
             } else {
                 None
@@ -107,12 +106,34 @@ impl LedgerSnapshots {
         };
     }
 
+    fn get_consensus_info(&self) -> (rsnano_ledger::RepWeights, rsnano_types::Amount) {
+        let online_reps = self.online_reps.lock().unwrap();
+        let rep_weights = online_reps.get_rep_weights();
+        let quorum_weight = online_reps.quorum_delta();
+        (rep_weights, quorum_weight)
+    }
+
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
         self.receive_preproposal_listener.track()
     }
 
     pub fn receive_proposal(&self, proposal: Proposal) {
         self.receive_proposal_listener.emit(proposal.clone());
+
+        let (rep_weights, quorum_weight) = self.get_consensus_info();
+
+        let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
+            proposal_aggregator.add(proposal);
+
+        proposal_aggregator.set_rep_weights(rep_weights, quorum_weight);
+
+        if proposal_aggregator.has_quorum() {
+            self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
+                &Message::SnapshotProposalVote(ProposalVote::new(proposal_aggregator.values().next().unwrap().hash(), &(self.get_private_key)().unwrap())),
+                TrafficType::LedgerSnapshots,
+                0.0,
+            );
+        }
     }
 
     pub fn track_received_proposals(&self) -> Arc<OutputTrackerMt<Proposal>> {
@@ -125,7 +146,7 @@ mod tests {
     use super::*;
     use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
     use rsnano_ledger::RepWeights;
-    use rsnano_messages::{Aggregatable, Message};
+    use rsnano_messages::{Aggregatable, Message, ProposalVote};
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
     use rsnano_types::{AccountInfo, Amount, ConfirmationHeightInfo};
@@ -220,7 +241,7 @@ mod tests {
     }
 
     #[test]
-    fn rep_weights_are_initialized() {
+    fn a_received_preproposal_sets_the_rep_weights() {
         let fixture = Fixture::new();
         let snapshots = &fixture.snapshots;
         let preproposal = Preproposal::new_test_instance();
@@ -240,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn publish_proposal() {
+    fn publish_proposal_vote_when_quorum_of_preproposals_is_reached() {
         let mut rep_weights = RepWeights::new();
         let private_key = get_test_key().unwrap();
         let quorum_weight = Amount::nano(100_000);
@@ -260,7 +281,6 @@ mod tests {
             flood_events[0],
             FloodEvent {
                 message: Message::SnapshotProposal(expected_proposal),
-                // TODO: add new traffic type for snapshots
                 traffic_type: TrafficType::LedgerSnapshots,
                 scale: 0.0,
                 all_prs: true,
@@ -277,6 +297,71 @@ mod tests {
         let receive_events = fixture.receive_proposal_tracker.output();
         assert_eq!(receive_events.len(), 1, "Should receive proposal");
         assert_eq!(receive_events[0], proposal);
+    }
+
+    #[test]
+    fn a_received_proposal_is_added_to_the_proposal_aggregator() {
+        let fixture = Fixture::new();
+        let snapshots = &fixture.snapshots;
+        let proposal = Proposal::new_test_instance();
+
+        snapshots.receive_proposal(proposal.clone());
+
+        assert!(
+            snapshots
+                .proposal_aggregator
+                .lock()
+                .unwrap()
+                .contains(&proposal.hash())
+        );
+    }
+
+    #[test]
+    fn a_received_proposal_sets_the_rep_weights() {
+        let fixture = Fixture::new();
+        let snapshots = &fixture.snapshots;
+        let proposal = Proposal::new_test_instance();
+
+        snapshots.receive_proposal(proposal.clone());
+        let online_reps = snapshots.online_reps.lock().unwrap();
+        let proposal_aggregator = snapshots.proposal_aggregator.lock().unwrap();
+
+        assert_eq!(
+            proposal_aggregator.quorum_weight,
+            online_reps.quorum_delta()
+        );
+        assert_eq!(
+            proposal_aggregator.rep_weights,
+            online_reps.get_rep_weights()
+        );
+    }
+
+    #[test]
+    fn publish_proposal_vote_when_quorum_of_proposals_is_reached() {
+        let mut rep_weights = RepWeights::new();
+        let private_key = get_test_key().unwrap();
+        let quorum_weight = Amount::nano(100_000);
+
+        rep_weights.insert(private_key.public_key(), quorum_weight);
+        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+
+        let proposal = Proposal::new(vec![], &private_key);
+        fixture.snapshots.receive_proposal(proposal.clone());
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should flood the message");
+
+        let expected_proposal_vote = ProposalVote::new(proposal.hash(), &private_key);
+
+        assert_eq!(
+            flood_events[0],
+            FloodEvent {
+                message: Message::SnapshotProposalVote(expected_proposal_vote),
+                traffic_type: TrafficType::LedgerSnapshots,
+                scale: 0.0,
+                all_prs: true,
+            }
+        );
     }
 
     struct Fixture {
@@ -332,7 +417,7 @@ mod tests {
                 snapshots,
                 flood_tracker,
                 receive_preproposal_tracker,
-                receive_proposal_tracker
+                receive_proposal_tracker,
             }
         }
     }

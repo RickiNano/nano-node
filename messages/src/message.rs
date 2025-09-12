@@ -22,6 +22,8 @@ pub enum Message {
     SnapshotPreproposal(Preproposal),
     #[cfg(feature = "ledger_snapshots")]
     SnapshotProposal(Proposal),
+    #[cfg(feature = "ledger_snapshots")]
+    SnapshotProposalVote(ProposalVote),
 }
 
 pub trait MessageVariant {
@@ -95,6 +97,7 @@ impl From<&ParseMessageError> for DetailType {
             ParseMessageError::InvalidMessage(MessageType::Preproposal) => todo!(),
             #[cfg(feature = "ledger_snapshots")]
             ParseMessageError::InvalidMessage(MessageType::Proposal) => Self::InvalidMessageType,
+            ParseMessageError::InvalidMessage(MessageType::ProposalVote) => Self::InvalidMessageType,
             ParseMessageError::InvalidMessage(MessageType::Invalid)
             | ParseMessageError::InvalidMessage(MessageType::NotAType) => Self::InvalidMessageType,
             ParseMessageError::InvalidNetwork => Self::InvalidNetwork,
@@ -140,6 +143,8 @@ impl Message {
             Message::SnapshotPreproposal(_) => MessageType::Preproposal,
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotProposal(_) => MessageType::Proposal,
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotProposalVote(_) => MessageType::ProposalVote,
         }
     }
 
@@ -192,6 +197,8 @@ impl Message {
             Message::SnapshotPreproposal(m) => m.serialize(writer),
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotProposal(m) => m.serialize(writer),
+            #[cfg(feature = "ledger_snapshots")]
+            Message::SnapshotProposalVote(m) => todo!()
         }
     }
 
@@ -236,6 +243,8 @@ impl Message {
             }
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => Message::SnapshotProposal(Proposal::deserialize(payload)?),
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::ProposalVote => todo!(),
             MessageType::Invalid | MessageType::NotAType => {
                 return Err(DeserializationError::InvalidData);
             }

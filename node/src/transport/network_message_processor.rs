@@ -210,6 +210,8 @@ impl NetworkMessageProcessor {
 
                 self.ledger_snapshots.receive_proposal(proposal);
             }
+            Message::SnapshotProposalVote(proposal_vote) => {
+            }
         }
     }
 }
@@ -232,7 +234,7 @@ mod tests {
             Message::SnapshotPreproposal(preproposal.clone()),
             &Channel::new_test_instance().into(),
         );
-        
+
         assert_eq!(receive_preproposal_tracker.output(), vec![preproposal]);
     }
 
@@ -254,7 +256,9 @@ mod tests {
         assert_eq!(receive_proposal_tracker.output(), vec![proposal]);
     }
 
-    fn create_network_message_processor(ledger_snapshots: LedgerSnapshots) -> NetworkMessageProcessor {
+    fn create_network_message_processor(
+        ledger_snapshots: LedgerSnapshots,
+    ) -> NetworkMessageProcessor {
         NetworkMessageProcessor::new(
             Stats::default().into(),
             RwLock::new(Network::new_test_instance()).into(),

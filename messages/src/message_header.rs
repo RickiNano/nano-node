@@ -35,6 +35,8 @@ pub enum MessageType {
     Preproposal = 0x10,
     #[cfg(feature = "ledger_snapshots")]
     Proposal = 0x11,
+    #[cfg(feature = "ledger_snapshots")]
+    ProposalVote = 0x12,
 }
 
 impl MessageType {
@@ -59,13 +61,15 @@ impl MessageType {
             MessageType::Preproposal => "preproposal",
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => "proposal",
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::ProposalVote => "proposal_vote",
         }
     }
 
     pub const fn max_id() -> usize {
         #[cfg(feature = "ledger_snapshots")]
         {
-            Self::Proposal as usize
+            Self::ProposalVote as usize
         }
         #[cfg(not(feature = "ledger_snapshots"))]
         {
@@ -191,6 +195,8 @@ impl MessageHeader {
             MessageType::Preproposal => Preproposal::serialized_size(self.extensions),
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => Proposal::serialized_size(self.extensions),
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::ProposalVote => todo!(),
             MessageType::Invalid | MessageType::NotAType => {
                 debug_assert!(false);
                 0
@@ -254,6 +260,8 @@ impl From<MessageType> for DetailType {
             MessageType::Preproposal => DetailType::Preproposal,
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => DetailType::Proposal,
+            #[cfg(feature = "ledger_snapshots")]
+            MessageType::ProposalVote => todo!(),
         }
     }
 }

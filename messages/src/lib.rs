@@ -68,6 +68,11 @@ mod proposal;
 #[cfg(feature = "ledger_snapshots")]
 pub use proposal::*;
 
+#[cfg(feature = "ledger_snapshots")]
+mod proposal_vote;
+#[cfg(feature = "ledger_snapshots")]
+pub use proposal_vote::*;
+
 pub trait MessageVisitor {
     fn received(&mut self, message: &Message);
 }
