@@ -204,9 +204,11 @@ impl NetworkMessageProcessor {
                 self.ledger_snapshots.receive_preproposal(preproposal);
             }
             #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotProposal(_) => {
+            Message::SnapshotProposal(proposal) => {
                 use tracing::warn;
-                warn!("Snapshot proposal received")
+                warn!("Snapshot proposal received");
+
+                self.ledger_snapshots.receive_proposal(proposal);
             }
         }
     }
@@ -221,10 +223,39 @@ mod tests {
     fn preproposal_is_received() {
         use rsnano_messages::Preproposal;
 
-        let ledgner_snapshots = LedgerSnapshots::new_null();
-        let receive_preproposal_tracker = ledgner_snapshots.track_received_preproposals();
+        let ledger_snapshots = LedgerSnapshots::new_null();
+        let receive_preproposal_tracker = ledger_snapshots.track_received_preproposals();
+        let network_message_processor = create_network_message_processor(ledger_snapshots);
+        let preproposal = Preproposal::new_test_instance();
 
-        let network_message_processor = NetworkMessageProcessor::new(
+        network_message_processor.process(
+            Message::SnapshotPreproposal(preproposal.clone()),
+            &Channel::new_test_instance().into(),
+        );
+        
+        assert_eq!(receive_preproposal_tracker.output(), vec![preproposal]);
+    }
+
+    #[test]
+    #[cfg(feature = "ledger_snapshots")]
+    fn proposal_is_received() {
+        use rsnano_messages::Proposal;
+
+        let ledger_snapshots: LedgerSnapshots = LedgerSnapshots::new_null();
+        let receive_proposal_tracker = ledger_snapshots.track_received_proposals();
+        let network_message_processor = create_network_message_processor(ledger_snapshots);
+        let proposal = Proposal::new_test_instance();
+
+        network_message_processor.process(
+            Message::SnapshotProposal(proposal.clone()),
+            &Channel::new_test_instance().into(),
+        );
+
+        assert_eq!(receive_proposal_tracker.output(), vec![proposal]);
+    }
+
+    fn create_network_message_processor(ledger_snapshots: LedgerSnapshots) -> NetworkMessageProcessor {
+        NetworkMessageProcessor::new(
             Stats::default().into(),
             RwLock::new(Network::new_test_instance()).into(),
             NetworkFilter::default().into(),
@@ -236,14 +267,7 @@ mod tests {
             BootstrapServer::new_null().into(),
             Bootstrapper::new_null().into(),
             WorkThresholds::new_stub(),
-            ledgner_snapshots.into(),
-        );
-
-        let preproposal = Preproposal::new_test_instance();
-        network_message_processor.process(
-            Message::SnapshotPreproposal(preproposal.clone()),
-            &Channel::new_test_instance().into(),
-        );
-        assert_eq!(receive_preproposal_tracker.output(), vec![preproposal]);
+            ledger_snapshots.into(),
+        )
     }
 }

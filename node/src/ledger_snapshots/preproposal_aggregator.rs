@@ -1,6 +1,6 @@
 use rsnano_ledger::RepWeights;
-use rsnano_messages::{Preproposal, PreproposalHash, Proposal};
-use rsnano_types::{Amount, PrivateKey, PublicKey};
+use rsnano_messages::{Preproposal, PreproposalHash};
+use rsnano_types::{Amount, PublicKey};
 use std::collections::{HashMap, HashSet};
 
 pub(super) struct PreproposalAggregator {
@@ -60,8 +60,8 @@ impl PreproposalAggregator {
         preproposals_weight >= self.quorum_weight
     }
 
-    pub(crate) fn create_proposal(&self, private_key: &PrivateKey) -> Proposal {
-        Proposal::new(self.preproposals.values(), private_key)
+    pub(crate) fn values(&self) -> impl Iterator<Item = &Preproposal> {
+        self.preproposals.values()
     }
 }
 
@@ -143,42 +143,6 @@ mod tests {
         assert!(
             aggregator.contains(&preproposal1.hash()),
             "Should contain preproposal1"
-        );
-    }
-
-    #[test]
-    fn create_proposal() {
-        let rep_key1 = PrivateKey::from(1);
-        let rep_key2 = PrivateKey::from(2);
-
-        let mut rep_weights = RepWeights::new();
-        rep_weights.insert(rep_key1.public_key(), Amount::nano(100_000));
-        rep_weights.insert(rep_key2.public_key(), Amount::nano(200_000));
-
-        let mut aggregator = PreproposalAggregator::default();
-        aggregator.set_rep_weights(rep_weights, Amount::nano(300_000));
-
-        let preproposal1 = Preproposal::new(test_frontiers(), &rep_key1);
-        aggregator.add(preproposal1.clone());
-
-        let preproposal2 = Preproposal::new(test_frontiers(), &rep_key2);
-        aggregator.add(preproposal2.clone());
-
-        let proposal = aggregator.create_proposal(&rep_key1);
-
-        assert_eq!(
-            proposal.signer,
-            rep_key1.public_key(),
-            "Should be signed by rep_key1"
-        );
-        assert_eq!(proposal.preproposal_hashes.len(), 2, "prepropsal hashes");
-        assert!(
-            proposal.preproposal_hashes.contains(&preproposal1.hash()),
-            "Should contain preproposal1"
-        );
-        assert!(
-            proposal.preproposal_hashes.contains(&preproposal2.hash()),
-            "Should contain preproposal2"
         );
     }
 

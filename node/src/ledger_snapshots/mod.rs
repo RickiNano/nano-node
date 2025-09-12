@@ -3,7 +3,7 @@ mod preproposal_aggregator;
 use std::sync::{Arc, Mutex};
 
 use rsnano_ledger::Ledger;
-use rsnano_messages::{Message, Preproposal};
+use rsnano_messages::{Message, Preproposal, Proposal};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::PrivateKey;
@@ -21,6 +21,7 @@ pub struct LedgerSnapshots {
     get_private_key: Box<dyn Fn() -> Option<PrivateKey> + Send + Sync>,
     flooder: Mutex<MessageFlooder>,
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
+    receive_proposal_listener: OutputListenerMt<Proposal>,
     preproposal_aggregator: Mutex<PreproposalAggregator>,
     online_reps: Arc<Mutex<OnlineReps>>,
 }
@@ -37,6 +38,7 @@ impl LedgerSnapshots {
             get_private_key: Box::new(get_private_key),
             flooder: flooder.into(),
             receive_preproposal_listener: OutputListenerMt::new(),
+            receive_proposal_listener: OutputListenerMt::new(),
             preproposal_aggregator: Default::default(),
             online_reps,
         }
@@ -89,7 +91,7 @@ impl LedgerSnapshots {
 
             if preproposal_aggregator.has_quorum() {
                 let proposal =
-                    preproposal_aggregator.create_proposal(&(self.get_private_key)().unwrap());
+                    Proposal::new(preproposal_aggregator.values(), &(self.get_private_key)().unwrap());
                 Some(proposal)
             } else {
                 None
@@ -107,6 +109,14 @@ impl LedgerSnapshots {
 
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
         self.receive_preproposal_listener.track()
+    }
+
+    pub fn receive_proposal(&self, proposal: Proposal) {
+        self.receive_proposal_listener.emit(proposal.clone());
+    }
+
+    pub fn track_received_proposals(&self) -> Arc<OutputTrackerMt<Proposal>> {
+        self.receive_proposal_listener.track()
     }
 }
 
@@ -239,17 +249,12 @@ mod tests {
         let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
 
         let preproposal = Preproposal::new(vec![], &private_key);
-        fixture.snapshots.receive_preproposal(preproposal);
+        fixture.snapshots.receive_preproposal(preproposal.clone());
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_proposal = fixture
-            .snapshots
-            .preproposal_aggregator
-            .lock()
-            .unwrap()
-            .create_proposal(&private_key);
+        let expected_proposal = Proposal::new(&[preproposal], &private_key);
 
         assert_eq!(
             flood_events[0],
@@ -263,10 +268,22 @@ mod tests {
         );
     }
 
+    #[test]
+    fn receive_proposal_listener() {
+        let fixture = Fixture::new();
+        let proposal = Proposal::new_test_instance();
+        fixture.snapshots.receive_proposal(proposal.clone());
+
+        let receive_events = fixture.receive_proposal_tracker.output();
+        assert_eq!(receive_events.len(), 1, "Should receive proposal");
+        assert_eq!(receive_events[0], proposal);
+    }
+
     struct Fixture {
         snapshots: LedgerSnapshots,
         flood_tracker: Arc<OutputTrackerMt<FloodEvent>>,
         receive_preproposal_tracker: Arc<OutputTrackerMt<Preproposal>>,
+        receive_proposal_tracker: Arc<OutputTrackerMt<Proposal>>,
     }
 
     impl Fixture {
@@ -309,11 +326,13 @@ mod tests {
                 LedgerSnapshots::new(ledger.clone(), get_test_key, flooder, online_reps);
 
             let receive_preproposal_tracker = snapshots.track_received_preproposals();
+            let receive_proposal_tracker = snapshots.track_received_proposals();
 
             Self {
                 snapshots,
                 flood_tracker,
                 receive_preproposal_tracker,
+                receive_proposal_tracker
             }
         }
     }
