@@ -1,38 +1,70 @@
-use rsnano_types::{PrivateKey, PublicKey, Signature};
-use crate::ProposalHash;
+use crate::{MessageVariant, ProposalHash};
+use bitvec::prelude::BitArray;
+use rsnano_types::{DeserializationError, PrivateKey, PublicKey, Signature};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProposalVote {
     pub voter: PublicKey,
     pub signature: Signature,
-    pub hash: ProposalHash,
+    pub proposal_hash: ProposalHash,
 }
 
 impl ProposalVote {
-    pub fn new(hash: ProposalHash, private_key: &PrivateKey) -> Self {
+    pub fn new(proposal_hash: ProposalHash, private_key: &PrivateKey) -> Self {
         let mut proposal_vote = Self {
-            hash,
+            proposal_hash,
             voter: private_key.public_key(),
             signature: Signature::default(),
         };
 
-        proposal_vote.signature = private_key.sign(hash.as_bytes());
+        proposal_vote.signature = private_key.sign(proposal_hash.as_bytes());
 
         proposal_vote
     }
 
     pub fn new_test_instance() -> Self {
         Self {
-            hash: ProposalHash::from(1),
+            proposal_hash: ProposalHash::from(1),
             voter: PublicKey::from(2),
             signature: Signature::from_bytes([1; 64]),
         }
     }
+
+    pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
+    where
+        T: std::io::Write,
+    {
+        self.voter.serialize(writer)?;
+        self.signature.serialize(writer)?;
+        self.proposal_hash.serialize(writer)
+    }
+
+    pub(crate) fn serialized_size(extensions: BitArray<u16>) -> usize {
+        extensions.data as usize
+    }
+
+    pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let voter = PublicKey::deserialize(&mut bytes)?;
+        let signature = Signature::deserialize(&mut bytes)?;
+        let proposal_hash = ProposalHash::deserialize(&mut bytes)?;
+        Ok(Self {
+            voter,
+            signature,
+            proposal_hash,
+        })
+    }
 }
 
+impl MessageVariant for ProposalVote {
+    fn header_extensions(&self, payload_len: u16) -> BitArray<u16> {
+        BitArray::new(payload_len)
+    }
+}
+
+#[cfg(test)]
 mod tests {
-    use rsnano_types::PrivateKey;
-    use crate::{Aggregatable, Proposal, ProposalVote};
+    use super::*;
+    use crate::{Aggregatable, Message, Proposal, ProposalVote, assert_deserializable};
 
     #[test]
     fn sign_new_proposal_vote() {
@@ -42,11 +74,18 @@ mod tests {
         let proposal_vote = ProposalVote::new(proposal.hash(), &private_key);
 
         assert_eq!(proposal_vote.voter, private_key.public_key());
-        assert_eq!(proposal_vote.hash, proposal.hash());
+        assert_eq!(proposal_vote.proposal_hash, proposal.hash());
 
-        let result = proposal_vote
-            .voter
-            .verify(proposal_vote.hash.as_bytes(), &proposal_vote.signature);
+        let result = proposal_vote.voter.verify(
+            proposal_vote.proposal_hash.as_bytes(),
+            &proposal_vote.signature,
+        );
         assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn proposal_vote_message_is_serializable() {
+        let message = Message::SnapshotProposalVote(ProposalVote::new_test_instance());
+        assert_deserializable(&message);
     }
 }

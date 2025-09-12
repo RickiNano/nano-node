@@ -1,4 +1,4 @@
-use std::sync::{atomic::Ordering, Arc, Mutex, RwLock, Weak};
+use std::sync::{Arc, Mutex, RwLock, Weak, atomic::Ordering};
 
 use tracing::{debug, warn};
 

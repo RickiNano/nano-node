@@ -123,13 +123,16 @@ impl LedgerSnapshots {
         let (rep_weights, quorum_weight) = self.get_consensus_info();
 
         let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
-            proposal_aggregator.add(proposal);
+        proposal_aggregator.add(proposal);
 
         proposal_aggregator.set_rep_weights(rep_weights, quorum_weight);
 
         if proposal_aggregator.has_quorum() {
             self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
-                &Message::SnapshotProposalVote(ProposalVote::new(proposal_aggregator.values().next().unwrap().hash(), &(self.get_private_key)().unwrap())),
+                &Message::SnapshotProposalVote(ProposalVote::new(
+                    proposal_aggregator.values().next().unwrap().hash(),
+                    &(self.get_private_key)().unwrap(),
+                )),
                 TrafficType::LedgerSnapshots,
                 0.0,
             );

@@ -196,7 +196,7 @@ impl MessageHeader {
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => Proposal::serialized_size(self.extensions),
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::ProposalVote => todo!(),
+            MessageType::ProposalVote => ProposalVote::serialized_size(self.extensions),
             MessageType::Invalid | MessageType::NotAType => {
                 debug_assert!(false);
                 0
@@ -261,7 +261,7 @@ impl From<MessageType> for DetailType {
             #[cfg(feature = "ledger_snapshots")]
             MessageType::Proposal => DetailType::Proposal,
             #[cfg(feature = "ledger_snapshots")]
-            MessageType::ProposalVote => todo!(),
+            MessageType::ProposalVote => DetailType::ProposalVote,
         }
     }
 }

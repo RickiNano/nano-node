@@ -210,8 +210,7 @@ impl NetworkMessageProcessor {
 
                 self.ledger_snapshots.receive_proposal(proposal);
             }
-            Message::SnapshotProposalVote(proposal_vote) => {
-            }
+            Message::SnapshotProposalVote(proposal_vote) => {}
         }
     }
 }
