@@ -1,7 +1,8 @@
-use rsnano_node::config::NodeConfig;
+use rsnano_messages::MessageType;
+use rsnano_node::{config::NodeConfig, Node};
 use rsnano_types::{Amount, DEV_GENESIS_KEY};
-use rsnano_utils::stats::{DetailType, Direction, StatType};
-use test_helpers::{System, assert_timely_eq2, assert_timely2, setup_rep};
+use rsnano_utils::stats::{Direction, StatType};
+use test_helpers::{assert_timely2, assert_timely_eq2, setup_rep, System};
 
 #[test]
 fn publish_preproposal_integration_test() {
@@ -27,58 +28,41 @@ fn publish_preproposal_integration_test() {
     let rep2_key = setup_rep(&node2, amount_pr, &DEV_GENESIS_KEY);
     node2.insert_into_wallet(&rep2_key);
 
+    assert_peered_principal_reps(&node1, 2);
+    assert_peered_principal_reps(&node2, 2);
+
+    node1.ledger_snapshots.publish_preproposal();
+
+    assert_message_received(&node1, MessageType::Preproposal, 1);
+    assert_message_received(&node2, MessageType::Preproposal, 1);
+
+    assert_message_received(&node1, MessageType::Proposal, 2);
+    assert_message_received(&node2, MessageType::Proposal, 2);
+
+    assert_message_received(&node1, MessageType::ProposalVote, 2);
+    assert_message_received(&node2, MessageType::ProposalVote, 2);
+}
+
+// Helper functions:
+// -----------------------------------------------------------------------------
+
+fn assert_peered_principal_reps(node: &Node, expected_rep_count: usize) {
     assert_timely2(|| {
-        node1
-            .online_reps
+        node.online_reps
             .lock()
             .unwrap()
             .peered_principal_reps()
             .len()
-            == 2
-            && node2
-                .online_reps
-                .lock()
-                .unwrap()
-                .peered_principal_reps()
-                .len()
-                == 2
+            == expected_rep_count
     });
+}
 
-    node1.ledger_snapshots.publish_preproposal();
-
+fn assert_message_received(node: &Node, message_type: MessageType, count: usize) {
     assert_timely_eq2(
         || {
-            node2
-                .stats
-                .count(StatType::Message, DetailType::Preproposal, Direction::In)
+            node.stats
+                .count(StatType::Message, message_type.into(), Direction::In) as usize
         },
-        1,
-    );
-
-    assert_timely_eq2(
-        || {
-            node1
-                .stats
-                .count(StatType::Message, DetailType::Preproposal, Direction::In)
-        },
-        1,
-    );
-
-    assert_timely_eq2(
-        || {
-            node2
-                .stats
-                .count(StatType::Message, DetailType::Proposal, Direction::In)
-        },
-        2,
-    );
-
-    assert_timely_eq2(
-        || {
-            node1
-                .stats
-                .count(StatType::Message, DetailType::Proposal, Direction::In)
-        },
-        2,
+        count,
     );
 }

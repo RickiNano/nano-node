@@ -1,5 +1,6 @@
 mod aggregator;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use rsnano_ledger::Ledger;
@@ -25,6 +26,7 @@ pub struct LedgerSnapshots {
     preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
     proposal_aggregator: Mutex<Aggregator<Proposal>>,
     online_reps: Arc<Mutex<OnlineReps>>,
+    proposal_voted: AtomicBool,
 }
 
 impl LedgerSnapshots {
@@ -43,6 +45,7 @@ impl LedgerSnapshots {
             preproposal_aggregator: Default::default(),
             proposal_aggregator: Default::default(),
             online_reps,
+            proposal_voted: AtomicBool::new(false)
         }
     }
 
@@ -127,16 +130,23 @@ impl LedgerSnapshots {
 
         proposal_aggregator.set_rep_weights(rep_weights, quorum_weight);
 
-        if proposal_aggregator.has_quorum() {
-            self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
-                &Message::SnapshotProposalVote(ProposalVote::new(
-                    proposal_aggregator.values().next().unwrap().hash(),
-                    &(self.get_private_key)().unwrap(),
-                )),
-                TrafficType::LedgerSnapshots,
-                0.0,
-            );
+        if proposal_aggregator.has_quorum() && !self.proposal_voted.load(Ordering::SeqCst) {
+            if let Some(proposal_vote) = LedgerSnapshots::create_proposal_vote(&proposal_aggregator,&(self.get_private_key)().unwrap()) {
+                self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
+                    &Message::SnapshotProposalVote(proposal_vote),
+                    TrafficType::LedgerSnapshots,
+                    0.0,
+                );
+                self.proposal_voted.store(true, Ordering::SeqCst);
+            }
         }
+    }
+
+    fn create_proposal_vote(proposal_aggregator: &Aggregator<Proposal>, private_key: &PrivateKey) -> Option<ProposalVote> {
+        Some(ProposalVote::new(
+            proposal_aggregator.values().map(|p| p.hash()).max()?,
+            private_key
+        ))
     }
 
     pub fn track_received_proposals(&self) -> Arc<OutputTrackerMt<Proposal>> {
@@ -234,13 +244,11 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
 
-        assert!(
-            snapshots
-                .preproposal_aggregator
-                .lock()
-                .unwrap()
-                .contains(&preproposal.hash())
-        );
+        assert!(snapshots
+            .preproposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&preproposal.hash()));
     }
 
     #[test]
@@ -310,13 +318,11 @@ mod tests {
 
         snapshots.receive_proposal(proposal.clone());
 
-        assert!(
-            snapshots
-                .proposal_aggregator
-                .lock()
-                .unwrap()
-                .contains(&proposal.hash())
-        );
+        assert!(snapshots
+            .proposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&proposal.hash()));
     }
 
     #[test]
@@ -365,6 +371,44 @@ mod tests {
                 all_prs: true,
             }
         );
+    }
+
+    #[test]
+    fn publish_proposal_vote_only_once() {
+        let mut rep_weights = RepWeights::new();
+        let private_key = get_test_key().unwrap();
+        let quorum_weight = Amount::nano(100_000);
+        rep_weights.insert(private_key.public_key(), quorum_weight);
+
+        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+
+        let proposal1 = Proposal::new(vec![], &private_key);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2));
+        fixture.snapshots.receive_proposal(proposal1.clone());
+        fixture.snapshots.receive_proposal(proposal2);
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should flood only one vote message");
+    }
+
+    #[test]
+    fn vote_for_proposal_with_highest_hash() {
+        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1));
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2));
+        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3));
+        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4));
+
+        let highest_hash = [proposal1.hash(), proposal2.hash(), proposal3.hash(), proposal4.hash()].into_iter().max().unwrap();
+        
+        let mut proposal_aggregator = Aggregator::<Proposal>::default();
+        proposal_aggregator.add(proposal1);
+        proposal_aggregator.add(proposal2);
+        proposal_aggregator.add(proposal3);
+        proposal_aggregator.add(proposal4);
+
+        let proposal_vote = LedgerSnapshots::create_proposal_vote(&proposal_aggregator, &PrivateKey::from(5));
+
+        assert_eq!(proposal_vote.unwrap().proposal_hash, highest_hash);
     }
 
     struct Fixture {
