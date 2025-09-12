@@ -1,4 +1,4 @@
-use crate::{MessageVariant, Preproposal, PreproposalHash};
+use crate::{Aggregatable, MessageVariant, Preproposal, PreproposalHash};
 use bitvec::array::BitArray;
 use rsnano_types::{
     Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
@@ -56,15 +56,6 @@ impl Proposal {
         hash_builder.build()
     }
 
-    pub fn hash(&self) -> ProposalHash {
-        let preproposals_hash = self.preproposals_hash();
-        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
-        hash_builder = hash_builder
-            .update(preproposals_hash.as_bytes())
-            .update(self.signer.as_bytes());
-        hash_builder.build()
-    }
-
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
@@ -102,6 +93,21 @@ impl Proposal {
 impl MessageVariant for Proposal {
     fn header_extensions(&self, payload_len: u16) -> BitArray<u16> {
         BitArray::new(payload_len)
+    }
+}
+
+impl Aggregatable for Proposal {
+    fn signer(&self) -> PublicKey {
+        self.signer
+    }
+
+    fn hash(&self) -> Blake2Hash {
+        let preproposals_hash = self.preproposals_hash();
+        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
+        hash_builder = hash_builder
+            .update(preproposals_hash.as_bytes())
+            .update(self.signer.as_bytes());
+        hash_builder.build()
     }
 }
 

@@ -1,4 +1,4 @@
-mod preproposal_aggregator;
+mod aggregator;
 
 use std::sync::{Arc, Mutex};
 
@@ -9,7 +9,7 @@ use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
 
-use crate::ledger_snapshots::preproposal_aggregator::PreproposalAggregator;
+use crate::ledger_snapshots::aggregator::Aggregator;
 use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
 
@@ -22,7 +22,7 @@ pub struct LedgerSnapshots {
     flooder: Mutex<MessageFlooder>,
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
-    preproposal_aggregator: Mutex<PreproposalAggregator>,
+    preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
     online_reps: Arc<Mutex<OnlineReps>>,
 }
 
@@ -125,7 +125,7 @@ mod tests {
     use super::*;
     use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
     use rsnano_ledger::RepWeights;
-    use rsnano_messages::Message;
+    use rsnano_messages::{Aggregatable, Message};
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
     use rsnano_types::{AccountInfo, Amount, ConfirmationHeightInfo};

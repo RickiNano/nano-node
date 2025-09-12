@@ -1,4 +1,4 @@
-use crate::MessageVariant;
+use crate::{Aggregatable, MessageVariant};
 use bitvec::prelude::BitArray;
 use rsnano_types::DeserializationError;
 use rsnano_types::{
@@ -58,15 +58,6 @@ impl Preproposal {
         hash_builder.build()
     }
 
-    pub fn hash(&self) -> PreproposalHash {
-        let frontiers_hash = self.frontiers_hash();
-        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
-        hash_builder = hash_builder
-            .update(frontiers_hash.as_bytes())
-            .update(self.signer.as_bytes());
-        hash_builder.build()
-    }
-
     pub fn serialize<T>(&self, writer: &mut T) -> std::io::Result<()>
     where
         T: std::io::Write,
@@ -106,6 +97,21 @@ impl Preproposal {
 impl MessageVariant for Preproposal {
     fn header_extensions(&self, payload_len: u16) -> BitArray<u16> {
         BitArray::new(payload_len)
+    }
+}
+
+impl Aggregatable for Preproposal {
+    fn signer(&self) -> PublicKey {
+        self.signer
+    }
+
+    fn hash(&self) -> Blake2Hash {
+        let frontiers_hash = self.frontiers_hash();
+        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
+        hash_builder = hash_builder
+            .update(frontiers_hash.as_bytes())
+            .update(self.signer.as_bytes());
+        hash_builder.build()
     }
 }
 

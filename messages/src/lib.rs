@@ -49,6 +49,7 @@ mod bulk_pull_account;
 pub use bulk_pull_account::*;
 
 mod telemetry_ack;
+use rsnano_types::{Blake2Hash, PublicKey};
 pub use telemetry_ack::*;
 
 mod asc_pull_req;
@@ -69,6 +70,12 @@ pub use proposal::*;
 
 pub trait MessageVisitor {
     fn received(&mut self, message: &Message);
+}
+
+pub trait Aggregatable {
+    fn signer(&self) -> PublicKey;
+
+    fn hash(&self) -> Blake2Hash;
 }
 
 pub type Cookie = [u8; 32];

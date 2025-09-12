@@ -1,19 +1,19 @@
 use rsnano_ledger::RepWeights;
-use rsnano_messages::{Preproposal, PreproposalHash};
-use rsnano_types::{Amount, PublicKey};
+use rsnano_messages::{Aggregatable, PreproposalHash};
+use rsnano_types::{Amount, Blake2Hash, PublicKey};
 use std::collections::{HashMap, HashSet};
 
-pub(super) struct PreproposalAggregator {
-    preproposals: HashMap<PreproposalHash, Preproposal>,
+pub(super) struct Aggregator<T: Aggregatable> {
+    values: HashMap<Blake2Hash, T>,
     signers: HashSet<PublicKey>,
     pub(crate) rep_weights: RepWeights,
     pub(crate) quorum_weight: Amount,
 }
 
-impl Default for PreproposalAggregator {
+impl<T: Aggregatable> Default for Aggregator<T> {
     fn default() -> Self {
         Self {
-            preproposals: Default::default(),
+            values: Default::default(),
             signers: Default::default(),
             rep_weights: Default::default(),
             quorum_weight: Amount::MAX,
@@ -21,22 +21,22 @@ impl Default for PreproposalAggregator {
     }
 }
 
-impl PreproposalAggregator {
+impl<T: Aggregatable> Aggregator<T> {
     pub fn len(&self) -> usize {
-        self.preproposals.len()
+        self.values.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.preproposals.is_empty()
+        self.values.is_empty()
     }
 
     pub fn contains(&self, hash: &PreproposalHash) -> bool {
-        self.preproposals.contains_key(hash)
+        self.values.contains_key(hash)
     }
 
-    pub fn add(&mut self, preproposal: Preproposal) {
-        if self.signers.insert(preproposal.signer) {
-            self.preproposals.insert(preproposal.hash(), preproposal);
+    pub fn add(&mut self, value: T) {
+        if self.signers.insert(value.signer()) {
+            self.values.insert(value.hash(), value);
         }
     }
 
@@ -46,22 +46,22 @@ impl PreproposalAggregator {
     }
 
     fn vote_weight(&self, preproposal_hash: &PreproposalHash) -> Amount {
-        let Some(preproposal) = self.preproposals.get(&preproposal_hash) else {
+        let Some(preproposal) = self.values.get(&preproposal_hash) else {
             return Amount::ZERO;
         };
-        self.rep_weights.weight(&preproposal.signer)
+        self.rep_weights.weight(&preproposal.signer())
     }
 
     pub(crate) fn has_quorum(&self) -> bool {
         let mut preproposals_weight = Amount::ZERO;
-        for (_, preproposal) in &self.preproposals {
-            preproposals_weight += self.rep_weights.weight(&preproposal.signer);
+        for (_, preproposal) in &self.values {
+            preproposals_weight += self.rep_weights.weight(&preproposal.signer());
         }
         preproposals_weight >= self.quorum_weight
     }
 
-    pub(crate) fn values(&self) -> impl Iterator<Item = &Preproposal> {
-        self.preproposals.values()
+    pub(crate) fn values(&self) -> impl Iterator<Item = &T> {
+        self.values.values()
     }
 }
 
@@ -69,11 +69,12 @@ impl PreproposalAggregator {
 mod tests {
     use super::*;
     use rsnano_ledger::RepWeights;
+    use rsnano_messages::Preproposal;
     use rsnano_types::{Account, Amount, BlockHash, PrivateKey};
 
     #[test]
     fn a_new_aggregator_is_empty() {
-        let aggregator = PreproposalAggregator::default();
+        let aggregator = Aggregator::<Preproposal>::default();
         assert_eq!(aggregator.len(), 0);
         assert!(aggregator.is_empty());
         assert_eq!(aggregator.contains(&PreproposalHash::from(123)), false);
@@ -87,7 +88,7 @@ mod tests {
         let mut rep_weights = RepWeights::new();
         rep_weights.insert(rep_key.public_key(), weight);
 
-        let mut aggregator = PreproposalAggregator::default();
+        let mut aggregator = Aggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::MAX);
 
         let preproposal = Preproposal::new(test_frontiers(), &rep_key);
@@ -110,7 +111,7 @@ mod tests {
         rep_weights.insert(rep_key1.public_key(), Amount::nano(100_000));
         rep_weights.insert(rep_key2.public_key(), Amount::nano(200_000));
 
-        let mut aggregator = PreproposalAggregator::default();
+        let mut aggregator = Aggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::nano(300_000));
 
         let preproposal1 = Preproposal::new(test_frontiers(), &rep_key1);
@@ -127,7 +128,7 @@ mod tests {
         let mut rep_weights = RepWeights::new();
         rep_weights.insert(rep_key.public_key(), Amount::nano(100_000));
 
-        let mut aggregator = PreproposalAggregator::default();
+        let mut aggregator = Aggregator::default();
         aggregator.set_rep_weights(rep_weights, Amount::nano(150_000));
 
         let preproposal1 =
