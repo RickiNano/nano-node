@@ -23,7 +23,7 @@ fn publish_preproposal_integration_test() {
             ..System::default_config()
         })
         .finish();
-    let amount_pr = Amount::nano(600_000);
+    let amount_pr = Amount::nano(2_000_000);
     let rep2_key = setup_rep(&node2, amount_pr, &DEV_GENESIS_KEY);
     node2.insert_into_wallet(&rep2_key);
 
@@ -32,8 +32,16 @@ fn publish_preproposal_integration_test() {
             .online_reps
             .lock()
             .unwrap()
-            .online_reps()
-            .any(|i| i.rep_key == rep2_key.public_key())
+            .peered_principal_reps()
+            .len()
+            == 2
+            && node2
+                .online_reps
+                .lock()
+                .unwrap()
+                .peered_principal_reps()
+                .len()
+                == 2
     });
 
     node1.ledger_snapshots.publish_preproposal();
@@ -58,19 +66,19 @@ fn publish_preproposal_integration_test() {
 
     assert_timely_eq2(
         || {
-            node1
-                .stats
-                .count(StatType::Message, DetailType::Proposal, Direction::In)
-        },
-        1,
-    );
-
-    assert_timely_eq2(
-        || {
             node2
                 .stats
                 .count(StatType::Message, DetailType::Proposal, Direction::In)
         },
-        1,
+        2,
+    );
+
+    assert_timely_eq2(
+        || {
+            node1
+                .stats
+                .count(StatType::Message, DetailType::Proposal, Direction::In)
+        },
+        2,
     );
 }

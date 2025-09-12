@@ -76,7 +76,12 @@ impl NetworkMessageProcessor {
             message.message_type().into(),
             Direction::In,
         );
-        trace!(?message, "network processed");
+
+        trace!(
+            ?message,
+            channel_id = ?channel.channel_id(),
+            "network processed"
+        );
 
         match message {
             Message::Keepalive(keepalive) => {

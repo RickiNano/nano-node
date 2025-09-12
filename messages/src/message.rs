@@ -243,6 +243,16 @@ impl Message {
 
         Ok(msg)
     }
+
+    pub fn is_obsolete(&self) -> bool {
+        matches!(
+            self.message_type(),
+            MessageType::BulkPull
+                | MessageType::BulkPullAccount
+                | MessageType::BulkPush
+                | MessageType::TelemetryReq
+        )
+    }
 }
 
 pub fn validate_header(

@@ -63,6 +63,7 @@ impl MessageSender {
                 traffic_type,
             });
         }
+
         let buffer = self.message_serializer.serialize(message);
         let sent =
             { try_send_serialized_message(channel, &self.stats, buffer, message, traffic_type) };

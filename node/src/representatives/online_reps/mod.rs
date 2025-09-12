@@ -190,7 +190,7 @@ impl OnlineReps {
         self.representatives_filter(Amount::ZERO)
     }
 
-    /// Request a list of the top \p count known principal representatives in descending order of weight, optionally with a minimum version \p minimum_protocol_version
+    /// Request a list of the top known principal representatives in descending order of weight
     pub fn peered_principal_reps(&self) -> Vec<PeeredRepInfo> {
         self.representatives_filter(self.minimum_principal_weight())
     }

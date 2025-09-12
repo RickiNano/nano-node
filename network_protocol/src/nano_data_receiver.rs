@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, RwLock, Weak, atomic::Ordering};
+use std::sync::{atomic::Ordering, Arc, Mutex, RwLock, Weak};
 
 use tracing::{debug, warn};
 
@@ -117,29 +117,17 @@ impl NanoDataReceiver {
     }
 
     fn process_realtime(&mut self, message: Message) -> ReceiveResult {
-        let process = match &message {
-            Message::Keepalive(keepalive) => {
-                self.set_last_keepalive(keepalive.clone());
-                true
-            }
-            Message::Publish(_)
-            | Message::AscPullAck(_)
-            | Message::AscPullReq(_)
-            | Message::ConfirmAck(_)
-            | Message::ConfirmReq(_)
-            | Message::FrontierReq(_)
-            | Message::TelemetryAck(_) => true,
-            #[cfg(feature = "ledger_snapshots")]
-            Message::SnapshotPreproposal(_) => true,
-            _ => false,
-        };
-
-        if process {
-            self.queue_realtime(message)
-        } else {
+        if message.is_obsolete() {
             // TODO: Ban the peer, instead of continuing?
-            ReceiveResult::Continue
+            warn!(message_type = ?message.message_type(), "Received an obsolete message");
+            return ReceiveResult::Continue;
         }
+
+        if let Message::Keepalive(keepalive) = &message {
+            self.set_last_keepalive(keepalive.clone());
+        }
+
+        self.queue_realtime(message)
     }
 
     fn to_realtime_connection(&self, node_id: &NodeId) -> bool {
