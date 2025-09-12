@@ -210,7 +210,12 @@ impl NetworkMessageProcessor {
 
                 self.ledger_snapshots.receive_proposal(proposal);
             }
-            Message::SnapshotProposalVote(proposal_vote) => {}
+            Message::SnapshotProposalVote(proposal_vote) => {
+                use tracing::warn;
+                warn!("Snapshot proposal vote received");
+
+                self.ledger_snapshots.receive_proposal_vote(proposal_vote);
+            }
         }
     }
 }
@@ -225,7 +230,7 @@ mod tests {
         use rsnano_messages::Preproposal;
 
         let ledger_snapshots = LedgerSnapshots::new_null();
-        let receive_preproposal_tracker = ledger_snapshots.track_received_preproposals();
+        let receive_tracker = ledger_snapshots.track_received_preproposals();
         let network_message_processor = create_network_message_processor(ledger_snapshots);
         let preproposal = Preproposal::new_test_instance();
 
@@ -234,7 +239,7 @@ mod tests {
             &Channel::new_test_instance().into(),
         );
 
-        assert_eq!(receive_preproposal_tracker.output(), vec![preproposal]);
+        assert_eq!(receive_tracker.output(), vec![preproposal]);
     }
 
     #[test]
@@ -243,7 +248,7 @@ mod tests {
         use rsnano_messages::Proposal;
 
         let ledger_snapshots: LedgerSnapshots = LedgerSnapshots::new_null();
-        let receive_proposal_tracker = ledger_snapshots.track_received_proposals();
+        let receive_tracker = ledger_snapshots.track_received_proposals();
         let network_message_processor = create_network_message_processor(ledger_snapshots);
         let proposal = Proposal::new_test_instance();
 
@@ -252,7 +257,25 @@ mod tests {
             &Channel::new_test_instance().into(),
         );
 
-        assert_eq!(receive_proposal_tracker.output(), vec![proposal]);
+        assert_eq!(receive_tracker.output(), vec![proposal]);
+    }
+
+    #[test]
+    #[cfg(feature = "ledger_snapshots")]
+    fn proposal_vote_is_received() {
+        use rsnano_messages::ProposalVote;
+
+        let ledger_snapshots: LedgerSnapshots = LedgerSnapshots::new_null();
+        let receive_tracker = ledger_snapshots.track_received_proposal_votes();
+        let network_message_processor = create_network_message_processor(ledger_snapshots);
+        let proposal_vote = ProposalVote::new_test_instance();
+
+        network_message_processor.process(
+            Message::SnapshotProposalVote(proposal_vote.clone()),
+            &Channel::new_test_instance().into(),
+        );
+
+        assert_eq!(receive_tracker.output(), vec![proposal_vote]);
     }
 
     fn create_network_message_processor(
