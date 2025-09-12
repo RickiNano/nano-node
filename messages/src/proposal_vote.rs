@@ -1,6 +1,6 @@
-use crate::{MessageVariant, ProposalHash};
+use crate::{Aggregatable, MessageVariant, ProposalHash};
 use bitvec::prelude::BitArray;
-use rsnano_types::{DeserializationError, PrivateKey, PublicKey, Signature};
+use rsnano_types::{Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProposalVote {
@@ -61,6 +61,21 @@ impl MessageVariant for ProposalVote {
     }
 }
 
+impl Aggregatable for ProposalVote {
+    fn signer(&self) -> PublicKey {
+        self.voter
+    }
+
+    fn hash(&self) -> Blake2Hash {
+        let proposal_hash = self.proposal_hash;
+        let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
+        hash_builder = hash_builder
+            .update(proposal_hash.as_bytes())
+            .update(self.voter.as_bytes());
+        hash_builder.build()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,5 +102,14 @@ mod tests {
     fn proposal_vote_message_is_serializable() {
         let message = Message::SnapshotProposalVote(ProposalVote::new_test_instance());
         assert_deserializable(&message);
+    }
+
+    #[test]
+    fn proposal_vote_hash() {
+        let proposal_hash = ProposalHash::from(1);
+        let proposal_vote1 = ProposalVote::new(proposal_hash, &PrivateKey::from(1));
+        let proposal_vote2 = ProposalVote::new(proposal_hash, &PrivateKey::from(2));
+
+        assert_ne!(proposal_vote1.hash(), proposal_vote2.hash());
     }
 }

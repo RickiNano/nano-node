@@ -29,6 +29,7 @@ pub struct LedgerSnapshots {
     consensus_params: Mutex<ConsensusParams>,
     preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
     proposal_aggregator: Mutex<Aggregator<Proposal>>,
+    proposal_vote_aggregator: Mutex<Aggregator<ProposalVote>>,
     online_reps: Arc<Mutex<OnlineReps>>,
     proposal_voted: AtomicBool,
 }
@@ -50,6 +51,7 @@ impl LedgerSnapshots {
             consensus_params: Default::default(),
             preproposal_aggregator: Default::default(),
             proposal_aggregator: Default::default(),
+            proposal_vote_aggregator: Default::default(),
             online_reps,
             proposal_voted: AtomicBool::new(false),
         }
@@ -174,7 +176,14 @@ impl LedgerSnapshots {
     }
 
     pub fn receive_proposal_vote(&self, proposal_vote: ProposalVote) {
-        self.receive_proposal_vote_listener.emit(proposal_vote);
+        self.receive_proposal_vote_listener.emit(proposal_vote.clone());
+
+        let (rep_weights, quorum_weight) = self.get_consensus_info();
+        let mut consensus_params = self.consensus_params.lock().unwrap();
+        consensus_params.set_rep_weights(rep_weights, quorum_weight);
+
+        let mut proposal_vote_aggregator = self.proposal_vote_aggregator.lock().unwrap();
+        proposal_vote_aggregator.add(proposal_vote);
     }
 }
 
@@ -447,6 +456,23 @@ mod tests {
         let receive_events = fixture.receive_proposal_vote_tracker.output();
         assert_eq!(receive_events.len(), 1, "Should receive proposal vote");
         assert_eq!(receive_events[0], proposal_vote);
+    }
+
+    #[test]
+    fn a_received_proposal_vote_is_added_to_the_proposal_vote_aggregator() {
+        let fixture = Fixture::new();
+        let snapshots = &fixture.snapshots;
+        let proposal_vote = ProposalVote::new_test_instance();
+
+        snapshots.receive_proposal_vote(proposal_vote.clone());
+
+        assert!(
+            snapshots
+                .proposal_vote_aggregator
+                .lock()
+                .unwrap()
+                .contains(&proposal_vote.hash())
+        );
     }
 
     struct Fixture {
