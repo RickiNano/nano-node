@@ -1,5 +1,5 @@
 mod aggregator;
-mod quantitative_tally;
+mod tally;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -12,7 +12,7 @@ use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
-use crate::ledger_snapshots::quantitative_tally::QuantitativeTally;
+use crate::ledger_snapshots::tally::{ConsensusParams, has_quantitative_quorum};
 use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
 
@@ -26,7 +26,7 @@ pub struct LedgerSnapshots {
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
     receive_proposal_vote_listener: OutputListenerMt<ProposalVote>,
-    quantitative_tally: Mutex<QuantitativeTally>,
+    consensus_params: Mutex<ConsensusParams>,
     preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
     proposal_aggregator: Mutex<Aggregator<Proposal>>,
     online_reps: Arc<Mutex<OnlineReps>>,
@@ -47,7 +47,7 @@ impl LedgerSnapshots {
             receive_preproposal_listener: OutputListenerMt::new(),
             receive_proposal_listener: OutputListenerMt::new(),
             receive_proposal_vote_listener: OutputListenerMt::new(),
-            quantitative_tally: Default::default(),
+            consensus_params: Default::default(),
             preproposal_aggregator: Default::default(),
             proposal_aggregator: Default::default(),
             online_reps,
@@ -91,13 +91,13 @@ impl LedgerSnapshots {
         let (rep_weights, quorum_weight) = self.get_consensus_info();
 
         let proposal = {
-            let mut tally = self.quantitative_tally.lock().unwrap();
-            tally.set_rep_weights(rep_weights, quorum_weight);
+            let mut consensus_params = self.consensus_params.lock().unwrap();
+            consensus_params.set_rep_weights(rep_weights, quorum_weight);
 
             let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
             preproposal_aggregator.add(preproposal);
 
-            if tally.has_quorum(&preproposal_aggregator) {
+            if has_quantitative_quorum(&consensus_params, &preproposal_aggregator) {
                 let proposal = Proposal::new(
                     preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
@@ -132,13 +132,15 @@ impl LedgerSnapshots {
         self.receive_proposal_listener.emit(proposal.clone());
 
         let (rep_weights, quorum_weight) = self.get_consensus_info();
-        let mut tally = self.quantitative_tally.lock().unwrap();
-        tally.set_rep_weights(rep_weights, quorum_weight);
+        let mut consensus_params = self.consensus_params.lock().unwrap();
+        consensus_params.set_rep_weights(rep_weights, quorum_weight);
 
         let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
         proposal_aggregator.add(proposal);
 
-        if tally.has_quorum(&proposal_aggregator) && !self.proposal_voted.load(Ordering::SeqCst) {
+        if has_quantitative_quorum(&consensus_params, &proposal_aggregator)
+            && !self.proposal_voted.load(Ordering::SeqCst)
+        {
             if let Some(proposal_vote) = LedgerSnapshots::create_proposal_vote(
                 &proposal_aggregator,
                 &(self.get_private_key)().unwrap(),
@@ -283,7 +285,7 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
         let online_reps = snapshots.online_reps.lock().unwrap();
-        let tally = snapshots.quantitative_tally.lock().unwrap();
+        let tally = snapshots.consensus_params.lock().unwrap();
 
         assert_eq!(tally.quorum_weight, online_reps.quorum_delta());
         assert_eq!(tally.rep_weights, online_reps.get_rep_weights());
@@ -353,7 +355,7 @@ mod tests {
 
         snapshots.receive_proposal(proposal.clone());
         let online_reps = snapshots.online_reps.lock().unwrap();
-        let tally = snapshots.quantitative_tally.lock().unwrap();
+        let tally = snapshots.consensus_params.lock().unwrap();
 
         assert_eq!(tally.quorum_weight, online_reps.quorum_delta());
         assert_eq!(tally.rep_weights, online_reps.get_rep_weights());
