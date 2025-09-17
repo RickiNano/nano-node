@@ -6,4 +6,6 @@ pub(crate) struct LedgerSnapshotState {
     pub(crate) preproposal_aggregator: Aggregator<Preproposal>,
     pub(crate) proposal_aggregator: Aggregator<Proposal>,
     pub(crate) vote_aggregator: Aggregator<ProposalVote>,
+    pub(crate) proposal_voted: bool,
+    pub(crate) current_snapshot_number: u32,
 }

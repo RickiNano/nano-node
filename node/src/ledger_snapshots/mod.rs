@@ -2,7 +2,6 @@ mod aggregator;
 mod ledger_snapshot_state;
 mod tally;
 
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use rsnano_ledger::Ledger;
@@ -31,9 +30,6 @@ pub struct LedgerSnapshots {
     receive_proposal_vote_listener: OutputListenerMt<ProposalVote>,
 
     state: Mutex<LedgerSnapshotState>,
-    proposal_voted: AtomicBool,
-    /// TODO: An atomic will cause race conditions with updating the other mutxes
-    current_snapshot_number: AtomicU32,
 
     online_reps: Arc<Mutex<OnlineReps>>,
 }
@@ -54,8 +50,6 @@ impl LedgerSnapshots {
             receive_proposal_vote_listener: OutputListenerMt::new(),
             state: Default::default(),
             online_reps,
-            proposal_voted: AtomicBool::new(false),
-            current_snapshot_number: AtomicU32::new(0),
         }
     }
 
@@ -93,16 +87,15 @@ impl LedgerSnapshots {
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
         warn!(preproposal_hash= ?preproposal.hash(), "Snapshot preproposal received");
         self.receive_preproposal_listener.emit(preproposal.clone());
+        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
-        if preproposal.snapshot_number != self.get_current_snapshot_number() {
+        let mut state = self.state.lock().unwrap();
+        if preproposal.snapshot_number != state.current_snapshot_number {
             warn!(preproposal_hash= ?preproposal.hash(), snapshot_number= ?preproposal.snapshot_number, "Snapshot preproposal discarded because snapshot number is different than current");
             return;
         }
 
-        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
-
         let proposal = {
-            let mut state = self.state.lock().unwrap();
             state.preproposal_aggregator.add(preproposal);
 
             warn!(
@@ -115,7 +108,7 @@ impl LedgerSnapshots {
                 let proposal = Proposal::new(
                     state.preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
-                    self.get_current_snapshot_number(),
+                    state.current_snapshot_number,
                 );
                 Some(proposal)
             } else {
@@ -123,6 +116,7 @@ impl LedgerSnapshots {
                 None
             }
         };
+        drop(state);
 
         if let Some(proposal) = proposal {
             warn!(proposal_hash = ?proposal.hash(), "Created proposal. Flooding...");
@@ -141,15 +135,14 @@ impl LedgerSnapshots {
     pub fn receive_proposal(&self, proposal: Proposal) {
         warn!(proposal_hash = ?proposal.hash(), "Snapshot proposal received");
         self.receive_proposal_listener.emit(proposal.clone());
+        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
-        if proposal.snapshot_number != self.get_current_snapshot_number() {
+        let mut state = self.state.lock().unwrap();
+        if proposal.snapshot_number != state.current_snapshot_number {
             warn!(proposal_hash= ?proposal.hash(), snapshot_number= ?proposal.snapshot_number, "Snapshot proposal discarded because snapshot number is different than current");
             return;
         }
 
-        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
-
-        let mut state = self.state.lock().unwrap();
         state.proposal_aggregator.add(proposal);
 
         warn!(
@@ -162,13 +155,15 @@ impl LedgerSnapshots {
             warn!("Quorum on proposal reached");
         }
 
-        if has_quorum && !self.proposal_voted.load(Ordering::SeqCst) {
+        if has_quorum && !state.proposal_voted {
             let proposal_vote = LedgerSnapshots::create_proposal_vote(
                 &state.proposal_aggregator,
                 &(self.get_private_key)().unwrap(),
-                self.get_current_snapshot_number(),
+                state.current_snapshot_number,
             )
             .expect("Should always be able to create a vote when quorum reached");
+            state.proposal_voted = true;
+            drop(state);
 
             warn!(vote_hash = ?proposal_vote.hash(), "Flooding proposal vote");
             self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
@@ -176,7 +171,6 @@ impl LedgerSnapshots {
                 TrafficType::LedgerSnapshots,
                 0.0,
             );
-            self.proposal_voted.store(true, Ordering::SeqCst);
         }
     }
 
@@ -204,14 +198,14 @@ impl LedgerSnapshots {
         self.receive_proposal_vote_listener
             .emit(proposal_vote.clone());
 
-        if proposal_vote.snapshot_number != self.get_current_snapshot_number() {
+        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
+        let mut state = self.state.lock().unwrap();
+
+        if proposal_vote.snapshot_number != state.current_snapshot_number {
             warn!(proposal_vote_hash= ?proposal_vote.hash(), snapshot_number= ?proposal_vote.snapshot_number, "Snapshot proposal vote discarded because snapshot number is different than current");
             return;
         }
 
-        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
-
-        let mut state = self.state.lock().unwrap();
         state.vote_aggregator.add(proposal_vote);
 
         warn!(
@@ -223,7 +217,7 @@ impl LedgerSnapshots {
             find_winner_proposal(&consensus_params, state.vote_aggregator.values())
         {
             tracing::warn!(proposal_hash=?winner, "Found a winner!");
-            self.current_snapshot_number.fetch_add(1, Ordering::SeqCst);
+            state.current_snapshot_number += 1;
             state.preproposal_aggregator.clear();
             state.proposal_aggregator.clear();
             state.vote_aggregator.clear();
@@ -231,7 +225,7 @@ impl LedgerSnapshots {
     }
 
     fn get_current_snapshot_number(&self) -> SnapshotNumber {
-        self.current_snapshot_number.load(Ordering::SeqCst)
+        self.state.lock().unwrap().current_snapshot_number
     }
 }
 
@@ -665,7 +659,7 @@ mod tests {
 
         let state = snapshots.state.lock().unwrap();
 
-        assert_eq!(snapshots.get_current_snapshot_number(), snapshot_number + 1);
+        assert_eq!(state.current_snapshot_number, snapshot_number + 1);
         assert_eq!(
             state.preproposal_aggregator.len(),
             0,
@@ -722,9 +716,7 @@ mod tests {
             let snapshots =
                 LedgerSnapshots::new(ledger.clone(), get_test_key, flooder, online_reps);
 
-            snapshots
-                .current_snapshot_number
-                .store(10, Ordering::SeqCst);
+            snapshots.state.lock().unwrap().current_snapshot_number = 10;
 
             let receive_preproposal_tracker = snapshots.track_received_preproposals();
             let receive_proposal_tracker = snapshots.track_received_proposals();
