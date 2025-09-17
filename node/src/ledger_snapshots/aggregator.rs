@@ -52,6 +52,10 @@ impl<T: Aggregatable> Aggregator<T> {
         }
         weight
     }
+
+    pub(crate) fn clear(&mut self) {
+        self.values.clear();
+    }
 }
 
 #[cfg(test)]
