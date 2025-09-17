@@ -1,5 +1,5 @@
 use crate::{
-    ledger_snapshots::{Aggregator, tally::find_winner_proposal},
+    ledger_snapshots::{tally::find_winner_proposal, Aggregator},
     representatives::ConsensusParams,
 };
 use rsnano_messages::{Aggregatable, Preproposal, Proposal, ProposalVote};
@@ -104,4 +104,85 @@ pub(crate) fn create_proposal_vote(
         private_key,
         snapshot_number,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rsnano_messages::ProposalHash;
+
+    #[test]
+    fn discard_preproposal_with_different_snapshot_number_than_current() {
+        let mut state = LedgerSnapshotsState::default();
+        state.current_snapshot_number = 10;
+
+        let preproposal1 = Preproposal::new(
+            vec![],
+            &PrivateKey::from(1),
+            state.current_snapshot_number - 1,
+        );
+        state.receive_preproposal(preproposal1.clone());
+
+        assert!(state.preproposal_aggregator.is_empty());
+
+        let preproposal2 = Preproposal::new(
+            vec![],
+            &PrivateKey::from(1),
+            state.current_snapshot_number + 1,
+        );
+        state.receive_preproposal(preproposal2.clone());
+
+        assert!(state.preproposal_aggregator.is_empty());
+    }
+
+    #[test]
+    fn discard_proposal_with_different_snapshot_number_than_current() {
+        let mut state = LedgerSnapshotsState::default();
+        state.current_snapshot_number = 10;
+
+        let proposal1 = Proposal::new(
+            vec![],
+            &PrivateKey::from(1),
+            state.current_snapshot_number - 1,
+        );
+        state.receive_proposal(proposal1.clone());
+
+        assert!(state.proposal_aggregator.is_empty());
+
+        let proposal2 = Proposal::new(
+            vec![],
+            &PrivateKey::from(1),
+            state.current_snapshot_number + 1,
+        );
+        state.receive_proposal(proposal2.clone());
+
+        assert!(state.proposal_aggregator.is_empty());
+    }
+
+    #[test]
+    fn discard_proposal_vote_with_different_snapshot_number_than_current() {
+        let mut state = LedgerSnapshotsState::default();
+        state.current_snapshot_number = 10;
+        let snapshot_number = state.current_snapshot_number;
+
+        let proposal_vote1 = ProposalVote::new(
+            ProposalHash::from(1),
+            &PrivateKey::from(1),
+            snapshot_number - 1,
+        );
+
+        state.receive_vote(proposal_vote1, &ConsensusParams::default());
+
+        assert!(state.vote_aggregator.is_empty());
+
+        let proposal_vote2 = ProposalVote::new(
+            ProposalHash::from(1),
+            &PrivateKey::from(1),
+            snapshot_number + 1,
+        );
+
+        state.receive_vote(proposal_vote2, &ConsensusParams::default());
+
+        assert!(state.vote_aggregator.is_empty());
+    }
 }
