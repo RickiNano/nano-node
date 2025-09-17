@@ -368,6 +368,27 @@ impl QuorumSpecs {
     }
 }
 
+pub(crate) struct ConsensusParams {
+    pub(crate) rep_weights: RepWeights,
+    pub(crate) quorum_weight: Amount,
+}
+
+impl Default for ConsensusParams {
+    fn default() -> Self {
+        Self {
+            rep_weights: Default::default(),
+            quorum_weight: Amount::MAX,
+        }
+    }
+}
+
+impl ConsensusParams {
+    pub(crate) fn set_rep_weights(&mut self, rep_weights: RepWeights, quorum_weight: Amount) {
+        self.rep_weights = rep_weights;
+        self.quorum_weight = quorum_weight;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

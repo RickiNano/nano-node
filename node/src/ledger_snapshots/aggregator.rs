@@ -1,4 +1,4 @@
-use crate::ledger_snapshots::tally::ConsensusParams;
+use crate::representatives::ConsensusParams;
 use rsnano_messages::Aggregatable;
 use rsnano_types::{Amount, Blake2Hash, PublicKey};
 use std::collections::{HashMap, HashSet};

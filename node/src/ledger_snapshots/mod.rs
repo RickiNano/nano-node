@@ -12,8 +12,8 @@ use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
-use crate::ledger_snapshots::tally::{ConsensusParams, find_winner_proposal};
-use crate::representatives::OnlineReps;
+use crate::ledger_snapshots::tally::find_winner_proposal;
+use crate::representatives::{ConsensusParams, OnlineReps};
 use crate::transport::MessageFlooder;
 
 pub struct LedgerSnapshots {
@@ -282,13 +282,11 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
 
-        assert!(
-            snapshots
-                .preproposal_aggregator
-                .lock()
-                .unwrap()
-                .contains(&preproposal.hash())
-        );
+        assert!(snapshots
+            .preproposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&preproposal.hash()));
     }
 
     #[test]
@@ -352,13 +350,11 @@ mod tests {
 
         snapshots.receive_proposal(proposal.clone());
 
-        assert!(
-            snapshots
-                .proposal_aggregator
-                .lock()
-                .unwrap()
-                .contains(&proposal.hash())
-        );
+        assert!(snapshots
+            .proposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&proposal.hash()));
     }
 
     #[test]
@@ -471,13 +467,11 @@ mod tests {
 
         snapshots.receive_proposal_vote(proposal_vote.clone());
 
-        assert!(
-            snapshots
-                .proposal_vote_aggregator
-                .lock()
-                .unwrap()
-                .contains(&proposal_vote.hash())
-        );
+        assert!(snapshots
+            .proposal_vote_aggregator
+            .lock()
+            .unwrap()
+            .contains(&proposal_vote.hash()));
     }
 
     struct Fixture {
