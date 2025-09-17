@@ -46,7 +46,7 @@ mod tests {
         consensus_params.set_rep_weights(rep_weights, Amount::MAX);
 
         let mut aggregator = Aggregator::default();
-        aggregator.add(Preproposal::new(Vec::new(), &rep_key));
+        aggregator.add(Preproposal::new(Vec::new(), &rep_key, 0));
 
         assert_eq!(aggregator.has_quorum(&consensus_params), false);
     }
@@ -64,9 +64,9 @@ mod tests {
         let mut consensus_params = ConsensusParams::default();
         consensus_params.set_rep_weights(rep_weights, Amount::nano(300_000));
 
-        let preproposal1 = Preproposal::new(test_frontiers(), &rep_key1);
+        let preproposal1 = Preproposal::new(test_frontiers(), &rep_key1, 0);
         aggregator.add(preproposal1.clone());
-        let preproposal2 = Preproposal::new(test_frontiers(), &rep_key2);
+        let preproposal2 = Preproposal::new(test_frontiers(), &rep_key2, 0);
         aggregator.add(preproposal2.clone());
 
         assert_eq!(aggregator.has_quorum(&consensus_params), true);

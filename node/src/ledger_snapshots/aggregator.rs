@@ -87,11 +87,11 @@ mod tests {
         let mut aggregator = Aggregator::default();
 
         let preproposal1 =
-            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key);
+            Preproposal::new(vec![(Account::from(1), BlockHash::from(10))], &rep_key, 0);
         aggregator.add(preproposal1.clone());
 
         let preproposal2 =
-            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key);
+            Preproposal::new(vec![(Account::from(2), BlockHash::from(20))], &rep_key, 0);
         aggregator.add(preproposal2.clone());
 
         assert_eq!(aggregator.len(), 1, "Should only contain one preproposal");
