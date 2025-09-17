@@ -1,5 +1,6 @@
+use crate::ledger_snapshots::tally::ConsensusParams;
 use rsnano_messages::Aggregatable;
-use rsnano_types::{Blake2Hash, PublicKey};
+use rsnano_types::{Amount, Blake2Hash, PublicKey};
 use std::collections::{HashMap, HashSet};
 
 pub(super) struct Aggregator<T: Aggregatable> {
@@ -37,6 +38,15 @@ impl<T: Aggregatable> Aggregator<T> {
 
     pub(crate) fn values(&self) -> impl Iterator<Item = &T> {
         self.values.values()
+    }
+
+    /// Quorum is reached if all received valid values have 67% vote weight in sum
+    pub(crate) fn has_quorum(&self, params: &ConsensusParams) -> bool {
+        let mut weight = Amount::ZERO;
+        for value in self.values() {
+            weight += params.rep_weights.weight(&value.signer());
+        }
+        weight >= params.quorum_weight
     }
 }
 

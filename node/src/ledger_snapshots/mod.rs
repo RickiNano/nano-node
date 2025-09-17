@@ -12,9 +12,7 @@ use rsnano_types::PrivateKey;
 use rsnano_types::{Account, BlockHash};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
-use crate::ledger_snapshots::tally::{
-    ConsensusParams, find_winner_proposal, has_quantitative_quorum,
-};
+use crate::ledger_snapshots::tally::{ConsensusParams, find_winner_proposal};
 use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
 
@@ -101,7 +99,7 @@ impl LedgerSnapshots {
             let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
             preproposal_aggregator.add(preproposal);
 
-            if has_quantitative_quorum(&consensus_params, &preproposal_aggregator) {
+            if preproposal_aggregator.has_quorum(&consensus_params) {
                 let proposal = Proposal::new(
                     preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
@@ -142,7 +140,7 @@ impl LedgerSnapshots {
         let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
         proposal_aggregator.add(proposal);
 
-        if has_quantitative_quorum(&consensus_params, &proposal_aggregator)
+        if proposal_aggregator.has_quorum(&consensus_params)
             && !self.proposal_voted.load(Ordering::SeqCst)
         {
             if let Some(proposal_vote) = LedgerSnapshots::create_proposal_vote(

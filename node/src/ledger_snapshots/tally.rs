@@ -26,18 +26,6 @@ impl ConsensusParams {
     }
 }
 
-/// Quorum is reached if all received valid values have 67% vote weight in sum
-pub(crate) fn has_quantitative_quorum<T: Aggregatable>(
-    params: &ConsensusParams,
-    aggregator: &Aggregator<T>,
-) -> bool {
-    let mut weight = Amount::ZERO;
-    for value in aggregator.values() {
-        weight += params.rep_weights.weight(&value.signer());
-    }
-    weight >= params.quorum_weight
-}
-
 pub(crate) fn find_winner_proposal<'a>(
     params: &ConsensusParams,
     votes: impl IntoIterator<Item = &'a ProposalVote>,
@@ -80,10 +68,7 @@ mod tests {
         let mut aggregator = Aggregator::default();
         aggregator.add(Preproposal::new(Vec::new(), &rep_key));
 
-        assert_eq!(
-            has_quantitative_quorum(&consensus_params, &aggregator),
-            false
-        );
+        assert_eq!(aggregator.has_quorum(&consensus_params), false);
     }
 
     #[test]
@@ -104,10 +89,7 @@ mod tests {
         let preproposal2 = Preproposal::new(test_frontiers(), &rep_key2);
         aggregator.add(preproposal2.clone());
 
-        assert_eq!(
-            has_quantitative_quorum(&consensus_params, &aggregator),
-            true
-        );
+        assert_eq!(aggregator.has_quorum(&consensus_params), true);
     }
 
     #[test]
