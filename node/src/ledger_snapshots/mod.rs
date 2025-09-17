@@ -1,4 +1,5 @@
 mod aggregator;
+mod ledger_snapshot_state;
 mod tally;
 
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -12,6 +13,7 @@ use rsnano_types::{Account, BlockHash};
 use rsnano_types::{PrivateKey, SnapshotNumber};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
+use crate::ledger_snapshots::ledger_snapshot_state::LedgerSnapshotState;
 use crate::ledger_snapshots::tally::find_winner_proposal;
 use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
@@ -27,13 +29,13 @@ pub struct LedgerSnapshots {
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
     receive_proposal_vote_listener: OutputListenerMt<ProposalVote>,
-    preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
-    proposal_aggregator: Mutex<Aggregator<Proposal>>,
-    proposal_vote_aggregator: Mutex<Aggregator<ProposalVote>>,
-    online_reps: Arc<Mutex<OnlineReps>>,
+
+    state: Mutex<LedgerSnapshotState>,
     proposal_voted: AtomicBool,
     /// TODO: An atomic will cause race conditions with updating the other mutxes
     current_snapshot_number: AtomicU32,
+
+    online_reps: Arc<Mutex<OnlineReps>>,
 }
 
 impl LedgerSnapshots {
@@ -50,9 +52,7 @@ impl LedgerSnapshots {
             receive_preproposal_listener: OutputListenerMt::new(),
             receive_proposal_listener: OutputListenerMt::new(),
             receive_proposal_vote_listener: OutputListenerMt::new(),
-            preproposal_aggregator: Default::default(),
-            proposal_aggregator: Default::default(),
-            proposal_vote_aggregator: Default::default(),
+            state: Default::default(),
             online_reps,
             proposal_voted: AtomicBool::new(false),
             current_snapshot_number: AtomicU32::new(0),
@@ -102,18 +102,18 @@ impl LedgerSnapshots {
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let proposal = {
-            let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
-            preproposal_aggregator.add(preproposal);
+            let mut state = self.state.lock().unwrap();
+            state.preproposal_aggregator.add(preproposal);
 
             warn!(
                 "Current preproposal tally = {:?}",
-                preproposal_aggregator.tally(&consensus_params)
+                state.preproposal_aggregator.tally(&consensus_params)
             );
 
-            if preproposal_aggregator.has_quorum(&consensus_params) {
+            if state.preproposal_aggregator.has_quorum(&consensus_params) {
                 warn!("Quorum on preproposals reached");
                 let proposal = Proposal::new(
-                    preproposal_aggregator.values(),
+                    state.preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
                     self.get_current_snapshot_number(),
                 );
@@ -149,22 +149,22 @@ impl LedgerSnapshots {
 
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
-        let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
-        proposal_aggregator.add(proposal);
+        let mut state = self.state.lock().unwrap();
+        state.proposal_aggregator.add(proposal);
 
         warn!(
             "Current proposal tally = {:?}",
-            proposal_aggregator.tally(&consensus_params)
+            state.proposal_aggregator.tally(&consensus_params)
         );
 
-        let has_quorum = proposal_aggregator.has_quorum(&consensus_params);
+        let has_quorum = state.proposal_aggregator.has_quorum(&consensus_params);
         if has_quorum {
             warn!("Quorum on proposal reached");
         }
 
         if has_quorum && !self.proposal_voted.load(Ordering::SeqCst) {
             let proposal_vote = LedgerSnapshots::create_proposal_vote(
-                &proposal_aggregator,
+                &state.proposal_aggregator,
                 &(self.get_private_key)().unwrap(),
                 self.get_current_snapshot_number(),
             )
@@ -211,20 +211,22 @@ impl LedgerSnapshots {
 
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
-        let mut vote_aggregator = self.proposal_vote_aggregator.lock().unwrap();
-        vote_aggregator.add(proposal_vote);
+        let mut state = self.state.lock().unwrap();
+        state.vote_aggregator.add(proposal_vote);
 
         warn!(
-            received_votes = vote_aggregator.len(),
+            received_votes = state.vote_aggregator.len(),
             "Snapshot proposal vote received"
         );
 
-        if let Some(winner) = find_winner_proposal(&consensus_params, vote_aggregator.values()) {
+        if let Some(winner) =
+            find_winner_proposal(&consensus_params, state.vote_aggregator.values())
+        {
             tracing::warn!(proposal_hash=?winner, "Found a winner!");
             self.current_snapshot_number.fetch_add(1, Ordering::SeqCst);
-            self.preproposal_aggregator.lock().unwrap().clear();
-            self.proposal_aggregator.lock().unwrap().clear();
-            vote_aggregator.clear();
+            state.preproposal_aggregator.clear();
+            state.proposal_aggregator.clear();
+            state.vote_aggregator.clear();
         }
     }
 
@@ -330,9 +332,10 @@ mod tests {
 
         assert!(
             snapshots
-                .preproposal_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .preproposal_aggregator
                 .contains(&preproposal.hash())
         );
     }
@@ -397,9 +400,10 @@ mod tests {
 
         assert!(
             snapshots
-                .proposal_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .proposal_aggregator
                 .contains(&proposal.hash())
         );
     }
@@ -518,9 +522,10 @@ mod tests {
 
         assert!(
             snapshots
-                .proposal_vote_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .vote_aggregator
                 .contains(&proposal_vote.hash())
         );
     }
@@ -543,9 +548,10 @@ mod tests {
         assert!(
             fixture
                 .snapshots
-                .preproposal_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .preproposal_aggregator
                 .is_empty()
         );
 
@@ -555,9 +561,10 @@ mod tests {
         assert!(
             fixture
                 .snapshots
-                .preproposal_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .preproposal_aggregator
                 .is_empty()
         );
     }
@@ -573,9 +580,10 @@ mod tests {
         assert!(
             fixture
                 .snapshots
-                .proposal_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .proposal_aggregator
                 .is_empty()
         );
 
@@ -585,9 +593,10 @@ mod tests {
         assert!(
             fixture
                 .snapshots
-                .proposal_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .proposal_aggregator
                 .is_empty()
         );
     }
@@ -609,9 +618,10 @@ mod tests {
         assert!(
             fixture
                 .snapshots
-                .proposal_vote_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .vote_aggregator
                 .is_empty()
         );
 
@@ -627,9 +637,10 @@ mod tests {
         assert!(
             fixture
                 .snapshots
-                .proposal_vote_aggregator
+                .state
                 .lock()
                 .unwrap()
+                .vote_aggregator
                 .is_empty()
         );
     }
@@ -652,22 +663,16 @@ mod tests {
         snapshots.receive_proposal(proposal);
         snapshots.receive_proposal_vote(proposal_vote);
 
+        let state = snapshots.state.lock().unwrap();
+
         assert_eq!(snapshots.get_current_snapshot_number(), snapshot_number + 1);
         assert_eq!(
-            snapshots.preproposal_aggregator.lock().unwrap().len(),
+            state.preproposal_aggregator.len(),
             0,
             "preproposals not cleared"
         );
-        assert_eq!(
-            snapshots.proposal_aggregator.lock().unwrap().len(),
-            0,
-            "proposals not cleared"
-        );
-        assert_eq!(
-            snapshots.proposal_vote_aggregator.lock().unwrap().len(),
-            0,
-            "votes not cleared"
-        );
+        assert_eq!(state.proposal_aggregator.len(), 0, "proposals not cleared");
+        assert_eq!(state.vote_aggregator.len(), 0, "votes not cleared");
     }
 
     struct Fixture {
