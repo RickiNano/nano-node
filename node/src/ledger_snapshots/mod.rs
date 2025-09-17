@@ -93,6 +93,11 @@ impl LedgerSnapshots {
         warn!(preproposal_hash= ?preproposal.hash(), "Snapshot preproposal received");
         self.receive_preproposal_listener.emit(preproposal.clone());
 
+        if preproposal.snapshot_number != self.get_current_snapshot_number() {
+            warn!(preproposal_hash= ?preproposal.hash(), "Snapshot preprosal discarded");
+            return;
+        }
+
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let proposal = {
@@ -300,7 +305,8 @@ mod tests {
     fn a_received_preproposal_is_added_to_the_preproposal_aggregator() {
         let fixture = Fixture::new();
         let snapshots = &fixture.snapshots;
-        let preproposal = Preproposal::new_test_instance();
+        let snapshot_number = snapshots.get_current_snapshot_number();
+        let preproposal = Preproposal::new(vec![], &PrivateKey::from(1), snapshot_number);
 
         snapshots.receive_preproposal(preproposal.clone());
 
@@ -484,6 +490,21 @@ mod tests {
         assert_eq!(ledger_snapshots.get_current_snapshot_number(), 0);
     }
 
+    #[test]
+    fn discard_preproposal_with_different_snapshot_number_than_current() {
+        let fixture = Fixture::new();
+        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
+
+        let preproposal1 = Preproposal::new(vec![], &PrivateKey::from(1), snapshot_number - 1);
+        fixture.snapshots.receive_preproposal(preproposal1.clone());
+        
+        assert!(fixture.snapshots.preproposal_aggregator.lock().unwrap().is_empty());
+
+        let preproposal2 = Preproposal::new(vec![], &PrivateKey::from(1), snapshot_number + 1);
+        fixture.snapshots.receive_preproposal(preproposal2.clone());
+        
+        assert!(fixture.snapshots.preproposal_aggregator.lock().unwrap().is_empty());
+    }
     struct Fixture {
         snapshots: LedgerSnapshots,
         flood_tracker: Arc<OutputTrackerMt<FloodEvent>>,
