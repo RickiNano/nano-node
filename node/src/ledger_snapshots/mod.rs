@@ -1,5 +1,5 @@
 mod aggregator;
-mod ledger_snapshot_state;
+mod ledger_snapshots_state;
 mod tally;
 
 use std::sync::{Arc, Mutex};
@@ -11,11 +11,11 @@ use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, BlockHash};
 use rsnano_types::{PrivateKey, SnapshotNumber};
 
-use crate::ledger_snapshots::aggregator::Aggregator;
-use crate::ledger_snapshots::ledger_snapshot_state::LedgerSnapshotState;
-use crate::ledger_snapshots::tally::find_winner_proposal;
-use crate::representatives::OnlineReps;
-use crate::transport::MessageFlooder;
+use crate::{
+    ledger_snapshots::{aggregator::Aggregator, ledger_snapshots_state::LedgerSnapshotsState},
+    representatives::OnlineReps,
+    transport::MessageFlooder,
+};
 use tracing::warn;
 
 pub struct LedgerSnapshots {
@@ -29,7 +29,7 @@ pub struct LedgerSnapshots {
     receive_proposal_listener: OutputListenerMt<Proposal>,
     receive_proposal_vote_listener: OutputListenerMt<ProposalVote>,
 
-    state: Mutex<LedgerSnapshotState>,
+    state: Mutex<LedgerSnapshotsState>,
 
     online_reps: Arc<Mutex<OnlineReps>>,
 }
@@ -90,32 +90,23 @@ impl LedgerSnapshots {
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let mut state = self.state.lock().unwrap();
-        if preproposal.snapshot_number != state.current_snapshot_number {
+        if !state.receive_preproposal(preproposal.clone()) {
             warn!(preproposal_hash= ?preproposal.hash(), snapshot_number= ?preproposal.snapshot_number, "Snapshot preproposal discarded because snapshot number is different than current");
             return;
         }
 
-        let proposal = {
-            state.preproposal_aggregator.add(preproposal);
+        warn!(
+            "Current preproposal tally = {:?}",
+            state.preproposal_aggregator.tally(&consensus_params)
+        );
 
-            warn!(
-                "Current preproposal tally = {:?}",
-                state.preproposal_aggregator.tally(&consensus_params)
-            );
-
-            if state.preproposal_aggregator.has_quorum(&consensus_params) {
-                warn!("Quorum on preproposals reached");
-                let proposal = Proposal::new(
-                    state.preproposal_aggregator.values(),
-                    &(self.get_private_key)().unwrap(),
-                    state.current_snapshot_number,
-                );
-                Some(proposal)
-            } else {
-                warn!("No quorum on preproposals yet");
-                None
-            }
-        };
+        let rep_key = (self.get_private_key)().unwrap();
+        let proposal = state.try_create_proposal(&consensus_params, &rep_key);
+        if proposal.is_some() {
+            warn!("Quorum on preproposals reached");
+        } else {
+            warn!("No quorum on preproposals yet");
+        }
         drop(state);
 
         if let Some(proposal) = proposal {
@@ -138,52 +129,26 @@ impl LedgerSnapshots {
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let mut state = self.state.lock().unwrap();
-        if proposal.snapshot_number != state.current_snapshot_number {
+        if !state.receive_proposal(proposal.clone()) {
             warn!(proposal_hash= ?proposal.hash(), snapshot_number= ?proposal.snapshot_number, "Snapshot proposal discarded because snapshot number is different than current");
             return;
         }
-
-        state.proposal_aggregator.add(proposal);
 
         warn!(
             "Current proposal tally = {:?}",
             state.proposal_aggregator.tally(&consensus_params)
         );
 
-        let has_quorum = state.proposal_aggregator.has_quorum(&consensus_params);
-        if has_quorum {
+        let rep_key = (self.get_private_key)().unwrap();
+        if let Some(vote) = state.try_create_vote(&consensus_params, &rep_key) {
             warn!("Quorum on proposal reached");
-        }
-
-        if has_quorum && !state.proposal_voted {
-            let proposal_vote = LedgerSnapshots::create_proposal_vote(
-                &state.proposal_aggregator,
-                &(self.get_private_key)().unwrap(),
-                state.current_snapshot_number,
-            )
-            .expect("Should always be able to create a vote when quorum reached");
-            state.proposal_voted = true;
-            drop(state);
-
-            warn!(vote_hash = ?proposal_vote.hash(), "Flooding proposal vote");
+            warn!(vote_hash = ?vote.hash(), "Flooding proposal vote");
             self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
-                &Message::SnapshotProposalVote(proposal_vote),
+                &Message::SnapshotProposalVote(vote),
                 TrafficType::LedgerSnapshots,
                 0.0,
             );
         }
-    }
-
-    fn create_proposal_vote(
-        proposal_aggregator: &Aggregator<Proposal>,
-        private_key: &PrivateKey,
-        snapshot_number: SnapshotNumber,
-    ) -> Option<ProposalVote> {
-        Some(ProposalVote::new(
-            proposal_aggregator.values().map(|p| p.hash()).max()?,
-            private_key,
-            snapshot_number,
-        ))
     }
 
     pub fn track_received_proposals(&self) -> Arc<OutputTrackerMt<Proposal>> {
@@ -201,27 +166,15 @@ impl LedgerSnapshots {
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
         let mut state = self.state.lock().unwrap();
 
-        if proposal_vote.snapshot_number != state.current_snapshot_number {
+        if !state.receive_vote(proposal_vote.clone(), &consensus_params) {
             warn!(proposal_vote_hash= ?proposal_vote.hash(), snapshot_number= ?proposal_vote.snapshot_number, "Snapshot proposal vote discarded because snapshot number is different than current");
             return;
         }
-
-        state.vote_aggregator.add(proposal_vote);
 
         warn!(
             received_votes = state.vote_aggregator.len(),
             "Snapshot proposal vote received"
         );
-
-        if let Some(winner) =
-            find_winner_proposal(&consensus_params, state.vote_aggregator.values())
-        {
-            tracing::warn!(proposal_hash=?winner, "Found a winner!");
-            state.current_snapshot_number += 1;
-            state.preproposal_aggregator.clear();
-            state.proposal_aggregator.clear();
-            state.vote_aggregator.clear();
-        }
     }
 
     fn get_current_snapshot_number(&self) -> SnapshotNumber {
@@ -232,7 +185,10 @@ impl LedgerSnapshots {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
+    use crate::{
+        ledger_snapshots::ledger_snapshots_state::create_proposal_vote,
+        representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent,
+    };
     use rsnano_ledger::RepWeights;
     use rsnano_messages::{Aggregatable, Message, ProposalHash, ProposalVote};
     use rsnano_network::TrafficType;
@@ -480,11 +436,8 @@ mod tests {
         proposal_aggregator.add(proposal3);
         proposal_aggregator.add(proposal4);
 
-        let proposal_vote = LedgerSnapshots::create_proposal_vote(
-            &proposal_aggregator,
-            &PrivateKey::from(5),
-            snapshot_number,
-        );
+        let proposal_vote =
+            create_proposal_vote(&proposal_aggregator, &PrivateKey::from(5), snapshot_number);
 
         assert_eq!(proposal_vote.unwrap().proposal_hash, highest_hash);
     }
