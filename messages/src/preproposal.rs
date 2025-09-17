@@ -1,9 +1,9 @@
 use crate::{Aggregatable, MessageVariant};
 use bitvec::prelude::BitArray;
-use rsnano_types::{read_u32_be, DeserializationError, SnapshotNumber};
 use rsnano_types::{
     Account, Blake2Hash, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature,
 };
+use rsnano_types::{DeserializationError, SnapshotNumber, read_u32_be};
 
 pub type PreproposalHash = Blake2Hash;
 pub type FrontiersHash = Blake2Hash;
@@ -17,7 +17,11 @@ pub struct Preproposal {
 }
 
 impl Preproposal {
-    pub fn new(frontiers: Vec<(Account, BlockHash)>, private_key: &PrivateKey, snapshot_number: SnapshotNumber) -> Self {
+    pub fn new(
+        frontiers: Vec<(Account, BlockHash)>,
+        private_key: &PrivateKey,
+        snapshot_number: SnapshotNumber,
+    ) -> Self {
         let mut preproposal = Self {
             snapshot_number,
             frontiers,
@@ -183,16 +187,8 @@ mod tests {
             (Account::from(1), BlockHash::from(10)),
         ];
 
-        let p1 = Preproposal::new(
-            frontiers1.clone(),
-            &key1,
-            snapshot_number1
-        );
-        let p2 = Preproposal::new(
-            frontiers2.clone(),
-            &key2,
-            snapshot_number1
-        );
+        let p1 = Preproposal::new(frontiers1.clone(), &key1, snapshot_number1);
+        let p2 = Preproposal::new(frontiers2.clone(), &key2, snapshot_number1);
         let p3 = Preproposal::new(frontiers1.clone(), &key1, snapshot_number2);
         let p4 = Preproposal::new(vec![], &key1, snapshot_number1);
 

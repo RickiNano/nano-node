@@ -1,7 +1,8 @@
 use crate::{Aggregatable, MessageVariant, ProposalHash};
 use bitvec::prelude::BitArray;
 use rsnano_types::{
-    read_u32_be, Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature, SnapshotNumber
+    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+    SnapshotNumber, read_u32_be,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -13,7 +14,11 @@ pub struct ProposalVote {
 }
 
 impl ProposalVote {
-    pub fn new(proposal_hash: ProposalHash, private_key: &PrivateKey, snapshot_number: SnapshotNumber) -> Self {
+    pub fn new(
+        proposal_hash: ProposalHash,
+        private_key: &PrivateKey,
+        snapshot_number: SnapshotNumber,
+    ) -> Self {
         let mut proposal_vote = Self {
             snapshot_number,
             proposal_hash,

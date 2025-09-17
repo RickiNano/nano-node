@@ -1,7 +1,8 @@
 use crate::{Aggregatable, MessageVariant, Preproposal, PreproposalHash};
 use bitvec::array::BitArray;
 use rsnano_types::{
-    read_u32_be, Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature, SnapshotNumber
+    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+    SnapshotNumber, read_u32_be,
 };
 
 pub type PreproposalsHash = Blake2Hash;
@@ -133,7 +134,7 @@ mod tests {
                 (Account::from(2), BlockHash::from(20)),
             ],
             &PrivateKey::new(),
-            0
+            0,
         );
         let pre2 = Preproposal::new(
             vec![
@@ -141,7 +142,7 @@ mod tests {
                 (Account::from(1), BlockHash::from(10)),
             ],
             &PrivateKey::new(),
-            0
+            0,
         );
 
         let p1 = Proposal::new(&[pre1.clone(), pre2.clone()], &PrivateKey::new(), 0);
@@ -180,7 +181,11 @@ mod tests {
         let p1 = Proposal::new(vec![], &key1, snapshot_number);
         let p2 = Proposal::new(&[Preproposal::new_test_instance()], &key1, snapshot_number);
         let p3 = Proposal::new(&[Preproposal::new_test_instance()], &key2, snapshot_number);
-        let p4 = Proposal::new(&[Preproposal::new_test_instance()], &key2, snapshot_number + 1);
+        let p4 = Proposal::new(
+            &[Preproposal::new_test_instance()],
+            &key2,
+            snapshot_number + 1,
+        );
 
         assert_ne!(p1.hash(), p2.hash());
         assert_ne!(p2.hash(), p3.hash());
