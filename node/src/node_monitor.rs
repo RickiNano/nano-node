@@ -8,7 +8,7 @@ use tracing::info;
 
 use rsnano_ledger::Ledger;
 use rsnano_network::Network;
-use rsnano_utils::{CancellationToken, ticker::Tickable};
+use rsnano_utils::{ticker::Tickable, CancellationToken};
 
 use crate::{
     block_rate_calculator::CurrentBlockRates, consensus::ActiveElectionsContainer,
@@ -65,8 +65,8 @@ impl NodeMonitor {
             info!(
                 "Quorum: {} (stake peered: {} | online stake: {})",
                 delta.format_balance(0),
-                online.format_balance(0),
-                peered.format_balance(0)
+                peered.format_balance(0),
+                online.format_balance(0)
             );
         }
 

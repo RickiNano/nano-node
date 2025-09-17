@@ -198,9 +198,6 @@ impl NetworkMessageProcessor {
             }
             #[cfg(feature = "ledger_snapshots")]
             Message::SnapshotPreproposal(preproposal) => {
-                use tracing::warn;
-                warn!("Snapshot preproposal received");
-
                 self.ledger_snapshots.receive_preproposal(preproposal);
             }
             #[cfg(feature = "ledger_snapshots")]

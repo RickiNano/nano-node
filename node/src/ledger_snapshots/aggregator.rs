@@ -42,11 +42,15 @@ impl<T: Aggregatable> Aggregator<T> {
 
     /// Quorum is reached if all received valid values have 67% vote weight in sum
     pub(crate) fn has_quorum(&self, params: &ConsensusParams) -> bool {
+        self.tally(params) >= params.quorum_weight
+    }
+
+    pub(crate) fn tally(&self, params: &ConsensusParams) -> Amount {
         let mut weight = Amount::ZERO;
         for value in self.values() {
             weight += params.rep_weights.weight(&value.signer());
         }
-        weight >= params.quorum_weight
+        weight
     }
 }
 

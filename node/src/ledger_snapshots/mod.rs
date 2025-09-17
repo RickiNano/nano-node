@@ -13,8 +13,9 @@ use rsnano_types::{Account, BlockHash};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
 use crate::ledger_snapshots::tally::find_winner_proposal;
-use crate::representatives::{ConsensusParams, OnlineReps};
+use crate::representatives::OnlineReps;
 use crate::transport::MessageFlooder;
+use tracing::warn;
 
 pub struct LedgerSnapshots {
     ledger: Arc<Ledger>,
@@ -65,6 +66,7 @@ impl LedgerSnapshots {
     }
 
     pub fn publish_preproposal(&self) {
+        warn!("Preproposal generation triggered");
         // TODO add test for no private key
         let private_key = (self.get_private_key)().unwrap();
         let preproposal = self.create_preproposal(&private_key);
@@ -86,6 +88,7 @@ impl LedgerSnapshots {
     }
 
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
+        warn!(preproposal_hash= ?preproposal.hash(), "Snapshot preproposal received");
         self.receive_preproposal_listener.emit(preproposal.clone());
 
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
@@ -94,18 +97,26 @@ impl LedgerSnapshots {
             let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
             preproposal_aggregator.add(preproposal);
 
+            warn!(
+                "Current preproposal tally = {:?}",
+                preproposal_aggregator.tally(&consensus_params)
+            );
+
             if preproposal_aggregator.has_quorum(&consensus_params) {
+                warn!("Quorum on preproposals reached");
                 let proposal = Proposal::new(
                     preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
                 );
                 Some(proposal)
             } else {
+                warn!("No quorum on preproposals yet");
                 None
             }
         };
 
         if let Some(proposal) = proposal {
+            warn!(proposal_hash = ?proposal.hash(), "Created proposal. Flooding...");
             self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
                 &Message::SnapshotProposal(proposal),
                 TrafficType::LedgerSnapshots,
@@ -119,6 +130,7 @@ impl LedgerSnapshots {
     }
 
     pub fn receive_proposal(&self, proposal: Proposal) {
+        warn!(proposal_hash = ?proposal.hash(), "Snapshot proposal received");
         self.receive_proposal_listener.emit(proposal.clone());
 
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
@@ -126,20 +138,30 @@ impl LedgerSnapshots {
         let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
         proposal_aggregator.add(proposal);
 
-        if proposal_aggregator.has_quorum(&consensus_params)
-            && !self.proposal_voted.load(Ordering::SeqCst)
-        {
-            if let Some(proposal_vote) = LedgerSnapshots::create_proposal_vote(
+        warn!(
+            "Current proposal tally = {:?}",
+            proposal_aggregator.tally(&consensus_params)
+        );
+
+        let has_quorum = proposal_aggregator.has_quorum(&consensus_params);
+        if has_quorum {
+            warn!("Quorum on proposal reached");
+        }
+
+        if has_quorum && !self.proposal_voted.load(Ordering::SeqCst) {
+            let proposal_vote = LedgerSnapshots::create_proposal_vote(
                 &proposal_aggregator,
                 &(self.get_private_key)().unwrap(),
-            ) {
-                self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
-                    &Message::SnapshotProposalVote(proposal_vote),
-                    TrafficType::LedgerSnapshots,
-                    0.0,
-                );
-                self.proposal_voted.store(true, Ordering::SeqCst);
-            }
+            )
+            .expect("Should always be able to create a vote when quorum reached");
+
+            warn!(vote_hash = ?proposal_vote.hash(), "Flooding proposal vote");
+            self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
+                &Message::SnapshotProposalVote(proposal_vote),
+                TrafficType::LedgerSnapshots,
+                0.0,
+            );
+            self.proposal_voted.store(true, Ordering::SeqCst);
         }
     }
 
@@ -169,6 +191,11 @@ impl LedgerSnapshots {
 
         let mut vote_aggregator = self.proposal_vote_aggregator.lock().unwrap();
         vote_aggregator.add(proposal_vote);
+
+        warn!(
+            received_votes = vote_aggregator.len(),
+            "Snapshot proposal vote received"
+        );
 
         if let Some(winner) = find_winner_proposal(&consensus_params, vote_aggregator.values()) {
             tracing::warn!(proposal_hash=?winner, "Found a winner!");
@@ -266,27 +293,11 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
 
-        assert!(
-            snapshots
-                .preproposal_aggregator
-                .lock()
-                .unwrap()
-                .contains(&preproposal.hash())
-        );
-    }
-
-    #[test]
-    fn a_received_preproposal_sets_the_rep_weights() {
-        let fixture = Fixture::new();
-        let snapshots = &fixture.snapshots;
-        let preproposal = Preproposal::new_test_instance();
-
-        snapshots.receive_preproposal(preproposal.clone());
-        let online_reps = snapshots.online_reps.lock().unwrap();
-        let tally = snapshots.consensus_params.lock().unwrap();
-
-        assert_eq!(tally.quorum_weight, online_reps.quorum_delta());
-        assert_eq!(tally.rep_weights, online_reps.get_rep_weights());
+        assert!(snapshots
+            .preproposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&preproposal.hash()));
     }
 
     #[test]
@@ -336,27 +347,11 @@ mod tests {
 
         snapshots.receive_proposal(proposal.clone());
 
-        assert!(
-            snapshots
-                .proposal_aggregator
-                .lock()
-                .unwrap()
-                .contains(&proposal.hash())
-        );
-    }
-
-    #[test]
-    fn a_received_proposal_sets_the_rep_weights() {
-        let fixture = Fixture::new();
-        let snapshots = &fixture.snapshots;
-        let proposal = Proposal::new_test_instance();
-
-        snapshots.receive_proposal(proposal.clone());
-        let online_reps = snapshots.online_reps.lock().unwrap();
-        let tally = snapshots.consensus_params.lock().unwrap();
-
-        assert_eq!(tally.quorum_weight, online_reps.quorum_delta());
-        assert_eq!(tally.rep_weights, online_reps.get_rep_weights());
+        assert!(snapshots
+            .proposal_aggregator
+            .lock()
+            .unwrap()
+            .contains(&proposal.hash()));
     }
 
     #[test]
@@ -455,13 +450,11 @@ mod tests {
 
         snapshots.receive_proposal_vote(proposal_vote.clone());
 
-        assert!(
-            snapshots
-                .proposal_vote_aggregator
-                .lock()
-                .unwrap()
-                .contains(&proposal_vote.hash())
-        );
+        assert!(snapshots
+            .proposal_vote_aggregator
+            .lock()
+            .unwrap()
+            .contains(&proposal_vote.hash()));
     }
 
     struct Fixture {
