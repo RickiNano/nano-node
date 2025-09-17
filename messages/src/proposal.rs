@@ -1,7 +1,7 @@
 use crate::{Aggregatable, MessageVariant, Preproposal, PreproposalHash};
 use bitvec::array::BitArray;
 use rsnano_types::{
-    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+    read_u32_be, Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature, SnapshotNumber
 };
 
 pub type PreproposalsHash = Blake2Hash;
@@ -9,6 +9,7 @@ pub type ProposalHash = Blake2Hash;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
+    pub snapshot_number: SnapshotNumber,
     pub preproposal_hashes: Vec<PreproposalHash>,
     pub signer: PublicKey,
     pub signature: Signature,
@@ -18,11 +19,13 @@ impl Proposal {
     pub fn new<'a>(
         preproposals: impl IntoIterator<Item = &'a Preproposal>,
         private_key: &PrivateKey,
+        snapshot_number: SnapshotNumber,
     ) -> Self {
         let preproposals: Vec<PreproposalHash> =
             preproposals.into_iter().map(|p| p.hash()).collect();
 
         let mut proposal = Self {
+            snapshot_number,
             preproposal_hashes: preproposals,
             signer: private_key.public_key(),
             signature: Signature::default(),
@@ -35,6 +38,7 @@ impl Proposal {
 
     pub fn new_test_instance() -> Self {
         Self {
+            snapshot_number: 1,
             preproposal_hashes: vec![PreproposalHash::from(1)],
             signer: PublicKey::from(2),
             signature: Signature::from_bytes([1; 64]),
@@ -60,6 +64,7 @@ impl Proposal {
     where
         T: std::io::Write,
     {
+        writer.write_all(&self.snapshot_number.to_be_bytes())?;
         self.signer.serialize(writer)?;
         self.signature.serialize(writer)?;
         for preproposal in &self.preproposal_hashes {
@@ -73,6 +78,7 @@ impl Proposal {
     }
 
     pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let snapshot_number = read_u32_be(&mut bytes)?;
         let signer = PublicKey::deserialize(&mut bytes)?;
         let signature = Signature::deserialize(&mut bytes)?;
         let mut preproposals = Vec::new();
@@ -83,6 +89,7 @@ impl Proposal {
         }
 
         Ok(Proposal {
+            snapshot_number,
             preproposal_hashes: preproposals,
             signer,
             signature,
@@ -105,6 +112,7 @@ impl Aggregatable for Proposal {
         let preproposals_hash = self.preproposals_hash();
         let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
         hash_builder = hash_builder
+            .update(self.snapshot_number.to_be_bytes())
             .update(preproposals_hash.as_bytes())
             .update(self.signer.as_bytes());
         hash_builder.build()
@@ -136,8 +144,8 @@ mod tests {
             0
         );
 
-        let p1 = Proposal::new(&[pre1.clone(), pre2.clone()], &PrivateKey::new());
-        let p2 = Proposal::new(&[pre2, pre1], &PrivateKey::new());
+        let p1 = Proposal::new(&[pre1.clone(), pre2.clone()], &PrivateKey::new(), 0);
+        let p2 = Proposal::new(&[pre2, pre1], &PrivateKey::new(), 0);
 
         assert_eq!(p1.preproposals_hash(), p2.preproposals_hash());
     }
@@ -147,7 +155,7 @@ mod tests {
         let private_key = PrivateKey::from(42);
         let preproposals = [Preproposal::new_test_instance()];
 
-        let proposal = Proposal::new(&preproposals, &private_key);
+        let proposal = Proposal::new(&preproposals, &private_key, 0);
 
         assert_eq!(proposal.signer, private_key.public_key());
 
@@ -161,5 +169,21 @@ mod tests {
     fn proposal_serialization() {
         let message = Message::SnapshotProposal(Proposal::new_test_instance());
         assert_deserializable(&message);
+    }
+
+    #[test]
+    fn hash_proposal() {
+        let key1 = PrivateKey::from(1);
+        let key2 = PrivateKey::from(2);
+        let snapshot_number = 0;
+
+        let p1 = Proposal::new(vec![], &key1, snapshot_number);
+        let p2 = Proposal::new(&[Preproposal::new_test_instance()], &key1, snapshot_number);
+        let p3 = Proposal::new(&[Preproposal::new_test_instance()], &key2, snapshot_number);
+        let p4 = Proposal::new(&[Preproposal::new_test_instance()], &key2, snapshot_number + 1);
+
+        assert_ne!(p1.hash(), p2.hash());
+        assert_ne!(p2.hash(), p3.hash());
+        assert_ne!(p3.hash(), p4.hash());
     }
 }

@@ -107,6 +107,7 @@ impl LedgerSnapshots {
                 let proposal = Proposal::new(
                     preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
+                    0
                 );
                 Some(proposal)
             } else {
@@ -172,6 +173,7 @@ impl LedgerSnapshots {
         Some(ProposalVote::new(
             proposal_aggregator.values().map(|p| p.hash()).max()?,
             private_key,
+            0,
         ))
     }
 
@@ -315,7 +317,7 @@ mod tests {
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_proposal = Proposal::new(&[preproposal], &private_key);
+        let expected_proposal = Proposal::new(&[preproposal], &private_key, 0);
 
         assert_eq!(
             flood_events[0],
@@ -363,13 +365,13 @@ mod tests {
         rep_weights.insert(private_key.public_key(), quorum_weight);
         let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
 
-        let proposal = Proposal::new(vec![], &private_key);
+        let proposal = Proposal::new(vec![], &private_key, 0);
         fixture.snapshots.receive_proposal(proposal.clone());
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_proposal_vote = ProposalVote::new(proposal.hash(), &private_key);
+        let expected_proposal_vote = ProposalVote::new(proposal.hash(), &private_key, 0);
 
         assert_eq!(
             flood_events[0],
@@ -391,8 +393,8 @@ mod tests {
 
         let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
 
-        let proposal1 = Proposal::new(vec![], &private_key);
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2));
+        let proposal1 = Proposal::new(vec![], &private_key, 0);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), 0);
         fixture.snapshots.receive_proposal(proposal1.clone());
         fixture.snapshots.receive_proposal(proposal2);
 
@@ -402,10 +404,10 @@ mod tests {
 
     #[test]
     fn vote_for_proposal_with_highest_hash() {
-        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1));
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2));
-        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3));
-        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4));
+        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), 0);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), 0);
+        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), 0);
+        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), 0);
 
         let highest_hash = [
             proposal1.hash(),

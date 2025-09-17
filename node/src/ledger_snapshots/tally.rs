@@ -90,7 +90,7 @@ mod tests {
         params.set_rep_weights(rep_weights, Amount::MAX);
 
         let proposal_hash = ProposalHash::from(1);
-        let proposal_vote = ProposalVote::new(proposal_hash, &rep_key);
+        let proposal_vote = ProposalVote::new(proposal_hash, &rep_key, 0);
 
         assert_eq!(find_winner_proposal(&params, &[proposal_vote]), None);
     }
@@ -109,8 +109,8 @@ mod tests {
         params.set_rep_weights(rep_weights, weight * 2);
 
         let proposal_hash = ProposalHash::from(1);
-        let proposal_vote1 = ProposalVote::new(proposal_hash, &rep_key1);
-        let proposal_vote2 = ProposalVote::new(proposal_hash, &rep_key2);
+        let proposal_vote1 = ProposalVote::new(proposal_hash, &rep_key1, 0);
+        let proposal_vote2 = ProposalVote::new(proposal_hash, &rep_key2, 0);
 
         assert_eq!(
             find_winner_proposal(&params, &[proposal_vote1, proposal_vote2]),

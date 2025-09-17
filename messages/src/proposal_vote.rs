@@ -1,19 +1,21 @@
 use crate::{Aggregatable, MessageVariant, ProposalHash};
 use bitvec::prelude::BitArray;
 use rsnano_types::{
-    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+    read_u32_be, Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature, SnapshotNumber
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProposalVote {
+    pub snapshot_number: SnapshotNumber,
     pub voter: PublicKey,
     pub signature: Signature,
     pub proposal_hash: ProposalHash,
 }
 
 impl ProposalVote {
-    pub fn new(proposal_hash: ProposalHash, private_key: &PrivateKey) -> Self {
+    pub fn new(proposal_hash: ProposalHash, private_key: &PrivateKey, snapshot_number: SnapshotNumber) -> Self {
         let mut proposal_vote = Self {
+            snapshot_number,
             proposal_hash,
             voter: private_key.public_key(),
             signature: Signature::default(),
@@ -26,6 +28,7 @@ impl ProposalVote {
 
     pub fn new_test_instance() -> Self {
         Self {
+            snapshot_number: 1,
             proposal_hash: ProposalHash::from(1),
             voter: PublicKey::from(2),
             signature: Signature::from_bytes([1; 64]),
@@ -36,6 +39,7 @@ impl ProposalVote {
     where
         T: std::io::Write,
     {
+        writer.write_all(&self.snapshot_number.to_be_bytes())?;
         self.voter.serialize(writer)?;
         self.signature.serialize(writer)?;
         self.proposal_hash.serialize(writer)
@@ -46,10 +50,12 @@ impl ProposalVote {
     }
 
     pub fn deserialize(mut bytes: &[u8]) -> Result<Self, DeserializationError> {
+        let snapshot_number = read_u32_be(&mut bytes)?;
         let voter = PublicKey::deserialize(&mut bytes)?;
         let signature = Signature::deserialize(&mut bytes)?;
         let proposal_hash = ProposalHash::deserialize(&mut bytes)?;
         Ok(Self {
+            snapshot_number,
             voter,
             signature,
             proposal_hash,
@@ -72,6 +78,7 @@ impl Aggregatable for ProposalVote {
         let proposal_hash = self.proposal_hash;
         let mut hash_builder: Blake2HashBuilder = Blake2HashBuilder::default();
         hash_builder = hash_builder
+            .update(self.snapshot_number.to_be_bytes())
             .update(proposal_hash.as_bytes())
             .update(self.voter.as_bytes());
         hash_builder.build()
@@ -88,7 +95,7 @@ mod tests {
         let private_key = PrivateKey::from(42);
         let proposal = Proposal::new_test_instance();
 
-        let proposal_vote = ProposalVote::new(proposal.hash(), &private_key);
+        let proposal_vote = ProposalVote::new(proposal.hash(), &private_key, 0);
 
         assert_eq!(proposal_vote.voter, private_key.public_key());
         assert_eq!(proposal_vote.proposal_hash, proposal.hash());
@@ -109,9 +116,13 @@ mod tests {
     #[test]
     fn proposal_vote_hash() {
         let proposal_hash = ProposalHash::from(1);
-        let proposal_vote1 = ProposalVote::new(proposal_hash, &PrivateKey::from(1));
-        let proposal_vote2 = ProposalVote::new(proposal_hash, &PrivateKey::from(2));
+        let proposal_vote1 = ProposalVote::new(proposal_hash, &PrivateKey::from(1), 0);
+        let proposal_vote2 = ProposalVote::new(proposal_hash, &PrivateKey::from(2), 0);
+        let proposal_vote3 = ProposalVote::new(proposal_hash, &PrivateKey::from(2), 1);
+        let proposal_vote4 = ProposalVote::new(ProposalHash::from(2), &PrivateKey::from(1), 0);
 
         assert_ne!(proposal_vote1.hash(), proposal_vote2.hash());
+        assert_ne!(proposal_vote3.hash(), proposal_vote2.hash());
+        assert_ne!(proposal_vote1.hash(), proposal_vote4.hash());
     }
 }
