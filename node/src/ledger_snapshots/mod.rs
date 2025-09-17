@@ -26,7 +26,6 @@ pub struct LedgerSnapshots {
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
     receive_proposal_vote_listener: OutputListenerMt<ProposalVote>,
-    consensus_params: Mutex<ConsensusParams>,
     preproposal_aggregator: Mutex<Aggregator<Preproposal>>,
     proposal_aggregator: Mutex<Aggregator<Proposal>>,
     proposal_vote_aggregator: Mutex<Aggregator<ProposalVote>>,
@@ -48,7 +47,6 @@ impl LedgerSnapshots {
             receive_preproposal_listener: OutputListenerMt::new(),
             receive_proposal_listener: OutputListenerMt::new(),
             receive_proposal_vote_listener: OutputListenerMt::new(),
-            consensus_params: Default::default(),
             preproposal_aggregator: Default::default(),
             proposal_aggregator: Default::default(),
             proposal_vote_aggregator: Default::default(),
@@ -90,12 +88,9 @@ impl LedgerSnapshots {
     pub fn receive_preproposal(&self, preproposal: Preproposal) {
         self.receive_preproposal_listener.emit(preproposal.clone());
 
-        let (rep_weights, quorum_weight) = self.get_consensus_info();
+        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let proposal = {
-            let mut consensus_params = self.consensus_params.lock().unwrap();
-            consensus_params.set_rep_weights(rep_weights, quorum_weight);
-
             let mut preproposal_aggregator = self.preproposal_aggregator.lock().unwrap();
             preproposal_aggregator.add(preproposal);
 
@@ -119,13 +114,6 @@ impl LedgerSnapshots {
         };
     }
 
-    fn get_consensus_info(&self) -> (rsnano_ledger::RepWeights, rsnano_types::Amount) {
-        let online_reps = self.online_reps.lock().unwrap();
-        let rep_weights = online_reps.get_rep_weights();
-        let quorum_weight = online_reps.quorum_delta();
-        (rep_weights, quorum_weight)
-    }
-
     pub fn track_received_preproposals(&self) -> Arc<OutputTrackerMt<Preproposal>> {
         self.receive_preproposal_listener.track()
     }
@@ -133,9 +121,7 @@ impl LedgerSnapshots {
     pub fn receive_proposal(&self, proposal: Proposal) {
         self.receive_proposal_listener.emit(proposal.clone());
 
-        let (rep_weights, quorum_weight) = self.get_consensus_info();
-        let mut consensus_params = self.consensus_params.lock().unwrap();
-        consensus_params.set_rep_weights(rep_weights, quorum_weight);
+        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let mut proposal_aggregator = self.proposal_aggregator.lock().unwrap();
         proposal_aggregator.add(proposal);
@@ -179,9 +165,7 @@ impl LedgerSnapshots {
         self.receive_proposal_vote_listener
             .emit(proposal_vote.clone());
 
-        let (rep_weights, quorum_weight) = self.get_consensus_info();
-        let mut consensus_params = self.consensus_params.lock().unwrap();
-        consensus_params.set_rep_weights(rep_weights, quorum_weight);
+        let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
         let mut vote_aggregator = self.proposal_vote_aggregator.lock().unwrap();
         vote_aggregator.add(proposal_vote);
@@ -282,11 +266,13 @@ mod tests {
 
         snapshots.receive_preproposal(preproposal.clone());
 
-        assert!(snapshots
-            .preproposal_aggregator
-            .lock()
-            .unwrap()
-            .contains(&preproposal.hash()));
+        assert!(
+            snapshots
+                .preproposal_aggregator
+                .lock()
+                .unwrap()
+                .contains(&preproposal.hash())
+        );
     }
 
     #[test]
@@ -350,11 +336,13 @@ mod tests {
 
         snapshots.receive_proposal(proposal.clone());
 
-        assert!(snapshots
-            .proposal_aggregator
-            .lock()
-            .unwrap()
-            .contains(&proposal.hash()));
+        assert!(
+            snapshots
+                .proposal_aggregator
+                .lock()
+                .unwrap()
+                .contains(&proposal.hash())
+        );
     }
 
     #[test]
@@ -467,11 +455,13 @@ mod tests {
 
         snapshots.receive_proposal_vote(proposal_vote.clone());
 
-        assert!(snapshots
-            .proposal_vote_aggregator
-            .lock()
-            .unwrap()
-            .contains(&proposal_vote.hash()));
+        assert!(
+            snapshots
+                .proposal_vote_aggregator
+                .lock()
+                .unwrap()
+                .contains(&proposal_vote.hash())
+        );
     }
 
     struct Fixture {
