@@ -1,5 +1,5 @@
 use crate::{
-    ledger_snapshots::{tally::find_winner_proposal, Aggregator},
+    ledger_snapshots::{Aggregator, tally::find_winner_proposal},
     representatives::ConsensusParams,
 };
 use rsnano_messages::{Aggregatable, Preproposal, Proposal, ProposalVote};
@@ -109,7 +109,9 @@ pub(crate) fn create_proposal_vote(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rsnano_ledger::RepWeights;
     use rsnano_messages::ProposalHash;
+    use rsnano_types::Amount;
 
     #[test]
     fn discard_preproposal_with_different_snapshot_number_than_current() {
@@ -184,5 +186,36 @@ mod tests {
         state.receive_vote(proposal_vote2, &ConsensusParams::default());
 
         assert!(state.vote_aggregator.is_empty());
+    }
+
+    #[test]
+    fn current_snapshot_number_is_increased_when_proposal_gets_confirmed() {
+        let rep_key = PrivateKey::from(1);
+        let mut weights = RepWeights::new();
+        weights.insert(rep_key.public_key(), Amount::MAX);
+
+        let mut state = LedgerSnapshotsState::default();
+        let snapshot_number = state.current_snapshot_number;
+
+        let preproposal = Preproposal::new(vec![], &rep_key, snapshot_number);
+        let proposal = Proposal::new([&preproposal], &rep_key, snapshot_number);
+        let proposal_vote = ProposalVote::new(ProposalHash::from(123), &rep_key, snapshot_number);
+
+        state.receive_preproposal(preproposal);
+        state.receive_proposal(proposal);
+        let consensus_params = ConsensusParams {
+            rep_weights: weights,
+            ..Default::default()
+        };
+        state.receive_vote(proposal_vote, &consensus_params);
+
+        assert_eq!(state.current_snapshot_number, snapshot_number + 1);
+        assert_eq!(
+            state.preproposal_aggregator.len(),
+            0,
+            "preproposals not cleared"
+        );
+        assert_eq!(state.proposal_aggregator.len(), 0, "proposals not cleared");
+        assert_eq!(state.vote_aggregator.len(), 0, "votes not cleared");
     }
 }
