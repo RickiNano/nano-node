@@ -1,14 +1,14 @@
 mod aggregator;
 mod tally;
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Aggregatable, Message, Preproposal, Proposal, ProposalVote};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
-use rsnano_types::PrivateKey;
+use rsnano_types::{PrivateKey, SnapshotNumber};
 use rsnano_types::{Account, BlockHash};
 
 use crate::ledger_snapshots::aggregator::Aggregator;
@@ -32,6 +32,7 @@ pub struct LedgerSnapshots {
     proposal_vote_aggregator: Mutex<Aggregator<ProposalVote>>,
     online_reps: Arc<Mutex<OnlineReps>>,
     proposal_voted: AtomicBool,
+    current_snapshot_number: AtomicU32,
 }
 
 impl LedgerSnapshots {
@@ -53,6 +54,7 @@ impl LedgerSnapshots {
             proposal_vote_aggregator: Default::default(),
             online_reps,
             proposal_voted: AtomicBool::new(false),
+            current_snapshot_number: AtomicU32::new(0),
         }
     }
 
@@ -80,7 +82,7 @@ impl LedgerSnapshots {
 
     fn create_preproposal(&self, private_key: &PrivateKey) -> Preproposal {
         let frontiers = self.collect_frontiers();
-        Preproposal::new(frontiers, private_key, 0)
+        Preproposal::new(frontiers, private_key, self.get_current_snapshot_number())
     }
 
     fn collect_frontiers(&self) -> Vec<(Account, BlockHash)> {
@@ -107,7 +109,7 @@ impl LedgerSnapshots {
                 let proposal = Proposal::new(
                     preproposal_aggregator.values(),
                     &(self.get_private_key)().unwrap(),
-                    0
+                    self.get_current_snapshot_number()
                 );
                 Some(proposal)
             } else {
@@ -153,6 +155,7 @@ impl LedgerSnapshots {
             let proposal_vote = LedgerSnapshots::create_proposal_vote(
                 &proposal_aggregator,
                 &(self.get_private_key)().unwrap(),
+                self.get_current_snapshot_number()
             )
             .expect("Should always be able to create a vote when quorum reached");
 
@@ -169,11 +172,12 @@ impl LedgerSnapshots {
     fn create_proposal_vote(
         proposal_aggregator: &Aggregator<Proposal>,
         private_key: &PrivateKey,
+        snapshot_number: SnapshotNumber
     ) -> Option<ProposalVote> {
         Some(ProposalVote::new(
             proposal_aggregator.values().map(|p| p.hash()).max()?,
             private_key,
-            0,
+            snapshot_number,
         ))
     }
 
@@ -202,6 +206,10 @@ impl LedgerSnapshots {
         if let Some(winner) = find_winner_proposal(&consensus_params, vote_aggregator.values()) {
             tracing::warn!(proposal_hash=?winner, "Found a winner!");
         }
+    }
+
+    fn get_current_snapshot_number(&self) -> SnapshotNumber {
+        self.current_snapshot_number.load(Ordering::SeqCst)
     }
 }
 
@@ -247,6 +255,7 @@ mod tests {
         let preproposal = fixture.snapshots.create_preproposal(&PrivateKey::from(1));
 
         assert!(preproposal.frontiers.contains(&(account, frontier)));
+        assert_eq!(preproposal.snapshot_number, fixture.snapshots.get_current_snapshot_number());
     }
 
     #[test]
@@ -303,21 +312,23 @@ mod tests {
     }
 
     #[test]
-    fn publish_proposal_vote_when_quorum_of_preproposals_is_reached() {
+    fn publish_proposal_when_quorum_of_preproposals_is_reached() {
         let mut rep_weights = RepWeights::new();
         let private_key = get_test_key().unwrap();
         let quorum_weight = Amount::nano(100_000);
 
         rep_weights.insert(private_key.public_key(), quorum_weight);
         let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
 
-        let preproposal = Preproposal::new(vec![], &private_key, 0);
+        let preproposal = Preproposal::new(vec![], &private_key, snapshot_number);
         fixture.snapshots.receive_preproposal(preproposal.clone());
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_proposal = Proposal::new(&[preproposal], &private_key, 0);
+        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
+        let expected_proposal = Proposal::new(&[preproposal], &private_key, snapshot_number);
 
         assert_eq!(
             flood_events[0],
@@ -328,6 +339,8 @@ mod tests {
                 all_prs: true,
             }
         );
+
+        assert_eq!(snapshot_number, fixture.snapshots.get_current_snapshot_number());
     }
 
     #[test]
@@ -364,14 +377,15 @@ mod tests {
 
         rep_weights.insert(private_key.public_key(), quorum_weight);
         let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
 
-        let proposal = Proposal::new(vec![], &private_key, 0);
+        let proposal = Proposal::new(vec![], &private_key, snapshot_number);
         fixture.snapshots.receive_proposal(proposal.clone());
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_proposal_vote = ProposalVote::new(proposal.hash(), &private_key, 0);
+        let expected_proposal_vote = ProposalVote::new(proposal.hash(), &private_key, snapshot_number);
 
         assert_eq!(
             flood_events[0],
@@ -382,6 +396,8 @@ mod tests {
                 all_prs: true,
             }
         );
+
+        assert_eq!(snapshot_number, fixture.snapshots.get_current_snapshot_number());
     }
 
     #[test]
@@ -392,9 +408,10 @@ mod tests {
         rep_weights.insert(private_key.public_key(), quorum_weight);
 
         let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
 
-        let proposal1 = Proposal::new(vec![], &private_key, 0);
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), 0);
+        let proposal1 = Proposal::new(vec![], &private_key, snapshot_number);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
         fixture.snapshots.receive_proposal(proposal1.clone());
         fixture.snapshots.receive_proposal(proposal2);
 
@@ -404,10 +421,11 @@ mod tests {
 
     #[test]
     fn vote_for_proposal_with_highest_hash() {
-        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), 0);
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), 0);
-        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), 0);
-        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), 0);
+        let snapshot_number = 0;
+        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), snapshot_number);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
+        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), snapshot_number);
+        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), snapshot_number);
 
         let highest_hash = [
             proposal1.hash(),
@@ -426,7 +444,7 @@ mod tests {
         proposal_aggregator.add(proposal4);
 
         let proposal_vote =
-            LedgerSnapshots::create_proposal_vote(&proposal_aggregator, &PrivateKey::from(5));
+            LedgerSnapshots::create_proposal_vote(&proposal_aggregator, &PrivateKey::from(5), snapshot_number);
 
         assert_eq!(proposal_vote.unwrap().proposal_hash, highest_hash);
     }
@@ -457,6 +475,13 @@ mod tests {
             .lock()
             .unwrap()
             .contains(&proposal_vote.hash()));
+    }
+
+    #[test]
+    fn initial_snapshot_number_should_be_zero() {
+        let ledger_snapshots = LedgerSnapshots::new_null();
+
+        assert_eq!(ledger_snapshots.get_current_snapshot_number(), 0);
     }
 
     struct Fixture {
@@ -503,8 +528,10 @@ mod tests {
             online_reps.set_trended(quorum_weight / ONLINE_WEIGHT_QUORUM as u128 * 100);
             let online_reps = Arc::new(Mutex::new(online_reps));
 
-            let snapshots =
+            let mut snapshots =
                 LedgerSnapshots::new(ledger.clone(), get_test_key, flooder, online_reps);
+
+            snapshots.current_snapshot_number.store(10, Ordering::SeqCst); 
 
             let receive_preproposal_tracker = snapshots.track_received_preproposals();
             let receive_proposal_tracker = snapshots.track_received_proposals();
