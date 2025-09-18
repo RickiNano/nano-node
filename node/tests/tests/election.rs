@@ -3,10 +3,10 @@ use std::{sync::Arc, time::Duration};
 use rsnano_ledger::test_helpers::UnsavedBlockLatticeBuilder;
 use rsnano_node::{
     config::NodeConfig,
-    consensus::{election::ElectionBehavior, ReceivedVote},
+    consensus::{ReceivedVote, election::ElectionBehavior},
 };
-use rsnano_types::{Amount, PrivateKey, Vote, VoteSource, DEV_GENESIS_KEY};
-use test_helpers::{assert_timely2, setup_chain, start_election, System};
+use rsnano_types::{Amount, DEV_GENESIS_KEY, PrivateKey, Vote, VoteSource};
+use test_helpers::{System, assert_timely2, setup_chain, start_election};
 
 // checks that block cannot be confirmed if there is no enough votes to reach quorum
 #[test]
