@@ -1,16 +1,13 @@
 mod aggregator;
 mod state;
-mod tally;
 
 use std::sync::{Arc, Mutex};
-
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Aggregatable, Message, Preproposal, Proposal, ProposalVote};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, BlockHash};
 use rsnano_types::{PrivateKey, SnapshotNumber};
-
 use crate::{
     ledger_snapshots::{aggregator::Aggregator, state::State},
     representatives::OnlineReps,
