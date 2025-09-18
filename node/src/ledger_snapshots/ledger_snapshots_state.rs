@@ -1,9 +1,7 @@
-use crate::{
-    ledger_snapshots::{Aggregator, tally::find_winner_proposal},
-    representatives::ConsensusParams,
-};
-use rsnano_messages::{Aggregatable, Preproposal, Proposal, ProposalVote};
-use rsnano_types::{PrivateKey, SnapshotNumber};
+use crate::{ledger_snapshots::Aggregator, representatives::ConsensusParams};
+use rsnano_messages::{Aggregatable, Preproposal, Proposal, ProposalHash, ProposalVote};
+use rsnano_types::{Amount, PrivateKey, SnapshotNumber};
+use std::collections::HashMap;
 
 #[derive(Default)]
 pub(crate) struct LedgerSnapshotsState {
@@ -81,8 +79,7 @@ impl LedgerSnapshotsState {
 
         self.vote_aggregator.add(vote);
 
-        if let Some(winner) = find_winner_proposal(&consensus_params, self.vote_aggregator.values())
-        {
+        if let Some(winner) = self.find_winner_proposal(&consensus_params) {
             tracing::warn!(proposal_hash=?winner, "Found a winner!");
             self.current_snapshot_number += 1;
             self.preproposal_aggregator.clear();
@@ -91,6 +88,20 @@ impl LedgerSnapshotsState {
         }
 
         true
+    }
+
+    pub(crate) fn find_winner_proposal(&self, params: &ConsensusParams) -> Option<ProposalHash> {
+        let mut tallies: HashMap<ProposalHash, Amount> = HashMap::new();
+
+        for vote in self.vote_aggregator.values() {
+            let weight = tallies.entry(vote.proposal_hash).or_default();
+            *weight += params.rep_weights.weight(&vote.voter);
+        }
+
+        tallies
+            .into_iter()
+            .find(|(_, w)| *w >= params.quorum_weight)
+            .map(|(p, _)| p)
     }
 }
 
@@ -217,5 +228,57 @@ mod tests {
         );
         assert_eq!(state.proposal_aggregator.len(), 0, "proposals not cleared");
         assert_eq!(state.vote_aggregator.len(), 0, "votes not cleared");
+    }
+
+    #[test]
+    fn a_winner_proposal_is_not_found_if_there_are_no_votes() {
+        let state = LedgerSnapshotsState::default();
+
+        assert_eq!(
+            state.find_winner_proposal(&ConsensusParams::default()),
+            None
+        );
+    }
+
+    #[test]
+    fn a_winner_proposal_is_not_found_if_quorum_is_not_reached() {
+        let mut params = ConsensusParams::default();
+        let rep_key = PrivateKey::from(1);
+        let weight = Amount::nano(100_000);
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key.public_key(), weight);
+        params.set_rep_weights(rep_weights, Amount::MAX);
+
+        let proposal_hash = ProposalHash::from(1);
+        let proposal_vote = ProposalVote::new(proposal_hash, &rep_key, 0);
+
+        let mut state: LedgerSnapshotsState = LedgerSnapshotsState::default();
+        state.vote_aggregator.add(proposal_vote);
+
+        assert_eq!(state.find_winner_proposal(&params), None);
+    }
+
+    #[test]
+    fn a_winner_proposal_is_found_if_quorum_is_reached() {
+        let mut params = ConsensusParams::default();
+
+        let rep_key1 = PrivateKey::from(1);
+        let rep_key2 = PrivateKey::from(2);
+        let weight = Amount::nano(100_000);
+
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key1.public_key(), weight);
+        rep_weights.insert(rep_key2.public_key(), weight);
+        params.set_rep_weights(rep_weights, weight * 2);
+
+        let proposal_hash = ProposalHash::from(1);
+        let proposal_vote1 = ProposalVote::new(proposal_hash, &rep_key1, 0);
+        let proposal_vote2 = ProposalVote::new(proposal_hash, &rep_key2, 0);
+
+        let mut state = LedgerSnapshotsState::default();
+        state.vote_aggregator.add(proposal_vote1);
+        state.vote_aggregator.add(proposal_vote2);
+
+        assert_eq!(state.find_winner_proposal(&params), Some(proposal_hash));
     }
 }
