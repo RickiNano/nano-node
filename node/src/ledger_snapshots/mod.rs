@@ -1,6 +1,5 @@
 mod aggregator;
 mod ledger_snapshots_state;
-mod tally;
 
 use std::sync::{Arc, Mutex};
 
