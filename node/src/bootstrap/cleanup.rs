@@ -1,7 +1,4 @@
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::sync::Arc;
 
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_utils::stats::{DetailType, StatType, Stats};
@@ -11,16 +8,11 @@ use super::state::{BootstrapLogic, RunningQuery};
 pub(super) struct BootstrapCleanup {
     clock: Arc<SteadyClock>,
     stats: Arc<Stats>,
-    last_dependency_sync: Instant,
 }
 
 impl BootstrapCleanup {
     pub(super) fn new(clock: Arc<SteadyClock>, stats: Arc<Stats>) -> Self {
-        Self {
-            clock,
-            stats,
-            last_dependency_sync: Instant::now(),
-        }
+        Self { clock, stats }
     }
 
     pub fn cleanup(&mut self, state: &mut BootstrapLogic) {
@@ -55,11 +47,6 @@ impl BootstrapCleanup {
     }
 
     fn reinsert_known_dependencies(&mut self, state: &mut BootstrapLogic) {
-        if self.last_dependency_sync.elapsed() < Duration::from_secs(30) {
-            return;
-        }
-
-        self.last_dependency_sync = Instant::now();
         self.stats
             .inc(StatType::Bootstrap, DetailType::SyncDependencies);
 

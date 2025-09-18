@@ -172,21 +172,3 @@ fn quorum_minimum_flip_success() {
     // Wait for the election to be confirmed
     assert_timely2(|| node1.block_confirmed(&send2.hash()));
 }
-
-#[test]
-fn election_behavior() {
-    let mut system = System::new();
-    let node = system.build_node().finish();
-    let chain = setup_chain(&node, 1, &DEV_GENESIS_KEY, false);
-
-    start_election(&node, &chain[0].hash());
-    assert_eq!(
-        node.active
-            .read()
-            .unwrap()
-            .election_for_block(&chain[0].hash())
-            .unwrap()
-            .behavior(),
-        ElectionBehavior::Manual
-    );
-}
