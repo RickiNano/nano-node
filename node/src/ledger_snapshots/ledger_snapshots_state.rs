@@ -55,12 +55,9 @@ impl LedgerSnapshotsState {
         let has_quorum = self.proposal_aggregator.has_quorum(&consensus_params);
 
         if has_quorum && !self.proposal_voted {
-            let proposal_vote = create_proposal_vote(
-                &self.proposal_aggregator,
-                rep_key,
-                self.current_snapshot_number,
-            )
-            .expect("Should always be able to create a vote when quorum reached");
+            let proposal_vote = self
+                .create_proposal_vote(rep_key)
+                .expect("Should always be able to create a vote when quorum reached");
             self.proposal_voted = true;
             Some(proposal_vote)
         } else {
@@ -103,18 +100,14 @@ impl LedgerSnapshotsState {
             .find(|(_, w)| *w >= params.quorum_weight)
             .map(|(p, _)| p)
     }
-}
 
-pub(crate) fn create_proposal_vote(
-    aggregator: &Aggregator<Proposal>,
-    private_key: &PrivateKey,
-    snapshot_number: SnapshotNumber,
-) -> Option<ProposalVote> {
-    Some(ProposalVote::new(
-        aggregator.values().map(|p| p.hash()).max()?,
-        private_key,
-        snapshot_number,
-    ))
+    pub(crate) fn create_proposal_vote(&self, private_key: &PrivateKey) -> Option<ProposalVote> {
+        Some(ProposalVote::new(
+            self.proposal_aggregator.values().map(|p| p.hash()).max()?,
+            private_key,
+            self.current_snapshot_number,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -228,6 +221,35 @@ mod tests {
         );
         assert_eq!(state.proposal_aggregator.len(), 0, "proposals not cleared");
         assert_eq!(state.vote_aggregator.len(), 0, "votes not cleared");
+    }
+
+    #[test]
+    fn vote_for_proposal_with_highest_hash() {
+        let snapshot_number = 0;
+        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), snapshot_number);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
+        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), snapshot_number);
+        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), snapshot_number);
+
+        let highest_hash = [
+            proposal1.hash(),
+            proposal2.hash(),
+            proposal3.hash(),
+            proposal4.hash(),
+        ]
+        .into_iter()
+        .max()
+        .unwrap();
+
+        let mut state = LedgerSnapshotsState::default();
+        state.proposal_aggregator.add(proposal1);
+        state.proposal_aggregator.add(proposal2);
+        state.proposal_aggregator.add(proposal3);
+        state.proposal_aggregator.add(proposal4);
+
+        let proposal_vote = state.create_proposal_vote(&PrivateKey::from(5));
+
+        assert_eq!(proposal_vote.unwrap().proposal_hash, highest_hash);
     }
 
     #[test]
