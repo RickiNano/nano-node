@@ -8,6 +8,7 @@ pub(crate) struct LedgerSnapshotsState {
     pub(crate) preproposal_aggregator: Aggregator<Preproposal>,
     pub(crate) proposal_aggregator: Aggregator<Proposal>,
     pub(crate) vote_aggregator: Aggregator<ProposalVote>,
+    pub(crate) proposal_published: bool,
     pub(crate) proposal_voted: bool,
     pub(crate) current_snapshot_number: u32,
 }
@@ -26,7 +27,7 @@ impl LedgerSnapshotsState {
         consensus_params: &ConsensusParams,
         rep_key: &PrivateKey,
     ) -> Option<Proposal> {
-        if self.preproposal_aggregator.has_quorum(consensus_params) {
+        if self.preproposal_aggregator.has_quorum(consensus_params) && !self.proposal_published {
             let proposal = Proposal::new(
                 self.preproposal_aggregator.values(),
                 rep_key,
@@ -108,6 +109,10 @@ impl LedgerSnapshotsState {
             self.current_snapshot_number,
         ))
     }
+
+    pub(crate) fn set_proposal_published(&mut self, published: bool) {
+        self.proposal_published = published;
+    } 
 }
 
 #[cfg(test)]

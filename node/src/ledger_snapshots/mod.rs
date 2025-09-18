@@ -113,6 +113,8 @@ impl LedgerSnapshots {
                 TrafficType::LedgerSnapshots,
                 0.0,
             );
+
+            self.state.lock().unwrap().set_proposal_published(true);
         };
     }
 
@@ -385,6 +387,25 @@ mod tests {
             snapshot_number,
             fixture.snapshots.get_current_snapshot_number()
         );
+    }
+
+    #[test]
+    fn publish_proposal_only_once() {
+        let mut rep_weights = RepWeights::new();
+        let private_key = get_test_key().unwrap();
+        let quorum_weight = Amount::nano(100_000);
+        rep_weights.insert(private_key.public_key(), quorum_weight);
+
+        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
+
+        let preproposal1 = Preproposal::new(vec![], &private_key, snapshot_number);
+        let preproposal2 = Preproposal::new(vec![], &PrivateKey::from(2), snapshot_number);
+        fixture.snapshots.receive_preproposal(preproposal1.clone());
+        fixture.snapshots.receive_preproposal(preproposal2);
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should flood only one proposal message");
     }
 
     #[test]
