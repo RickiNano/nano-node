@@ -28,9 +28,7 @@ pub struct LedgerSnapshots {
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
     receive_proposal_vote_listener: OutputListenerMt<ProposalVote>,
-
     state: Mutex<LedgerSnapshotsState>,
-
     online_reps: Arc<Mutex<OnlineReps>>,
 }
 
