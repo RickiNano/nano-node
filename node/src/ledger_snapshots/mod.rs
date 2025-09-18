@@ -1,18 +1,18 @@
 mod aggregator;
 mod state;
 
-use std::sync::{Arc, Mutex};
+use crate::{
+    ledger_snapshots::{aggregator::Aggregator, state::State},
+    representatives::OnlineReps,
+    transport::MessageFlooder,
+};
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Aggregatable, Message, Preproposal, Proposal, ProposalVote};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, BlockHash};
 use rsnano_types::{PrivateKey, SnapshotNumber};
-use crate::{
-    ledger_snapshots::{aggregator::Aggregator, state::State},
-    representatives::OnlineReps,
-    transport::MessageFlooder,
-};
+use std::sync::{Arc, Mutex};
 use tracing::warn;
 
 pub struct LedgerSnapshots {
@@ -396,7 +396,11 @@ mod tests {
         fixture.snapshots.handle_preproposal(preproposal2);
 
         let flood_events = fixture.flood_tracker.output();
-        assert_eq!(flood_events.len(), 1, "Should flood only one proposal message");
+        assert_eq!(
+            flood_events.len(),
+            1,
+            "Should flood only one proposal message"
+        );
     }
 
     #[test]

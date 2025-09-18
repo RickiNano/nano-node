@@ -112,7 +112,7 @@ impl State {
 
     pub(crate) fn set_proposal_published(&mut self, published: bool) {
         self.proposal_published = published;
-    } 
+    }
 }
 
 #[cfg(test)]
