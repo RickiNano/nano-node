@@ -571,4 +571,10 @@ mod tests {
         );
         assert_ne!(online_reps.peered_weight(), Amount::ZERO, "peered");
     }
+
+    #[test]
+    fn default_quorum_weight_is_max() {
+        let params = ConsensusParams::default();
+        assert_eq!(params.quorum_weight, Amount::MAX);
+    }
 }

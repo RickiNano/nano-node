@@ -30,12 +30,6 @@ mod tests {
     use rsnano_types::{Account, BlockHash, PrivateKey};
 
     #[test]
-    fn default_quorum_weight_is_max() {
-        let params = ConsensusParams::default();
-        assert_eq!(params.quorum_weight, Amount::MAX);
-    }
-
-    #[test]
     fn no_quorum_if_value_doesnt_have_enough_vote_weight() {
         let mut consensus_params = ConsensusParams::default();
 
