@@ -240,9 +240,10 @@ impl OnlineReps {
 
     pub fn trim(&mut self, now: Timestamp) {
         self.trim_counter += 1;
-        let trimmed = self
-            .online_reps
-            .trim(now.checked_sub(self.weight_interval).unwrap_or_default());
+        let trimmed = self.online_reps.trim(
+            now.checked_sub(Duration::from_secs(60 * 10))
+                .unwrap_or_default(),
+        );
 
         for (rep_key, time) in &trimmed {
             debug!(
@@ -538,17 +539,14 @@ mod tests {
         weights.set(rep_a, Amount::nano(100_000));
         weights.set(rep_b, Amount::nano(200_000));
         weights.set(rep_c, Amount::nano(400_000));
-        let mut online_reps = OnlineReps::builder()
-            .rep_weights(weights)
-            .weight_interval(Duration::from_secs(30))
-            .finish();
+        let mut online_reps = OnlineReps::builder().rep_weights(weights).finish();
 
         let start = SteadyClock::new_null().now();
         online_reps.vote_observed(rep_a, start);
         online_reps.vote_observed(rep_b, start + Duration::from_secs(10));
-        online_reps.vote_observed(rep_c, start + Duration::from_secs(31));
+        online_reps.vote_observed(rep_c, start + Duration::from_secs(60 * 10 + 1));
 
-        online_reps.trim(start + Duration::from_secs(31));
+        online_reps.trim(start + Duration::from_secs(60 * 10 + 1));
 
         assert_eq!(online_reps.online_weight(), Amount::nano(600_000));
     }
