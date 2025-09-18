@@ -147,15 +147,11 @@ impl CandidateAccounts {
         blocking: &BlockingContainer,
         priorities: &mut PriorityContainer,
     ) -> bool {
-        if account.is_zero() {
-            return false;
-        }
-
-        if !blocking.contains(account) && !priorities.contains(account) {
+        if account.is_zero() || blocking.contains(account) || priorities.contains(account) {
+            false
+        } else {
             priorities.insert(PriorityEntry::new(*account, priority));
             true
-        } else {
-            false
         }
     }
 

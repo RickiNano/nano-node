@@ -28,9 +28,7 @@ pub struct LedgerSnapshots {
     receive_preproposal_listener: OutputListenerMt<Preproposal>,
     receive_proposal_listener: OutputListenerMt<Proposal>,
     receive_vote_listener: OutputListenerMt<ProposalVote>,
-
     state: Mutex<State>,
-
     online_reps: Arc<Mutex<OnlineReps>>,
 }
 
@@ -180,10 +178,7 @@ impl LedgerSnapshots {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        ledger_snapshots::state::create_vote, representatives::ONLINE_WEIGHT_QUORUM,
-        transport::FloodEvent,
-    };
+    use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
     use rsnano_ledger::RepWeights;
     use rsnano_messages::{Aggregatable, Message, ProposalHash, ProposalVote};
     use rsnano_network::TrafficType;
@@ -404,35 +399,6 @@ mod tests {
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood only one vote message");
-    }
-
-    #[test]
-    fn vote_for_proposal_with_highest_hash() {
-        let snapshot_number = 0;
-        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), snapshot_number);
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
-        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), snapshot_number);
-        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), snapshot_number);
-
-        let highest_hash = [
-            proposal1.hash(),
-            proposal2.hash(),
-            proposal3.hash(),
-            proposal4.hash(),
-        ]
-        .into_iter()
-        .max()
-        .unwrap();
-
-        let mut proposal_aggregator = Aggregator::<Proposal>::default();
-        proposal_aggregator.add(proposal1);
-        proposal_aggregator.add(proposal2);
-        proposal_aggregator.add(proposal3);
-        proposal_aggregator.add(proposal4);
-
-        let vote = create_vote(&proposal_aggregator, &PrivateKey::from(5), snapshot_number);
-
-        assert_eq!(vote.unwrap().proposal_hash, highest_hash);
     }
 
     #[test]

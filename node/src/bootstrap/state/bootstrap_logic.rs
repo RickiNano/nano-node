@@ -65,7 +65,7 @@ impl BootstrapLogic {
                 && self
                     .running_queries
                     .count_by_account(account, QuerySource::Priority)
-                    < 4
+                    == 0
         });
 
         if next.account.is_zero() {
