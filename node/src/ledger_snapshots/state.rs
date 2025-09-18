@@ -1,10 +1,10 @@
 use crate::{ledger_snapshots::Aggregator, representatives::ConsensusParams};
 use rsnano_messages::{Aggregatable, Preproposal, Proposal, ProposalHash, ProposalVote};
-use rsnano_types::{Amount, PrivateKey, SnapshotNumber};
+use rsnano_types::{Amount, PrivateKey};
 use std::collections::HashMap;
 
 #[derive(Default)]
-pub(crate) struct LedgerSnapshotsState {
+pub(crate) struct State {
     pub(crate) preproposal_aggregator: Aggregator<Preproposal>,
     pub(crate) proposal_aggregator: Aggregator<Proposal>,
     pub(crate) vote_aggregator: Aggregator<ProposalVote>,
@@ -13,7 +13,7 @@ pub(crate) struct LedgerSnapshotsState {
     pub(crate) current_snapshot_number: u32,
 }
 
-impl LedgerSnapshotsState {
+impl State {
     pub(crate) fn receive_preproposal(&mut self, preproposal: Preproposal) -> bool {
         if preproposal.snapshot_number != self.current_snapshot_number {
             return false;
@@ -56,11 +56,11 @@ impl LedgerSnapshotsState {
         let has_quorum = self.proposal_aggregator.has_quorum(&consensus_params);
 
         if has_quorum && !self.proposal_voted {
-            let proposal_vote = self
-                .create_proposal_vote(rep_key)
+            let vote = self
+                .create_vote(rep_key)
                 .expect("Should always be able to create a vote when quorum reached");
             self.proposal_voted = true;
-            Some(proposal_vote)
+            Some(vote)
         } else {
             None
         }
@@ -102,7 +102,7 @@ impl LedgerSnapshotsState {
             .map(|(p, _)| p)
     }
 
-    pub(crate) fn create_proposal_vote(&self, private_key: &PrivateKey) -> Option<ProposalVote> {
+    pub(crate) fn create_vote(&self, private_key: &PrivateKey) -> Option<ProposalVote> {
         Some(ProposalVote::new(
             self.proposal_aggregator.values().map(|p| p.hash()).max()?,
             private_key,
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn discard_preproposal_with_different_snapshot_number_than_current() {
-        let mut state = LedgerSnapshotsState::default();
+        let mut state = State::default();
         state.current_snapshot_number = 10;
 
         let preproposal1 = Preproposal::new(
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn discard_proposal_with_different_snapshot_number_than_current() {
-        let mut state = LedgerSnapshotsState::default();
+        let mut state = State::default();
         state.current_snapshot_number = 10;
 
         let proposal1 = Proposal::new(
@@ -171,28 +171,28 @@ mod tests {
     }
 
     #[test]
-    fn discard_proposal_vote_with_different_snapshot_number_than_current() {
-        let mut state = LedgerSnapshotsState::default();
+    fn discard_vote_with_different_snapshot_number_than_current() {
+        let mut state = State::default();
         state.current_snapshot_number = 10;
         let snapshot_number = state.current_snapshot_number;
 
-        let proposal_vote1 = ProposalVote::new(
+        let vote1 = ProposalVote::new(
             ProposalHash::from(1),
             &PrivateKey::from(1),
             snapshot_number - 1,
         );
 
-        state.receive_vote(proposal_vote1, &ConsensusParams::default());
+        state.receive_vote(vote1, &ConsensusParams::default());
 
         assert!(state.vote_aggregator.is_empty());
 
-        let proposal_vote2 = ProposalVote::new(
+        let vote2 = ProposalVote::new(
             ProposalHash::from(1),
             &PrivateKey::from(1),
             snapshot_number + 1,
         );
 
-        state.receive_vote(proposal_vote2, &ConsensusParams::default());
+        state.receive_vote(vote2, &ConsensusParams::default());
 
         assert!(state.vote_aggregator.is_empty());
     }
@@ -203,12 +203,12 @@ mod tests {
         let mut weights = RepWeights::new();
         weights.insert(rep_key.public_key(), Amount::MAX);
 
-        let mut state = LedgerSnapshotsState::default();
+        let mut state = State::default();
         let snapshot_number = state.current_snapshot_number;
 
         let preproposal = Preproposal::new(vec![], &rep_key, snapshot_number);
         let proposal = Proposal::new([&preproposal], &rep_key, snapshot_number);
-        let proposal_vote = ProposalVote::new(ProposalHash::from(123), &rep_key, snapshot_number);
+        let vote = ProposalVote::new(ProposalHash::from(123), &rep_key, snapshot_number);
 
         state.receive_preproposal(preproposal);
         state.receive_proposal(proposal);
@@ -216,7 +216,7 @@ mod tests {
             rep_weights: weights,
             ..Default::default()
         };
-        state.receive_vote(proposal_vote, &consensus_params);
+        state.receive_vote(vote, &consensus_params);
 
         assert_eq!(state.current_snapshot_number, snapshot_number + 1);
         assert_eq!(
@@ -246,20 +246,20 @@ mod tests {
         .max()
         .unwrap();
 
-        let mut state = LedgerSnapshotsState::default();
+        let mut state = State::default();
         state.proposal_aggregator.add(proposal1);
         state.proposal_aggregator.add(proposal2);
         state.proposal_aggregator.add(proposal3);
         state.proposal_aggregator.add(proposal4);
 
-        let proposal_vote = state.create_proposal_vote(&PrivateKey::from(5));
+        let proposal_vote = state.create_vote(&PrivateKey::from(5));
 
         assert_eq!(proposal_vote.unwrap().proposal_hash, highest_hash);
     }
 
     #[test]
     fn a_winner_proposal_is_not_found_if_there_are_no_votes() {
-        let state = LedgerSnapshotsState::default();
+        let state = State::default();
 
         assert_eq!(
             state.find_winner_proposal(&ConsensusParams::default()),
@@ -279,7 +279,7 @@ mod tests {
         let proposal_hash = ProposalHash::from(1);
         let proposal_vote = ProposalVote::new(proposal_hash, &rep_key, 0);
 
-        let mut state: LedgerSnapshotsState = LedgerSnapshotsState::default();
+        let mut state = State::default();
         state.vote_aggregator.add(proposal_vote);
 
         assert_eq!(state.find_winner_proposal(&params), None);
@@ -302,7 +302,7 @@ mod tests {
         let proposal_vote1 = ProposalVote::new(proposal_hash, &rep_key1, 0);
         let proposal_vote2 = ProposalVote::new(proposal_hash, &rep_key2, 0);
 
-        let mut state = LedgerSnapshotsState::default();
+        let mut state = State::default();
         state.vote_aggregator.add(proposal_vote1);
         state.vote_aggregator.add(proposal_vote2);
 
