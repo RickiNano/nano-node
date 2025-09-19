@@ -82,7 +82,10 @@ impl LedgerSnapshots {
 
         let mut state = self.state.lock().unwrap();
         if !state.receive_preproposal(preproposal.clone()) {
-            warn!(preproposal_hash= ?preproposal.hash(), snapshot_number= ?preproposal.snapshot_number, "Snapshot preproposal discarded because snapshot number is different than current");
+            warn!(
+                preproposal_hash= ?preproposal.hash(), 
+                snapshot_number= ?preproposal.snapshot_number, 
+                "Snapshot preproposal discarded because snapshot number is different than current");
             return;
         }
 
@@ -94,6 +97,7 @@ impl LedgerSnapshots {
         let rep_key = (self.get_private_key)().unwrap();
         let proposal = state.try_create_proposal(&consensus_params, &rep_key);
         if proposal.is_some() {
+            state.set_proposal_published(true);
             warn!("Quorum on preproposals reached");
         } else {
             warn!("No quorum on preproposals yet");
@@ -103,7 +107,6 @@ impl LedgerSnapshots {
         if let Some(proposal) = proposal {
             warn!(proposal_hash = ?proposal.hash(), "Created proposal. Flooding...");
             self.publish_message(&Message::SnapshotProposal(proposal));
-            self.state.lock().unwrap().set_proposal_published(true);
         };
     }
 
@@ -118,7 +121,10 @@ impl LedgerSnapshots {
 
         let mut state = self.state.lock().unwrap();
         if !state.receive_proposal(proposal.clone()) {
-            warn!(proposal_hash= ?proposal.hash(), snapshot_number= ?proposal.snapshot_number, "Snapshot proposal discarded because snapshot number is different than current");
+            warn!(
+                proposal_hash= ?proposal.hash(), 
+                snapshot_number= ?proposal.snapshot_number, 
+                "Snapshot proposal discarded because snapshot number is different than current");
             return;
         }
 
@@ -150,7 +156,10 @@ impl LedgerSnapshots {
         let mut state = self.state.lock().unwrap();
 
         if !state.receive_vote(vote.clone(), &consensus_params) {
-            warn!(vote_hash= ?vote.hash(), snapshot_number= ?vote.snapshot_number, "Snapshot vote discarded because snapshot number is different than current");
+            warn!(
+                vote_hash= ?vote.hash(), 
+                snapshot_number= ?vote.snapshot_number, 
+                "Snapshot vote discarded because snapshot number is different than current");
             return;
         }
 
