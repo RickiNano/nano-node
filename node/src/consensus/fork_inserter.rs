@@ -12,14 +12,14 @@ use crate::{
     ledger_event_processor::LedgerEventProcessorPlugin,
 };
 
-pub(crate) struct ForkProcessor {
+pub(crate) struct ForkInserter {
     pub(crate) rep_weights: Arc<RepWeightCache>,
     pub(crate) fork_cache: Arc<RwLock<ForkCache>>,
     pub(crate) active_elections: Arc<RwLock<ActiveElectionsContainer>>,
     pub(crate) vote_cache: Arc<Mutex<VoteCache>>,
 }
 
-impl ForkProcessor {
+impl ForkInserter {
     #[allow(dead_code)]
     pub fn new_test_instance() -> Self {
         Self {
@@ -73,17 +73,17 @@ impl ForkProcessor {
     }
 }
 
-pub(crate) struct ForkProcessorPlugin {
-    fork_processor: Arc<ForkProcessor>,
+pub(crate) struct ForkInserterPlugin {
+    fork_processor: Arc<ForkInserter>,
 }
 
-impl ForkProcessorPlugin {
-    pub fn new(fork_processor: Arc<ForkProcessor>) -> Self {
+impl ForkInserterPlugin {
+    pub fn new(fork_processor: Arc<ForkInserter>) -> Self {
         Self { fork_processor }
     }
 }
 
-impl LedgerEventProcessorPlugin for ForkProcessorPlugin {
+impl LedgerEventProcessorPlugin for ForkInserterPlugin {
     fn process(&mut self, event: &LedgerEvent) {
         match event {
             LedgerEvent::BlocksProcessed(results) => {

@@ -3,8 +3,8 @@ use std::{
     net::SocketAddrV6,
     ops::{Deref, DerefMut},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::SystemTime,
 };
@@ -19,7 +19,8 @@ use rsnano_store_lmdb::{
 };
 use rsnano_types::{
     Account, AccountInfo, Amount, Block, BlockHash, ConfirmationHeightInfo, Epoch, Link,
-    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, UnixTimestamp,
+    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, SnapshotNumber,
+    UnixTimestamp,
 };
 use rsnano_utils::{
     container_info::{ContainerInfo, ContainerInfoProvider},
@@ -28,12 +29,12 @@ use rsnano_utils::{
 use rsnano_work::WorkThresholds;
 
 use crate::{
-    block_cementer::BlockCementer,
-    block_insertion::{BlockInserter, BlockValidatorFactory},
-    vote_verifier::VoteVerifier,
     BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, GenerateCacheFlags,
     LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
     RepWeightCache, RepWeightsUpdater, RollbackError,
+    block_cementer::BlockCementer,
+    block_insertion::{BlockInserter, BlockValidatorFactory},
+    vote_verifier::VoteVerifier,
 };
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, EnumCount, EnumIter, IntoStaticStr)]
@@ -852,6 +853,13 @@ impl Ledger {
 
     pub fn memory_stats(&self) -> anyhow::Result<MemoryStats> {
         self.store.memory_stats()
+    }
+
+    #[cfg(feature = "ledger_snapshots")]
+    pub fn mark_fork(&self, root: &QualifiedRoot, snapshot_number: SnapshotNumber) {
+        println!("Marking fork: {:?}", root);
+        let mut tx = self.store.begin_write();
+        self.store.forks.put(&mut tx, root, snapshot_number);
     }
 }
 

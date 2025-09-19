@@ -1,5 +1,6 @@
 mod aggregator;
 mod state;
+pub(crate) mod fork_detector;
 
 use crate::{
     ledger_snapshots::{aggregator::Aggregator, state::State},
@@ -158,7 +159,7 @@ impl LedgerSnapshots {
         if !state.receive_vote(vote.clone(), &consensus_params) {
             warn!(
                 vote_hash= ?vote.hash(), 
-                snapshot_number= ?vote.snapshot_number, 
+                snapshot_number= ?vote.snapshot_number,
                 "Snapshot vote discarded because snapshot number is different than current");
             return;
         }

@@ -14,7 +14,7 @@ use crate::{
     cementation::ConfirmingSet,
     consensus::{
         ActiveElectionsContainer, AecCooldownReason, AecEvent, BootstrapElectionActivator,
-        ForkProcessor, LocalVotesRemover, ReceivedVote, VoteCache, VoteCacheProcessor,
+        ForkInserter, LocalVotesRemover, ReceivedVote, VoteCache, VoteCacheProcessor,
         VoteProcessor, VoteRebroadcastQueue, WinnerBlockBroadcaster, aggregate_vote_results,
         election_schedulers::ElectionSchedulers,
     },
@@ -46,7 +46,7 @@ pub(crate) struct AecEventProcessor {
     pub(crate) clock: Arc<SteadyClock>,
     pub(crate) local_votes_remover: LocalVotesRemover,
     pub(crate) stats: Arc<Stats>,
-    pub(crate) fork_processor: Arc<ForkProcessor>,
+    pub(crate) fork_processor: Arc<ForkInserter>,
     pub(crate) winner_block_broadcaster: Arc<Mutex<WinnerBlockBroadcaster>>,
     pub(crate) plugins: Vec<Box<dyn AecEventHandler + Send>>,
 }

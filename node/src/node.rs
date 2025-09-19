@@ -44,6 +44,8 @@ use rsnano_utils::{
 };
 use rsnano_wallet::{ReceivableSearch, WalletBackup, Wallets, WalletsTicker};
 
+#[cfg(feature = "ledger_snapshots")]
+use crate::ledger_snapshots::{LedgerSnapshots, fork_detector::ForkDetector};
 use crate::{
     NodeCallbacks, OnlineWeightSampler,
     aec_event_processor::AecEventProcessor,
@@ -62,8 +64,8 @@ use crate::{
     consensus::{
         ActiveElectionsContainer, AecTicker, AecVoter, BootstrapElectionActivator,
         BootstrapStaleElections, ConfirmReqSender, ConfirmationSolicitorPlugin, CpsLimiter,
-        CurrentRepTiers, DependentElectionsConfirmer, ForkCache, ForkCacheUpdater, ForkProcessor,
-        ForkProcessorPlugin, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
+        CurrentRepTiers, DependentElectionsConfirmer, ForkCache, ForkCacheUpdater, ForkInserter,
+        ForkInserterPlugin, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
         RequestAggregator, RequestAggregatorCleanup, VoteApplier, VoteBroadcaster, VoteCache,
         VoteCacheProcessor, VoteGenerators, VoteProcessor, VoteProcessorExt, VoteProcessorQueue,
         VoteProcessorQueueCleanup, VoteRebroadcastQueue, VoteRebroadcaster, WalletRepsChecker,
@@ -97,9 +99,6 @@ use crate::{
     },
     work::WorkFactory,
 };
-
-#[cfg(feature = "ledger_snapshots")]
-use crate::ledger_snapshots::LedgerSnapshots;
 
 #[allow(dead_code)]
 pub struct Node {
@@ -1211,7 +1210,7 @@ impl Node {
             vote_history: vote_history.clone(),
         };
 
-        let fork_processor = Arc::new(ForkProcessor {
+        let fork_inserter = Arc::new(ForkInserter {
             rep_weights: rep_weights.clone(),
             fork_cache: fork_cache.clone(),
             active_elections: active_elections.clone(),
@@ -1225,8 +1224,17 @@ impl Node {
             current_network,
             cps_limiter,
         );
+
         ledger_event_processor_plugins
-            .push(Box::new(ForkProcessorPlugin::new(fork_processor.clone())));
+            .push(Box::new(ForkInserterPlugin::new(fork_inserter.clone())));
+
+        #[cfg(feature = "ledger_snapshots")]
+        {
+            ledger_event_processor_plugins.push(Box::new(ForkDetector::new(
+                ledger.clone(),
+                ledger_snapshots.clone(),
+            )));
+        }
 
         let aec_event_processor = AecEventProcessor {
             vote_cache_processor: vote_cache_processor.clone(),
@@ -1245,7 +1253,7 @@ impl Node {
             rep_crawler: rep_crawler.clone(),
             clock: steady_clock.clone(),
             local_votes_remover,
-            fork_processor,
+            fork_processor: fork_inserter,
             stats: stats.clone(),
             winner_block_broadcaster: winner_block_broadcaster.clone(),
             plugins: Vec::new(),

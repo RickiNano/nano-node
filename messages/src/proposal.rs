@@ -1,8 +1,8 @@
 use crate::{Aggregatable, MessageVariant, Preproposal, PreproposalHash};
 use bitvec::array::BitArray;
 use rsnano_types::{
-    read_u32_be, Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey,
-    Signature, SnapshotNumber,
+    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
+    SnapshotNumber, read_u32_be,
 };
 
 pub type PreproposalsHash = Blake2Hash;
@@ -119,7 +119,7 @@ impl Aggregatable for Proposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_deserializable, Message, Preproposal};
+    use crate::{Message, Preproposal, assert_deserializable};
     use rsnano_types::{Account, BlockHash};
 
     #[test]
