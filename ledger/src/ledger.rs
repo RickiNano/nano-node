@@ -925,7 +925,6 @@ impl Ledger {
             .forks
             .iter(&tx)
             .filter_map(|(root, snap_no)| {
-                println!("iteration: root: {:?}, snapshot: {:?}", root, snap_no);
                 if snap_no < snapshot_number {
                     use crate::AnySet;
                     any.block_successor_by_qualified_root(&root)
