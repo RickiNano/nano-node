@@ -66,24 +66,12 @@ impl State {
         }
     }
 
-    pub(crate) fn receive_vote(
-        &mut self,
-        vote: ProposalVote,
-        consensus_params: &ConsensusParams,
-    ) -> bool {
+    pub(crate) fn receive_vote(&mut self, vote: ProposalVote) -> bool {
         if vote.snapshot_number != self.current_snapshot_number {
             return false;
         }
 
         self.vote_aggregator.add(vote);
-
-        if let Some(winner) = self.find_winner_proposal(&consensus_params) {
-            tracing::warn!(proposal_hash=?winner, "Found a winner!");
-            self.current_snapshot_number += 1;
-            self.preproposal_aggregator.clear();
-            self.proposal_aggregator.clear();
-            self.vote_aggregator.clear();
-        }
 
         true
     }
@@ -100,6 +88,15 @@ impl State {
             .into_iter()
             .find(|(_, w)| *w >= params.quorum_weight)
             .map(|(p, _)| p)
+    }
+
+    pub(crate) fn advance_epoch(&mut self) {
+        self.current_snapshot_number += 1;
+        self.preproposal_aggregator.clear();
+        self.proposal_aggregator.clear();
+        self.vote_aggregator.clear();
+        self.proposal_published = false;
+        self.proposal_voted = false;
     }
 
     pub(crate) fn create_vote(&self, private_key: &PrivateKey) -> Option<ProposalVote> {
@@ -182,7 +179,7 @@ mod tests {
             snapshot_number - 1,
         );
 
-        state.receive_vote(vote1, &ConsensusParams::default());
+        state.receive_vote(vote1);
 
         assert!(state.vote_aggregator.is_empty());
 
@@ -192,7 +189,7 @@ mod tests {
             snapshot_number + 1,
         );
 
-        state.receive_vote(vote2, &ConsensusParams::default());
+        state.receive_vote(vote2);
 
         assert!(state.vote_aggregator.is_empty());
     }
@@ -293,11 +290,8 @@ mod tests {
 
         state.receive_preproposal(preproposal);
         state.receive_proposal(proposal);
-        let consensus_params = ConsensusParams {
-            rep_weights: weights,
-            ..Default::default()
-        };
-        state.receive_vote(vote, &consensus_params);
+        state.receive_vote(vote);
+        state.advance_epoch();
 
         assert_eq!(state.current_snapshot_number, snapshot_number + 1);
         assert_eq!(

@@ -7,15 +7,15 @@ use std::{
 use rsnano_nullable_lmdb::LmdbEnvironment;
 use rsnano_store_lmdb::LmdbAccountStore;
 use rsnano_types::{
-    Account, AccountInfo, Amount, BlockHash, DEV_GENESIS_KEY, PrivateKey, PublicKey, Root,
-    SavedBlock, TestBlockBuilder, UnixMillisTimestamp,
+    Account, AccountInfo, Amount, BlockHash, PrivateKey, PublicKey, Root, SavedBlock,
+    TestBlockBuilder, UnixMillisTimestamp, DEV_GENESIS_KEY,
 };
 use rsnano_utils::stats::Stats;
 
 use crate::{
-    AnySet, DEV_GENESIS_HASH, Ledger, LedgerConstants, LedgerInserter, LedgerSet, RepWeightCache,
     ledger_constants::{DEV_GENESIS_BLOCK, DEV_GENESIS_PUB_KEY},
     test_helpers::SavedBlockLatticeBuilder,
+    AnySet, Ledger, LedgerConstants, LedgerInserter, LedgerSet, RepWeightCache, DEV_GENESIS_HASH,
 };
 
 mod empty_ledger;
@@ -143,6 +143,17 @@ fn state_account() {
         ledger.any().block_account(&send.hash()),
         Some(ledger.genesis().account())
     );
+}
+
+#[test]
+fn rollbacks_can_be_tracked() {
+    let ledger = Ledger::new_null();
+    let rollback_tracker = ledger.track_rollbacks();
+    let hash = BlockHash::from(123);
+
+    let _ = ledger.roll_back(&hash);
+
+    assert_eq!(rollback_tracker.output(), vec![hash]);
 }
 
 mod dependents_confirmed {

@@ -2,8 +2,8 @@ use std::{
     collections::VecDeque,
     mem::size_of,
     sync::{
-        Arc, Condvar, Mutex, MutexGuard,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex, MutexGuard,
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -135,10 +135,22 @@ impl VoteGenerator {
     pub(crate) fn generate(&self, blocks: &[SavedBlock], channel: &Arc<Channel>) -> usize {
         let req_candidates = {
             let any = self.ledger.any();
+
+            let can_vote = |block: &SavedBlock| {
+                #[cfg(feature = "ledger_snapshots")]
+                {
+                    any.dependents_confirmed(block) && !any.is_forked(&block.qualified_root())
+                }
+                #[cfg(not(feature = "ledger_snapshots"))]
+                {
+                    any.dependents_confirmed(block)
+                }
+            };
+
             blocks
                 .iter()
                 .filter_map(|i| {
-                    if any.dependents_confirmed(i) {
+                    if can_vote(i) {
                         Some((i.root(), i.hash()))
                     } else {
                         None

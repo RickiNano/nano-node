@@ -12,6 +12,8 @@ use std::{
 use tracing::debug;
 
 use rsnano_nullable_lmdb::{LmdbEnvironment, Transaction, WriteTransaction};
+#[cfg(feature = "ledger_snapshots")]
+use rsnano_store_lmdb::forks_store::ConfiguredForksDatabaseBuilder;
 use rsnano_store_lmdb::{
     ConfiguredAccountDatabaseBuilder, ConfiguredBlockDatabaseBuilder,
     ConfiguredConfirmationHeightDatabaseBuilder, ConfiguredPeersDatabaseBuilder,
@@ -36,6 +38,7 @@ use crate::{
     LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
     RepWeightCache, RepWeightsUpdater, RollbackError,
 };
+use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, EnumCount, EnumIter, IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
@@ -118,6 +121,7 @@ pub struct Ledger {
     pub rep_weights: Arc<RepWeightCache>,
     pub constants: LedgerConstants,
     pub(crate) stats: Arc<Stats>,
+    rollback_listener: OutputListenerMt<BlockHash>,
 }
 
 pub struct NullLedgerBuilder {
@@ -125,6 +129,8 @@ pub struct NullLedgerBuilder {
     accounts: ConfiguredAccountDatabaseBuilder,
     pending: ConfiguredPendingDatabaseBuilder,
     peers: ConfiguredPeersDatabaseBuilder,
+    #[cfg(feature = "ledger_snapshots")]
+    forks: ConfiguredForksDatabaseBuilder,
     confirmation_height: ConfiguredConfirmationHeightDatabaseBuilder,
     min_rep_weight: Amount,
 }
@@ -136,6 +142,8 @@ impl NullLedgerBuilder {
             accounts: ConfiguredAccountDatabaseBuilder::new(),
             pending: ConfiguredPendingDatabaseBuilder::new(),
             peers: ConfiguredPeersDatabaseBuilder::new(),
+            #[cfg(feature = "ledger_snapshots")]
+            forks: ConfiguredForksDatabaseBuilder::new(),
             confirmation_height: ConfiguredConfirmationHeightDatabaseBuilder::new(),
             min_rep_weight: Amount::ZERO,
         }
@@ -175,6 +183,12 @@ impl NullLedgerBuilder {
         self
     }
 
+    #[cfg(feature = "ledger_snapshots")]
+    pub fn fork(mut self, root: &QualifiedRoot, snapshot_number: SnapshotNumber) -> Self {
+        self.forks = self.forks.fork(root, snapshot_number);
+        self
+    }
+
     pub fn frontiers(self, frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
         let mut builder = self;
 
@@ -193,16 +207,32 @@ impl NullLedgerBuilder {
         builder
     }
 
+    #[cfg(feature = "ledger_snapshots")]
+    pub fn forks(self, forks: impl IntoIterator<Item = (QualifiedRoot, SnapshotNumber)>) -> Self {
+        let mut builder = self;
+
+        for (root, snapshot_number) in forks {
+            builder = builder.fork(&root, snapshot_number);
+        }
+
+        builder
+    }
+
     pub fn finish(self) -> Ledger {
         let (block_index, block_data) = self.blocks.build();
-        let env = LmdbEnvironment::null_builder()
+        let mut env_builder = LmdbEnvironment::null_builder()
             .configured_database(block_index)
             .configured_database(block_data)
             .configured_database(self.accounts.build())
             .configured_database(self.pending.build())
             .configured_database(self.confirmation_height.build())
-            .configured_database(self.peers.build())
-            .build();
+            .configured_database(self.peers.build());
+
+        #[cfg(feature = "ledger_snapshots")]
+        {
+            env_builder = env_builder.configured_database(self.forks.build())
+        }
+        let env = env_builder.build();
 
         Ledger::new(
             env,
@@ -253,6 +283,7 @@ impl Ledger {
             store,
             constants,
             stats,
+            rollback_listener: Default::default(),
         };
 
         ledger.initialize(thread_count, &GenerateCacheFlags::new())?;
@@ -421,8 +452,13 @@ impl Ledger {
         }
     }
 
+    pub fn track_rollbacks(&self) -> Arc<OutputTrackerMt<BlockHash>> {
+        self.rollback_listener.track()
+    }
+
     /// Rollback blocks until `block' doesn't exist or it tries to penetrate the confirmation height
     pub fn roll_back(&self, block: &BlockHash) -> Result<usize, RollbackError> {
+        self.rollback_listener.emit(*block);
         let result = self.roll_back_batch(&[*block], usize::MAX, |_| true);
         let rolled_back = result[0].rolled_back.len();
         result[0].error.map_or(Ok(rolled_back), |e| Err(e))
@@ -860,6 +896,44 @@ impl Ledger {
         let mut tx = self.store.begin_write();
         self.store.forks.put(&mut tx, root, snapshot_number);
         tx.commit();
+    }
+
+    #[cfg(feature = "ledger_snapshots")]
+    pub fn roll_back_forks_older_than(&self, snapshot_number: SnapshotNumber) {
+        use tracing::warn;
+
+        let forks_to_roll_back = self.find_forks_to_roll_back(snapshot_number);
+
+        for fork_hash in forks_to_roll_back {
+            if let Err(e) = self.roll_back(&fork_hash) {
+                use tracing::warn;
+                warn!("Could not roll back fork: {e:?}")
+            }
+        }
+    }
+
+    #[cfg(feature = "ledger_snapshots")]
+    fn find_forks_to_roll_back(&self, snapshot_number: u32) -> Vec<BlockHash> {
+        let tx = self.store.begin_read();
+        let any = BorrowingAnySet {
+            constants: &self.constants,
+            store: &self.store,
+            tx: &tx,
+        };
+
+        self.store
+            .forks
+            .iter(&tx)
+            .filter_map(|(root, snap_no)| {
+                println!("iteration: root: {:?}, snapshot: {:?}", root, snap_no);
+                if snap_no < snapshot_number {
+                    use crate::AnySet;
+                    any.block_successor_by_qualified_root(&root)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 

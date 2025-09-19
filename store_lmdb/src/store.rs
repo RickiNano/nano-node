@@ -1,16 +1,15 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-};
-
-use serde::{Deserialize, Serialize};
-
-use rsnano_nullable_lmdb::{LmdbEnvironment, ReadTransaction, WriteTransaction};
-
+#[cfg(feature = "ledger_snapshots")]
+use crate::forks_store::LmdbForksStore;
 use crate::{
     LmdbAccountStore, LmdbBlockStore, LmdbConfirmationHeightStore, LmdbFinalVoteStore,
     LmdbOnlineWeightStore, LmdbPeerStore, LmdbPendingStore, LmdbRepWeightStore, LmdbVersionStore,
-    forks_store::LmdbForksStore, successor_store::LmdbSuccessorStore,
+    successor_store::LmdbSuccessorStore,
+};
+use rsnano_nullable_lmdb::{LmdbEnvironment, ReadTransaction, WriteTransaction};
+use serde::{Deserialize, Serialize};
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
 pub struct LedgerCache {

@@ -1,5 +1,7 @@
+use crate::{FORKS_TEST_DATABASE, LmdbIterator};
 use rsnano_nullable_lmdb::{
-    DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
+    ConfiguredDatabase, DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction,
+    WriteFlags, WriteTransaction,
 };
 use rsnano_types::{QualifiedRoot, SnapshotNumber, read_u32_be};
 
@@ -47,6 +49,42 @@ impl LmdbForksStore {
     pub fn del(&self, tx: &mut WriteTransaction, root: &QualifiedRoot) {
         let root_bytes = root.to_bytes();
         tx.delete(self.database, &root_bytes, None).unwrap();
+    }
+
+    pub fn iter<'tx>(
+        &self,
+        tx: &'tx dyn Transaction,
+    ) -> impl Iterator<Item = (QualifiedRoot, SnapshotNumber)> + 'tx + use<'tx> {
+        let cursor = tx.open_ro_cursor(self.database).unwrap();
+        LmdbIterator::new(cursor, read_fork_record)
+    }
+}
+
+fn read_fork_record(mut key: &[u8], mut value: &[u8]) -> (QualifiedRoot, SnapshotNumber) {
+    let root = QualifiedRoot::deserialize(&mut key).unwrap();
+    let snapshot_number = read_u32_be(&mut value).unwrap();
+    (root, snapshot_number)
+}
+
+pub struct ConfiguredForksDatabaseBuilder {
+    database: ConfiguredDatabase,
+}
+
+impl ConfiguredForksDatabaseBuilder {
+    pub fn new() -> Self {
+        Self {
+            database: ConfiguredDatabase::new(FORKS_TEST_DATABASE, "forks"),
+        }
+    }
+
+    pub fn fork(mut self, root: &QualifiedRoot, snapshot_number: SnapshotNumber) -> Self {
+        self.database
+            .insert(root.to_bytes(), snapshot_number.to_be_bytes());
+        self
+    }
+
+    pub fn build(self) -> ConfiguredDatabase {
+        self.database
     }
 }
 

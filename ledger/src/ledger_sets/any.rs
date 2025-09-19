@@ -1,10 +1,10 @@
 use std::ops::{Bound, RangeBounds};
 
 use rsnano_nullable_lmdb::{ReadTransaction, Transaction};
-use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore, read_pending_record};
+use rsnano_store_lmdb::{read_pending_record, LmdbPendingStore, LmdbRangeIterator, LmdbStore};
 use rsnano_types::{
-    Account, AccountInfo, Amount, Block, BlockHash, BlockPriority, DependentBlocks, DetailedBlock,
-    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, block_priority,
+    block_priority, Account, AccountInfo, Amount, Block, BlockHash, BlockPriority, DependentBlocks,
+    DetailedBlock, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };
 
 use super::{BorrowingConfirmedSet, ConfirmedSet, LedgerSet};
@@ -73,6 +73,8 @@ pub trait AnySet: LedgerSet {
     ) -> AnyReceivableIterator<'_>;
 
     fn get_final_vote(&self, root: &QualifiedRoot) -> Option<BlockHash>;
+    #[cfg(feature = "ledger_snapshots")]
+    fn is_forked(&self, root: &QualifiedRoot) -> bool;
 }
 
 /// All blocks - either confirmed or unconfirmed
@@ -325,6 +327,11 @@ impl<'a> AnySet for OwningAnySet<'a> {
     fn get_final_vote(&self, root: &QualifiedRoot) -> Option<BlockHash> {
         self.borrowing_set().get_final_vote(root)
     }
+
+    #[cfg(feature = "ledger_snapshots")]
+    fn is_forked(&self, root: &QualifiedRoot) -> bool {
+        self.borrowing_set().is_forked(root)
+    }
 }
 
 pub(crate) struct BorrowingAnySet<'a> {
@@ -563,6 +570,11 @@ impl<'a> AnySet for BorrowingAnySet<'a> {
 
     fn get_final_vote(&self, root: &QualifiedRoot) -> Option<BlockHash> {
         self.store.final_vote.get(self.tx, root)
+    }
+
+    #[cfg(feature = "ledger_snapshots")]
+    fn is_forked(&self, root: &QualifiedRoot) -> bool {
+        self.store.forks.get(self.tx, root).is_some()
     }
 }
 

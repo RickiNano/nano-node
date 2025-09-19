@@ -156,7 +156,7 @@ impl LedgerSnapshots {
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
         let mut state = self.state.lock().unwrap();
 
-        if !state.receive_vote(vote.clone(), &consensus_params) {
+        if !state.receive_vote(vote.clone()) {
             warn!(
                 vote_hash= ?vote.hash(), 
                 snapshot_number= ?vote.snapshot_number,
@@ -168,6 +168,15 @@ impl LedgerSnapshots {
             received_votes = state.vote_aggregator.len(),
             "Snapshot proposal vote received"
         );
+
+        if let Some(winner) = state.find_winner_proposal(&consensus_params) {
+            tracing::warn!(proposal_hash=?winner, "Found a winner!");
+            state.advance_epoch();
+            let snapshot_number = state.current_snapshot_number;
+            drop(state);
+            tracing::warn!("Calling roll_back_forks_older_than");
+            self.ledger.roll_back_forks_older_than(snapshot_number - 1);
+        }
     }
 
     fn get_current_snapshot_number(&self) -> SnapshotNumber {
@@ -191,7 +200,7 @@ mod tests {
     use rsnano_messages::{Aggregatable, Message, ProposalHash, ProposalVote};
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_types::Amount;
+    use rsnano_types::{Amount, QualifiedRoot, SavedBlock};
     use std::{sync::LazyLock, time::Duration};
 
     #[test]
@@ -480,24 +489,62 @@ mod tests {
         assert_eq!(ledger_snapshots.get_current_snapshot_number(), 0);
     }
 
+    #[test]
+    fn rollback_fork() {
+        let fork_block = SavedBlock::new_test_instance();
+        let root = fork_block.qualified_root();
+        let snapshot_number = 0;
+        let fixture = Fixture::builder().marked_forks([(root, snapshot_number)]).finish();
+
+        let mut tx = fixture.snapshots.ledger.store.begin_write();
+        fixture.snapshots.ledger.store.successors.put(&mut tx, &fork_block.previous(), &fork_block.hash());
+        tx.commit();
+
+        let proposal = fixture.create_proposal(&LOCAL_REP_KEY);   
+        let proposal_hash = proposal.hash();
+        let rollback_tracker = fixture.snapshots.ledger.track_rollbacks();
+
+        fixture.snapshots.handle_proposal(proposal);
+
+        let vote1 = fixture.create_vote(proposal_hash, &LOCAL_REP_KEY);
+        let vote2 = fixture.create_vote(proposal_hash, &fixture.rep_keys.rep2);
+        let vote3 = fixture.create_vote(proposal_hash, &fixture.rep_keys.rep3);
+
+        fixture.snapshots.handle_vote(vote1);
+        fixture.snapshots.handle_vote(vote2);
+        fixture.snapshots.handle_vote(vote3);
+
+        let output = rollback_tracker.output();
+
+        assert_eq!(output, vec![fork_block.hash()]);
+    }
+
     struct FixtureBuilder {
         frontiers: Vec<(Account, BlockHash)>,
+        forked_roots: Vec<(QualifiedRoot, SnapshotNumber)>,
     }
 
     impl FixtureBuilder {
         fn new() -> Self {
+
             let frontiers = vec![
                 (Account::from(1), BlockHash::from(100)),
                 (Account::from(2), BlockHash::from(200)),
             ];
 
-            Self { frontiers }
+            Self { frontiers, forked_roots: Vec::new() }
         }
 
         fn frontiers(mut self, frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
             self.frontiers = frontiers.into_iter().collect();
             self
         }
+
+        fn marked_forks(mut self, forked_roots: impl IntoIterator<Item = (QualifiedRoot, SnapshotNumber)>) -> Self {
+            self.forked_roots = forked_roots.into_iter().collect();
+            self
+        }
+
 
         fn finish(self) -> Fixture {
             let online_weight = Amount::nano(100_000_000);
@@ -513,6 +560,7 @@ mod tests {
 
             let ledger = Ledger::new_null_builder()
                 .frontiers(self.frontiers)
+                .forks(self.forked_roots)
                 .finish();
 
             Self::with_ledger_and_weights(ledger.into(), rep_weights, quorum_weight)
@@ -583,6 +631,14 @@ mod tests {
         fn create_proposal(&self, rep_key: &PrivateKey) -> Proposal {
             Proposal::new(
                 vec![],
+                rep_key,
+                self.snapshots.get_current_snapshot_number(),
+            )
+        }
+
+        fn create_vote(&self, proposal_hash: ProposalHash, rep_key: &PrivateKey) -> ProposalVote {
+            ProposalVote::new(
+                proposal_hash,
                 rep_key,
                 self.snapshots.get_current_snapshot_number(),
             )

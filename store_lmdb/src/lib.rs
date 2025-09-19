@@ -10,7 +10,7 @@ mod confirmation_height_store;
 mod fan;
 mod final_vote_store;
 #[cfg(feature = "ledger_snapshots")]
-mod forks_store;
+pub mod forks_store;
 mod iterator;
 mod lmdb_config;
 mod online_weight_store;
@@ -101,6 +101,7 @@ pub const PRUNED_TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(6);
 pub const REP_WEIGHT_TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(7);
 pub const CONFIRMATION_HEIGHT_TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(8);
 pub const PEERS_TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(9);
+pub const FORKS_TEST_DATABASE: LmdbDatabase = LmdbDatabase::new_null(10);
 
 #[cfg(test)]
 mod test {
