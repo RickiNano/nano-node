@@ -3,8 +3,8 @@ use std::{
     net::SocketAddrV6,
     ops::{Deref, DerefMut},
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
     time::SystemTime,
 };
@@ -28,12 +28,12 @@ use rsnano_utils::{
 use rsnano_work::WorkThresholds;
 
 use crate::{
-    BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, GenerateCacheFlags,
-    LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
-    RepWeightCache, RepWeightsUpdater, RollbackError,
     block_cementer::BlockCementer,
     block_insertion::{BlockInserter, BlockValidatorFactory},
     vote_verifier::VoteVerifier,
+    BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, GenerateCacheFlags,
+    LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
+    RepWeightCache, RepWeightsUpdater, RollbackError,
 };
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, EnumCount, EnumIter, IntoStaticStr)]
@@ -172,6 +172,24 @@ impl NullLedgerBuilder {
     pub fn pending(mut self, key: &PendingKey, info: &PendingInfo) -> Self {
         self.pending = self.pending.pending(key, info);
         self
+    }
+
+    pub fn frontiers(self, frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
+        let mut builder = self;
+
+        for (account, frontier) in frontiers {
+            builder = builder
+                .account_info(&account, &AccountInfo::new_test_instance())
+                .confirmation_height(
+                    &account,
+                    &ConfirmationHeightInfo {
+                        height: 0,
+                        frontier,
+                    },
+                );
+        }
+
+        builder
     }
 
     pub fn finish(self) -> Ledger {

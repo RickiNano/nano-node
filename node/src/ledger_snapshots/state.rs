@@ -193,6 +193,87 @@ mod tests {
     }
 
     #[test]
+    fn vote_for_proposal_with_highest_hash() {
+        let snapshot_number = 0;
+        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), snapshot_number);
+        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
+        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), snapshot_number);
+        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), snapshot_number);
+
+        let highest_hash = [
+            proposal1.hash(),
+            proposal2.hash(),
+            proposal3.hash(),
+            proposal4.hash(),
+        ]
+        .into_iter()
+        .max()
+        .unwrap();
+
+        let mut state = State::default();
+        state.proposal_aggregator.add(proposal1);
+        state.proposal_aggregator.add(proposal2);
+        state.proposal_aggregator.add(proposal3);
+        state.proposal_aggregator.add(proposal4);
+
+        let vote = state.create_vote(&PrivateKey::from(5));
+
+        assert_eq!(vote.unwrap().proposal_hash, highest_hash);
+    }
+
+    #[test]
+    fn a_winner_proposal_is_not_found_if_there_are_no_votes() {
+        let state = State::default();
+
+        assert_eq!(
+            state.find_winner_proposal(&ConsensusParams::default()),
+            None
+        );
+    }
+
+    #[test]
+    fn a_winner_proposal_is_not_found_if_quorum_is_not_reached() {
+        let mut params = ConsensusParams::default();
+        let rep_key = PrivateKey::from(1);
+        let weight = Amount::nano(100_000);
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key.public_key(), weight);
+        params.set_rep_weights(rep_weights, Amount::MAX);
+
+        let proposal_hash = ProposalHash::from(1);
+        let vote = ProposalVote::new(proposal_hash, &rep_key, 0);
+
+        let mut state = State::default();
+        state.vote_aggregator.add(vote);
+
+        assert_eq!(state.find_winner_proposal(&params), None);
+    }
+
+    #[test]
+    fn a_winner_proposal_is_found_if_quorum_is_reached() {
+        let mut params = ConsensusParams::default();
+
+        let rep_key1 = PrivateKey::from(1);
+        let rep_key2 = PrivateKey::from(2);
+        let weight = Amount::nano(100_000);
+
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key1.public_key(), weight);
+        rep_weights.insert(rep_key2.public_key(), weight);
+        params.set_rep_weights(rep_weights, weight * 2);
+
+        let proposal_hash = ProposalHash::from(1);
+        let vote1 = ProposalVote::new(proposal_hash, &rep_key1, 0);
+        let vote2 = ProposalVote::new(proposal_hash, &rep_key2, 0);
+
+        let mut state = State::default();
+        state.vote_aggregator.add(vote1);
+        state.vote_aggregator.add(vote2);
+
+        assert_eq!(state.find_winner_proposal(&params), Some(proposal_hash));
+    }
+
+    #[test]
     fn current_snapshot_number_is_increased_when_proposal_gets_confirmed() {
         let rep_key = PrivateKey::from(1);
         let mut weights = RepWeights::new();
@@ -221,86 +302,5 @@ mod tests {
         );
         assert_eq!(state.proposal_aggregator.len(), 0, "proposals not cleared");
         assert_eq!(state.vote_aggregator.len(), 0, "votes not cleared");
-    }
-
-    #[test]
-    fn vote_for_proposal_with_highest_hash() {
-        let snapshot_number = 0;
-        let proposal1 = Proposal::new(vec![], &PrivateKey::from(1), snapshot_number);
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
-        let proposal3 = Proposal::new(vec![], &PrivateKey::from(3), snapshot_number);
-        let proposal4 = Proposal::new(vec![], &PrivateKey::from(4), snapshot_number);
-
-        let highest_hash = [
-            proposal1.hash(),
-            proposal2.hash(),
-            proposal3.hash(),
-            proposal4.hash(),
-        ]
-        .into_iter()
-        .max()
-        .unwrap();
-
-        let mut state = State::default();
-        state.proposal_aggregator.add(proposal1);
-        state.proposal_aggregator.add(proposal2);
-        state.proposal_aggregator.add(proposal3);
-        state.proposal_aggregator.add(proposal4);
-
-        let proposal_vote = state.create_vote(&PrivateKey::from(5));
-
-        assert_eq!(proposal_vote.unwrap().proposal_hash, highest_hash);
-    }
-
-    #[test]
-    fn a_winner_proposal_is_not_found_if_there_are_no_votes() {
-        let state = State::default();
-
-        assert_eq!(
-            state.find_winner_proposal(&ConsensusParams::default()),
-            None
-        );
-    }
-
-    #[test]
-    fn a_winner_proposal_is_not_found_if_quorum_is_not_reached() {
-        let mut params = ConsensusParams::default();
-        let rep_key = PrivateKey::from(1);
-        let weight = Amount::nano(100_000);
-        let mut rep_weights = RepWeights::new();
-        rep_weights.insert(rep_key.public_key(), weight);
-        params.set_rep_weights(rep_weights, Amount::MAX);
-
-        let proposal_hash = ProposalHash::from(1);
-        let proposal_vote = ProposalVote::new(proposal_hash, &rep_key, 0);
-
-        let mut state = State::default();
-        state.vote_aggregator.add(proposal_vote);
-
-        assert_eq!(state.find_winner_proposal(&params), None);
-    }
-
-    #[test]
-    fn a_winner_proposal_is_found_if_quorum_is_reached() {
-        let mut params = ConsensusParams::default();
-
-        let rep_key1 = PrivateKey::from(1);
-        let rep_key2 = PrivateKey::from(2);
-        let weight = Amount::nano(100_000);
-
-        let mut rep_weights = RepWeights::new();
-        rep_weights.insert(rep_key1.public_key(), weight);
-        rep_weights.insert(rep_key2.public_key(), weight);
-        params.set_rep_weights(rep_weights, weight * 2);
-
-        let proposal_hash = ProposalHash::from(1);
-        let proposal_vote1 = ProposalVote::new(proposal_hash, &rep_key1, 0);
-        let proposal_vote2 = ProposalVote::new(proposal_hash, &rep_key2, 0);
-
-        let mut state = State::default();
-        state.vote_aggregator.add(proposal_vote1);
-        state.vote_aggregator.add(proposal_vote2);
-
-        assert_eq!(state.find_winner_proposal(&params), Some(proposal_hash));
     }
 }

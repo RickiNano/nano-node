@@ -1,8 +1,8 @@
 use crate::{Aggregatable, MessageVariant, Preproposal, PreproposalHash};
 use bitvec::array::BitArray;
 use rsnano_types::{
-    Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey, Signature,
-    SnapshotNumber, read_u32_be,
+    read_u32_be, Blake2Hash, Blake2HashBuilder, DeserializationError, PrivateKey, PublicKey,
+    Signature, SnapshotNumber,
 };
 
 pub type PreproposalsHash = Blake2Hash;
@@ -11,6 +11,7 @@ pub type ProposalHash = Blake2Hash;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
     pub snapshot_number: SnapshotNumber,
+    // TODO: remove duplicates
     pub preproposal_hashes: Vec<PreproposalHash>,
     pub signer: PublicKey,
     pub signature: Signature,
@@ -22,8 +23,9 @@ impl Proposal {
         private_key: &PrivateKey,
         snapshot_number: SnapshotNumber,
     ) -> Self {
-        let preproposals: Vec<PreproposalHash> =
+        let mut preproposals: Vec<PreproposalHash> =
             preproposals.into_iter().map(|p| p.hash()).collect();
+        preproposals.sort();
 
         let mut proposal = Self {
             snapshot_number,
@@ -47,15 +49,8 @@ impl Proposal {
     }
 
     fn preproposals_hash(&self) -> PreproposalsHash {
-        Proposal::hash_preproposals(&self.preproposal_hashes)
-    }
-
-    fn hash_preproposals(preproposals_hashes: &[PreproposalHash]) -> PreproposalsHash {
-        let mut unique_sorted: Vec<PreproposalHash> = preproposals_hashes.to_vec();
-        unique_sorted.sort_by(|a, b| a.as_bytes().cmp(b.as_bytes()));
-
         let mut hash_builder = Blake2HashBuilder::default();
-        for hash in unique_sorted.iter() {
+        for hash in self.preproposal_hashes.iter() {
             hash_builder = hash_builder.update(hash.as_bytes());
         }
         hash_builder.build()
@@ -88,6 +83,7 @@ impl Proposal {
             let preproposal = PreproposalHash::deserialize(&mut bytes)?;
             preproposals.push(preproposal);
         }
+        preproposals.sort();
 
         Ok(Proposal {
             snapshot_number,
@@ -123,7 +119,7 @@ impl Aggregatable for Proposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, Preproposal, assert_deserializable};
+    use crate::{assert_deserializable, Message, Preproposal};
     use rsnano_types::{Account, BlockHash};
 
     #[test]

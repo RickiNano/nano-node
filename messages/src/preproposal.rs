@@ -1,9 +1,9 @@
 use crate::{Aggregatable, MessageVariant};
 use bitvec::prelude::BitArray;
+use rsnano_types::{read_u32_be, DeserializationError, SnapshotNumber};
 use rsnano_types::{
     Account, Blake2Hash, Blake2HashBuilder, BlockHash, PrivateKey, PublicKey, Signature,
 };
-use rsnano_types::{DeserializationError, SnapshotNumber, read_u32_be};
 
 pub type PreproposalHash = Blake2Hash;
 pub type FrontiersHash = Blake2Hash;
@@ -16,12 +16,24 @@ pub struct Preproposal {
     pub signature: Signature,
 }
 
+fn sort_frontiers(frontiers: &mut Vec<(Account, BlockHash)>) {
+    frontiers.sort_by(|(account_a, hash_a), (account_b, hash_b)| {
+        let account_cmp = account_a.as_bytes().cmp(account_b.as_bytes());
+        if account_cmp != std::cmp::Ordering::Equal {
+            return account_cmp;
+        }
+        hash_a.as_bytes().cmp(hash_b.as_bytes())
+    });
+}
+
 impl Preproposal {
     pub fn new(
-        frontiers: Vec<(Account, BlockHash)>,
+        mut frontiers: Vec<(Account, BlockHash)>,
         private_key: &PrivateKey,
         snapshot_number: SnapshotNumber,
     ) -> Self {
+        sort_frontiers(&mut frontiers);
+
         let mut preproposal = Self {
             snapshot_number,
             frontiers,
@@ -43,21 +55,8 @@ impl Preproposal {
     }
 
     fn frontiers_hash(&self) -> FrontiersHash {
-        Preproposal::hash_frontiers(&self.frontiers)
-    }
-
-    pub fn hash_frontiers(frontiers: &[(Account, BlockHash)]) -> FrontiersHash {
-        let mut sorted_frontiers: Vec<(Account, BlockHash)> = frontiers.to_vec();
-        sorted_frontiers.sort_by(|(account_a, hash_a), (account_b, hash_b)| {
-            let account_cmp = account_a.as_bytes().cmp(account_b.as_bytes());
-            if account_cmp != std::cmp::Ordering::Equal {
-                return account_cmp;
-            }
-            hash_a.as_bytes().cmp(hash_b.as_bytes())
-        });
-
         let mut hash_builder = Blake2HashBuilder::default();
-        for (account, hash) in sorted_frontiers.iter() {
+        for (account, hash) in self.frontiers.iter() {
             hash_builder = hash_builder
                 .update(account.as_bytes())
                 .update(hash.as_bytes());
@@ -95,6 +94,8 @@ impl Preproposal {
             frontiers.push((account, hash));
         }
 
+        sort_frontiers(&mut frontiers);
+
         Ok(Preproposal {
             snapshot_number,
             frontiers,
@@ -129,7 +130,7 @@ impl Aggregatable for Preproposal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Message, assert_deserializable};
+    use crate::{assert_deserializable, Message};
 
     #[test]
     fn sign_new_preproposal() {
@@ -148,20 +149,19 @@ mod tests {
 
     #[test]
     fn hash_frontiers() {
-        assert_eq!(
-            Preproposal::hash_frontiers(&[]),
-            Preproposal::hash_frontiers(&[]),
-        );
+        let key = PrivateKey::from(42);
+        let preproposal1 = Preproposal::new(vec![], &key, 0);
+        let preproposal2 = Preproposal::new(vec![], &key, 0);
+        assert_eq!(preproposal1.frontiers_hash(), preproposal2.frontiers_hash());
 
-        assert_eq!(
-            Preproposal::hash_frontiers(&[(Account::from(1), BlockHash::from(2))]),
-            Preproposal::hash_frontiers(&[(Account::from(1), BlockHash::from(2))]),
-        );
+        let preproposal1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(2))], &key, 0);
+        let preproposal2 = Preproposal::new(vec![(Account::from(1), BlockHash::from(2))], &key, 0);
+        assert_eq!(preproposal1.frontiers_hash(), preproposal2.frontiers_hash());
 
-        assert_ne!(
-            Preproposal::hash_frontiers(&[(Account::from(1), BlockHash::from(2))]),
-            Preproposal::hash_frontiers(&[(Account::from(10), BlockHash::from(20))]),
-        );
+        let preproposal1 = Preproposal::new(vec![(Account::from(1), BlockHash::from(2))], &key, 0);
+        let preproposal2 =
+            Preproposal::new(vec![(Account::from(10), BlockHash::from(20))], &key, 0);
+        assert_ne!(preproposal1.frontiers_hash(), preproposal2.frontiers_hash());
     }
 
     #[test]

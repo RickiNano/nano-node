@@ -1,18 +1,18 @@
 mod aggregator;
 mod state;
 
-use std::sync::{Arc, Mutex};
+use crate::{
+    ledger_snapshots::{aggregator::Aggregator, state::State},
+    representatives::OnlineReps,
+    transport::MessageFlooder,
+};
 use rsnano_ledger::Ledger;
 use rsnano_messages::{Aggregatable, Message, Preproposal, Proposal, ProposalVote};
 use rsnano_network::TrafficType;
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 use rsnano_types::{Account, BlockHash};
 use rsnano_types::{PrivateKey, SnapshotNumber};
-use crate::{
-    ledger_snapshots::{aggregator::Aggregator, state::State},
-    representatives::OnlineReps,
-    transport::MessageFlooder,
-};
+use std::sync::{Arc, Mutex};
 use tracing::warn;
 
 pub struct LedgerSnapshots {
@@ -180,25 +180,28 @@ mod tests {
     use rsnano_messages::{Aggregatable, Message, ProposalHash, ProposalVote};
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
-    use rsnano_types::{AccountInfo, Amount, ConfirmationHeightInfo};
-    use std::time::Duration;
+    use rsnano_types::Amount;
+    use std::{sync::LazyLock, time::Duration};
 
     #[test]
-    fn ledger_with_one_account() {
+    fn collect_one_frontier() {
         let account = Account::from(1);
         let frontier = BlockHash::from(2);
-        let fixture = Fixture::with_frontiers([(account, frontier)]);
+        let fixture = Fixture::builder().frontiers([(account, frontier)]).finish();
         assert_eq!(fixture.snapshots.collect_frontiers(), [(account, frontier)]);
     }
 
     #[test]
-    fn ledger_with_multiple_accounts() {
+    fn collect_multiple_frontiers() {
         let account1 = Account::from(1);
         let frontier1 = BlockHash::from(100);
         let account2 = Account::from(2);
         let frontier2 = BlockHash::from(200);
 
-        let fixture = Fixture::with_frontiers([(account1, frontier1), (account2, frontier2)]);
+        let fixture = Fixture::builder()
+            .frontiers([(account1, frontier1), (account2, frontier2)])
+            .finish();
+
         assert_eq!(
             fixture.snapshots.collect_frontiers(),
             [(account1, frontier1), (account2, frontier2)]
@@ -206,10 +209,10 @@ mod tests {
     }
 
     #[test]
-    fn create_preproposal() {
+    fn create_preproposal_with_one_frontier() {
         let account = Account::from(10);
         let frontier = BlockHash::from(2);
-        let fixture = Fixture::with_frontiers([(account, frontier)]);
+        let fixture = Fixture::builder().frontiers([(account, frontier)]).finish();
 
         let preproposal = fixture.snapshots.create_preproposal(&PrivateKey::from(1));
 
@@ -222,9 +225,7 @@ mod tests {
 
     #[test]
     fn publish_preproposal() {
-        let account = Account::from(1);
-        let frontier = BlockHash::from(100);
-        let fixture = Fixture::with_frontiers([(account, frontier)]);
+        let fixture = Fixture::new();
 
         fixture.snapshots.start_ledger_snapshot();
 
@@ -233,7 +234,7 @@ mod tests {
 
         let expected_preproposal = fixture
             .snapshots
-            .create_preproposal(&get_test_key().unwrap());
+            .create_preproposal(&fixture.rep_keys.local_rep);
 
         assert_eq!(
             flood_events[0],
@@ -262,8 +263,7 @@ mod tests {
     fn a_received_preproposal_is_added_to_the_preproposal_aggregator() {
         let fixture = Fixture::new();
         let snapshots = &fixture.snapshots;
-        let snapshot_number = snapshots.get_current_snapshot_number();
-        let preproposal = Preproposal::new(vec![], &PrivateKey::from(1), snapshot_number);
+        let preproposal = fixture.create_preproposal(&fixture.rep_keys.rep2);
 
         snapshots.handle_preproposal(preproposal.clone());
 
@@ -279,22 +279,33 @@ mod tests {
 
     #[test]
     fn publish_proposal_when_quorum_of_preproposals_is_reached() {
-        let mut rep_weights = RepWeights::new();
-        let private_key = get_test_key().unwrap();
-        let quorum_weight = Amount::nano(100_000);
+        let fixture = Fixture::new();
 
-        rep_weights.insert(private_key.public_key(), quorum_weight);
-        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
-        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
+        let preproposal1 = fixture.create_preproposal(&fixture.rep_keys.local_rep);
+        fixture.snapshots.handle_preproposal(preproposal1.clone());
 
-        let preproposal = Preproposal::new(vec![], &private_key, snapshot_number);
-        fixture.snapshots.handle_preproposal(preproposal.clone());
+        let preproposal2 = fixture.create_preproposal(&fixture.rep_keys.rep2);
+        fixture.snapshots.handle_preproposal(preproposal2.clone());
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(
+            flood_events.len(),
+            0,
+            "Should not flood any message before quorum reached"
+        );
+
+        let preproposal3 = fixture.create_preproposal(&fixture.rep_keys.rep3);
+        fixture.snapshots.handle_preproposal(preproposal3.clone());
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
         let snapshot_number = fixture.snapshots.get_current_snapshot_number();
-        let expected_proposal = Proposal::new(&[preproposal], &private_key, snapshot_number);
+        let expected_proposal = Proposal::new(
+            &[preproposal1, preproposal2, preproposal3],
+            &fixture.rep_keys.local_rep,
+            snapshot_number,
+        );
 
         assert_eq!(
             flood_events[0],
@@ -304,11 +315,6 @@ mod tests {
                 scale: 0.0,
                 all_prs: true,
             }
-        );
-
-        assert_eq!(
-            snapshot_number,
-            fixture.snapshots.get_current_snapshot_number()
         );
     }
 
@@ -327,11 +333,7 @@ mod tests {
     fn a_received_proposal_is_added_to_the_proposal_aggregator() {
         let fixture = Fixture::new();
         let snapshots = &fixture.snapshots;
-        let proposal = Proposal::new(
-            vec![],
-            &PrivateKey::from(1),
-            snapshots.get_current_snapshot_number(),
-        );
+        let proposal = fixture.create_proposal(&fixture.rep_keys.rep2);
 
         snapshots.handle_proposal(proposal.clone());
 
@@ -347,21 +349,28 @@ mod tests {
 
     #[test]
     fn publish_vote_when_quorum_of_proposals_is_reached() {
-        let mut rep_weights = RepWeights::new();
-        let private_key = get_test_key().unwrap();
-        let quorum_weight = Amount::nano(100_000);
-
-        rep_weights.insert(private_key.public_key(), quorum_weight);
-        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
+        let fixture = Fixture::new();
         let snapshot_number = fixture.snapshots.get_current_snapshot_number();
 
-        let proposal = Proposal::new(vec![], &private_key, snapshot_number);
-        fixture.snapshots.handle_proposal(proposal.clone());
+        let proposal1 = fixture.create_proposal(&fixture.rep_keys.local_rep);
+        fixture.snapshots.handle_proposal(proposal1.clone());
+
+        let proposal2 = fixture.create_proposal(&fixture.rep_keys.rep2);
+        fixture.snapshots.handle_proposal(proposal2.clone());
+
+        let proposal3 = fixture.create_proposal(&fixture.rep_keys.rep3);
+        fixture.snapshots.handle_proposal(proposal3.clone());
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood the message");
 
-        let expected_vote = ProposalVote::new(proposal.hash(), &private_key, snapshot_number);
+        let highest_hash = [proposal1.hash(), proposal2.hash(), proposal3.hash()]
+            .into_iter()
+            .max()
+            .unwrap();
+
+        let expected_vote =
+            ProposalVote::new(highest_hash, &fixture.rep_keys.local_rep, snapshot_number);
 
         assert_eq!(
             flood_events[0],
@@ -372,27 +381,24 @@ mod tests {
                 all_prs: true,
             }
         );
-
-        assert_eq!(
-            snapshot_number,
-            fixture.snapshots.get_current_snapshot_number()
-        );
     }
 
     #[test]
     fn publish_vote_only_once() {
-        let mut rep_weights = RepWeights::new();
-        let private_key = get_test_key().unwrap();
-        let quorum_weight = Amount::nano(100_000);
-        rep_weights.insert(private_key.public_key(), quorum_weight);
+        let fixture = Fixture::new();
+        let proposal1 = fixture.create_proposal(&fixture.rep_keys.local_rep);
+        let proposal2 = fixture.create_proposal(&fixture.rep_keys.rep2);
+        let proposal3 = fixture.create_proposal(&fixture.rep_keys.rep3);
+        let proposal4 = fixture.create_proposal(&fixture.rep_keys.rep4);
 
-        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
-        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
-
-        let proposal1 = Proposal::new(vec![], &private_key, snapshot_number);
-        let proposal2 = Proposal::new(vec![], &PrivateKey::from(2), snapshot_number);
-        fixture.snapshots.handle_proposal(proposal1.clone());
+        fixture.snapshots.handle_proposal(proposal1);
         fixture.snapshots.handle_proposal(proposal2);
+        fixture.snapshots.handle_proposal(proposal3);
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should flood only one vote message");
+
+        fixture.snapshots.handle_proposal(proposal4);
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(flood_events.len(), 1, "Should flood only one vote message");
@@ -438,38 +444,49 @@ mod tests {
         assert_eq!(ledger_snapshots.get_current_snapshot_number(), 0);
     }
 
-    struct Fixture {
-        snapshots: LedgerSnapshots,
-        flood_tracker: Arc<OutputTrackerMt<FloodEvent>>,
-        receive_preproposal_tracker: Arc<OutputTrackerMt<Preproposal>>,
-        receive_proposal_tracker: Arc<OutputTrackerMt<Proposal>>,
-        receive_vote_tracker: Arc<OutputTrackerMt<ProposalVote>>,
+    struct FixtureBuilder {
+        frontiers: Vec<(Account, BlockHash)>,
     }
 
-    impl Fixture {
+    impl FixtureBuilder {
         fn new() -> Self {
-            Self::with_frontiers([])
+            let frontiers = vec![
+                (Account::from(1), BlockHash::from(100)),
+                (Account::from(2), BlockHash::from(200)),
+            ];
+
+            Self { frontiers }
         }
 
-        fn with_frontiers(frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
-            let ledger = create_ledger_with_frontiers(frontiers);
-            Self::with_ledger(ledger)
+        fn frontiers(mut self, frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
+            self.frontiers = frontiers.into_iter().collect();
+            self
         }
 
-        fn with_ledger(ledger: Arc<Ledger>) -> Self {
-            Self::with_ledger_and_weights(ledger, RepWeights::new(), Amount::nano(60_000_000))
-        }
+        fn finish(self) -> Fixture {
+            let online_weight = Amount::nano(100_000_000);
+            let quorum_weight = Amount::nano(67_000_000);
+            let mut rep_weights = RepWeights::new();
+            let rep_weight = online_weight / 4_u128;
 
-        fn with_rep_weights(rep_weights: RepWeights, quorum_weight: Amount) -> Self {
-            let ledger = create_ledger_with_frontiers([]);
-            Self::with_ledger_and_weights(ledger, rep_weights, quorum_weight)
+            let rep_keys = RepKeys::default();
+            rep_weights.insert(rep_keys.local_rep.public_key(), rep_weight);
+            rep_weights.insert(rep_keys.rep2.public_key(), rep_weight);
+            rep_weights.insert(rep_keys.rep3.public_key(), rep_weight);
+            rep_weights.insert(rep_keys.rep4.public_key(), rep_weight);
+
+            let ledger = Ledger::new_null_builder()
+                .frontiers(self.frontiers)
+                .finish();
+
+            Self::with_ledger_and_weights(ledger.into(), rep_weights, quorum_weight)
         }
 
         fn with_ledger_and_weights(
             ledger: Arc<Ledger>,
             rep_weights: RepWeights,
             quorum_weight: Amount,
-        ) -> Self {
+        ) -> Fixture {
             let flooder = MessageFlooder::new_null();
             let flood_tracker = flooder.track_floods();
 
@@ -491,8 +508,9 @@ mod tests {
             let receive_proposal_tracker = snapshots.track_received_proposals();
             let receive_vote_tracker = snapshots.track_received_votes();
 
-            Self {
+            Fixture {
                 snapshots,
+                rep_keys: RepKeys::default(),
                 flood_tracker,
                 receive_preproposal_tracker,
                 receive_proposal_tracker,
@@ -501,27 +519,61 @@ mod tests {
         }
     }
 
-    fn get_test_key() -> Option<PrivateKey> {
-        Some(PrivateKey::from(123))
+    struct Fixture {
+        snapshots: LedgerSnapshots,
+        rep_keys: RepKeys,
+        flood_tracker: Arc<OutputTrackerMt<FloodEvent>>,
+        receive_preproposal_tracker: Arc<OutputTrackerMt<Preproposal>>,
+        receive_proposal_tracker: Arc<OutputTrackerMt<Proposal>>,
+        receive_vote_tracker: Arc<OutputTrackerMt<ProposalVote>>,
     }
 
-    fn create_ledger_with_frontiers(
-        frontiers: impl IntoIterator<Item = (Account, BlockHash)>,
-    ) -> Arc<Ledger> {
-        let mut builder = Ledger::new_null_builder();
-
-        for (account, frontier) in frontiers {
-            builder = builder
-                .account_info(&account, &AccountInfo::new_test_instance())
-                .confirmation_height(
-                    &account,
-                    &ConfirmationHeightInfo {
-                        height: 0,
-                        frontier,
-                    },
-                );
+    impl Fixture {
+        fn new() -> Self {
+            Self::builder().finish()
         }
 
-        builder.finish().into()
+        fn builder() -> FixtureBuilder {
+            FixtureBuilder::new()
+        }
+        fn create_preproposal(&self, rep_key: &PrivateKey) -> Preproposal {
+            Preproposal::new(
+                vec![],
+                rep_key,
+                self.snapshots.get_current_snapshot_number(),
+            )
+        }
+
+        fn create_proposal(&self, rep_key: &PrivateKey) -> Proposal {
+            Proposal::new(
+                vec![],
+                rep_key,
+                self.snapshots.get_current_snapshot_number(),
+            )
+        }
+    }
+
+    fn get_test_key() -> Option<PrivateKey> {
+        Some(LOCAL_REP_KEY.clone())
+    }
+
+    static LOCAL_REP_KEY: LazyLock<PrivateKey> = LazyLock::new(|| RepKeys::default().local_rep);
+
+    struct RepKeys {
+        local_rep: PrivateKey,
+        rep2: PrivateKey,
+        rep3: PrivateKey,
+        rep4: PrivateKey,
+    }
+
+    impl Default for RepKeys {
+        fn default() -> Self {
+            Self {
+                local_rep: PrivateKey::from(123),
+                rep2: PrivateKey::from(2),
+                rep3: PrivateKey::from(3),
+                rep4: PrivateKey::from(4),
+            }
+        }
     }
 }
