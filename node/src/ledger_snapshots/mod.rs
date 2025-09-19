@@ -386,18 +386,15 @@ mod tests {
 
     #[test]
     fn publish_proposal_only_once() {
-        let mut rep_weights = RepWeights::new();
-        let private_key = get_test_key().unwrap();
-        let quorum_weight = Amount::nano(100_000);
-        rep_weights.insert(private_key.public_key(), quorum_weight);
+        let fixture = Fixture::new();
 
-        let fixture = Fixture::with_rep_weights(rep_weights, quorum_weight);
-        let snapshot_number = fixture.snapshots.get_current_snapshot_number();
-
-        let preproposal1 = Preproposal::new(vec![], &private_key, snapshot_number);
-        let preproposal2 = Preproposal::new(vec![], &PrivateKey::from(2), snapshot_number);
+        let preproposal1 = fixture.create_preproposal(&fixture.rep_keys.local_rep);
+        let preproposal2 = fixture.create_preproposal(&fixture.rep_keys.rep2);
+        let preproposal3 = fixture.create_preproposal(&fixture.rep_keys.rep3);
+        let preproposal4 = fixture.create_preproposal(&fixture.rep_keys.rep4);
         fixture.snapshots.handle_preproposal(preproposal1.clone());
         fixture.snapshots.handle_preproposal(preproposal2);
+        fixture.snapshots.handle_preproposal(preproposal3);
 
         let flood_events = fixture.flood_tracker.output();
         assert_eq!(
@@ -405,6 +402,11 @@ mod tests {
             1,
             "Should flood only one proposal message"
         );
+
+        fixture.snapshots.handle_preproposal(preproposal4);
+
+        let flood_events = fixture.flood_tracker.output();
+        assert_eq!(flood_events.len(), 1, "Should not flood another proposal");
     }
 
     #[test]
