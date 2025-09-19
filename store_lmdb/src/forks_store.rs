@@ -1,7 +1,7 @@
 use rsnano_nullable_lmdb::{
     DatabaseFlags, Error, LmdbDatabase, LmdbEnvironment, Transaction, WriteFlags, WriteTransaction,
 };
-use rsnano_types::{QualifiedRoot, SnapshotNumber};
+use rsnano_types::{QualifiedRoot, SnapshotNumber, read_u32_be};
 
 /// Maps the qualified roots to the snapshot number when the fork was detected
 pub struct LmdbForksStore {
@@ -35,11 +35,11 @@ impl LmdbForksStore {
         .expect("This should never fail");
     }
 
-    pub fn contains(&self, tx: &dyn Transaction, root: &QualifiedRoot) -> bool {
+    pub fn get(&self, tx: &dyn Transaction, root: &QualifiedRoot) -> Option<SnapshotNumber> {
         let result = tx.get(self.database, &root.to_bytes());
         match result {
-            Err(Error::NotFound) => false,
-            Ok(_) => true,
+            Err(Error::NotFound) => None,
+            Ok(mut bytes) => Some(read_u32_be(&mut bytes).unwrap()),
             Err(e) => panic!("Could not load fork info {:?}", e),
         }
     }
@@ -68,10 +68,10 @@ mod tests {
             Self::with_stored_entries(Vec::new())
         }
 
-        fn with_stored_entries(entries: Vec<QualifiedRoot>) -> Self {
+        fn with_stored_entries(entries: Vec<(QualifiedRoot, SnapshotNumber)>) -> Self {
             let mut env = LmdbEnvironment::null_builder().database("forks", TEST_DATABASE);
             for entry in entries {
-                env = env.entry(&entry.to_bytes(), &[]);
+                env = env.entry(&entry.0.to_bytes(), &entry.1.to_be_bytes());
             }
             Self::with_env(env.build().build())
         }
@@ -111,18 +111,19 @@ mod tests {
     #[test]
     fn exists() {
         let root = QualifiedRoot::new_test_instance();
-        let fixture = Fixture::with_stored_entries(vec![root.clone()]);
+        let snapshot_number = 0;
+        let fixture = Fixture::with_stored_entries(vec![(root.clone(), snapshot_number)]);
         let txn = fixture.env.begin_read();
 
-        let result = fixture.store.contains(&txn, &root);
+        let result = fixture.store.get(&txn, &root);
 
-        assert_eq!(result, true);
+        assert_eq!(result, Some(snapshot_number));
     }
 
     #[test]
     fn delete() {
         let root = QualifiedRoot::new_test_instance();
-        let fixture = Fixture::with_stored_entries(vec![root.clone()]);
+        let fixture = Fixture::with_stored_entries(vec![(root.clone(), 0)]);
         let mut txn = fixture.env.begin_write();
         let delete_tracker = txn.track_deletions();
 
