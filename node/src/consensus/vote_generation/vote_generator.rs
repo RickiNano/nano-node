@@ -139,6 +139,8 @@ impl VoteGenerator {
             let can_vote = |block: &SavedBlock| {
                 #[cfg(feature = "ledger_snapshots")]
                 {
+                    // With ledger snapshots enabled, we just stop voting for forks, because
+                    // fork rollback will happen when a new snapshot is created
                     any.dependents_confirmed(block) && !any.is_forked(&block.qualified_root())
                 }
                 #[cfg(not(feature = "ledger_snapshots"))]
