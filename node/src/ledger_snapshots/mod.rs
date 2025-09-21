@@ -1,6 +1,6 @@
 mod aggregator;
-mod state;
 pub(crate) mod fork_detector;
+mod state;
 
 use crate::{
     ledger_snapshots::{aggregator::Aggregator, state::State},
@@ -84,8 +84,8 @@ impl LedgerSnapshots {
         let mut state = self.state.lock().unwrap();
         if !state.receive_preproposal(preproposal.clone()) {
             warn!(
-                preproposal_hash= ?preproposal.hash(), 
-                snapshot_number= ?preproposal.snapshot_number, 
+                preproposal_hash= ?preproposal.hash(),
+                snapshot_number= ?preproposal.snapshot_number,
                 "Snapshot preproposal discarded because snapshot number is different than current");
             return;
         }
@@ -123,8 +123,8 @@ impl LedgerSnapshots {
         let mut state = self.state.lock().unwrap();
         if !state.receive_proposal(proposal.clone()) {
             warn!(
-                proposal_hash= ?proposal.hash(), 
-                snapshot_number= ?proposal.snapshot_number, 
+                proposal_hash= ?proposal.hash(),
+                snapshot_number= ?proposal.snapshot_number,
                 "Snapshot proposal discarded because snapshot number is different than current");
             return;
         }
@@ -158,7 +158,7 @@ impl LedgerSnapshots {
 
         if !state.receive_vote(vote.clone()) {
             warn!(
-                vote_hash= ?vote.hash(), 
+                vote_hash= ?vote.hash(),
                 snapshot_number= ?vote.snapshot_number,
                 "Snapshot vote discarded because snapshot number is different than current");
             return;
@@ -494,13 +494,19 @@ mod tests {
         let fork_block = SavedBlock::new_test_instance();
         let root = fork_block.qualified_root();
         let snapshot_number = 0;
-        let fixture = Fixture::builder().marked_forks([(root, snapshot_number)]).finish();
+        let fixture = Fixture::builder()
+            .marked_forks([(root, snapshot_number)])
+            .finish();
 
         let mut tx = fixture.snapshots.ledger.store.begin_write();
-        fixture.snapshots.ledger.store.successors.put(&mut tx, &fork_block.previous(), &fork_block.hash());
+        fixture.snapshots.ledger.store.successors.put(
+            &mut tx,
+            &fork_block.previous(),
+            &fork_block.hash(),
+        );
         tx.commit();
 
-        let proposal = fixture.create_proposal(&LOCAL_REP_KEY);   
+        let proposal = fixture.create_proposal(&LOCAL_REP_KEY);
         let proposal_hash = proposal.hash();
         let rollback_tracker = fixture.snapshots.ledger.track_rollbacks();
 
@@ -526,13 +532,15 @@ mod tests {
 
     impl FixtureBuilder {
         fn new() -> Self {
-
             let frontiers = vec![
                 (Account::from(1), BlockHash::from(100)),
                 (Account::from(2), BlockHash::from(200)),
             ];
 
-            Self { frontiers, forked_roots: Vec::new() }
+            Self {
+                frontiers,
+                forked_roots: Vec::new(),
+            }
         }
 
         fn frontiers(mut self, frontiers: impl IntoIterator<Item = (Account, BlockHash)>) -> Self {
@@ -540,11 +548,13 @@ mod tests {
             self
         }
 
-        fn marked_forks(mut self, forked_roots: impl IntoIterator<Item = (QualifiedRoot, SnapshotNumber)>) -> Self {
+        fn marked_forks(
+            mut self,
+            forked_roots: impl IntoIterator<Item = (QualifiedRoot, SnapshotNumber)>,
+        ) -> Self {
             self.forked_roots = forked_roots.into_iter().collect();
             self
         }
-
 
         fn finish(self) -> Fixture {
             let online_weight = Amount::nano(100_000_000);
