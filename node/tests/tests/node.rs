@@ -777,11 +777,10 @@ fn search_receivable() {
 fn search_receivable_same() {
     let mut system = System::new();
     let node = system.make_node();
+    node.insert_into_wallet(&DEV_GENESIS_KEY);
     let wallet_id = node.wallets.wallet_ids()[0];
     let key2 = PrivateKey::new();
-    node.wallets
-        .insert_adhoc2(&wallet_id, &DEV_GENESIS_KEY.raw_key(), true)
-        .unwrap();
+
     let send_result1 = node
         .wallets
         .send(
@@ -793,8 +792,9 @@ fn search_receivable_same() {
             true,
             None,
         )
-        .wait();
+        .wait_timeout(Duration::from_secs(5));
     assert!(send_result1.is_ok());
+
     let send_result2 = node
         .wallets
         .send(
@@ -806,12 +806,14 @@ fn search_receivable_same() {
             true,
             None,
         )
-        .wait();
+        .wait_timeout(Duration::from_secs(5));
     assert!(send_result2.is_ok());
+
+    node.insert_into_wallet(&key2);
     node.wallets
-        .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
+        .search_receivable(&wallet_id)
+        .wait_timeout(Duration::from_secs(5))
         .unwrap();
-    node.wallets.search_receivable(&wallet_id).wait().unwrap();
 
     assert_timely2(|| node.balance(&key2.account()) == node.config.receive_minimum * 2);
 }

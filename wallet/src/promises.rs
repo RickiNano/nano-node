@@ -1,4 +1,7 @@
-use std::sync::{Arc, Condvar, Mutex};
+use std::{
+    sync::{Arc, Condvar, Mutex},
+    time::Duration,
+};
 
 use rsnano_types::SavedBlock;
 
@@ -33,6 +36,16 @@ impl BlockPromise {
             state.done = true;
         }
         self.done_notification.notify_all();
+    }
+
+    pub fn wait_timeout(&self, timeout: Duration) -> Result<SavedBlock, WalletsError> {
+        let result_guard = self.state.lock().unwrap();
+        self.done_notification
+            .wait_timeout_while(result_guard, timeout, |i| !i.done)
+            .unwrap()
+            .0
+            .result
+            .clone()
     }
 
     pub fn wait(&self) -> Result<SavedBlock, WalletsError> {
@@ -92,5 +105,12 @@ impl MultiBlockPromise {
 
     pub fn wait(&self) -> Result<Vec<SavedBlock>, WalletsError> {
         self.children.iter().map(|c| c.wait()).collect()
+    }
+
+    pub fn wait_timeout(&self, timeout: Duration) -> Result<Vec<SavedBlock>, WalletsError> {
+        self.children
+            .iter()
+            .map(|c| c.wait_timeout(timeout))
+            .collect()
     }
 }
