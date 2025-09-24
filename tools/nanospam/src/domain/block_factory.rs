@@ -18,26 +18,21 @@ pub(crate) enum BlockResult {
 }
 
 pub(crate) struct Forks {
-    pub blocks: [Block; Self::MAX_FORK_COUNT],
-    pub blocks_count: usize,
+    pub block: Block,
+    pub fork: Option<Block>,
 }
 
 impl Forks {
     pub(crate) fn new(block: Block) -> Self {
-        Self {
-            blocks: [block, NULL_BLOCK.clone()],
-            blocks_count: 1,
-        }
+        Self { block, fork: None }
     }
 
-    pub(crate) fn new_fork(block1: Block, block2: Block) -> Self {
+    pub(crate) fn new_fork(block: Block, fork: Block) -> Self {
         Self {
-            blocks: [block1, block2],
-            blocks_count: 2,
+            block,
+            fork: Some(fork),
         }
     }
-
-    const MAX_FORK_COUNT: usize = 2;
 }
 
 static NULL_BLOCK: LazyLock<Block> = LazyLock::new(|| Block::new_test_instance());
@@ -47,7 +42,7 @@ impl BlockResult {
     pub fn unwrap(self) -> Block {
         match self {
             BlockResult::Waiting => panic!("Expected block, but was in waiting state"),
-            BlockResult::Block(forks) => forks.blocks[0].clone(),
+            BlockResult::Block(forks) => forks.block.clone(),
         }
     }
 }
@@ -258,7 +253,7 @@ mod tests {
         let mut start = Instant::now();
         let mut created_batch = 0;
         while let Some(BlockResult::Block(forks)) = block_factory.create_next(false) {
-            block_factory.confirm(forks.blocks[0].hash());
+            block_factory.confirm(forks.block.hash());
             created_batch += 1;
             if created_batch == 50_000 {
                 println!(

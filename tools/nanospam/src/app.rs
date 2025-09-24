@@ -25,13 +25,13 @@ use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_tcp::{TcpStream, TcpStreamFactory};
 use rsnano_nullable_tracing_subscriber::TracingInitializer;
 use rsnano_rpc_client::NanoRpcClient;
-use rsnano_types::{Block, Networks, PrivateKey, ProtocolInfo, RawKey};
+use rsnano_types::{Networks, PrivateKey, ProtocolInfo, RawKey};
 use rsnano_websocket_messages::MessageEnvelope;
 
 use crate::{
     confirmation_receiver::ConfirmationReceiver,
     confirmation_tracker::track_confirmations,
-    domain::{BlockFactory, BlockResult, DelayedBlocks, RateSpec, SpamStrategy},
+    domain::{BlockFactory, BlockResult, DelayedBlocks, Forks, RateSpec, SpamStrategy},
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
     high_prio_check::{HighPrioCheck, HighPrioTracker},
@@ -111,6 +111,9 @@ pub(crate) struct Args {
     /// Randomly drop publish messages
     #[arg(long, default_value_t = 0)]
     pub drop_percentage: usize,
+
+    #[arg(long, default_value_t = 0)]
+    pub forks_percentage: usize,
 }
 
 #[derive(Default)]
@@ -156,7 +159,7 @@ impl NanoSpamApp {
             node_handles = start_nodes(&args, data_dir, &rpc_clients).await
         }
 
-        let (tx_block, rx_block) = mpsc::channel::<Block>(MAX_BUFFERED_BLOCKS);
+        let (tx_forks, rx_forks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
         let high_prio_tracker = Mutex::new(HighPrioTracker::default());
         let mut high_prio_check =
             HighPrioCheck::new(genesis_rpc, &delayed_blocks, &high_prio_tracker);
@@ -199,7 +202,7 @@ impl NanoSpamApp {
             tcp_readers.push(node_readers);
         }
 
-        let tx_block_clone = tx_block.clone();
+        let tx_forks_clone = tx_forks.clone();
         let cancel_block_creation = CancellationToken::new();
         let cancel_tcp_recv = CancellationToken::new();
         let cancel_ws_recv = CancellationToken::new();
@@ -243,17 +246,18 @@ impl NanoSpamApp {
             s.spawn(|| {
                 create_blocks(
                     &block_factory,
-                    tx_block,
+                    tx_forks,
                     &delayed_blocks,
                     &current_bps,
                     rate_spec,
                     cancel_blk,
+                    args.forks_percentage as f64 / 100.0,
                 )
             });
 
             tokio_scoped::scope(|scope| {
                 if !args.no_prio {
-                    scope.spawn(high_prio_check.run(cancel_block_creation, tx_block_clone.clone()));
+                    scope.spawn(high_prio_check.run(cancel_block_creation, tx_forks_clone.clone()));
                 }
                 scope.spawn(conf_receiver.run(cancel_ws_recv.clone(), &ws_queue_len, tx_ws_msg));
                 scope.spawn(receive_messages(
@@ -263,13 +267,13 @@ impl NanoSpamApp {
                 ));
                 if !args.no_republish {
                     scope.spawn(republish_delayed_blocks(
-                        tx_block_clone,
+                        tx_forks_clone,
                         &delayed_blocks,
                         cancel_ws_recv,
                     ));
                 }
                 scope.spawn(publish_blocks(
-                    rx_block,
+                    rx_forks,
                     tcp_writers,
                     protocol,
                     &delayed_blocks,
@@ -300,11 +304,12 @@ impl NanoSpamApp {
 
 fn create_blocks(
     block_factory: &Mutex<BlockFactory>,
-    tx_block: mpsc::Sender<Block>,
+    tx_forks: mpsc::Sender<Forks>,
     delayed_blocks: &Mutex<DelayedBlocks>,
     current_bps: &AtomicUsize,
     rate_spec: RateSpec,
     cancel_token: CancellationToken,
+    forks_percentage: f64,
 ) {
     let mut bps_start = Instant::now();
     let mut limiter = TokenBucket::new(current_bps.load(Ordering::Relaxed));
@@ -312,7 +317,7 @@ fn create_blocks(
 
     while let Some(result) = {
         let mut guard = block_factory.lock().unwrap();
-        let is_fork = rng().random_bool(0.1);
+        let is_fork = rng().random_bool(forks_percentage);
         guard.create_next(is_fork)
     } {
         let BlockResult::Block(forks) = result else {
@@ -320,18 +325,17 @@ fn create_blocks(
             continue;
         };
 
-        let block = forks.blocks[0].clone();
-
         while !limiter.try_consume(1, clock.now()) {
             std::thread::yield_now();
         }
 
         {
             let mut delayed = delayed_blocks.lock().unwrap();
-            delayed.insert(block.clone());
+            // TODO: support delayed forks too
+            delayed.insert(forks.block.clone());
         }
 
-        tx_block.blocking_send(block).unwrap();
+        tx_forks.blocking_send(forks).unwrap();
         if bps_start.elapsed() >= rate_spec.interval {
             let new_bps =
                 current_bps.fetch_add(rate_spec.increment, Ordering::Relaxed) + rate_spec.increment;
@@ -344,7 +348,7 @@ fn create_blocks(
 }
 
 async fn publish_blocks(
-    mut rx_block: mpsc::Receiver<Block>,
+    mut rx_forks: mpsc::Receiver<Forks>,
     mut tcp_streams: Vec<Vec<WriteHalf<TcpStream>>>,
     protocol: ProtocolInfo,
     delayed_blocks: &Mutex<DelayedBlocks>,
@@ -355,23 +359,44 @@ async fn publish_blocks(
     drop_percentage: usize,
 ) {
     let mut serializer = MessageSerializer::new(protocol);
+    let mut fork_serializer = MessageSerializer::new(protocol);
     let mut writer_index = 0;
-    while let Some(block) = rx_block.recv().await {
+    while let Some(forks) = rx_forks.recv().await {
+        let block = forks.block.clone();
         let hash = block.hash();
         let publish = Message::Publish(Publish::new_from_originator(block));
         let buffer = serializer.serialize(&publish);
+        let mut fork_buffer = None;
+
+        if let Some(fork) = forks.fork {
+            let publish_fork = Message::Publish(Publish::new_from_originator(fork));
+            fork_buffer = Some(fork_serializer.serialize(&publish_fork));
+        }
 
         let now = Instant::now();
+        // TODO support delayed forks
         delayed_blocks.lock().unwrap().published(&hash, now);
 
+        let mut counter = 0;
         tokio_scoped::scope(|s| {
             for stream in &mut tcp_streams {
                 if drop_percentage > 0 && rng().random_range(0..=100) <= drop_percentage {
                     continue;
                 }
+
+                let buf = if let Some(fbuf) = fork_buffer
+                    && counter % 2 == 0
+                {
+                    fbuf
+                } else {
+                    buffer
+                };
+
                 s.spawn(async {
-                    stream[writer_index].write_all(buffer).await.unwrap();
+                    stream[writer_index].write_all(buf).await.unwrap();
                 });
+
+                counter += 1;
             }
         });
 
@@ -390,7 +415,7 @@ async fn publish_blocks(
 }
 
 async fn republish_delayed_blocks(
-    tx_block: mpsc::Sender<Block>,
+    tx_forks: mpsc::Sender<Forks>,
     delayed_blocks: &Mutex<DelayedBlocks>,
     cancel_token: CancellationToken,
 ) {
@@ -399,7 +424,7 @@ async fn republish_delayed_blocks(
             let now = Instant::now();
             delayed_blocks.lock().unwrap().next(now)
         } {
-            tx_block.send(block).await.unwrap();
+            tx_forks.send(Forks::new(block)).await.unwrap();
         }
 
         if delayed_blocks.lock().unwrap().is_finished() {

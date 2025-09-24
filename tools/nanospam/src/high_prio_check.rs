@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use tokio::{select, sync::mpsc::Sender, time::sleep};
 use tracing::info;
 
-use crate::domain::DelayedBlocks;
+use crate::domain::{DelayedBlocks, Forks};
 use rsnano_rpc_client::NanoRpcClient;
 use rsnano_rpc_messages::SendArgs;
 use rsnano_types::{
@@ -123,7 +123,7 @@ impl<'a> HighPrioCheck<'a> {
         Ok(())
     }
 
-    pub(crate) async fn run(&mut self, cancel_token: CancellationToken, tx_block: Sender<Block>) {
+    pub(crate) async fn run(&mut self, cancel_token: CancellationToken, tx_forks: Sender<Forks>) {
         loop {
             select! {
                 _ = cancel_token.cancelled() => { break;},
@@ -158,7 +158,7 @@ impl<'a> HighPrioCheck<'a> {
 
             let hash = block.hash();
             self.tracker.lock().unwrap().enqueued(hash);
-            tx_block.send(block).await.unwrap();
+            tx_forks.send(Forks::new(block)).await.unwrap();
             let (_, frontier, height) = self.accounts.get_mut(&account).unwrap();
             *frontier = hash;
             *height += 1;
