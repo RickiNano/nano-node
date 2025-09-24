@@ -38,18 +38,18 @@ pub(crate) async fn create_wallets(
             .await
             .unwrap();
 
+        info!("Setting default representative...");
+        rpc_client
+            .wallet_representative_set(WalletRepresentativeSetArgs {
+                wallet: resp.wallet,
+                representative: pr_key.account(),
+                update_existing_accounts: Some(false.into()),
+            })
+            .await
+            .unwrap();
+
         // the first rpc client is the genesis client
         if i > 0 {
-            info!("Setting default representative...");
-            rpc_client
-                .wallet_representative_set(WalletRepresentativeSetArgs {
-                    wallet: resp.wallet,
-                    representative: pr_key.account(),
-                    update_existing_accounts: Some(false.into()),
-                })
-                .await
-                .unwrap();
-
             let pr_balance = (Amount::MAX - INITIAL_AMOUNT) / pr_count as u128;
             info!(
                 "Sending Ӿ{} to PR{i} wallet {} ...",
