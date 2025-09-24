@@ -3,6 +3,7 @@ use rand::Rng;
 use rsnano_types::{Amount, Block, BlockHash, Link, PublicKey, StateBlockArgs, WorkNonce};
 
 use crate::domain::AccountMap;
+use std::sync::LazyLock;
 
 pub(crate) struct BlockFactory {
     max_blocks: usize,
@@ -12,16 +13,41 @@ pub(crate) struct BlockFactory {
 }
 
 pub(crate) enum BlockResult {
-    Block(Block),
+    Block(Forks),
     Waiting,
 }
+
+pub(crate) struct Forks {
+    pub blocks: [Block; Self::MAX_FORK_COUNT],
+    pub blocks_count: usize,
+}
+
+impl Forks {
+    pub(crate) fn new(block: Block) -> Self {
+        Self {
+            blocks: [block, NULL_BLOCK.clone()],
+            blocks_count: 1,
+        }
+    }
+
+    pub(crate) fn new_fork(block1: Block, block2: Block) -> Self {
+        Self {
+            blocks: [block1, block2],
+            blocks_count: 2,
+        }
+    }
+
+    const MAX_FORK_COUNT: usize = 2;
+}
+
+static NULL_BLOCK: LazyLock<Block> = LazyLock::new(|| Block::new_test_instance());
 
 impl BlockResult {
     #[allow(dead_code)]
     pub fn unwrap(self) -> Block {
         match self {
-            BlockResult::Block(block) => block,
             BlockResult::Waiting => panic!("Expected block, but was in waiting state"),
+            BlockResult::Block(forks) => forks.blocks[0].clone(),
         }
     }
 }
@@ -41,76 +67,26 @@ impl BlockFactory {
         }
     }
 
-    pub fn create_next(&mut self) -> Option<BlockResult> {
+    pub fn create_next(&mut self, is_fork: bool) -> Option<BlockResult> {
         if self.max_blocks > 0 && self.created >= self.max_blocks {
             return None;
         }
 
-        if matches!(self.strategy, SpamStrategy::Change) {
-            let Some(state) = self.account_map.random_account_that_can_send() else {
-                return Some(BlockResult::Waiting);
-            };
-            let block: Block = StateBlockArgs {
-                key: &state.key,
-                previous: state.confirmed_frontier,
-                representative: PublicKey::from_bytes(rand::rng().random()),
-                balance: state.balance,
-                link: Link::ZERO,
-                work: WorkNonce::new(0),
+        let block_result = match self.strategy {
+            SpamStrategy::SendReceive => {
+                create_send_or_receive_block(&mut self.account_map, is_fork)
             }
-            .into();
-            self.account_map
-                .process_change(state.key.account(), block.hash());
+            SpamStrategy::Change => {
+                // TODO: use is_fork flag
+                create_change_block(&mut self.account_map)
+            }
+        };
+
+        if matches!(block_result, BlockResult::Block(_)) {
             self.created += 1;
-            return Some(BlockResult::Block(block));
         }
 
-        if let Some((receiver, send_hash, amount_sent)) = self.account_map.next_receivable() {
-            let state = self.account_map.state(&receiver).unwrap();
-            assert!(state.confirmed());
-            let receive: Block = StateBlockArgs {
-                key: &state.key,
-                previous: state.confirmed_frontier,
-                representative: state.key.public_key(),
-                balance: state.balance + amount_sent,
-                link: send_hash.into(),
-                work: 0.into(),
-            }
-            .into();
-
-            self.account_map
-                .process_receive(receiver, send_hash, receive.hash());
-
-            self.created += 1;
-            Some(BlockResult::Block(receive))
-        } else if let Some(state) = self.account_map.random_account_that_can_send() {
-            assert!(state.confirmed());
-            let destination = self.account_map.random_account().unwrap();
-            let new_balance: Amount = rand::rng().random_range(..state.balance.number()).into();
-            let amount_sent = state.balance - new_balance;
-
-            let send: Block = StateBlockArgs {
-                key: &state.key,
-                previous: state.confirmed_frontier,
-                representative: state.key.public_key(),
-                balance: new_balance,
-                link: destination.into(),
-                work: 0.into(),
-            }
-            .into();
-
-            self.account_map.process_send(
-                state.key.account(),
-                destination,
-                send.hash(),
-                amount_sent,
-            );
-            self.created += 1;
-
-            Some(BlockResult::Block(send))
-        } else {
-            Some(BlockResult::Waiting)
-        }
+        Some(block_result)
     }
 
     pub fn confirm(&mut self, hash: BlockHash) {
@@ -120,6 +96,107 @@ impl BlockFactory {
     pub fn created(&self) -> usize {
         self.created
     }
+}
+
+fn create_send_or_receive_block(account_map: &mut AccountMap, is_fork: bool) -> BlockResult {
+    if let Some((receiver, send_hash, amount_sent)) = account_map.next_receivable() {
+        let state = account_map.state(&receiver).unwrap();
+        assert!(state.confirmed());
+        let receive: Block = StateBlockArgs {
+            key: &state.key,
+            previous: state.confirmed_frontier,
+            representative: state.key.public_key(),
+            balance: state.balance + amount_sent,
+            link: send_hash.into(),
+            work: 0.into(),
+        }
+        .into();
+
+        let receive_hash = receive.hash();
+        let mut fork_hash = None;
+
+        let result = if is_fork {
+            let fork: Block = StateBlockArgs {
+                key: &state.key,
+                previous: state.confirmed_frontier,
+                representative: PublicKey::from(1), // Different Rep!
+                balance: state.balance + amount_sent,
+                link: send_hash.into(),
+                work: 0.into(),
+            }
+            .into();
+
+            fork_hash = Some(fork.hash());
+
+            BlockResult::Block(Forks::new_fork(receive, fork))
+        } else {
+            BlockResult::Block(Forks::new(receive))
+        };
+        account_map.process_receive(receiver, send_hash, receive_hash, fork_hash);
+        result
+    } else if let Some(state) = account_map.random_account_that_can_send() {
+        assert!(state.confirmed());
+        let destination = account_map.random_account().unwrap();
+        let new_balance: Amount = rand::rng().random_range(..state.balance.number()).into();
+        let amount_sent = state.balance - new_balance;
+
+        let send: Block = StateBlockArgs {
+            key: &state.key,
+            previous: state.confirmed_frontier,
+            representative: state.key.public_key(),
+            balance: new_balance,
+            link: destination.into(),
+            work: 0.into(),
+        }
+        .into();
+
+        let send_hash = send.hash();
+        let mut fork_hash = None;
+        let result = if is_fork {
+            let fork: Block = StateBlockArgs {
+                key: &state.key,
+                previous: state.confirmed_frontier,
+                representative: PublicKey::from(1), // Different Rep!
+                balance: new_balance,
+                link: destination.into(),
+                work: 0.into(),
+            }
+            .into();
+            fork_hash = Some(fork.hash());
+            BlockResult::Block(Forks::new_fork(send, fork))
+        } else {
+            BlockResult::Block(Forks::new(send))
+        };
+
+        account_map.process_send(
+            state.key.account(),
+            destination,
+            send_hash,
+            amount_sent,
+            fork_hash,
+        );
+
+        result
+    } else {
+        BlockResult::Waiting
+    }
+}
+
+fn create_change_block(account_map: &mut AccountMap) -> BlockResult {
+    let Some(state) = account_map.random_account_that_can_send() else {
+        return BlockResult::Waiting;
+    };
+    let block: Block = StateBlockArgs {
+        key: &state.key,
+        previous: state.confirmed_frontier,
+        representative: PublicKey::from_bytes(rand::rng().random()),
+        balance: state.balance,
+        link: Link::ZERO,
+        work: WorkNonce::new(0),
+    }
+    .into();
+    account_map.process_change(state.key.account(), block.hash());
+    BlockResult::Block(Forks::new(block))
 }
 
 #[cfg(test)]
@@ -134,7 +211,7 @@ mod tests {
     fn initial_send_to_random_account() {
         let mut block_factory =
             BlockFactory::new(test_account_map(), MAX_BLOCKS, SpamStrategy::SendReceive);
-        let block = block_factory.create_next().unwrap().unwrap();
+        let block = block_factory.create_next(false).unwrap().unwrap();
         let account = block.account_field().unwrap();
         let destination = block.destination_or_link();
 
@@ -153,11 +230,11 @@ mod tests {
         let mut block_factory =
             BlockFactory::new(test_account_map(), MAX_BLOCKS, SpamStrategy::SendReceive);
         // genesis send
-        let send = block_factory.create_next().unwrap().unwrap();
+        let send = block_factory.create_next(false).unwrap().unwrap();
         block_factory.confirm(send.hash());
         let account = send.destination_or_link();
 
-        let receive = block_factory.create_next().unwrap().unwrap();
+        let receive = block_factory.create_next(false).unwrap().unwrap();
         assert_eq!(receive.account_field().unwrap(), account);
         assert_eq!(receive.link_field().unwrap(), send.hash().into());
     }
@@ -180,8 +257,8 @@ mod tests {
 
         let mut start = Instant::now();
         let mut created_batch = 0;
-        while let Some(BlockResult::Block(b)) = block_factory.create_next() {
-            block_factory.confirm(b.hash());
+        while let Some(BlockResult::Block(forks)) = block_factory.create_next(false) {
+            block_factory.confirm(forks.blocks[0].hash());
             created_batch += 1;
             if created_batch == 50_000 {
                 println!(

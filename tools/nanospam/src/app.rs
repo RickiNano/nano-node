@@ -312,12 +312,15 @@ fn create_blocks(
 
     while let Some(result) = {
         let mut guard = block_factory.lock().unwrap();
-        guard.create_next()
+        let is_fork = rng().random_bool(0.1);
+        guard.create_next(is_fork)
     } {
-        let BlockResult::Block(block) = result else {
+        let BlockResult::Block(forks) = result else {
             yield_now();
             continue;
         };
+
+        let block = forks.blocks[0].clone();
 
         while !limiter.try_consume(1, clock.now()) {
             std::thread::yield_now();
