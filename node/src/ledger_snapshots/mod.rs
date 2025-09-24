@@ -59,7 +59,10 @@ impl LedgerSnapshots {
     }
 
     pub fn start_ledger_snapshot(&self) {
-        warn!("Preproposal generation triggered");
+        warn!(
+            snapshot_number = self.get_current_snapshot_number(),
+            "Preproposal generation triggered"
+        );
         // TODO add test for no private key
         let private_key = (self.get_private_key)().unwrap();
         let preproposal = self.create_preproposal(&private_key);
@@ -77,7 +80,7 @@ impl LedgerSnapshots {
     }
 
     pub fn handle_preproposal(&self, preproposal: Preproposal) {
-        warn!(preproposal_hash= ?preproposal.hash(), "Snapshot preproposal received");
+        warn!(snapshot_number = preproposal.snapshot_number, preproposal_hash= ?preproposal.hash(), "Snapshot preproposal received");
         self.receive_preproposal_listener.emit(preproposal.clone());
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
@@ -91,6 +94,8 @@ impl LedgerSnapshots {
         }
 
         warn!(
+            snapshot_number = state.current_snapshot_number,
+            preproposals_count = state.preproposal_aggregator.len(),
             "Current preproposal tally = {:?}",
             state.preproposal_aggregator.tally(&consensus_params)
         );
@@ -99,14 +104,20 @@ impl LedgerSnapshots {
         let proposal = state.try_create_proposal(&consensus_params, &rep_key);
         if proposal.is_some() {
             state.set_proposal_published(true);
-            warn!("Quorum on preproposals reached");
+            warn!(
+                snapshot_number = state.current_snapshot_number,
+                "Quorum on preproposals reached"
+            );
         } else {
-            warn!("No quorum on preproposals yet");
+            warn!(
+                snapshot_number = state.current_snapshot_number,
+                "No quorum on preproposals yet"
+            );
         }
         drop(state);
 
         if let Some(proposal) = proposal {
-            warn!(proposal_hash = ?proposal.hash(), "Created proposal. Flooding...");
+            warn!(snapshot_number = self.get_current_snapshot_number(), proposal_hash = ?proposal.hash(), "Created proposal. Flooding...");
             self.publish_message(&Message::SnapshotProposal(proposal));
         };
     }
@@ -116,7 +127,7 @@ impl LedgerSnapshots {
     }
 
     pub fn handle_proposal(&self, proposal: Proposal) {
-        warn!(proposal_hash = ?proposal.hash(), "Snapshot proposal received");
+        warn!(snapshot_number = proposal.snapshot_number, proposal_hash = ?proposal.hash(), "Snapshot proposal received");
         self.receive_proposal_listener.emit(proposal.clone());
         let consensus_params = self.online_reps.lock().unwrap().get_consensus_params();
 
@@ -130,13 +141,17 @@ impl LedgerSnapshots {
         }
 
         warn!(
+            snapshot_number = state.current_snapshot_number,
             "Current proposal tally = {:?}",
             state.proposal_aggregator.tally(&consensus_params)
         );
 
         let rep_key = (self.get_private_key)().unwrap();
         if let Some(vote) = state.try_create_vote(&consensus_params, &rep_key) {
-            warn!("Quorum on proposal reached");
+            warn!(
+                snapshot_number = state.current_snapshot_number,
+                "Quorum on proposal reached"
+            );
             warn!(vote_hash = ?vote.hash(), "Flooding proposal vote");
             self.publish_message(&Message::SnapshotProposalVote(vote));
         }
@@ -165,13 +180,18 @@ impl LedgerSnapshots {
         }
 
         warn!(
+            snapshot_number = vote.snapshot_number,
             received_votes = state.vote_aggregator.len(),
             "Snapshot proposal vote received"
         );
 
         if let Some(winner) = state.find_winner_proposal(&consensus_params) {
-            tracing::warn!(proposal_hash=?winner, "Found a winner!");
+            tracing::warn!(snapshot_number = state.current_snapshot_number, proposal_hash=?winner, "Found a winner!");
             state.advance_epoch();
+            tracing::warn!(
+                snapshot_number = state.current_snapshot_number,
+                "Advanced epoch"
+            );
             let snapshot_number = state.current_snapshot_number;
             drop(state);
             tracing::warn!("Calling roll_back_forks_older_than");
@@ -196,7 +216,7 @@ impl LedgerSnapshots {
 mod tests {
     use super::*;
     use crate::{representatives::ONLINE_WEIGHT_QUORUM, transport::FloodEvent};
-    use rsnano_ledger::RepWeights;
+    use rsnano_ledger::{AnySet, RepWeights};
     use rsnano_messages::{Aggregatable, Message, ProposalHash, ProposalVote};
     use rsnano_network::TrafficType;
     use rsnano_output_tracker::OutputTrackerMt;
@@ -523,6 +543,15 @@ mod tests {
         let output = rollback_tracker.output();
 
         assert_eq!(output, vec![fork_block.hash()]);
+        assert_eq!(
+            fixture
+                .snapshots
+                .ledger
+                .any()
+                .is_forked(&fork_block.qualified_root()),
+            false,
+            "Should delete the fork from the forks table"
+        );
     }
 
     struct FixtureBuilder {

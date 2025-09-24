@@ -1225,8 +1225,12 @@ impl Node {
             cps_limiter,
         );
 
-        ledger_event_processor_plugins
-            .push(Box::new(ForkInserterPlugin::new(fork_inserter.clone())));
+        // With ledger_snapshots we never vote for forked blocks!
+        #[cfg(not(feature = "ledger_snapshots"))]
+        {
+            ledger_event_processor_plugins
+                .push(Box::new(ForkInserterPlugin::new(fork_inserter.clone())));
+        }
 
         #[cfg(feature = "ledger_snapshots")]
         {

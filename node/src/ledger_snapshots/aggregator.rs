@@ -55,6 +55,7 @@ impl<T: Aggregatable> Aggregator<T> {
 
     pub(crate) fn clear(&mut self) {
         self.values.clear();
+        self.signers.clear();
     }
 }
 
@@ -141,6 +142,27 @@ mod tests {
         aggregator.add(preproposal2.clone());
 
         assert_eq!(aggregator.has_quorum(&consensus_params), true);
+    }
+
+    #[test]
+    fn clear() {
+        let rep_key = PrivateKey::from(1);
+
+        let mut rep_weights = RepWeights::new();
+        rep_weights.insert(rep_key.public_key(), Amount::nano(100_000));
+
+        let mut aggregator = Aggregator::default();
+        let mut consensus_params = ConsensusParams::default();
+        consensus_params.set_rep_weights(rep_weights, Amount::nano(300_000));
+
+        let preproposal = Preproposal::new(test_frontiers(), &rep_key, 0);
+        aggregator.add(preproposal);
+
+        aggregator.clear();
+
+        assert_eq!(aggregator.len(), 0);
+        assert_eq!(aggregator.values.len(), 0);
+        assert_eq!(aggregator.signers.len(), 0);
     }
 
     fn test_frontiers() -> Vec<(Account, BlockHash)> {

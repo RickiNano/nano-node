@@ -1,10 +1,10 @@
 use std::ops::{Bound, RangeBounds};
 
 use rsnano_nullable_lmdb::{ReadTransaction, Transaction};
-use rsnano_store_lmdb::{LmdbPendingStore, LmdbRangeIterator, LmdbStore, read_pending_record};
+use rsnano_store_lmdb::{read_pending_record, LmdbPendingStore, LmdbRangeIterator, LmdbStore};
 use rsnano_types::{
-    Account, AccountInfo, Amount, Block, BlockHash, BlockPriority, DependentBlocks, DetailedBlock,
-    PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock, block_priority,
+    block_priority, Account, AccountInfo, Amount, Block, BlockHash, BlockPriority, DependentBlocks,
+    DetailedBlock, PendingInfo, PendingKey, PublicKey, QualifiedRoot, Root, SavedBlock,
 };
 
 use super::{BorrowingConfirmedSet, ConfirmedSet, LedgerSet};

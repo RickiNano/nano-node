@@ -3,8 +3,8 @@ use std::{
     net::SocketAddrV6,
     ops::{Deref, DerefMut},
     sync::{
-        Arc,
         atomic::{AtomicBool, Ordering},
+        Arc,
     },
     time::SystemTime,
 };
@@ -31,12 +31,12 @@ use rsnano_utils::{
 use rsnano_work::WorkThresholds;
 
 use crate::{
-    BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, GenerateCacheFlags,
-    LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
-    RepWeightCache, RepWeightsUpdater, RollbackError,
     block_cementer::BlockCementer,
     block_insertion::{BlockInserter, BlockValidatorFactory},
     vote_verifier::VoteVerifier,
+    BlockRollbackPerformer, BorrowingAnySet, BorrowingConfirmedSet, GenerateCacheFlags,
+    LedgerConstants, LedgerSet, OwningAnySet, OwningConfirmedSet, OwningUnconfirmedSet,
+    RepWeightCache, RepWeightsUpdater, RollbackError,
 };
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
@@ -904,16 +904,27 @@ impl Ledger {
 
         let forks_to_roll_back = self.find_forks_to_roll_back(snapshot_number);
 
-        for fork_hash in forks_to_roll_back {
-            if let Err(e) = self.roll_back(&fork_hash) {
+        warn!("Rolling back these forks:");
+        for fork in &forks_to_roll_back {
+            warn!("fork hash: {:?}", fork);
+        }
+
+        for (fork_hash, _) in &forks_to_roll_back {
+            if let Err(e) = self.roll_back(fork_hash) {
                 use tracing::warn;
                 warn!("Could not roll back fork: {e:?}")
             }
         }
+
+        let mut txn = self.store.begin_write();
+        for (_, root) in forks_to_roll_back {
+            self.store.forks.del(&mut txn, &root);
+        }
+        txn.commit();
     }
 
     #[cfg(feature = "ledger_snapshots")]
-    fn find_forks_to_roll_back(&self, snapshot_number: u32) -> Vec<BlockHash> {
+    fn find_forks_to_roll_back(&self, snapshot_number: u32) -> Vec<(BlockHash, QualifiedRoot)> {
         let tx = self.store.begin_read();
         let any = BorrowingAnySet {
             constants: &self.constants,
@@ -928,6 +939,7 @@ impl Ledger {
                 if snap_no < snapshot_number {
                     use crate::AnySet;
                     any.block_successor_by_qualified_root(&root)
+                        .map(|h| (h, root))
                 } else {
                     None
                 }
