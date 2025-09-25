@@ -33,7 +33,6 @@ members = [
 	"tools/test_helpers", 
 	"tools/signature-checker", 
 	"tools/insight", 
-	"tools/rsnano-diff", 
 	]
 
 resolver = "2"

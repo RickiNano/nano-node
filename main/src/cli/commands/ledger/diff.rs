@@ -1,31 +1,28 @@
-use std::path::{Path, PathBuf};
-
 use anyhow::anyhow;
 use clap::Parser;
-
 use rsnano_nullable_console::Console;
 use rsnano_nullable_fs::NullableFilesystem;
 use rsnano_nullable_lmdb::{LmdbEnvironment, LmdbEnvironmentFactory};
 use rsnano_store_lmdb::{EnvironmentFlags, EnvironmentOptions, LmdbStore};
 use rsnano_types::{Account, AccountInfo, BlockHash};
 use serde::Serialize;
+use std::path::{Path, PathBuf};
 
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-pub(crate) struct Args {
+#[derive(Parser, PartialEq, Eq, Debug)]
+pub(crate) struct LedgerDiffArgs {
     left: PathBuf,
     right: PathBuf,
 }
 
 #[derive(Default)]
-pub(crate) struct App {
+pub(crate) struct LedgerDiff {
     console: Console,
     fs: NullableFilesystem,
     lmdb_env_factory: LmdbEnvironmentFactory,
 }
 
-impl App {
-    pub(crate) fn run(&self, args: Args) -> anyhow::Result<()> {
+impl LedgerDiff {
+    pub(crate) fn run(&self, args: LedgerDiffArgs) -> anyhow::Result<()> {
         let env_left = self.open_ledger(args.left)?;
         let env_right = self.open_ledger(args.right)?;
         let store_left = LmdbStore::new(env_left)?;
@@ -179,12 +176,12 @@ mod tests {
         let console = Console::new_null();
         let fs = NullableFilesystem::new_null();
         let lmdb_env_factory = LmdbEnvironmentFactory::new_null();
-        let app = App {
+        let app = LedgerDiff {
             console,
             fs,
             lmdb_env_factory,
         };
-        let args = Args {
+        let args = LedgerDiffArgs {
             left: "left.ldb".into(),
             right: "right.ldb".into(),
         };
@@ -200,12 +197,12 @@ mod tests {
             .finish();
         let lmdb_env_factory = LmdbEnvironmentFactory::new_null();
 
-        let app = App {
+        let app = LedgerDiff {
             console,
             fs,
             lmdb_env_factory,
         };
-        let args = Args {
+        let args = LedgerDiffArgs {
             left: "left.ldb".into(),
             right: "right.ldb".into(),
         };
@@ -225,12 +222,12 @@ mod tests {
             .path_exists("right.ldb")
             .finish();
 
-        let app = App {
+        let app = LedgerDiff {
             console,
             fs,
             lmdb_env_factory,
         };
-        let args = Args {
+        let args = LedgerDiffArgs {
             left: "left.ldb".into(),
             right: "right.ldb".into(),
         };
