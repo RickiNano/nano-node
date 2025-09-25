@@ -5,12 +5,13 @@ use std::{
 };
 
 use lmdb::{DatabaseFlags, EnvironmentFlags, Stat};
-use lmdb_sys::{MDB_CP_COMPACT, MDB_SUCCESS, MDB_env};
+use lmdb_sys::{MDB_env, MDB_CP_COMPACT, MDB_SUCCESS};
 
 use super::{ConfiguredDatabase, LmdbDatabase};
 use crate::{ConfiguredDatabaseBuilder, ReadTransaction, Result, WriteTransaction};
+use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EnvironmentOptions {
     pub max_dbs: u32,
     pub map_size: usize,
@@ -64,14 +65,23 @@ impl NullDatabaseBuilder {
 #[derive(Default)]
 pub struct LmdbEnvironmentFactory {
     is_nulled: bool,
+    create_listener: OutputListenerMt<EnvironmentOptions>,
 }
 
 impl LmdbEnvironmentFactory {
     pub fn new_null() -> Self {
-        Self { is_nulled: true }
+        Self {
+            is_nulled: true,
+            create_listener: OutputListenerMt::default(),
+        }
+    }
+
+    pub fn track(&self) -> Arc<OutputTrackerMt<EnvironmentOptions>> {
+        self.create_listener.track()
     }
 
     pub fn create(&self, options: EnvironmentOptions) -> Result<LmdbEnvironment> {
+        self.create_listener.emit(options.clone());
         if self.is_nulled {
             Ok(LmdbEnvironment::new_null_with_options(options))
         } else {
@@ -357,6 +367,24 @@ mod tests {
         path::PathBuf,
         sync::atomic::{AtomicUsize, Ordering},
     };
+
+    #[test]
+    fn can_track_env_creations() {
+        let env_factory = LmdbEnvironmentFactory::new_null();
+        let tracker = env_factory.track();
+
+        let options = EnvironmentOptions {
+            max_dbs: 42,
+            map_size: 1024 * 1024,
+            flags: EnvironmentFlags::NO_SUB_DIR,
+            path: "test-lmdb-file.ldb".into(),
+        };
+
+        let _ = env_factory.create(options.clone());
+
+        let output = tracker.output();
+        assert_eq!(output, vec![options]);
+    }
 
     #[test]
     fn open_unknown_database_fails() {
