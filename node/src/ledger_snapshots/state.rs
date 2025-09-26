@@ -55,7 +55,7 @@ impl State {
     ) -> Option<ProposalVote> {
         let has_quorum = self.proposal_aggregator.has_quorum(&consensus_params);
 
-        if has_quorum && !self.proposal_voted {
+        if has_quorum {
             let vote = self
                 .create_vote(rep_key)
                 .expect("Should always be able to create a vote when quorum reached");
