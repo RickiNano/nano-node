@@ -1,12 +1,20 @@
 mod clear;
+pub(crate) mod diff;
 mod info;
 mod roll_back;
+mod unconfirmed;
 
 use clap::{CommandFactory, Parser, Subcommand};
 
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 
-use crate::cli::GlobalArgs;
+use crate::cli::{
+    commands::ledger::{
+        diff::{LedgerDiff, LedgerDiffArgs},
+        unconfirmed::print_unconfirmed_accounts,
+    },
+    GlobalArgs,
+};
 use clear::ClearCommand;
 use info::InfoCommand;
 use roll_back::roll_back;
@@ -30,6 +38,10 @@ pub(crate) enum LedgerSubcommands {
     Snapshot,
     /// Roll back an unconfirmed block
     RollBack(HashArgs),
+    /// Print ledger differences
+    Diff(LedgerDiffArgs),
+    /// Print all accounts with unconfirmed blocks
+    Unconfirmed,
 }
 
 #[derive(Parser, PartialEq, Debug)]
@@ -49,6 +61,8 @@ pub(crate) fn run_ledger_command(
         Some(LedgerSubcommands::Vacuum) => vacuum(global_args)?,
         Some(LedgerSubcommands::Snapshot) => snapshot(global_args)?,
         Some(LedgerSubcommands::RollBack(args)) => roll_back(global_args, args)?,
+        Some(LedgerSubcommands::Diff(args)) => LedgerDiff::default().run(args)?,
+        Some(LedgerSubcommands::Unconfirmed) => print_unconfirmed_accounts(global_args)?,
         None => LedgerCommand::command().print_long_help()?,
     }
 

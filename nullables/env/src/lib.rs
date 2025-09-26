@@ -17,6 +17,14 @@ impl Env {
             std::env::var(key)
         }
     }
+
+    pub fn args(&self) -> Vec<String> {
+        if self.is_nulled {
+            vec!["nulled-executable".to_string()]
+        } else {
+            std::env::args().collect()
+        }
+    }
 }
 
 impl Env {
