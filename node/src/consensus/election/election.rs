@@ -13,7 +13,7 @@ use rsnano_types::{
 };
 use rsnano_utils::stats::DetailType;
 
-use super::{ConfirmationType, ConfirmedElection, ElectionState, block_tallies::BlockTallies};
+use super::{block_tallies::BlockTallies, ConfirmationType, ConfirmedElection, ElectionState};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
 pub enum VoteType {
@@ -360,6 +360,7 @@ impl Election {
         self.recalculate_tallies();
 
         if let Some(new_winner) = self.check_new_winner(quorum_delta) {
+            tracing::warn!("Winner changed to {:?}!", new_winner);
             self.change_winner_to(&new_winner);
         }
 

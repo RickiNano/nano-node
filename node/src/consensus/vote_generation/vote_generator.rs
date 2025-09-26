@@ -2,8 +2,8 @@ use std::{
     collections::VecDeque,
     mem::size_of,
     sync::{
-        Arc, Condvar, Mutex, MutexGuard,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex, MutexGuard,
     },
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -141,7 +141,12 @@ impl VoteGenerator {
                 {
                     // With ledger snapshots enabled, we just stop voting for forks, because
                     // fork rollback will happen when a new snapshot is created
-                    any.dependents_confirmed(block) && !any.is_forked(&block.qualified_root())
+                    any.dependents_confirmed(block)
+                        && (!any.is_forked(&block.qualified_root()) || {
+                            // For now allow final votes, until we include final voted fronties in
+                            // the preproposals!
+                            self.shared_state.is_final
+                        })
                 }
                 #[cfg(not(feature = "ledger_snapshots"))]
                 {

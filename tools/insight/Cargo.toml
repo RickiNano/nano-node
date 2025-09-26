@@ -3,6 +3,12 @@ name = "rsnano-insight"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+ledger_snapshots = [
+	"rsnano_node/ledger_snapshots",
+	"rsnano_daemon/ledger_snapshots",
+]
+
 [dependencies]
 eframe = "0.32.1"
 egui_extras = "0.32.1"

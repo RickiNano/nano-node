@@ -3,6 +3,13 @@ name = "rsnano_daemon"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+ledger_snapshots = [
+	"rsnano_utils/ledger_snapshots",
+	"rsnano_ledger/ledger_snapshots",
+	"rsnano_rpc_server/ledger_snapshots",
+]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
