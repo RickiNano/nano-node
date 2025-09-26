@@ -26,7 +26,7 @@ impl LedgerEventProcessorPlugin for ForkDetector {
         if let LedgerEvent::BlocksProcessed(results) = event {
             for result in results {
                 if result.status == Err(BlockError::Fork) {
-                    warn!("Fork detected: {:?}", result.block.qualified_root());
+                    tracing::debug!("Fork detected: {:?}", result.block.qualified_root());
 
                     self.ledger.mark_fork(
                         &result.block.qualified_root(),

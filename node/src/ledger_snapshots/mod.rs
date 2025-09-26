@@ -111,7 +111,7 @@ impl LedgerSnapshots {
         } else {
             warn!(
                 snapshot_number = state.current_snapshot_number,
-                "No quorum on preproposals yet"
+                "No quorum on preproposals yet or proposal already published"
             );
         }
         drop(state);
@@ -204,10 +204,15 @@ impl LedgerSnapshots {
     }
 
     fn publish_message(&self, message: &Message) {
-        self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
+        let flood_count = self.flooder.lock().unwrap().flood_prs_and_some_non_prs(
             message,
             TrafficType::LedgerSnapshots,
             0.0,
+        );
+        tracing::warn!(
+            "Flooded {:?} to {} nodes",
+            message.message_type(),
+            flood_count.principal_reps
         );
     }
 }

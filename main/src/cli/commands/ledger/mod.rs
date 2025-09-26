@@ -9,11 +9,11 @@ use clap::{CommandFactory, Parser, Subcommand};
 use rsnano_nullable_lmdb::LmdbEnvironmentFactory;
 
 use crate::cli::{
+    GlobalArgs,
     commands::ledger::{
         diff::{LedgerDiff, LedgerDiffArgs},
         unconfirmed::print_unconfirmed_accounts,
     },
-    GlobalArgs,
 };
 use clear::ClearCommand;
 use info::InfoCommand;
