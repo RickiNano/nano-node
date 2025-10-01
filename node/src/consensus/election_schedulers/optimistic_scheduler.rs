@@ -224,10 +224,10 @@ impl OptimisticScheduler {
             }
 
             // Ensure block is not already confirmed
-            if (!self.confirming_set.contains(&block.hash())
-                || any.confirmed().block_exists(&block.hash()))
-                && !forked
-            {
+            let is_confirmed = self.confirming_set.contains(&block.hash())
+                || any.confirmed().block_exists(&block.hash());
+
+            if !is_confirmed && !forked {
                 // Try to insert it into AEC
                 // We check for AEC vacancy inside our predicate
                 let now = self.clock.now();

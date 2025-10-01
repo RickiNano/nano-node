@@ -13,7 +13,7 @@ use rsnano_types::{
 };
 use rsnano_utils::stats::DetailType;
 
-use super::{block_tallies::BlockTallies, ConfirmationType, ConfirmedElection, ElectionState};
+use super::{ConfirmationType, ConfirmedElection, ElectionState, block_tallies::BlockTallies};
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Hash)]
 pub enum VoteType {

@@ -3,8 +3,8 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     mem::size_of,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Condvar, Mutex, RwLock,
+        atomic::{AtomicBool, Ordering},
     },
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -21,7 +21,7 @@ use rsnano_utils::{
 use super::VoteCache;
 use crate::{
     cementation::ConfirmingSet,
-    consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
+    consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior},
     representatives::OnlineReps,
 };
 
@@ -172,10 +172,10 @@ impl HintedScheduler {
                     forked = any.is_forked(&block.qualified_root());
                 }
                 // Ensure block is not already confirmed
-                if (self.confirming_set.contains(&current_hash)
-                    || any.confirmed().block_exists(&current_hash))
-                    && !forked
-                {
+                let is_confirmed = self.confirming_set.contains(&current_hash)
+                    || any.confirmed().block_exists(&current_hash);
+
+                if is_confirmed && !forked {
                     self.stats
                         .inc(StatType::Hinting, DetailType::AlreadyConfirmed);
                     self.vote_cache.lock().unwrap().erase(&current_hash); // Remove from vote cache

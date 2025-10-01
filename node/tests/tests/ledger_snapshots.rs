@@ -1,8 +1,8 @@
 use rsnano_messages::MessageType;
-use rsnano_node::{config::NodeConfig, Node};
+use rsnano_node::{Node, config::NodeConfig};
 use rsnano_types::{Amount, DEV_GENESIS_KEY};
 use rsnano_utils::stats::{Direction, StatType};
-use test_helpers::{assert_timely2, assert_timely_eq2, setup_rep, System};
+use test_helpers::{System, assert_timely_eq2, assert_timely2, setup_rep};
 
 #[test]
 fn ledger_snapshot_integration_test() {
