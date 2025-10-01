@@ -1228,6 +1228,8 @@ impl Node {
         // With ledger_snapshots we never vote for forked blocks!
         #[cfg(not(feature = "ledger_snapshots"))]
         {
+            use crate::consensus::ForkInserterPlugin;
+
             ledger_event_processor_plugins
                 .push(Box::new(ForkInserterPlugin::new(aec_fork_inserter.clone())));
         }
