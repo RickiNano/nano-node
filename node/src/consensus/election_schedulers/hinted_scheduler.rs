@@ -3,8 +3,8 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet},
     mem::size_of,
     sync::{
-        Arc, Condvar, Mutex, RwLock,
         atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex, RwLock,
     },
     thread::JoinHandle,
     time::{Duration, Instant},
@@ -21,7 +21,7 @@ use rsnano_utils::{
 use super::VoteCache;
 use crate::{
     cementation::ConfirmingSet,
-    consensus::{ActiveElectionsContainer, AecInsertRequest, election::ElectionBehavior},
+    consensus::{election::ElectionBehavior, ActiveElectionsContainer, AecInsertRequest},
     representatives::OnlineReps,
 };
 
@@ -165,9 +165,16 @@ impl HintedScheduler {
 
             // Check if block exists
             if let Some(block) = any.get_block(&current_hash) {
+                let mut forked = false;
+
+                #[cfg(feature = "ledger_snapshots")]
+                {
+                    forked = any.is_forked(&block.qualified_root());
+                }
                 // Ensure block is not already confirmed
-                if self.confirming_set.contains(&current_hash)
-                    || any.confirmed().block_exists(&current_hash)
+                if (self.confirming_set.contains(&current_hash)
+                    || any.confirmed().block_exists(&current_hash))
+                    && !forked
                 {
                     self.stats
                         .inc(StatType::Hinting, DetailType::AlreadyConfirmed);
