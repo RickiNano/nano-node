@@ -216,9 +216,17 @@ impl OptimisticScheduler {
             return;
         };
         if let Some(block) = any.get_block(&head) {
+            let mut forked = false;
+
+            #[cfg(feature = "ledger_snapshots")]
+            {
+                forked = any.is_forked(&block.qualified_root());
+            }
+
             // Ensure block is not already confirmed
-            if !self.confirming_set.contains(&block.hash())
-                || any.confirmed().block_exists(&block.hash())
+            if (!self.confirming_set.contains(&block.hash())
+                || any.confirmed().block_exists(&block.hash()))
+                && !forked
             {
                 // Try to insert it into AEC
                 // We check for AEC vacancy inside our predicate

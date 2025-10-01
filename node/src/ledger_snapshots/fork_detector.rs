@@ -1,11 +1,9 @@
-use rsnano_ledger::{BlockError, Ledger};
-use std::sync::Arc;
-use tracing::warn;
-
 use crate::{
     block_processing::LedgerEvent, ledger_event_processor::LedgerEventProcessorPlugin,
     ledger_snapshots::LedgerSnapshots,
 };
+use rsnano_ledger::{BlockError, Ledger};
+use std::sync::Arc;
 
 pub(crate) struct ForkDetector {
     ledger: Arc<Ledger>,

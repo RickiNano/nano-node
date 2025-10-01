@@ -5,7 +5,7 @@ use std::{
 };
 
 use lmdb::{DatabaseFlags, EnvironmentFlags, Stat};
-use lmdb_sys::{MDB_CP_COMPACT, MDB_SUCCESS, MDB_env};
+use lmdb_sys::{MDB_env, MDB_CP_COMPACT, MDB_SUCCESS};
 
 use super::{ConfiguredDatabase, LmdbDatabase};
 use crate::{ConfiguredDatabaseBuilder, ReadTransaction, Result, WriteTransaction};

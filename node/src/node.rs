@@ -3,9 +3,9 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::PathBuf,
     sync::{
-        Arc, Mutex, MutexGuard, RwLock,
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, SyncSender},
+        Arc, Mutex, MutexGuard, RwLock,
     },
     time::Duration,
 };
@@ -35,19 +35,18 @@ use rsnano_types::{
     SavedBlock, Vote, VoteError, WorkNonce, WorkRequest,
 };
 use rsnano_utils::{
-    CancellationToken,
     container_info::{ContainerInfo, ContainerInfoFactory, ContainerInfoProvider},
     stats::{Direction, Stats, StatsCollection, StatsCollector},
     sync::backpressure_channel,
     thread_pool::ThreadPool,
     ticker::{Tickable, TickerPool, TimerThread},
+    CancellationToken,
 };
 use rsnano_wallet::{ReceivableSearch, WalletBackup, Wallets, WalletsTicker};
 
 #[cfg(feature = "ledger_snapshots")]
-use crate::ledger_snapshots::{LedgerSnapshots, fork_detector::ForkDetector};
+use crate::ledger_snapshots::{fork_detector::ForkDetector, LedgerSnapshots};
 use crate::{
-    NodeCallbacks, OnlineWeightSampler,
     aec_event_processor::AecEventProcessor,
     block_processing::{
         BacklogScan, BacklogWaiter, BlockContext, BlockProcessor, BlockProcessorQueue, BlockSource,
@@ -62,17 +61,16 @@ use crate::{
     cementation::{ConfirmingSet, TrackConfirmationTimes},
     config::{GlobalConfig, NetworkParams, NodeConfig, NodeFlags},
     consensus::{
-        ActiveElectionsContainer, AecTicker, AecVoter, BootstrapElectionActivator,
-        BootstrapStaleElections, ConfirmReqSender, ConfirmationSolicitorPlugin, CpsLimiter,
-        CurrentRepTiers, DependentElectionsConfirmer, ForkCache, ForkCacheUpdater, ForkInserter,
-        ForkInserterPlugin, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
+        election::ConfirmedElection,
+        election_schedulers::{ElectionSchedulers, ElectionSchedulersPlugin},
+        get_bootstrap_weights, log_bootstrap_weights, ActiveElectionsContainer, AecForkInserter,
+        AecTicker, AecVoter, BootstrapElectionActivator, BootstrapStaleElections, ConfirmReqSender,
+        ConfirmationSolicitorPlugin, CpsLimiter, CurrentRepTiers, DependentElectionsConfirmer,
+        ForkCache, ForkCacheUpdater, LocalVoteHistory, LocalVotesRemover, RepTiersCalculator,
         RequestAggregator, RequestAggregatorCleanup, VoteApplier, VoteBroadcaster, VoteCache,
         VoteCacheProcessor, VoteGenerators, VoteProcessor, VoteProcessorExt, VoteProcessorQueue,
         VoteProcessorQueueCleanup, VoteRebroadcastQueue, VoteRebroadcaster, WalletRepsChecker,
         WinnerBlockBroadcaster,
-        election::ConfirmedElection,
-        election_schedulers::{ElectionSchedulers, ElectionSchedulersPlugin},
-        get_bootstrap_weights, log_bootstrap_weights,
     },
     ledger_event_processor::{LedgerEventProcessor, LedgerEventProcessorPlugin},
     node_id_key_file::NodeIdKeyFile,
@@ -82,22 +80,22 @@ use crate::{
         OnlineReps, OnlineRepsCleanup, OnlineWeightCalculation, RepCrawler, RepCrawlerExt,
     },
     telemetry::{
-        TelementryConfig, TelementryExt, Telemetry, TelemetryFactory, rsnano_build_info,
-        rsnano_version_string,
+        rsnano_build_info, rsnano_version_string, TelementryConfig, TelementryExt, Telemetry,
+        TelemetryFactory,
     },
     tokio_runner::TokioRunner,
     transport::{
-        MessageFlooder, MessageProcessor, MessageSender, NetworkMessageProcessor, NetworkThreads,
-        PeerCacheConnector, PeerCacheUpdater,
         keepalive::{KeepaliveMessageFactory, KeepalivePublisher},
-        run_loopback_channel_adapter,
+        run_loopback_channel_adapter, MessageFlooder, MessageProcessor, MessageSender,
+        NetworkMessageProcessor, NetworkThreads, PeerCacheConnector, PeerCacheUpdater,
     },
     utils::spawn_backpressure_processor,
     wallets::{
-        LocalRepsComputation, WalletRepresentatives, block_processor::WalletBlockProcessor,
-        work::WalletWorkProvider,
+        block_processor::WalletBlockProcessor, work::WalletWorkProvider, LocalRepsComputation,
+        WalletRepresentatives,
     },
     work::WorkFactory,
+    NodeCallbacks, OnlineWeightSampler,
 };
 
 #[allow(dead_code)]
@@ -1210,7 +1208,7 @@ impl Node {
             vote_history: vote_history.clone(),
         };
 
-        let fork_inserter = Arc::new(ForkInserter {
+        let aec_fork_inserter = Arc::new(AecForkInserter {
             rep_weights: rep_weights.clone(),
             fork_cache: fork_cache.clone(),
             active_elections: active_elections.clone(),
@@ -1229,7 +1227,7 @@ impl Node {
         #[cfg(not(feature = "ledger_snapshots"))]
         {
             ledger_event_processor_plugins
-                .push(Box::new(ForkInserterPlugin::new(fork_inserter.clone())));
+                .push(Box::new(ForkInserterPlugin::new(aec_fork_inserter.clone())));
         }
 
         #[cfg(feature = "ledger_snapshots")]
@@ -1257,7 +1255,7 @@ impl Node {
             rep_crawler: rep_crawler.clone(),
             clock: steady_clock.clone(),
             local_votes_remover,
-            fork_processor: fork_inserter,
+            aec_fork_inserter,
             stats: stats.clone(),
             winner_block_broadcaster: winner_block_broadcaster.clone(),
             plugins: Vec::new(),
