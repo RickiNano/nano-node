@@ -520,7 +520,7 @@ mod tests {
             .insert(request, Timestamp::new_test_instance())
             .unwrap();
 
-        assert_eq!(container.len(), 1)
+        assert_eq!(container.len(), 1);
     }
 
     #[test]

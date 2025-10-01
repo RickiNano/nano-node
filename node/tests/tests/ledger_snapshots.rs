@@ -5,7 +5,7 @@ use rsnano_utils::stats::{Direction, StatType};
 use test_helpers::{System, assert_timely_eq2, assert_timely2, setup_rep};
 
 #[test]
-fn publish_preproposal_integration_test() {
+fn ledger_snapshot_integration_test() {
     let mut system = System::new();
 
     let node1 = system

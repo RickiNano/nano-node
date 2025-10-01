@@ -13,8 +13,8 @@ use crate::{
     block_processing::{BlockContext, BlockProcessorQueue, BlockSource},
     cementation::ConfirmingSet,
     consensus::{
-        ActiveElectionsContainer, AecCooldownReason, AecEvent, BootstrapElectionActivator,
-        ForkInserter, LocalVotesRemover, ReceivedVote, VoteCache, VoteCacheProcessor,
+        ActiveElectionsContainer, AecCooldownReason, AecEvent, AecForkInserter,
+        BootstrapElectionActivator, LocalVotesRemover, ReceivedVote, VoteCache, VoteCacheProcessor,
         VoteProcessor, VoteRebroadcastQueue, WinnerBlockBroadcaster, aggregate_vote_results,
         election_schedulers::ElectionSchedulers,
     },
@@ -46,7 +46,7 @@ pub(crate) struct AecEventProcessor {
     pub(crate) clock: Arc<SteadyClock>,
     pub(crate) local_votes_remover: LocalVotesRemover,
     pub(crate) stats: Arc<Stats>,
-    pub(crate) fork_processor: Arc<ForkInserter>,
+    pub(crate) aec_fork_inserter: Arc<AecForkInserter>,
     pub(crate) winner_block_broadcaster: Arc<Mutex<WinnerBlockBroadcaster>>,
     pub(crate) plugins: Vec<Box<dyn AecEventHandler + Send>>,
 }
@@ -75,7 +75,7 @@ impl BackpressureEventProcessor<AecEvent> for AecEventProcessor {
 
         match event {
             AecEvent::ElectionStarted(hash, root) => {
-                self.fork_processor.try_add_cached_forks(&root);
+                self.aec_fork_inserter.try_add_cached_forks(&root);
                 self.bootstrap_election_activator.election_started(hash);
                 self.vote_cache_processor.trigger(hash);
                 if let Some(tx) = &self.node_observer {
