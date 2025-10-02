@@ -108,7 +108,6 @@ impl<'a> LedgerBuilder<'a> {
 
         let env = create_and_update_lmdb_env(&env_factory, env_options)?;
 
-        info!("Loading ledger, this may take a while...");
         Ledger::new(
             env,
             ledger_constants,

@@ -312,6 +312,7 @@ impl Node {
             LmdbEnvironmentFactory::default()
         };
 
+        info!("LMDB sync strategy: {:?}", config.lmdb_config.sync);
         info!("Loading ledger, this may take a while...");
         let ledger = LedgerBuilder::new(&ledger_path)
             .env_factory(&lmdb_env_factory)
