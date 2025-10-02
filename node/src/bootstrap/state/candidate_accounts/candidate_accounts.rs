@@ -25,7 +25,7 @@ impl Default for CandidateAccountsConfig {
             consideration_count: 4,
             priorities_max: 256 * 1024,
             blocking_max: 256 * 1024,
-            blocking_decay: Duration::from_secs(60 * 15),
+            blocking_decay: Duration::from_secs(60 * 60),
             cooldown: Duration::from_secs(3),
         }
     }
