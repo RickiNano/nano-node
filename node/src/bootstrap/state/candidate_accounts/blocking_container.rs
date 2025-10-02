@@ -129,17 +129,18 @@ impl BlockingContainer {
         self.by_account.get(account)
     }
 
-    pub fn pop_oldest(&mut self) -> Option<BlockingEntry> {
-        let oldest = self.sequenced.front()?.clone();
-        self.remove(&oldest)
+    /// Removes the oldest entry and all entries dependent on that
+    /// Returns the number of removed entries
+    pub fn remove_oldest(&mut self) -> usize {
+        let Some(oldest) = self.sequenced.front().cloned() else {
+            return 0;
+        };
+
+        self.remove_account_and_dependents(&oldest)
     }
 
-    pub fn remove(&mut self, account: &Account) -> Option<BlockingEntry> {
-        let entry = self.by_account.remove(account)?;
-        self.remove_indexes(&entry);
-        Some(entry)
-    }
-
+    /// Removes entries older than the given cutoff and all entries dependent on them
+    /// Returns the number of removed entries
     pub fn remove_older_than(&mut self, cutoff: Timestamp) -> usize {
         let mut removed = 0;
         while let Some((timestamp, accounts)) = self.by_timestamp.first_key_value() {
@@ -149,12 +150,34 @@ impl BlockingContainer {
             }
             let accounts = accounts.clone();
             for account in &accounts {
-                self.remove(account);
+                removed += self.remove_account_and_dependents(account);
             }
-            removed += accounts.len();
         }
 
         removed
+    }
+
+    fn remove_account_and_dependents(&mut self, account: &Account) -> usize {
+        let mut stack = vec![*account];
+        let mut removed = 0;
+
+        while let Some(a) = stack.pop() {
+            if let Some(entry) = self.remove_account(&a) {
+                removed += 1;
+
+                if let Some(dependents) = self.by_dependency_account.get(&entry.account) {
+                    stack.extend_from_slice(dependents);
+                }
+            }
+        }
+
+        removed
+    }
+
+    pub fn remove_account(&mut self, account: &Account) -> Option<BlockingEntry> {
+        let entry = self.by_account.remove(account)?;
+        self.remove_indexes(&entry);
+        Some(entry)
     }
 
     pub fn modify_dependency_account(
@@ -233,6 +256,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use ntest::assert_false;
 
     #[test]
     fn empty() {
@@ -249,8 +273,8 @@ mod tests {
         );
         assert!(blocking.next(|_| true).is_none());
         assert!(blocking.get(&Account::from(1)).is_none());
-        assert!(blocking.remove(&Account::from(1)).is_none());
-        assert!(blocking.pop_oldest().is_none());
+        assert_eq!(blocking.remove_account_and_dependents(&Account::from(1)), 0);
+        assert_eq!(blocking.remove_oldest(), 0);
     }
 
     #[test]
@@ -358,23 +382,28 @@ mod tests {
     fn pop_front() {
         let mut blocking = BlockingContainer::default();
 
+        let account_a = Account::from(1000);
+        let account_b = Account::from(2000);
+
         blocking.insert(BlockingEntry {
-            account: Account::from(1000),
+            account: account_a,
             dependency: BlockHash::from(100),
             dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
         blocking.insert(BlockingEntry {
-            account: Account::from(2000),
+            account: account_b,
             dependency: BlockHash::from(200),
             dependency_account: Account::ZERO,
             ..BlockingEntry::new_test_instance()
         });
 
-        assert_eq!(blocking.pop_oldest().unwrap().account, Account::from(1000));
-        assert_eq!(blocking.pop_oldest().unwrap().account, Account::from(2000));
-        assert!(blocking.pop_oldest().is_none());
+        assert_eq!(blocking.remove_oldest(), 1);
+        assert_false!(blocking.contains(&account_a));
+        assert_eq!(blocking.remove_oldest(), 1);
+        assert_false!(blocking.contains(&account_b));
+        assert_eq!(blocking.remove_oldest(), 0);
     }
 
     #[test]
@@ -529,12 +558,90 @@ mod tests {
         container.insert(entry2.clone());
         container.insert(entry3.clone());
 
-        container.remove(&entry1.account);
+        container.remove_account_and_dependents(&entry1.account);
 
         assert_eq!(
             container.by_dependency.get(&same_dependency).unwrap().len(),
             1
         );
+    }
+
+    #[test]
+    fn remove_account_with_all_dependents() {
+        let mut container = BlockingContainer::default();
+
+        let account_to_remove = Account::from(1000);
+
+        let entry_to_remove = BlockingEntry {
+            account: account_to_remove,
+            ..BlockingEntry::new_test_instance()
+        };
+
+        let dependent1 = BlockingEntry {
+            account: 2000.into(),
+            dependency: 2000.into(),
+            dependency_account: account_to_remove,
+            ..BlockingEntry::new_test_instance()
+        };
+
+        let dependent2 = BlockingEntry {
+            account: 3000.into(),
+            dependency: 3000.into(),
+            dependency_account: account_to_remove,
+            ..BlockingEntry::new_test_instance()
+        };
+
+        let unrelated = BlockingEntry::new_test_instance();
+
+        container.insert(entry_to_remove);
+        container.insert(dependent1);
+        container.insert(dependent2);
+        container.insert(unrelated.clone());
+
+        let removed = container.remove_account_and_dependents(&account_to_remove);
+
+        assert_eq!(removed, 3);
+        assert_eq!(container.len(), 1);
+        assert!(container.contains(&unrelated.account));
+    }
+
+    #[test]
+    fn remove_multiple_levels_of_dependents() {
+        let mut container = BlockingContainer::default();
+
+        let account_to_remove = Account::from(1000);
+
+        let entry_to_remove = BlockingEntry {
+            account: account_to_remove,
+            ..BlockingEntry::new_test_instance()
+        };
+
+        let dependent1 = BlockingEntry {
+            account: 2000.into(),
+            dependency: 2000.into(),
+            dependency_account: account_to_remove,
+            ..BlockingEntry::new_test_instance()
+        };
+
+        let dependent2 = BlockingEntry {
+            account: 3000.into(),
+            dependency: 3000.into(),
+            dependency_account: dependent1.account,
+            ..BlockingEntry::new_test_instance()
+        };
+
+        let unrelated = BlockingEntry::new_test_instance();
+
+        container.insert(entry_to_remove);
+        container.insert(dependent1);
+        container.insert(dependent2);
+        container.insert(unrelated.clone());
+
+        let removed = container.remove_account_and_dependents(&account_to_remove);
+
+        assert_eq!(removed, 3);
+        assert_eq!(container.len(), 1);
+        assert!(container.contains(&unrelated.account));
     }
 
     #[test]

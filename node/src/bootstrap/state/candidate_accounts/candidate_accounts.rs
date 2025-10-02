@@ -200,7 +200,7 @@ impl CandidateAccounts {
                 debug_assert!(!self.priorities.contains(&account));
                 self.priorities
                     .insert(PriorityEntry::new(account, Self::PRIORITY_INITIAL));
-                self.blocking.remove(&account);
+                self.blocking.remove_account(&account);
                 self.trim_overflow();
                 return true;
             }
@@ -253,7 +253,7 @@ impl CandidateAccounts {
             self.priorities.pop_lowest_prio();
         }
         while self.blocking.len() > self.config.blocking_max {
-            self.blocking.pop_oldest();
+            self.blocking.remove_oldest();
         }
     }
 
