@@ -841,7 +841,7 @@ fn search_receivable_multiple() {
             true,
             None,
         )
-        .wait()
+        .wait_timeout(Duration::from_secs(5))
         .unwrap();
 
     assert_timely2(|| !node.balance(&key3.account()).is_zero());
@@ -855,7 +855,7 @@ fn search_receivable_multiple() {
             true,
             None,
         )
-        .wait()
+        .wait_timeout(Duration::from_secs(5))
         .unwrap();
     node.wallets
         .send(
@@ -867,12 +867,15 @@ fn search_receivable_multiple() {
             true,
             None,
         )
-        .wait()
+        .wait_timeout(Duration::from_secs(5))
         .unwrap();
     node.wallets
         .insert_adhoc2(&wallet_id, &key2.raw_key(), true)
         .unwrap();
-    node.wallets.search_receivable(&wallet_id).wait().unwrap();
+    node.wallets
+        .search_receivable(&wallet_id)
+        .wait_timeout(Duration::from_secs(5))
+        .unwrap();
 
     assert_timely2(|| node.balance(&key2.account()) == node.config.receive_minimum * 2);
 }
