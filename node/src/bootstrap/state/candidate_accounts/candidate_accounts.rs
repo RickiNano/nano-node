@@ -244,6 +244,18 @@ impl CandidateAccounts {
         let updated = self
             .blocking
             .modify_dependency_account(dependency, dependency_account);
+
+        if updated > 0 && !self.priority_full() {
+            if Self::priority_set_impl(
+                &dependency_account,
+                Self::PRIORITY_INITIAL,
+                &self.blocking,
+                &mut self.priorities,
+            ) {
+                self.trim_overflow();
+            }
+        }
+
         updated
     }
 
@@ -864,11 +876,9 @@ mod tests {
         let dependency = BlockHash::from(100);
         candidates.priority_set_initial(&account);
         candidates.block(account, dependency, Timestamp::new_test_instance());
+
         candidates.dependency_update(&dependency, dependency_account);
 
-        let inserted = candidates.sync_dependencies();
-
-        assert_eq!(inserted, 1);
         assert!(candidates.prioritized(&dependency_account));
     }
 
@@ -951,7 +961,7 @@ mod tests {
         assert_eq!(
             info,
             [
-                ("priorities", 1, PriorityContainer::ELEMENT_SIZE),
+                ("priorities", 2, PriorityContainer::ELEMENT_SIZE),
                 ("blocking", 2, BlockingContainer::ELEMENT_SIZE),
                 ("blocking_unknown", 1, 0)
             ]
