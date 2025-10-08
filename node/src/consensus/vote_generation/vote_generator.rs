@@ -25,7 +25,8 @@ use crate::{
     wallets::WalletRepresentatives,
 };
 
-pub struct VoteGeneratorRequest {
+/// Vote requested by a given channel
+pub struct VoteRequest {
     pub candidates: Vec<(Root, BlockHash)>,
     pub channel: Arc<Channel>,
 }
@@ -168,7 +169,7 @@ impl VoteGenerator {
 
         let result = req_candidates.len();
         let mut guard = self.shared_state.queues.lock().unwrap();
-        let vote_req = VoteGeneratorRequest {
+        let vote_req = VoteRequest {
             candidates: req_candidates,
             channel: channel.clone(),
         };
@@ -341,8 +342,8 @@ impl SharedState {
 
         for vote in votes {
             {
-                let mut spacing = self.spacing.lock().unwrap();
                 let now = self.clock.now();
+                let mut spacing = self.spacing.lock().unwrap();
                 for i in 0..hashes.len() {
                     self.history.add(&roots[i], &hashes[i], &vote);
                     spacing.flag(&roots[i], &hashes[i], now);
@@ -352,7 +353,7 @@ impl SharedState {
         }
     }
 
-    fn reply(&self, request: VoteGeneratorRequest) {
+    fn reply(&self, request: VoteRequest) {
         let mut i = request.candidates.iter().peekable();
         while i.peek().is_some() && !self.stopped.load(Ordering::SeqCst) {
             let mut hashes = Vec::with_capacity(VoteGenerator::MAX_HASHES);
@@ -429,7 +430,7 @@ impl SharedState {
 
 struct Queues {
     candidates: VecDeque<(Root, BlockHash)>,
-    requests: VecDeque<VoteGeneratorRequest>,
+    requests: VecDeque<VoteRequest>,
     next_broadcast: Instant,
 }
 

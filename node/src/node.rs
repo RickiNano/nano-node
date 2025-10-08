@@ -646,6 +646,8 @@ impl Node {
             steady_clock.clone(),
             current_network,
             message_flooder.clone(),
+            online_reps.clone(),
+            network.clone(),
         )));
 
         let confirm_req_sender = ConfirmReqSender::new(stats.clone(), steady_clock.clone());

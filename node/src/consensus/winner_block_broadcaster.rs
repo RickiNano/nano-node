@@ -1,13 +1,18 @@
-use std::{cmp::max, collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    cmp::max,
+    collections::HashMap,
+    sync::{Arc, Mutex, RwLock},
+    time::Duration,
+};
 
 use rsnano_messages::{Message, Publish};
-use rsnano_network::{TrafficType, token_bucket::TokenBucket};
+use rsnano_network::{Network, TrafficType, token_bucket::TokenBucket};
 use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_types::{Block, BlockHash, Networks, PublicKey};
 use rsnano_utils::stats::{StatsCollection, StatsSource};
 
 use super::{bounded_hash_map::BoundedHashMap, election::VoteSummary};
-use crate::transport::MessageFlooder;
+use crate::{representatives::OnlineReps, transport::MessageFlooder};
 use rsnano_output_tracker::{OutputListenerMt, OutputTrackerMt};
 
 /// Broadcasts the winner block of an election
@@ -17,29 +22,43 @@ pub(crate) struct WinnerBlockBroadcaster {
     message_flooder: MessageFlooder,
     rebroadcast_limiter: TokenBucket,
     broadcast_listener: OutputListenerMt<BlockHash>,
+    online_reps: Arc<Mutex<OnlineReps>>,
+    network: Arc<RwLock<Network>>,
 }
 
 impl WinnerBlockBroadcaster {
     pub(crate) fn new(
         clock: Arc<SteadyClock>,
-        network: Networks,
+        networks: Networks,
         message_flooder: MessageFlooder,
+        online_reps: Arc<Mutex<OnlineReps>>,
+        network: Arc<RwLock<Network>>,
     ) -> Self {
         Self {
             clock,
-            broadcast_tracker: BroadcastTracker::new(network),
+            broadcast_tracker: BroadcastTracker::new(networks),
             message_flooder,
             // TODO: Make rate limit configurable
             rebroadcast_limiter: TokenBucket::with_burst_ratio(100, 2.0),
             broadcast_listener: OutputListenerMt::default(),
+            online_reps,
+            network,
         }
     }
 
     #[allow(dead_code)]
     pub(crate) fn new_null() -> Self {
         let clock = Arc::new(SteadyClock::new_null());
-        let network = Networks::NanoLiveNetwork;
-        Self::new(clock, network, MessageFlooder::new_null())
+        let networks = Networks::NanoLiveNetwork;
+        let online_reps = Mutex::new(OnlineReps::default());
+        let network = RwLock::new(Network::new_test_instance());
+        Self::new(
+            clock,
+            networks,
+            MessageFlooder::new_null(),
+            online_reps.into(),
+            network.into(),
+        )
     }
 
     #[allow(dead_code)]
@@ -61,10 +80,7 @@ impl WinnerBlockBroadcaster {
         }
 
         // Maximum amount of directed broadcasts to be sent per election
-        let max_election_broadcasts = max(
-            self.message_flooder.network.read().unwrap().fanout(1.0) / 2,
-            1,
-        );
+        let max_election_broadcasts = max(self.network.read().unwrap().fanout(1.0) / 2, 1);
 
         if !self.rebroadcast_limiter.try_consume(1, now) {
             return;
@@ -72,12 +88,7 @@ impl WinnerBlockBroadcaster {
 
         let winner_msg = Message::Publish(Publish::new_forward(winner_block.clone()));
 
-        let peered_prs = self
-            .message_flooder
-            .online_reps
-            .lock()
-            .unwrap()
-            .peered_principal_reps();
+        let peered_prs = self.online_reps.lock().unwrap().peered_principal_reps();
 
         let mut count = 0;
         // Directed broadcasting to principal representatives

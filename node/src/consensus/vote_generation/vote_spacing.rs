@@ -5,6 +5,7 @@ use std::{
     time::Duration,
 };
 
+/// Makes sure that there is a minimum time gap between votes if the winner changed
 pub struct VoteSpacing {
     delay: Duration,
     recent: EntryContainer,

@@ -16,9 +16,8 @@ use crate::representatives::OnlineReps;
 
 /// Floods messages to PRs and non PRs
 pub struct MessageFlooder {
-    // TODO make private again
-    pub online_reps: Arc<Mutex<OnlineReps>>,
-    pub network: Arc<RwLock<Network>>,
+    online_reps: Arc<Mutex<OnlineReps>>,
+    network: Arc<RwLock<Network>>,
     stats: Arc<Stats>,
     message_serializer: MessageSerializer,
     sender: MessageSender,
