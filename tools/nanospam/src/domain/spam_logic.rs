@@ -28,6 +28,7 @@ pub(crate) struct SpamLogic {
     pub(crate) confirmed: usize,
     pub(crate) sum_conf_time: Duration,
     pub(crate) sum_conf_time_total: Duration,
+    pub(crate) start: Option<Timestamp>,
 }
 
 impl SpamLogic {
@@ -45,6 +46,7 @@ impl SpamLogic {
             confirmed: 0,
             sum_conf_time: Duration::ZERO,
             sum_conf_time_total: Duration::ZERO,
+            start: None,
         }
     }
 
@@ -93,6 +95,9 @@ impl SpamLogic {
             let conf_time = self.delayed.confirmed(block_hash, timestamp);
 
             if let Some(conf_time) = conf_time {
+                if self.start.is_none() {
+                    self.start = Some(timestamp);
+                }
                 self.confirmed += 1;
                 self.total += 1;
                 self.sum_conf_time += conf_time;
@@ -104,8 +109,24 @@ impl SpamLogic {
         self.high_prio_tracker.confirmed(block_hash);
     }
 
-    pub(crate) fn reset_cps_counter(&mut self) {
+    pub(crate) fn reset_cps_counter(&mut self, now: Timestamp) {
         self.confirmed = 0;
         self.sum_conf_time = Duration::ZERO;
+        self.start = Some(now);
+    }
+
+    pub(crate) fn cps(&self, now: Timestamp) -> i32 {
+        match self.start {
+            Some(start) => (self.confirmed as f64 / start.elapsed(now).as_secs_f64()) as i32,
+            None => 0,
+        }
+    }
+
+    pub(crate) fn average_conf_time(&self) -> Duration {
+        if self.confirmed == 0 {
+            Duration::ZERO
+        } else {
+            self.sum_conf_time / self.confirmed as u32
+        }
     }
 }

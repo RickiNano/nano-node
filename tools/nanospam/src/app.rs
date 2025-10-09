@@ -1,17 +1,18 @@
 use std::{
     ffi::OsString,
     net::{Ipv6Addr, SocketAddrV6},
-    sync::{Mutex, atomic::AtomicUsize},
+    sync::Mutex,
     thread::yield_now,
     time::{Duration, Instant},
 };
 
-use clap::Parser;
+use num_format::{Locale, ToFormattedString};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf},
     select,
     sync::mpsc,
     task::JoinSet,
+    time::timeout,
 };
 use tokio_util::sync::CancellationToken;
 use tracing::info;
@@ -25,12 +26,10 @@ use rsnano_types::{Networks, PrivateKey, ProtocolInfo, RawKey, WalletId};
 use rsnano_websocket_messages::MessageEnvelope;
 
 use crate::{
+    cli_args::Args,
     confirmation_receiver::ConfirmationReceiver,
     confirmation_tracker::track_confirmations,
-    domain::{
-        BlockResult, Forks, RateSpec, SpamStrategy,
-        spam_logic::{SpamLogic, SpamSpec},
-    },
+    domain::{BlockResult, Forks, spam_logic::SpamLogic},
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
     high_prio_check::HighPrioCheck,
@@ -39,115 +38,11 @@ use crate::{
     },
     wallets_factory::create_wallets,
 };
+use clap::Parser;
 use rand::{Rng, rng};
 
 const MAX_BUFFERED_BLOCKS: usize = 1024;
-const DEFAULT_RATE: &str = "1+50@3s";
 const CONNECTIONS_PER_NODE: usize = 4;
-
-#[derive(Parser, Debug)]
-pub(crate) struct Args {
-    /// Number of principal representatives
-    #[arg(long, default_value_t = 1)]
-    pub prs: usize,
-
-    /// Only create the node config files and set up the wallets, then exit
-    #[arg(long, default_value_t = false)]
-    pub setup_only: bool,
-
-    /// Attach to an already running node
-    #[arg(long, default_value_t = false)]
-    pub attach: bool,
-
-    #[arg(long)]
-    /// Block rate in the form "1000+50@3s" or "1000"
-    pub rate: Option<String>,
-
-    #[arg(long)]
-    /// Number of blocks to publish
-    pub blocks: Option<usize>,
-
-    /// Don't wait for a block to get confirmed before publishing the next block
-    #[arg(long, default_value_t = false)]
-    pub unconfirmed: bool,
-
-    /// Query frontiers of the spam accounts before starting spam
-    #[arg(long, default_value_t = false)]
-    pub sync: bool,
-
-    /// Only publish change blocks. This requires --sync
-    #[arg(long, default_value_t = false)]
-    pub change: bool,
-
-    /// Run the C++ nano_node (must be in $PATH)
-    #[arg(long, default_value_t = false)]
-    pub cpp: bool,
-
-    /// Use RocksDB (works only for nano_node)
-    #[arg(long, default_value_t = false)]
-    pub rocksdb: bool,
-
-    /// Disable sending a high priority block every 10s
-    #[arg(long, default_value_t = false)]
-    pub no_prio: bool,
-
-    /// Limit confirmations per second
-    #[arg(long, default_value_t = 0)]
-    pub cps_limit: u32,
-
-    /// Don't kill the node processes on exit
-    #[arg(long, default_value_t = false)]
-    pub no_kill: bool,
-
-    /// Don't republish delayed blocks after 10 seconds
-    #[arg(long, default_value_t = false)]
-    pub no_republish: bool,
-
-    /// Maximum number of individual accounts to use to produce blocks
-    #[arg(long, default_value_t = 500000)]
-    pub accounts: usize,
-
-    /// Randomly drop publish messages
-    #[arg(long, default_value_t = 0)]
-    pub drop_percentage: usize,
-
-    /// Percentage of blocks that should have forks
-    #[arg(long, default_value_t = 0)]
-    pub fork_percentage: usize,
-}
-
-impl Args {
-    pub(crate) fn spam_spec(&self) -> anyhow::Result<SpamSpec> {
-        Ok(SpamSpec {
-            spam_strategy: self.strategy(),
-            max_blocks: self.blocks.unwrap_or(0),
-            rate: self.rate_spec()?,
-            fork_probability: self.fork_probability(),
-            track_confirmations: !self.unconfirmed,
-        })
-    }
-
-    fn fork_probability(&self) -> f64 {
-        self.fork_percentage as f64 / 100.0
-    }
-
-    fn drop_probability(&self) -> f64 {
-        self.drop_percentage as f64 / 100.0
-    }
-
-    fn strategy(&self) -> SpamStrategy {
-        if self.change {
-            SpamStrategy::Change
-        } else {
-            SpamStrategy::SendReceive
-        }
-    }
-
-    fn rate_spec(&self) -> Result<RateSpec, anyhow::Error> {
-        let rate: RateSpec = self.rate.as_deref().unwrap_or(DEFAULT_RATE).parse()?;
-        Ok(rate)
-    }
-}
 
 #[derive(Default)]
 pub(crate) struct NanoSpamApp {
@@ -246,9 +141,8 @@ impl NanoSpamApp {
         let cancel_block_creation = CancellationToken::new();
         let cancel_blk = cancel_block_creation.clone();
         let cancel_tcp_recv = CancellationToken::new();
-        let cancel_ws_recv = CancellationToken::new();
+        let cancel_nanospam = CancellationToken::new();
 
-        let ws_queue_len = AtomicUsize::new(0);
         let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Timestamp)>();
 
         info!("Connecting to websocket...");
@@ -263,31 +157,20 @@ impl NanoSpamApp {
                 cancel_blk.cancel();
             });
 
-            s.spawn(|| track_confirmations(rx_ws_msg, &logic, &ws_queue_len, &clock));
+            s.spawn(|| track_confirmations(rx_ws_msg, &logic));
 
             tokio_scoped::scope(|scope| {
+                scope.spawn(log_status(&logic, &clock, cancel_nanospam.clone()));
+
                 if !args.no_prio {
                     scope.spawn(high_prio_check.run(cancel_block_creation, tx_forks_clone.clone()));
                 }
-                scope.spawn(conf_receiver.run(
-                    cancel_ws_recv.clone(),
-                    &ws_queue_len,
-                    tx_ws_msg,
-                    &clock,
-                ));
+                scope.spawn(conf_receiver.run(cancel_nanospam.clone(), tx_ws_msg, &clock));
                 scope.spawn(receive_messages(
                     tcp_readers,
                     protocol,
                     cancel_tcp_recv.clone(),
                 ));
-                if !args.no_republish {
-                    scope.spawn(republish_delayed_blocks(
-                        tx_forks_clone,
-                        &logic,
-                        cancel_ws_recv,
-                        &clock,
-                    ));
-                }
                 scope.spawn(publish_blocks(
                     rx_blocks,
                     tcp_writers,
@@ -298,6 +181,14 @@ impl NanoSpamApp {
                     args.drop_probability(),
                     &clock,
                 ));
+                if !args.no_republish {
+                    scope.spawn(republish_delayed_blocks(
+                        tx_forks_clone,
+                        &logic,
+                        cancel_nanospam,
+                        &clock,
+                    ));
+                }
             });
         });
         let duration_secs = started.elapsed().as_secs_f64();
@@ -455,5 +346,29 @@ async fn receive_messages(
             }
             set.join_all().await;
         } => {}
+    }
+}
+
+async fn log_status(
+    logic: &Mutex<SpamLogic>,
+    clock: &SteadyClock,
+    cancel_token: CancellationToken,
+) {
+    while let Err(_) = timeout(Duration::from_secs(1), cancel_token.cancelled()).await {
+        let now = clock.now();
+        let mut logic = logic.lock().unwrap();
+        let cps = logic.cps(now);
+        let avg_conf_time = logic.average_conf_time().as_millis();
+        let bps = logic.current_bps;
+        let total = logic.total;
+        logic.reset_cps_counter(now);
+        drop(logic);
+
+        info!(
+            "Confirmed {} blocks | {} bps | {} cps | avg conf time: {avg_conf_time} ms",
+            total.to_formatted_string(&Locale::en),
+            bps.to_formatted_string(&Locale::en),
+            cps.to_formatted_string(&Locale::en),
+        );
     }
 }

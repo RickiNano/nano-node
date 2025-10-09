@@ -1,14 +1,17 @@
-use crate::{
-    app::Args,
-    setup::{GENESIS_BLOCK, GENESIS_PRV, peering_port},
-};
-use rsnano_rpc_client::NanoRpcClient;
 use std::{
     process::{Command, Stdio},
     time::Duration,
 };
+
 use tokio::time::sleep;
 use tracing::info;
+
+use rsnano_rpc_client::NanoRpcClient;
+
+use crate::{
+    cli_args::Args,
+    setup::{GENESIS_BLOCK, GENESIS_PRV, peering_port},
+};
 
 pub(crate) async fn start_nodes(
     args: &Args,

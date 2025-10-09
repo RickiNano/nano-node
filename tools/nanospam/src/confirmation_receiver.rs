@@ -1,7 +1,4 @@
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    mpsc::Sender,
-};
+use std::sync::mpsc::Sender;
 
 use anyhow::anyhow;
 use tokio::select;
@@ -45,7 +42,6 @@ impl ConfirmationReceiver {
     pub async fn run(
         &mut self,
         cancel_token: CancellationToken,
-        ws_queue_len: &AtomicUsize,
         tx_ws_msg: Sender<(MessageEnvelope, Timestamp)>,
         clock: &SteadyClock,
     ) {
@@ -57,7 +53,6 @@ impl ConfirmationReceiver {
 
             let msg = res.unwrap().unwrap();
             tx_ws_msg.send((msg, clock.now())).unwrap();
-            ws_queue_len.fetch_add(1, Ordering::Relaxed);
         }
     }
 }
