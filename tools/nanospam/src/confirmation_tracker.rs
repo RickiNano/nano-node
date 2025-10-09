@@ -1,8 +1,8 @@
 use std::{
     sync::{
+        Mutex,
         atomic::{AtomicUsize, Ordering},
         mpsc::Receiver,
-        Mutex,
     },
     time::{Duration, Instant},
 };
@@ -20,7 +20,6 @@ pub(crate) fn track_confirmations(
     logic: &Mutex<SpamLogic>,
     ws_queue_len: &AtomicUsize,
     sum_conf_time_total: &mut Duration,
-    current_bps: &AtomicUsize,
     should_track: bool,
 ) {
     let mut total = 0;
@@ -58,7 +57,7 @@ pub(crate) fn track_confirmations(
                 } else {
                     sum_conf_time.as_millis() / confirmed
                 };
-                let bps = current_bps.load(Ordering::Relaxed);
+                let bps = logic.lock().unwrap().current_bps;
                 info!(
                     "Confirmed {} blocks | {} bps | {} cps | avg conf time: {avg_conf_time} ms | ws queue: {len}",
                     total.to_formatted_string(&Locale::en),

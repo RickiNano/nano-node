@@ -44,6 +44,7 @@ impl BlockResult {
     }
 }
 
+#[derive(Clone, Copy)]
 pub(crate) enum SpamStrategy {
     SendReceive,
     Change,
@@ -60,7 +61,7 @@ impl BlockFactory {
     }
 
     pub fn create_next(&mut self, is_fork: bool) -> Option<BlockResult> {
-        if self.max_blocks > 0 && self.created >= self.max_blocks {
+        if self.max_blocks_reached() {
             return None;
         }
 
@@ -79,6 +80,10 @@ impl BlockFactory {
         }
 
         Some(block_result)
+    }
+
+    pub fn max_blocks_reached(&mut self) -> bool {
+        self.max_blocks > 0 && self.created >= self.max_blocks
     }
 
     pub fn confirm(&mut self, hash: BlockHash) {
@@ -209,10 +214,12 @@ mod tests {
 
         assert_eq!(account, initial_test_key().account());
         assert!(block_factory.account_map.contains(&destination));
-        assert!(block_factory
-            .account_map
-            .get_receivable(&destination)
-            .is_some());
+        assert!(
+            block_factory
+                .account_map
+                .get_receivable(&destination)
+                .is_some()
+        );
     }
 
     #[test]

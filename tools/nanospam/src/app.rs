@@ -1,10 +1,7 @@
 use std::{
     ffi::OsString,
     net::{Ipv6Addr, SocketAddrV6},
-    sync::{
-        Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
+    sync::{Mutex, atomic::AtomicUsize},
     thread::yield_now,
     time::{Duration, Instant},
 };
@@ -20,7 +17,6 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use rsnano_messages::{Message, MessageSerializer, Publish};
-use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_tcp::{TcpStream, TcpStreamFactory};
 use rsnano_nullable_tracing_subscriber::TracingInitializer;
@@ -31,10 +27,13 @@ use rsnano_websocket_messages::MessageEnvelope;
 use crate::{
     confirmation_receiver::ConfirmationReceiver,
     confirmation_tracker::track_confirmations,
-    domain::{spam_logic::SpamLogic, BlockResult,  Forks, RateSpec, SpamStrategy},
+    domain::{
+        BlockResult, Forks, RateSpec, SpamStrategy,
+        spam_logic::{SpamLogic, SpamSpec},
+    },
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
-    high_prio_check::{HighPrioCheck, },
+    high_prio_check::HighPrioCheck,
     setup::{
         configure_nodes, create_account_map, get_genesis_hash, peering_port, rpc_port, start_nodes,
     },
@@ -112,8 +111,30 @@ pub(crate) struct Args {
     #[arg(long, default_value_t = 0)]
     pub drop_percentage: usize,
 
+    /// Percentage of blocks that should have forks
     #[arg(long, default_value_t = 0)]
-    pub forks_percentage: usize,
+    pub fork_percentage: usize,
+}
+
+impl Args {
+    pub(crate) fn spam_spec(&self) -> anyhow::Result<SpamSpec> {
+        let rate: RateSpec = self.rate.as_deref().unwrap_or(DEFAULT_RATE).parse()?;
+
+        let spam_strategy = if self.change {
+            SpamStrategy::Change
+        } else {
+            SpamStrategy::SendReceive
+        };
+
+        let fork_propability = self.fork_percentage as f64 / 100.0;
+
+        Ok(SpamSpec {
+            spam_strategy,
+            max_blocks: self.blocks.unwrap_or(0),
+            rate,
+            fork_propability,
+        })
+    }
 }
 
 #[derive(Default)]
@@ -134,7 +155,6 @@ impl NanoSpamApp {
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
         let genesis_hash = get_genesis_hash();
-        let rate_spec: RateSpec = args.rate.as_deref().unwrap_or(DEFAULT_RATE).parse()?;
 
         let mut data_dir = dirs::home_dir().unwrap();
         data_dir.push("NanoSpam");
@@ -157,7 +177,6 @@ impl NanoSpamApp {
             sync_frontiers(&rpc_clients, &mut account_map).await;
         }
 
-
         let mut node_handles = Vec::new();
 
         if !args.attach {
@@ -165,22 +184,15 @@ impl NanoSpamApp {
         }
 
         let genesis_wallet_id = if set_up_new_nodes {
-                create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await
+            create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await
         } else {
             WalletId::ZERO
         };
 
-        let strategy = if args.change {
-            SpamStrategy::Change
-        } else {
-            SpamStrategy::SendReceive
-        };
-
-        let logic = Mutex::new(SpamLogic::new(account_map, args.blocks.unwrap_or(0), strategy));
+        let logic = Mutex::new(SpamLogic::new(account_map, args.spam_spec()?));
 
         let (tx_forks, rx_forks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
-        let mut high_prio_check =
-            HighPrioCheck::new(genesis_rpc, &logic);
+        let mut high_prio_check = HighPrioCheck::new(genesis_rpc, &logic);
 
         if set_up_new_nodes {
             high_prio_check
@@ -191,7 +203,6 @@ impl NanoSpamApp {
         if args.setup_only {
             return Ok(());
         }
-
 
         if args.sync {
             high_prio_check.sync_accounts().await?;
@@ -220,18 +231,18 @@ impl NanoSpamApp {
 
         let tx_forks_clone = tx_forks.clone();
         let cancel_block_creation = CancellationToken::new();
+        let cancel_blk = cancel_block_creation.clone();
         let cancel_tcp_recv = CancellationToken::new();
         let cancel_ws_recv = CancellationToken::new();
-        let current_bps = AtomicUsize::new(rate_spec.initial_bps);
 
         let ws_queue_len = AtomicUsize::new(0);
         let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Instant)>();
         let mut sum_conf_time = Duration::ZERO;
 
-
         info!("Connecting to websocket...");
         let mut conf_receiver = ConfirmationReceiver::connect().await?;
-        info!("Starting with {} BPS", current_bps.load(Ordering::Relaxed));
+        info!("Starting with {} BPS", logic.lock().unwrap().current_bps);
+
         let started = Instant::now();
         std::thread::scope(|s| {
             s.spawn(|| {
@@ -240,21 +251,13 @@ impl NanoSpamApp {
                     &logic,
                     &ws_queue_len,
                     &mut sum_conf_time,
-                    &current_bps,
                     !args.unconfirmed,
                 )
             });
 
-            let cancel_blk = cancel_block_creation.clone();
             s.spawn(|| {
-                create_blocks(
-                    tx_forks,
-                    &logic,
-                    &current_bps,
-                    rate_spec,
-                    cancel_blk,
-                    args.forks_percentage as f64 / 100.0,
-                )
+                create_blocks(tx_forks, &logic);
+                cancel_blk.cancel();
             });
 
             tokio_scoped::scope(|scope| {
@@ -302,48 +305,31 @@ impl NanoSpamApp {
     }
 }
 
-fn create_blocks(
-    tx_forks: mpsc::Sender<Forks>,
-    logic: &Mutex<SpamLogic>,
-    current_bps: &AtomicUsize,
-    rate_spec: RateSpec,
-    cancel_token: CancellationToken,
-    forks_percentage: f64,
-) {
-    let mut bps_start = Instant::now();
-    let mut limiter = TokenBucket::new(current_bps.load(Ordering::Relaxed));
+fn create_blocks(tx_forks: mpsc::Sender<Forks>, logic: &Mutex<SpamLogic>) {
     let clock = SteadyClock::default();
 
-    while let Some(result) = {
-        let is_fork = rng().random_bool(forks_percentage);
-        let mut guard = logic.lock().unwrap();
-        guard.block_factory.create_next(is_fork)
-    } {
-        let BlockResult::Block(forks) = result else {
-            yield_now();
-            continue;
+    loop {
+        let now = clock.now();
+
+        let result = {
+            let mut l = logic.lock().unwrap();
+            let is_fork = rng().random_bool(l.fork_propability());
+            l.next_block(is_fork, now)
         };
 
-        while !limiter.try_consume(1, clock.now()) {
-            std::thread::yield_now();
-        }
-
-        {
-            let mut l = logic.lock().unwrap();
-            // TODO: support delayed forks too
-            l.delayed.insert(forks.block.clone());
-        }
-
-        tx_forks.blocking_send(forks).unwrap();
-        if bps_start.elapsed() >= rate_spec.interval {
-            let new_bps =
-                current_bps.fetch_add(rate_spec.increment, Ordering::Relaxed) + rate_spec.increment;
-            limiter.set_limit(new_bps);
-            bps_start = Instant::now();
-        }
+        match result {
+            Some(BlockResult::Block(forks)) => {
+                tx_forks.blocking_send(forks).unwrap();
+            }
+            Some(BlockResult::Waiting) => {
+                yield_now();
+                continue;
+            }
+            None => {
+                break;
+            }
+        };
     }
-    logic.lock().unwrap().delayed.finished();
-    cancel_token.cancel();
 }
 
 async fn publish_blocks(

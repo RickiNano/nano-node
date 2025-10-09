@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use tokio::{select, sync::mpsc::Sender, time::sleep};
 use tracing::info;
 
-use crate::domain::{spam_logic::SpamLogic, Forks};
+use crate::domain::{Forks, spam_logic::SpamLogic};
 use rsnano_rpc_client::NanoRpcClient;
 use rsnano_rpc_messages::SendArgs;
 use rsnano_types::{
