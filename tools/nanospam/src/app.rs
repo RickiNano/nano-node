@@ -6,7 +6,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+use clap::Parser;
 use num_format::{Locale, ToFormattedString};
+use rand::{Rng, rng};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf},
     select,
@@ -22,13 +24,12 @@ use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_nullable_tcp::{TcpStream, TcpStreamFactory};
 use rsnano_nullable_tracing_subscriber::TracingInitializer;
 use rsnano_rpc_client::NanoRpcClient;
-use rsnano_types::{Networks, PrivateKey, ProtocolInfo, RawKey, WalletId};
-use rsnano_websocket_messages::MessageEnvelope;
+use rsnano_types::{BlockHash, Networks, PrivateKey, ProtocolInfo, RawKey, WalletId};
+use rsnano_websocket_messages::{BlockConfirmed, MessageEnvelope, Topic};
 
 use crate::{
     cli_args::Args,
     confirmation_receiver::ConfirmationReceiver,
-    confirmation_tracker::track_confirmations,
     domain::{BlockResult, Forks, spam_logic::SpamLogic},
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
@@ -38,8 +39,6 @@ use crate::{
     },
     wallets_factory::create_wallets,
 };
-use clap::Parser;
-use rand::{Rng, rng};
 
 const MAX_BUFFERED_BLOCKS: usize = 1024;
 const CONNECTIONS_PER_NODE: usize = 4;
@@ -153,7 +152,7 @@ impl NanoSpamApp {
         let started = Instant::now();
         std::thread::scope(|s| {
             s.spawn(|| {
-                create_blocks(&logic, tx_blocks, &clock);
+                enqueue_blocks(&logic, tx_blocks, &clock);
                 cancel_blk.cancel();
             });
 
@@ -162,9 +161,10 @@ impl NanoSpamApp {
             tokio_scoped::scope(|scope| {
                 scope.spawn(log_status(&logic, &clock, cancel_nanospam.clone()));
 
-                if !args.no_prio {
+                if args.high_prio_check() {
                     scope.spawn(high_prio_check.run(cancel_block_creation, tx_forks_clone.clone()));
                 }
+
                 scope.spawn(conf_receiver.run(cancel_nanospam.clone(), tx_ws_msg, &clock));
                 scope.spawn(receive_messages(
                     tcp_readers,
@@ -209,7 +209,7 @@ impl NanoSpamApp {
     }
 }
 
-fn create_blocks(logic: &Mutex<SpamLogic>, tx_blocks: mpsc::Sender<Forks>, clock: &SteadyClock) {
+fn enqueue_blocks(logic: &Mutex<SpamLogic>, tx_blocks: mpsc::Sender<Forks>, clock: &SteadyClock) {
     loop {
         let now = clock.now();
 
@@ -274,6 +274,7 @@ async fn publish_blocks(
                 let buf = if let Some(fbuf) = fork_buffer
                     && counter % 2 == 0
                 {
+                    // send fork to every second node
                     fbuf
                 } else {
                     buffer
@@ -349,6 +350,21 @@ async fn receive_messages(
     }
 }
 
+fn track_confirmations(
+    rx_ws_msg: std::sync::mpsc::Receiver<(MessageEnvelope, Timestamp)>,
+    logic: &Mutex<SpamLogic>,
+) {
+    while let Ok((msg, timestamp)) = rx_ws_msg.recv() {
+        if msg.topic == Some(Topic::Confirmation) {
+            let data: BlockConfirmed = serde_json::from_value(msg.message.unwrap()).unwrap();
+            let block_hash = BlockHash::decode_hex(data.hash).unwrap();
+
+            let mut logic = logic.lock().unwrap();
+            logic.confirmed(&block_hash, timestamp);
+        }
+    }
+}
+
 async fn log_status(
     logic: &Mutex<SpamLogic>,
     clock: &SteadyClock,
@@ -356,19 +372,20 @@ async fn log_status(
 ) {
     while let Err(_) = timeout(Duration::from_secs(1), cancel_token.cancelled()).await {
         let now = clock.now();
-        let mut logic = logic.lock().unwrap();
-        let cps = logic.cps(now);
-        let avg_conf_time = logic.average_conf_time().as_millis();
-        let bps = logic.current_bps;
-        let total = logic.total;
-        logic.reset_cps_counter(now);
-        drop(logic);
+
+        let stats = {
+            let mut l = logic.lock().unwrap();
+            let stats = l.stats(now);
+            l.reset_cps_counter(now);
+            stats
+        };
 
         info!(
-            "Confirmed {} blocks | {} bps | {} cps | avg conf time: {avg_conf_time} ms",
-            total.to_formatted_string(&Locale::en),
-            bps.to_formatted_string(&Locale::en),
-            cps.to_formatted_string(&Locale::en),
+            "Confirmed {} blocks | {} bps | {} cps | avg conf time: {} ms",
+            stats.total_confirmed.to_formatted_string(&Locale::en),
+            stats.target_bps.to_formatted_string(&Locale::en),
+            stats.current_cps.to_formatted_string(&Locale::en),
+            stats.average_conf_time.as_millis()
         );
     }
 }

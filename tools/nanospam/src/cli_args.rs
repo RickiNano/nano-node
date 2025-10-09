@@ -85,6 +85,10 @@ impl Args {
         })
     }
 
+    pub(crate) fn high_prio_check(&self) -> bool {
+        !self.no_prio
+    }
+
     pub(crate) fn fork_probability(&self) -> f64 {
         self.fork_percentage as f64 / 100.0
     }

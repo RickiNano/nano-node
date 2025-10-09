@@ -24,11 +24,11 @@ pub(crate) struct SpamLogic {
     next_block: Option<Forks>,
     bps_start: Option<Timestamp>,
     spec: SpamSpec,
-    pub(crate) total: usize,
-    pub(crate) confirmed: usize,
-    pub(crate) sum_conf_time: Duration,
+    pub(crate) confirmed_total: usize,
+    pub(crate) confirmed_recent: usize,
+    pub(crate) sum_conf_time_recent: Duration,
     pub(crate) sum_conf_time_total: Duration,
-    pub(crate) start: Option<Timestamp>,
+    pub(crate) cps_measure_start: Option<Timestamp>,
 }
 
 impl SpamLogic {
@@ -42,11 +42,11 @@ impl SpamLogic {
             next_block: None,
             bps_start: None,
             spec,
-            total: 0,
-            confirmed: 0,
-            sum_conf_time: Duration::ZERO,
+            confirmed_total: 0,
+            confirmed_recent: 0,
+            sum_conf_time_recent: Duration::ZERO,
             sum_conf_time_total: Duration::ZERO,
-            start: None,
+            cps_measure_start: None,
         }
     }
 
@@ -95,12 +95,12 @@ impl SpamLogic {
             let conf_time = self.delayed.confirmed(block_hash, timestamp);
 
             if let Some(conf_time) = conf_time {
-                if self.start.is_none() {
-                    self.start = Some(timestamp);
+                if self.cps_measure_start.is_none() {
+                    self.cps_measure_start = Some(timestamp);
                 }
-                self.confirmed += 1;
-                self.total += 1;
-                self.sum_conf_time += conf_time;
+                self.confirmed_recent += 1;
+                self.confirmed_total += 1;
+                self.sum_conf_time_recent += conf_time;
                 self.sum_conf_time_total += conf_time;
             }
             self.block_factory.confirm(block_hash);
@@ -110,23 +110,39 @@ impl SpamLogic {
     }
 
     pub(crate) fn reset_cps_counter(&mut self, now: Timestamp) {
-        self.confirmed = 0;
-        self.sum_conf_time = Duration::ZERO;
-        self.start = Some(now);
+        self.confirmed_recent = 0;
+        self.sum_conf_time_recent = Duration::ZERO;
+        self.cps_measure_start = Some(now);
     }
 
     pub(crate) fn cps(&self, now: Timestamp) -> i32 {
-        match self.start {
-            Some(start) => (self.confirmed as f64 / start.elapsed(now).as_secs_f64()) as i32,
+        match self.cps_measure_start {
+            Some(start) => (self.confirmed_recent as f64 / start.elapsed(now).as_secs_f64()) as i32,
             None => 0,
         }
     }
 
     pub(crate) fn average_conf_time(&self) -> Duration {
-        if self.confirmed == 0 {
+        if self.confirmed_recent == 0 {
             Duration::ZERO
         } else {
-            self.sum_conf_time / self.confirmed as u32
+            self.sum_conf_time_recent / self.confirmed_recent as u32
         }
     }
+
+    pub(crate) fn stats(&self, now: Timestamp) -> SpamStats {
+        SpamStats {
+            total_confirmed: self.confirmed_total,
+            target_bps: self.current_bps,
+            current_cps: self.cps(now),
+            average_conf_time: self.average_conf_time(),
+        }
+    }
+}
+
+pub(crate) struct SpamStats {
+    pub(crate) total_confirmed: usize,
+    pub(crate) target_bps: usize,
+    pub(crate) current_cps: i32,
+    pub(crate) average_conf_time: Duration,
 }
