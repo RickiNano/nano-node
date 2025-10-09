@@ -2,7 +2,7 @@ use std::{fs::remove_dir_all, path::Path};
 
 use tracing::info;
 
-use crate::cli_args::Args;
+use crate::cli_args::CliArgs;
 use rsnano_types::{Block, BlockHash, PrivateKey};
 
 pub(crate) const GENESIS_BLOCK: &str = r#"{
@@ -66,7 +66,7 @@ enable_control = true
 port = RPC_PORT
 "#;
 
-pub(crate) fn configure_nodes(args: &Args, data_dir: &Path) {
+pub(crate) fn configure_nodes(args: &CliArgs, data_dir: &Path) {
     for i in 0..100 {
         let mut pr_dir = data_dir.to_path_buf();
         pr_dir.push(format!("pr{i}"));

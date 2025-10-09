@@ -4,7 +4,8 @@ use clap::Parser;
 const DEFAULT_RATE: &str = "1+50@3s";
 
 #[derive(Parser, Debug)]
-pub(crate) struct Args {
+#[command(version, about, long_about = None)]
+pub(crate) struct CliArgs {
     /// Number of principal representatives
     #[arg(long, default_value_t = 1)]
     pub prs: usize,
@@ -74,7 +75,7 @@ pub(crate) struct Args {
     pub fork_percentage: usize,
 }
 
-impl Args {
+impl CliArgs {
     pub(crate) fn spam_spec(&self) -> anyhow::Result<SpamSpec> {
         Ok(SpamSpec {
             spam_strategy: self.strategy(),

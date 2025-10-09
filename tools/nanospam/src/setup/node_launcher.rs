@@ -9,12 +9,12 @@ use tracing::info;
 use rsnano_rpc_client::NanoRpcClient;
 
 use crate::{
-    cli_args::Args,
+    cli_args::CliArgs,
     setup::{GENESIS_BLOCK, GENESIS_PRV, peering_port},
 };
 
 pub(crate) async fn start_nodes(
-    args: &Args,
+    args: &CliArgs,
     data_dir: std::path::PathBuf,
     rpc_clients: &[NanoRpcClient],
 ) -> Vec<std::process::Child> {

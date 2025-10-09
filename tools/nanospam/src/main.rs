@@ -9,9 +9,12 @@ pub(crate) mod node_lifetime;
 mod setup;
 mod wallets_factory;
 
+use crate::cli_args::CliArgs;
 use app::NanoSpamApp;
+use clap::Parser;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> anyhow::Result<()> {
-    NanoSpamApp::default().run(std::env::args()).await
+    let args = CliArgs::parse();
+    NanoSpamApp::new(args).run().await
 }

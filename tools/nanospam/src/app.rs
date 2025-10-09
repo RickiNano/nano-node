@@ -1,5 +1,4 @@
 use std::{
-    ffi::OsString,
     net::{Ipv6Addr, SocketAddrV6},
     sync::Mutex,
     thread::yield_now,
@@ -7,7 +6,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use clap::Parser;
 use num_format::{Locale, ToFormattedString};
 use rand::{Rng, rng};
 use tokio::{
@@ -29,7 +27,7 @@ use rsnano_types::{BlockHash, Networks, PrivateKey, ProtocolInfo, RawKey, Wallet
 use rsnano_websocket_messages::{BlockConfirmed, MessageEnvelope, Topic};
 
 use crate::{
-    cli_args::Args,
+    cli_args::CliArgs,
     confirmation_receiver::ConfirmationReceiver,
     domain::{BlockResult, Forks, spam_logic::SpamLogic},
     frontiers_sync::sync_frontiers,
@@ -45,22 +43,29 @@ use crate::{
 const MAX_BUFFERED_BLOCKS: usize = 1024;
 const CONNECTIONS_PER_NODE: usize = 4;
 
-#[derive(Default)]
 pub(crate) struct NanoSpamApp {
     tracing_init: TracingInitializer,
     tcp_stream_factory: TcpStreamFactory,
     clock: SteadyClock,
     rpc_clients: Vec<NanoRpcClient>,
+    node_lifetime: NodeLifetime,
+    args: CliArgs,
 }
 
 impl NanoSpamApp {
-    pub async fn run<I, T>(&mut self, args: I) -> anyhow::Result<()>
-    where
-        I: IntoIterator<Item = T>,
-        T: Into<OsString> + Clone,
-    {
+    pub fn new(args: CliArgs) -> Self {
+        Self {
+            tracing_init: Default::default(),
+            tcp_stream_factory: Default::default(),
+            clock: Default::default(),
+            rpc_clients: Default::default(),
+            node_lifetime: Default::default(),
+            args,
+        }
+    }
+
+    pub async fn run(mut self) -> anyhow::Result<()> {
         self.tracing_init.init();
-        let args = Args::try_parse_from(args)?;
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
         let genesis_hash = get_genesis_hash();
@@ -68,61 +73,60 @@ impl NanoSpamApp {
         let mut data_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir found"))?;
         data_dir.push("NanoSpam");
 
-        let mut account_map = create_account_map(&data_dir, args.accounts);
+        let mut account_map = create_account_map(&data_dir, self.args.accounts);
 
-        if args.set_up_new_nodes() {
-            configure_nodes(&args, &data_dir);
+        if self.args.set_up_new_nodes() {
+            configure_nodes(&self.args, &data_dir);
         }
 
-        for i in 0..args.prs {
+        for i in 0..self.args.prs {
             let rpc_client =
                 NanoRpcClient::new(format!("http://[::1]:{}", rpc_port(i)).parse().unwrap());
             self.rpc_clients.push(rpc_client);
         }
 
         let genesis_rpc = &self.rpc_clients[0];
-        let mut _node_lifetime = NodeLifetime::default();
 
-        if !args.attach {
-            let node_handles = start_nodes(&args, data_dir, &self.rpc_clients).await;
-            if args.kill_nodes() {
-                _node_lifetime = NodeLifetime::new(node_handles);
+        if !self.args.attach {
+            let node_handles = start_nodes(&self.args, data_dir, &self.rpc_clients).await;
+            if self.args.kill_nodes() {
+                self.node_lifetime = NodeLifetime::new(node_handles);
             }
         }
 
-        let genesis_wallet_id = if args.set_up_new_nodes() {
+        let genesis_wallet_id = if self.args.set_up_new_nodes() {
             create_wallets(&self.rpc_clients, genesis_rpc, &mut account_map).await
         } else {
             WalletId::ZERO
         };
 
-        if args.sync {
+        if self.args.sync {
             sync_frontiers(&self.rpc_clients, &mut account_map).await;
         }
 
-        let logic = Mutex::new(SpamLogic::new(account_map, args.spam_spec()?));
+        let logic = Mutex::new(SpamLogic::new(account_map, self.args.spam_spec()?));
 
         let (tx_blocks, rx_blocks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
         let mut high_prio_check = HighPrioCheck::new(genesis_rpc, &logic);
 
-        if args.set_up_new_nodes() {
+        if self.args.set_up_new_nodes() {
             high_prio_check
                 .create_prio_accounts(genesis_wallet_id)
                 .await?;
         }
 
-        if args.setup_only {
+        if self.args.setup_only {
             return Ok(());
         }
 
-        if args.sync {
+        if self.args.sync {
             high_prio_check.sync_accounts().await?;
         }
 
         let mut tcp_writers = Vec::new();
         let mut tcp_readers = Vec::new();
 
-        for node_index in 0..args.prs {
+        for node_index in 0..self.args.prs {
             let peer_addr = SocketAddrV6::new(Ipv6Addr::LOCALHOST, peering_port(node_index), 0, 0);
             info!(?peer_addr, "Connecting to node PR{node_index}...");
             let mut node_writers = Vec::with_capacity(CONNECTIONS_PER_NODE);
@@ -165,7 +169,7 @@ impl NanoSpamApp {
             tokio_scoped::scope(|scope| {
                 scope.spawn(log_status(&logic, &self.clock, cancel_nanospam.clone()));
 
-                if args.high_prio_check() {
+                if self.args.high_prio_check() {
                     scope.spawn(high_prio_check.run(cancel_block_creation, tx_forks_clone.clone()));
                 }
 
@@ -181,10 +185,10 @@ impl NanoSpamApp {
                     protocol,
                     &logic,
                     cancel_tcp_recv,
-                    args.drop_probability(),
+                    self.args.drop_probability(),
                     &self.clock,
                 ));
-                if !args.no_republish {
+                if !self.args.no_republish {
                     scope.spawn(republish_delayed_blocks(
                         tx_forks_clone,
                         &logic,
