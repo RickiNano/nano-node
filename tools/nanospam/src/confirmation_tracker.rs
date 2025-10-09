@@ -4,7 +4,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         mpsc::Receiver,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use num_format::{Locale, ToFormattedString};
@@ -14,14 +14,16 @@ use rsnano_types::BlockHash;
 use rsnano_websocket_messages::{BlockConfirmed, MessageEnvelope, Topic};
 
 use crate::domain::spam_logic::SpamLogic;
+use rsnano_nullable_clock::{SteadyClock, Timestamp};
 
 pub(crate) fn track_confirmations(
-    rx_ws_msg: Receiver<(MessageEnvelope, Instant)>,
+    rx_ws_msg: Receiver<(MessageEnvelope, Timestamp)>,
     logic: &Mutex<SpamLogic>,
     ws_queue_len: &AtomicUsize,
+    clock: &SteadyClock,
 ) {
-    let mut start = Instant::now();
-    let mut last_log = Instant::now();
+    let mut start = clock.now();
+    let mut last_log = start;
     while let Ok((msg, timestamp)) = rx_ws_msg.recv() {
         let len = ws_queue_len.fetch_sub(1, Ordering::Relaxed);
         if msg.topic == Some(Topic::Confirmation) {
@@ -31,8 +33,9 @@ pub(crate) fn track_confirmations(
             let mut logic = logic.lock().unwrap();
             logic.confirmed(&block_hash, timestamp);
 
-            if last_log.elapsed() > Duration::from_secs(1) {
-                let cps = (logic.confirmed as f64 / start.elapsed().as_secs_f64()) as i32;
+            if last_log.elapsed(clock.now()) > Duration::from_secs(1) {
+                let cps =
+                    (logic.confirmed as f64 / start.elapsed(clock.now()).as_secs_f64()) as i32;
                 let avg_conf_time = if logic.confirmed == 0 {
                     0
                 } else {
@@ -49,8 +52,8 @@ pub(crate) fn track_confirmations(
                     bps.to_formatted_string(&Locale::en),
                     cps.to_formatted_string(&Locale::en),
                 );
-                start = Instant::now();
-                last_log = Instant::now();
+                start = clock.now();
+                last_log = clock.now();
             }
         }
     }

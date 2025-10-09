@@ -5,7 +5,7 @@ use crate::{
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::Timestamp;
 use rsnano_types::BlockHash;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 pub(crate) struct SpamSpec {
     pub(crate) spam_strategy: SpamStrategy,
@@ -27,7 +27,7 @@ pub(crate) struct SpamLogic {
     pub(crate) total: usize,
     pub(crate) confirmed: usize,
     pub(crate) sum_conf_time: Duration,
-    sum_conf_time_total: Duration,
+    pub(crate) sum_conf_time_total: Duration,
 }
 
 impl SpamLogic {
@@ -88,7 +88,7 @@ impl SpamLogic {
         Some(BlockResult::Block(next))
     }
 
-    pub(crate) fn confirmed(&mut self, block_hash: &BlockHash, timestamp: Instant) {
+    pub(crate) fn confirmed(&mut self, block_hash: &BlockHash, timestamp: Timestamp) {
         if self.spec.track_confirmations {
             let conf_time = self.delayed.confirmed(block_hash, timestamp);
 

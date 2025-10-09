@@ -1,10 +1,8 @@
-use std::{
-    collections::BTreeMap,
-    time::{Duration, Instant},
-};
+use std::{collections::BTreeMap, time::Duration};
 
 use rustc_hash::FxHashMap;
 
+use rsnano_nullable_clock::Timestamp;
 use rsnano_types::{Block, BlockHash};
 
 const DELAY_LIMIT: Duration = Duration::from_secs(10);
@@ -13,7 +11,7 @@ const DELAY_LIMIT: Duration = Duration::from_secs(10);
 pub(crate) struct DelayedBlocks {
     /// block + publish timestamp
     blocks: FxHashMap<BlockHash, PublishInfo>,
-    by_time: BTreeMap<Instant, Vec<BlockHash>>,
+    by_time: BTreeMap<Timestamp, Vec<BlockHash>>,
     finished: bool,
 }
 
@@ -22,7 +20,7 @@ impl DelayedBlocks {
         Default::default()
     }
 
-    pub fn next(&mut self, now: Instant) -> Option<Block> {
+    pub fn next(&mut self, now: Timestamp) -> Option<Block> {
         let mut entry = self.by_time.first_entry()?;
         let sent = *entry.key();
         let block_hashes = entry.get_mut();
@@ -49,7 +47,7 @@ impl DelayedBlocks {
         }
     }
 
-    pub fn published(&mut self, hash: &BlockHash, timestamp: Instant) {
+    pub fn published(&mut self, hash: &BlockHash, timestamp: Timestamp) {
         if let Some(info) = self.blocks.get_mut(hash) {
             if info.first_publish.is_none() {
                 info.first_publish = Some(timestamp);
@@ -64,12 +62,12 @@ impl DelayedBlocks {
         }
     }
 
-    pub fn confirmed(&mut self, hash: &BlockHash, timestamp: Instant) -> Option<Duration> {
+    pub fn confirmed(&mut self, hash: &BlockHash, timestamp: Timestamp) -> Option<Duration> {
         if let Some(info) = self.blocks.remove(hash) {
             if let Some(sent) = info.last_publish {
                 self.remove_from_time_index(hash, sent);
             }
-            info.first_publish.map(|i| timestamp.duration_since(i))
+            info.first_publish.map(|i| i.elapsed(timestamp))
         } else {
             None
         }
@@ -87,7 +85,7 @@ impl DelayedBlocks {
         self.finished && self.len() == 0
     }
 
-    fn remove_from_time_index(&mut self, hash: &BlockHash, sent: Instant) {
+    fn remove_from_time_index(&mut self, hash: &BlockHash, sent: Timestamp) {
         let mut hashes = self.by_time.remove(&sent).unwrap();
         hashes.retain(|h| h != hash);
         if !hashes.is_empty() {
@@ -98,8 +96,8 @@ impl DelayedBlocks {
 
 struct PublishInfo {
     block: Block,
-    first_publish: Option<Instant>,
-    last_publish: Option<Instant>,
+    first_publish: Option<Timestamp>,
+    last_publish: Option<Timestamp>,
 }
 
 impl PublishInfo {
@@ -115,12 +113,12 @@ impl PublishInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     #[test]
     fn empty() {
         let mut delayed = DelayedBlocks::new();
-        let now = Instant::now();
+        let now = Timestamp::new_test_instance();
         assert!(delayed.next(now).is_none());
         assert_eq!(delayed.len(), 0);
     }
@@ -128,7 +126,7 @@ mod tests {
     #[test]
     fn add_block() {
         let mut delayed = DelayedBlocks::new();
-        let now = Instant::now();
+        let now = Timestamp::new_test_instance();
         let block = Block::new_test_instance();
         let hash = block.hash();
         delayed.insert(block);
@@ -140,7 +138,7 @@ mod tests {
     #[test]
     fn get_delayed_block() {
         let mut delayed = DelayedBlocks::new();
-        let now = Instant::now();
+        let now = Timestamp::new_test_instance();
         let block = Block::new_test_instance();
         let hash = block.hash();
         delayed.insert(block);
@@ -156,7 +154,7 @@ mod tests {
     #[test]
     fn remove_confirmed_block() {
         let mut delayed = DelayedBlocks::new();
-        let now = Instant::now();
+        let now = Timestamp::new_test_instance();
         let block = Block::new_test_instance();
         let hash = block.hash();
         delayed.insert(block);
@@ -170,8 +168,8 @@ mod tests {
     #[test]
     fn update_block_time_when_inserted_twice() {
         let mut delayed = DelayedBlocks::new();
-        let time_a = Instant::now();
-        let time_b = Instant::now() + Duration::from_secs(1);
+        let time_a = Timestamp::new_test_instance();
+        let time_b = time_a + Duration::from_secs(1);
         let block = Block::new_test_instance();
 
         delayed.insert(block.clone());
@@ -187,7 +185,7 @@ mod tests {
     #[test]
     fn allow_multiple_blocks_with_same_sent_timestamp() {
         let mut delayed = DelayedBlocks::new();
-        let now = Instant::now();
+        let now = Timestamp::new_test_instance();
         let block_a = Block::new_test_instance_with_key(1);
         let block_b = Block::new_test_instance_with_key(2);
         delayed.insert(block_a.clone());
@@ -208,7 +206,7 @@ mod tests {
     #[test]
     fn confirm_blocks_with_same_sent_timestamp() {
         let mut delayed = DelayedBlocks::new();
-        let now = Instant::now();
+        let now = Timestamp::new_test_instance();
         let block_a = Block::new_test_instance_with_key(1);
         let block_b = Block::new_test_instance_with_key(2);
         delayed.insert(block_a.clone());

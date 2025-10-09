@@ -17,7 +17,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 use rsnano_messages::{Message, MessageSerializer, Publish};
-use rsnano_nullable_clock::SteadyClock;
+use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_nullable_tcp::{TcpStream, TcpStreamFactory};
 use rsnano_nullable_tracing_subscriber::TracingInitializer;
 use rsnano_rpc_client::NanoRpcClient;
@@ -164,6 +164,7 @@ impl NanoSpamApp {
         self.tracing_init.init();
         let args = Args::try_parse_from(args)?;
         let set_up_new_nodes = !args.attach && !args.sync;
+        let clock = SteadyClock::default();
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
         let genesis_hash = get_genesis_hash();
@@ -248,7 +249,7 @@ impl NanoSpamApp {
         let cancel_ws_recv = CancellationToken::new();
 
         let ws_queue_len = AtomicUsize::new(0);
-        let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Instant)>();
+        let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Timestamp)>();
 
         info!("Connecting to websocket...");
         let mut conf_receiver = ConfirmationReceiver::connect().await?;
@@ -258,17 +259,22 @@ impl NanoSpamApp {
         let started = Instant::now();
         std::thread::scope(|s| {
             s.spawn(|| {
-                create_blocks(&logic, tx_blocks);
+                create_blocks(&logic, tx_blocks, &clock);
                 cancel_blk.cancel();
             });
 
-            s.spawn(|| track_confirmations(rx_ws_msg, &logic, &ws_queue_len));
+            s.spawn(|| track_confirmations(rx_ws_msg, &logic, &ws_queue_len, &clock));
 
             tokio_scoped::scope(|scope| {
                 if !args.no_prio {
                     scope.spawn(high_prio_check.run(cancel_block_creation, tx_forks_clone.clone()));
                 }
-                scope.spawn(conf_receiver.run(cancel_ws_recv.clone(), &ws_queue_len, tx_ws_msg));
+                scope.spawn(conf_receiver.run(
+                    cancel_ws_recv.clone(),
+                    &ws_queue_len,
+                    tx_ws_msg,
+                    &clock,
+                ));
                 scope.spawn(receive_messages(
                     tcp_readers,
                     protocol,
@@ -279,6 +285,7 @@ impl NanoSpamApp {
                         tx_forks_clone,
                         &logic,
                         cancel_ws_recv,
+                        &clock,
                     ));
                 }
                 scope.spawn(publish_blocks(
@@ -289,6 +296,7 @@ impl NanoSpamApp {
                     cancel_tcp_recv,
                     args.unconfirmed,
                     args.drop_probability(),
+                    &clock,
                 ));
             });
         });
@@ -296,9 +304,9 @@ impl NanoSpamApp {
         let logic = logic.lock().unwrap();
         let created_blocks = logic.block_factory.created();
         let cps = (created_blocks as f64 / duration_secs) as i32;
-        info!("Confirming all blocks took {duration_secs:.2}s");
+        info!("Confirming {created_blocks} blocks took {duration_secs:.2}s");
         info!("Confirmation rate: {cps} cps");
-        let conf_time = logic.sum_conf_time.as_millis() / created_blocks as u128;
+        let conf_time = logic.sum_conf_time_total.as_millis() / created_blocks as u128;
         info!("Average conf time: {conf_time} ms");
 
         if !args.no_kill {
@@ -310,9 +318,7 @@ impl NanoSpamApp {
     }
 }
 
-fn create_blocks(logic: &Mutex<SpamLogic>, tx_blocks: mpsc::Sender<Forks>) {
-    let clock = SteadyClock::default();
-
+fn create_blocks(logic: &Mutex<SpamLogic>, tx_blocks: mpsc::Sender<Forks>, clock: &SteadyClock) {
     loop {
         let now = clock.now();
 
@@ -345,6 +351,7 @@ async fn publish_blocks(
     cancel_token: CancellationToken,
     unconfirmed: bool,
     drop_probability: f64,
+    clock: &SteadyClock,
 ) {
     let mut serializer = MessageSerializer::new(protocol);
     let mut fork_serializer = MessageSerializer::new(protocol);
@@ -361,7 +368,7 @@ async fn publish_blocks(
             fork_buffer = Some(fork_serializer.serialize(&publish_fork));
         }
 
-        let now = Instant::now();
+        let now = clock.now();
         // TODO support delayed forks
         logic.lock().unwrap().delayed.published(&hash, now);
 
@@ -410,10 +417,11 @@ async fn republish_delayed_blocks(
     tx_forks: mpsc::Sender<Forks>,
     logic: &Mutex<SpamLogic>,
     cancel_token: CancellationToken,
+    clock: &SteadyClock,
 ) {
     loop {
         while let Some(block) = {
-            let now = Instant::now();
+            let now = clock.now();
             logic.lock().unwrap().delayed.next(now)
         } {
             tx_forks.send(Forks::new(block)).await.unwrap();

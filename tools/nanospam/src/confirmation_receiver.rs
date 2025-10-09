@@ -1,15 +1,13 @@
-use std::{
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        mpsc::Sender,
-    },
-    time::Instant,
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    mpsc::Sender,
 };
 
 use anyhow::anyhow;
 use tokio::select;
 use tokio_util::sync::CancellationToken;
 
+use rsnano_nullable_clock::{SteadyClock, Timestamp};
 use rsnano_websocket_client::{
     NanoWebSocketClient, NanoWebSocketClientFactory, SubscribeArgs, TopicSub,
 };
@@ -48,7 +46,8 @@ impl ConfirmationReceiver {
         &mut self,
         cancel_token: CancellationToken,
         ws_queue_len: &AtomicUsize,
-        tx_ws_msg: Sender<(MessageEnvelope, Instant)>,
+        tx_ws_msg: Sender<(MessageEnvelope, Timestamp)>,
+        clock: &SteadyClock,
     ) {
         loop {
             let res = select! {
@@ -57,7 +56,7 @@ impl ConfirmationReceiver {
             };
 
             let msg = res.unwrap().unwrap();
-            tx_ws_msg.send((msg, Instant::now())).unwrap();
+            tx_ws_msg.send((msg, clock.now())).unwrap();
             ws_queue_len.fetch_add(1, Ordering::Relaxed);
         }
     }
