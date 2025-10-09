@@ -25,13 +25,13 @@ use rsnano_nullable_clock::SteadyClock;
 use rsnano_nullable_tcp::{TcpStream, TcpStreamFactory};
 use rsnano_nullable_tracing_subscriber::TracingInitializer;
 use rsnano_rpc_client::NanoRpcClient;
-use rsnano_types::{Networks, PrivateKey, ProtocolInfo, RawKey};
+use rsnano_types::{Networks, PrivateKey, ProtocolInfo, RawKey, WalletId};
 use rsnano_websocket_messages::MessageEnvelope;
 
 use crate::{
     confirmation_receiver::ConfirmationReceiver,
     confirmation_tracker::track_confirmations,
-    domain::{spam_logic::SpamLogic, BlockFactory, BlockResult,  Forks, RateSpec, SpamStrategy},
+    domain::{spam_logic::SpamLogic, BlockResult,  Forks, RateSpec, SpamStrategy},
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
     high_prio_check::{HighPrioCheck, },
@@ -130,6 +130,7 @@ impl NanoSpamApp {
     {
         self.tracing_init.init();
         let args = Args::try_parse_from(args)?;
+        let set_up_new_nodes = !args.attach && !args.sync;
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
         let genesis_hash = get_genesis_hash();
@@ -151,7 +152,11 @@ impl NanoSpamApp {
             rpc_clients.push(rpc_client);
         }
         let genesis_rpc = &rpc_clients[0];
-        let logic = Mutex::new(SpamLogic::default());
+
+        if args.sync {
+            sync_frontiers(&rpc_clients, &mut account_map).await;
+        }
+
 
         let mut node_handles = Vec::new();
 
@@ -159,13 +164,25 @@ impl NanoSpamApp {
             node_handles = start_nodes(&args, data_dir, &rpc_clients).await
         }
 
+        let genesis_wallet_id = if set_up_new_nodes {
+                create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await
+        } else {
+            WalletId::ZERO
+        };
+
+        let strategy = if args.change {
+            SpamStrategy::Change
+        } else {
+            SpamStrategy::SendReceive
+        };
+
+        let logic = Mutex::new(SpamLogic::new(account_map, args.blocks.unwrap_or(0), strategy));
+
         let (tx_forks, rx_forks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
         let mut high_prio_check =
             HighPrioCheck::new(genesis_rpc, &logic);
 
-        if !args.attach && !args.sync {
-            let genesis_wallet_id =
-                create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await;
+        if set_up_new_nodes {
             high_prio_check
                 .create_prio_accounts(genesis_wallet_id)
                 .await?;
@@ -175,8 +192,8 @@ impl NanoSpamApp {
             return Ok(());
         }
 
+
         if args.sync {
-            sync_frontiers(&rpc_clients, &mut account_map).await;
             high_prio_check.sync_accounts().await?;
         }
 
@@ -211,17 +228,6 @@ impl NanoSpamApp {
         let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Instant)>();
         let mut sum_conf_time = Duration::ZERO;
 
-        let strategy = if args.change {
-            SpamStrategy::Change
-        } else {
-            SpamStrategy::SendReceive
-        };
-
-        let block_factory = Mutex::new(BlockFactory::new(
-            account_map,
-            args.blocks.unwrap_or(0),
-            strategy,
-        ));
 
         info!("Connecting to websocket...");
         let mut conf_receiver = ConfirmationReceiver::connect().await?;
@@ -232,7 +238,6 @@ impl NanoSpamApp {
                 track_confirmations(
                     rx_ws_msg,
                     &logic,
-                    &block_factory,
                     &ws_queue_len,
                     &mut sum_conf_time,
                     &current_bps,
@@ -243,7 +248,6 @@ impl NanoSpamApp {
             let cancel_blk = cancel_block_creation.clone();
             s.spawn(|| {
                 create_blocks(
-                    &block_factory,
                     tx_forks,
                     &logic,
                     &current_bps,
@@ -277,13 +281,12 @@ impl NanoSpamApp {
                     &logic,
                     cancel_tcp_recv,
                     args.unconfirmed,
-                    &block_factory,
                     args.drop_percentage,
                 ));
             });
         });
         let duration_secs = started.elapsed().as_secs_f64();
-        let created_blocks = block_factory.lock().unwrap().created();
+        let created_blocks = logic.lock().unwrap().block_factory.created();
         let cps = (created_blocks as f64 / duration_secs) as i32;
         info!("Confirming all blocks took {duration_secs:.2}s");
         info!("Confirmation rate: {cps} cps");
@@ -300,7 +303,6 @@ impl NanoSpamApp {
 }
 
 fn create_blocks(
-    block_factory: &Mutex<BlockFactory>,
     tx_forks: mpsc::Sender<Forks>,
     logic: &Mutex<SpamLogic>,
     current_bps: &AtomicUsize,
@@ -313,9 +315,9 @@ fn create_blocks(
     let clock = SteadyClock::default();
 
     while let Some(result) = {
-        let mut guard = block_factory.lock().unwrap();
         let is_fork = rng().random_bool(forks_percentage);
-        guard.create_next(is_fork)
+        let mut guard = logic.lock().unwrap();
+        guard.block_factory.create_next(is_fork)
     } {
         let BlockResult::Block(forks) = result else {
             yield_now();
@@ -351,7 +353,6 @@ async fn publish_blocks(
     logic: &Mutex<SpamLogic>,
     cancel_token: CancellationToken,
     unconfirmed: bool,
-    block_factory: &Mutex<BlockFactory>,
     drop_percentage: usize,
 ) {
     let mut serializer = MessageSerializer::new(protocol);
@@ -405,7 +406,7 @@ async fn publish_blocks(
             let mut logic = logic.lock().unwrap();
             if unconfirmed {
                 logic.delayed.confirmed(&hash, now);
-                block_factory.lock().unwrap().confirm(hash);
+                logic.block_factory.confirm(hash);
             }
             logic.high_prio_tracker.published(hash);
         }

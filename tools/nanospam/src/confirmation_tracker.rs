@@ -13,12 +13,11 @@ use tracing::info;
 use rsnano_types::BlockHash;
 use rsnano_websocket_messages::{BlockConfirmed, MessageEnvelope, Topic};
 
-use crate::domain::{spam_logic::SpamLogic, BlockFactory};
+use crate::domain::spam_logic::SpamLogic;
 
 pub(crate) fn track_confirmations(
     rx_ws_msg: Receiver<(MessageEnvelope, Instant)>,
     logic: &Mutex<SpamLogic>,
-    block_factory: &Mutex<BlockFactory>,
     ws_queue_len: &AtomicUsize,
     sum_conf_time_total: &mut Duration,
     current_bps: &AtomicUsize,
@@ -46,7 +45,7 @@ pub(crate) fn track_confirmations(
                         sum_conf_time += conf_time;
                         *sum_conf_time_total += conf_time;
                     }
-                    block_factory.lock().unwrap().confirm(block_hash);
+                    logic.block_factory.confirm(block_hash);
                 }
 
                 logic.high_prio_tracker.confirmed(block_hash);
