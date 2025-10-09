@@ -3,7 +3,6 @@ use rand::Rng;
 use rsnano_types::{Amount, Block, BlockHash, Link, PublicKey, StateBlockArgs, WorkNonce};
 
 use crate::domain::AccountMap;
-use std::sync::LazyLock;
 
 pub(crate) struct BlockFactory {
     max_blocks: usize,
@@ -34,8 +33,6 @@ impl Forks {
         }
     }
 }
-
-static NULL_BLOCK: LazyLock<Block> = LazyLock::new(|| Block::new_test_instance());
 
 impl BlockResult {
     #[allow(dead_code)]
@@ -212,12 +209,10 @@ mod tests {
 
         assert_eq!(account, initial_test_key().account());
         assert!(block_factory.account_map.contains(&destination));
-        assert!(
-            block_factory
-                .account_map
-                .get_receivable(&destination)
-                .is_some()
-        );
+        assert!(block_factory
+            .account_map
+            .get_receivable(&destination)
+            .is_some());
     }
 
     #[test]

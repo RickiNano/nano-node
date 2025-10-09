@@ -31,10 +31,10 @@ use rsnano_websocket_messages::MessageEnvelope;
 use crate::{
     confirmation_receiver::ConfirmationReceiver,
     confirmation_tracker::track_confirmations,
-    domain::{BlockFactory, BlockResult, DelayedBlocks, Forks, RateSpec, SpamStrategy},
+    domain::{spam_logic::SpamLogic, BlockFactory, BlockResult,  Forks, RateSpec, SpamStrategy},
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
-    high_prio_check::{HighPrioCheck, HighPrioTracker},
+    high_prio_check::{HighPrioCheck, },
     setup::{
         configure_nodes, create_account_map, get_genesis_hash, peering_port, rpc_port, start_nodes,
     },
@@ -151,7 +151,7 @@ impl NanoSpamApp {
             rpc_clients.push(rpc_client);
         }
         let genesis_rpc = &rpc_clients[0];
-        let delayed_blocks = Mutex::new(DelayedBlocks::new());
+        let logic = Mutex::new(SpamLogic::default());
 
         let mut node_handles = Vec::new();
 
@@ -160,9 +160,8 @@ impl NanoSpamApp {
         }
 
         let (tx_forks, rx_forks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
-        let high_prio_tracker = Mutex::new(HighPrioTracker::default());
         let mut high_prio_check =
-            HighPrioCheck::new(genesis_rpc, &delayed_blocks, &high_prio_tracker);
+            HighPrioCheck::new(genesis_rpc, &logic);
 
         if !args.attach && !args.sync {
             let genesis_wallet_id =
@@ -232,13 +231,12 @@ impl NanoSpamApp {
             s.spawn(|| {
                 track_confirmations(
                     rx_ws_msg,
-                    &delayed_blocks,
+                    &logic,
                     &block_factory,
                     &ws_queue_len,
                     &mut sum_conf_time,
                     &current_bps,
                     !args.unconfirmed,
-                    &high_prio_tracker,
                 )
             });
 
@@ -247,7 +245,7 @@ impl NanoSpamApp {
                 create_blocks(
                     &block_factory,
                     tx_forks,
-                    &delayed_blocks,
+                    &logic,
                     &current_bps,
                     rate_spec,
                     cancel_blk,
@@ -268,7 +266,7 @@ impl NanoSpamApp {
                 if !args.no_republish {
                     scope.spawn(republish_delayed_blocks(
                         tx_forks_clone,
-                        &delayed_blocks,
+                        &logic,
                         cancel_ws_recv,
                     ));
                 }
@@ -276,11 +274,10 @@ impl NanoSpamApp {
                     rx_forks,
                     tcp_writers,
                     protocol,
-                    &delayed_blocks,
+                    &logic,
                     cancel_tcp_recv,
                     args.unconfirmed,
                     &block_factory,
-                    &high_prio_tracker,
                     args.drop_percentage,
                 ));
             });
@@ -305,7 +302,7 @@ impl NanoSpamApp {
 fn create_blocks(
     block_factory: &Mutex<BlockFactory>,
     tx_forks: mpsc::Sender<Forks>,
-    delayed_blocks: &Mutex<DelayedBlocks>,
+    logic: &Mutex<SpamLogic>,
     current_bps: &AtomicUsize,
     rate_spec: RateSpec,
     cancel_token: CancellationToken,
@@ -330,9 +327,9 @@ fn create_blocks(
         }
 
         {
-            let mut delayed = delayed_blocks.lock().unwrap();
+            let mut l = logic.lock().unwrap();
             // TODO: support delayed forks too
-            delayed.insert(forks.block.clone());
+            l.delayed.insert(forks.block.clone());
         }
 
         tx_forks.blocking_send(forks).unwrap();
@@ -343,7 +340,7 @@ fn create_blocks(
             bps_start = Instant::now();
         }
     }
-    delayed_blocks.lock().unwrap().finished();
+    logic.lock().unwrap().delayed.finished();
     cancel_token.cancel();
 }
 
@@ -351,11 +348,10 @@ async fn publish_blocks(
     mut rx_forks: mpsc::Receiver<Forks>,
     mut tcp_streams: Vec<Vec<WriteHalf<TcpStream>>>,
     protocol: ProtocolInfo,
-    delayed_blocks: &Mutex<DelayedBlocks>,
+    logic: &Mutex<SpamLogic>,
     cancel_token: CancellationToken,
     unconfirmed: bool,
     block_factory: &Mutex<BlockFactory>,
-    prio_tracker: &Mutex<HighPrioTracker>,
     drop_percentage: usize,
 ) {
     let mut serializer = MessageSerializer::new(protocol);
@@ -375,7 +371,7 @@ async fn publish_blocks(
 
         let now = Instant::now();
         // TODO support delayed forks
-        delayed_blocks.lock().unwrap().published(&hash, now);
+        logic.lock().unwrap().delayed.published(&hash, now);
 
         let mut counter = 0;
         tokio_scoped::scope(|s| {
@@ -405,29 +401,32 @@ async fn publish_blocks(
             writer_index = 0;
         }
 
-        if unconfirmed {
-            delayed_blocks.lock().unwrap().confirmed(&hash, now);
-            block_factory.lock().unwrap().confirm(hash);
+        {
+            let mut logic = logic.lock().unwrap();
+            if unconfirmed {
+                logic.delayed.confirmed(&hash, now);
+                block_factory.lock().unwrap().confirm(hash);
+            }
+            logic.high_prio_tracker.published(hash);
         }
-        prio_tracker.lock().unwrap().published(hash);
     }
     cancel_token.cancel();
 }
 
 async fn republish_delayed_blocks(
     tx_forks: mpsc::Sender<Forks>,
-    delayed_blocks: &Mutex<DelayedBlocks>,
+    logic: &Mutex<SpamLogic>,
     cancel_token: CancellationToken,
 ) {
     loop {
         while let Some(block) = {
             let now = Instant::now();
-            delayed_blocks.lock().unwrap().next(now)
+            logic.lock().unwrap().delayed.next(now)
         } {
             tx_forks.send(Forks::new(block)).await.unwrap();
         }
 
-        if delayed_blocks.lock().unwrap().is_finished() {
+        if logic.lock().unwrap().delayed.is_finished() {
             break;
         }
 

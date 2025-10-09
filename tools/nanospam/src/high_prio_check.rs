@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use tokio::{select, sync::mpsc::Sender, time::sleep};
 use tracing::info;
 
-use crate::domain::{DelayedBlocks, Forks};
+use crate::domain::{spam_logic::SpamLogic, Forks};
 use rsnano_rpc_client::NanoRpcClient;
 use rsnano_rpc_messages::SendArgs;
 use rsnano_types::{
@@ -23,25 +23,19 @@ const INITIAL_ACCOUNT_BALANCE: Amount = Amount::millinano(1500); // bucket 16
 /// Periodically publishes a high priority block and tracks confirmation time
 pub(crate) struct HighPrioCheck<'a> {
     rpc_client: &'a NanoRpcClient,
-    delayed_blocks: &'a Mutex<DelayedBlocks>,
+    logic: &'a Mutex<SpamLogic>,
     /// prio account => key + frontier hash + height
     accounts: HashMap<Account, (PrivateKey, BlockHash, u64)>,
-    tracker: &'a Mutex<HighPrioTracker>,
 }
 
 impl<'a> HighPrioCheck<'a> {
-    pub(crate) fn new(
-        rpc_client: &'a NanoRpcClient,
-        delayed_blocks: &'a Mutex<DelayedBlocks>,
-        tracker: &'a Mutex<HighPrioTracker>,
-    ) -> Self {
+    pub(crate) fn new(rpc_client: &'a NanoRpcClient, logic: &'a Mutex<SpamLogic>) -> Self {
         Self {
             rpc_client,
-            delayed_blocks,
+            logic,
             accounts: prio_account_keys()
                 .map(|k| (k.account(), (k, BlockHash::ZERO, 0)))
                 .collect(),
-            tracker,
         }
     }
 
@@ -147,17 +141,17 @@ impl<'a> HighPrioCheck<'a> {
             .into();
 
             let account = key.account();
+            let hash = block.hash();
 
             {
-                let mut delayed = self.delayed_blocks.lock().unwrap();
-                if delayed.is_finished() {
+                let mut logic = self.logic.lock().unwrap();
+                if logic.delayed.is_finished() {
                     break;
                 }
-                delayed.insert(block.clone());
+                logic.delayed.insert(block.clone());
+                logic.high_prio_tracker.enqueued(hash);
             }
 
-            let hash = block.hash();
-            self.tracker.lock().unwrap().enqueued(hash);
             tx_forks.send(Forks::new(block)).await.unwrap();
             let (_, frontier, height) = self.accounts.get_mut(&account).unwrap();
             *frontier = hash;

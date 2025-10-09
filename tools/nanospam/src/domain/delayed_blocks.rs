@@ -9,6 +9,7 @@ use rsnano_types::{Block, BlockHash};
 
 const DELAY_LIMIT: Duration = Duration::from_secs(10);
 
+#[derive(Default)]
 pub(crate) struct DelayedBlocks {
     /// block + publish timestamp
     blocks: FxHashMap<BlockHash, PublishInfo>,
@@ -18,11 +19,7 @@ pub(crate) struct DelayedBlocks {
 
 impl DelayedBlocks {
     pub(crate) fn new() -> Self {
-        Self {
-            blocks: FxHashMap::default(),
-            by_time: BTreeMap::new(),
-            finished: false,
-        }
+        Default::default()
     }
 
     pub fn next(&mut self, now: Instant) -> Option<Block> {
