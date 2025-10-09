@@ -57,7 +57,6 @@ impl NanoSpamApp {
     {
         self.tracing_init.init();
         let args = Args::try_parse_from(args)?;
-        let set_up_new_nodes = !args.attach && !args.sync;
         let clock = SteadyClock::default();
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
@@ -90,7 +89,7 @@ impl NanoSpamApp {
             node_handles = start_nodes(&args, data_dir, &rpc_clients).await
         }
 
-        let genesis_wallet_id = if set_up_new_nodes {
+        let genesis_wallet_id = if args.set_up_new_nodes() {
             create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await
         } else {
             WalletId::ZERO
@@ -101,7 +100,7 @@ impl NanoSpamApp {
         let (tx_blocks, rx_blocks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
         let mut high_prio_check = HighPrioCheck::new(genesis_rpc, &logic);
 
-        if set_up_new_nodes {
+        if args.set_up_new_nodes() {
             high_prio_check
                 .create_prio_accounts(genesis_wallet_id)
                 .await?;
@@ -177,7 +176,6 @@ impl NanoSpamApp {
                     protocol,
                     &logic,
                     cancel_tcp_recv,
-                    args.unconfirmed,
                     args.drop_probability(),
                     &clock,
                 ));
@@ -235,19 +233,18 @@ fn enqueue_blocks(logic: &Mutex<SpamLogic>, tx_blocks: mpsc::Sender<Forks>, cloc
 }
 
 async fn publish_blocks(
-    mut rx_forks: mpsc::Receiver<Forks>,
+    mut rx_blocks: mpsc::Receiver<Forks>,
     mut tcp_streams: Vec<Vec<WriteHalf<TcpStream>>>,
     protocol: ProtocolInfo,
     logic: &Mutex<SpamLogic>,
     cancel_token: CancellationToken,
-    unconfirmed: bool,
     drop_probability: f64,
     clock: &SteadyClock,
 ) {
     let mut serializer = MessageSerializer::new(protocol);
     let mut fork_serializer = MessageSerializer::new(protocol);
     let mut writer_index = 0;
-    while let Some(forks) = rx_forks.recv().await {
+    while let Some(forks) = rx_blocks.recv().await {
         let block = forks.block.clone();
         let hash = block.hash();
         let publish = Message::Publish(Publish::new_from_originator(block));
@@ -293,13 +290,9 @@ async fn publish_blocks(
             writer_index = 0;
         }
 
-        {
-            let mut logic = logic.lock().unwrap();
-            if unconfirmed {
-                logic.delayed.confirmed(&hash, now);
-                logic.block_factory.confirm(&hash);
-            }
-            logic.high_prio_tracker.published(hash);
+        let was_high_prio = logic.lock().unwrap().published(&hash, now);
+        if was_high_prio {
+            tracing::info!("High prio block published: {hash}");
         }
     }
     cancel_token.cancel();
@@ -359,8 +352,14 @@ fn track_confirmations(
             let data: BlockConfirmed = serde_json::from_value(msg.message.unwrap()).unwrap();
             let block_hash = BlockHash::decode_hex(data.hash).unwrap();
 
-            let mut logic = logic.lock().unwrap();
-            logic.confirmed(&block_hash, timestamp);
+            let high_prio_conf_time = logic.lock().unwrap().confirmed(&block_hash, timestamp);
+
+            if let Some(time) = high_prio_conf_time {
+                tracing::info!(
+                    "High prio block confirmed: {block_hash}. Conf time: {} ms",
+                    time.as_millis()
+                );
+            }
         }
     }
 }

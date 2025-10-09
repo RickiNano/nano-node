@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::Mutex,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use anyhow::anyhow;
@@ -9,6 +9,7 @@ use tokio::{select, sync::mpsc::Sender, time::sleep};
 use tracing::info;
 
 use crate::domain::{Forks, spam_logic::SpamLogic};
+use rsnano_nullable_clock::Timestamp;
 use rsnano_rpc_client::NanoRpcClient;
 use rsnano_rpc_messages::SendArgs;
 use rsnano_types::{
@@ -171,7 +172,7 @@ fn account_key(index: usize) -> PrivateKey {
 #[derive(Default)]
 pub(crate) struct HighPrioTracker {
     enqueued: HashSet<BlockHash>,
-    published: HashMap<BlockHash, Instant>,
+    published: HashMap<BlockHash, Timestamp>,
 }
 
 impl HighPrioTracker {
@@ -179,19 +180,20 @@ impl HighPrioTracker {
         self.enqueued.insert(hash);
     }
 
-    pub(crate) fn published(&mut self, hash: BlockHash) {
-        if self.enqueued.remove(&hash) {
-            self.published.insert(hash, Instant::now());
-            info!("High prio block published: {hash}");
+    pub(crate) fn published(&mut self, hash: &BlockHash, now: Timestamp) -> bool {
+        if self.enqueued.remove(hash) {
+            self.published.insert(*hash, now);
+            true
+        } else {
+            false
         }
     }
 
-    pub(crate) fn confirmed(&mut self, hash: &BlockHash) {
+    pub(crate) fn confirmed(&mut self, hash: &BlockHash, now: Timestamp) -> Option<Duration> {
         if let Some(published) = self.published.remove(hash) {
-            info!(
-                "High prio block confirmed: {hash}. Conf time: {} ms",
-                published.elapsed().as_millis()
-            );
+            Some(published.elapsed(now))
+        } else {
+            None
         }
     }
 }

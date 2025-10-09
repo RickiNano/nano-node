@@ -90,7 +90,19 @@ impl SpamLogic {
         Some(BlockResult::Block(next))
     }
 
-    pub(crate) fn confirmed(&mut self, block_hash: &BlockHash, timestamp: Timestamp) {
+    pub(crate) fn published(&mut self, hash: &BlockHash, now: Timestamp) -> bool {
+        if !self.spec.track_confirmations {
+            self.delayed.confirmed(hash, now);
+            self.block_factory.confirm(hash);
+        }
+        self.high_prio_tracker.published(hash, now)
+    }
+
+    pub(crate) fn confirmed(
+        &mut self,
+        block_hash: &BlockHash,
+        timestamp: Timestamp,
+    ) -> Option<Duration> {
         if self.spec.track_confirmations {
             let conf_time = self.delayed.confirmed(block_hash, timestamp);
 
@@ -106,7 +118,7 @@ impl SpamLogic {
             self.block_factory.confirm(block_hash);
         }
 
-        self.high_prio_tracker.confirmed(block_hash);
+        self.high_prio_tracker.confirmed(block_hash, timestamp)
     }
 
     pub(crate) fn reset_cps_counter(&mut self, now: Timestamp) {

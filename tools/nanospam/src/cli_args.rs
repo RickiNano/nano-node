@@ -13,7 +13,7 @@ pub(crate) struct Args {
     #[arg(long, default_value_t = false)]
     pub setup_only: bool,
 
-    /// Attach to an already running node
+    /// Attach to an already running node that was set up by a previous nanospam run
     #[arg(long, default_value_t = false)]
     pub attach: bool,
 
@@ -95,6 +95,10 @@ impl Args {
 
     pub(crate) fn drop_probability(&self) -> f64 {
         self.drop_percentage as f64 / 100.0
+    }
+
+    pub(crate) fn set_up_new_nodes(&self) -> bool {
+        !self.attach && !self.sync
     }
 
     fn strategy(&self) -> SpamStrategy {
