@@ -6,6 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use anyhow::anyhow;
 use clap::Parser;
 use num_format::{Locale, ToFormattedString};
 use rand::{Rng, rng};
@@ -34,6 +35,7 @@ use crate::{
     frontiers_sync::sync_frontiers,
     handshake::perform_handshake,
     high_prio_check::HighPrioCheck,
+    node_lifetime::NodeLifetime,
     setup::{
         configure_nodes, create_account_map, get_genesis_hash, peering_port, rpc_port, start_nodes,
     },
@@ -45,55 +47,58 @@ const CONNECTIONS_PER_NODE: usize = 4;
 
 #[derive(Default)]
 pub(crate) struct NanoSpamApp {
-    pub tracing_init: TracingInitializer,
-    pub tcp_stream_factory: TcpStreamFactory,
+    tracing_init: TracingInitializer,
+    tcp_stream_factory: TcpStreamFactory,
+    clock: SteadyClock,
+    rpc_clients: Vec<NanoRpcClient>,
 }
 
 impl NanoSpamApp {
-    pub async fn run<I, T>(&self, args: I) -> anyhow::Result<()>
+    pub async fn run<I, T>(&mut self, args: I) -> anyhow::Result<()>
     where
         I: IntoIterator<Item = T>,
         T: Into<OsString> + Clone,
     {
         self.tracing_init.init();
         let args = Args::try_parse_from(args)?;
-        let clock = SteadyClock::default();
 
         let protocol = ProtocolInfo::default_for(Networks::NanoTestNetwork);
         let genesis_hash = get_genesis_hash();
 
-        let mut data_dir = dirs::home_dir().unwrap();
+        let mut data_dir = dirs::home_dir().ok_or_else(|| anyhow!("No home dir found"))?;
         data_dir.push("NanoSpam");
 
         let mut account_map = create_account_map(&data_dir, args.accounts);
 
-        if !args.attach && !args.sync {
+        if args.set_up_new_nodes() {
             configure_nodes(&args, &data_dir);
         }
 
-        let mut rpc_clients = Vec::new();
         for i in 0..args.prs {
             let rpc_client =
                 NanoRpcClient::new(format!("http://[::1]:{}", rpc_port(i)).parse().unwrap());
-            rpc_clients.push(rpc_client);
-        }
-        let genesis_rpc = &rpc_clients[0];
-
-        if args.sync {
-            sync_frontiers(&rpc_clients, &mut account_map).await;
+            self.rpc_clients.push(rpc_client);
         }
 
-        let mut node_handles = Vec::new();
+        let genesis_rpc = &self.rpc_clients[0];
+        let mut _node_lifetime = NodeLifetime::default();
 
         if !args.attach {
-            node_handles = start_nodes(&args, data_dir, &rpc_clients).await
+            let node_handles = start_nodes(&args, data_dir, &self.rpc_clients).await;
+            if args.kill_nodes() {
+                _node_lifetime = NodeLifetime::new(node_handles);
+            }
         }
 
         let genesis_wallet_id = if args.set_up_new_nodes() {
-            create_wallets(&rpc_clients, genesis_rpc, &mut account_map).await
+            create_wallets(&self.rpc_clients, genesis_rpc, &mut account_map).await
         } else {
             WalletId::ZERO
         };
+
+        if args.sync {
+            sync_frontiers(&self.rpc_clients, &mut account_map).await;
+        }
 
         let logic = Mutex::new(SpamLogic::new(account_map, args.spam_spec()?));
 
@@ -151,20 +156,20 @@ impl NanoSpamApp {
         let started = Instant::now();
         std::thread::scope(|s| {
             s.spawn(|| {
-                enqueue_blocks(&logic, tx_blocks, &clock);
+                enqueue_blocks(&logic, tx_blocks, &self.clock);
                 cancel_blk.cancel();
             });
 
             s.spawn(|| track_confirmations(rx_ws_msg, &logic));
 
             tokio_scoped::scope(|scope| {
-                scope.spawn(log_status(&logic, &clock, cancel_nanospam.clone()));
+                scope.spawn(log_status(&logic, &self.clock, cancel_nanospam.clone()));
 
                 if args.high_prio_check() {
                     scope.spawn(high_prio_check.run(cancel_block_creation, tx_forks_clone.clone()));
                 }
 
-                scope.spawn(conf_receiver.run(cancel_nanospam.clone(), tx_ws_msg, &clock));
+                scope.spawn(conf_receiver.run(cancel_nanospam.clone(), tx_ws_msg, &self.clock));
                 scope.spawn(receive_messages(
                     tcp_readers,
                     protocol,
@@ -177,14 +182,14 @@ impl NanoSpamApp {
                     &logic,
                     cancel_tcp_recv,
                     args.drop_probability(),
-                    &clock,
+                    &self.clock,
                 ));
                 if !args.no_republish {
                     scope.spawn(republish_delayed_blocks(
                         tx_forks_clone,
                         &logic,
                         cancel_nanospam,
-                        &clock,
+                        &self.clock,
                     ));
                 }
             });
@@ -198,11 +203,6 @@ impl NanoSpamApp {
         let conf_time = logic.sum_conf_time_total.as_millis() / created_blocks as u128;
         info!("Average conf time: {conf_time} ms");
 
-        if !args.no_kill {
-            for mut child in node_handles {
-                child.kill().unwrap();
-            }
-        }
         Ok(())
     }
 }

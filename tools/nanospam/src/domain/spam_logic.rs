@@ -1,6 +1,6 @@
-use crate::{
-    domain::{AccountMap, BlockFactory, BlockResult, DelayedBlocks, Forks, RateSpec, SpamStrategy},
-    high_prio_check::HighPrioTracker,
+use crate::domain::{
+    AccountMap, BlockFactory, BlockResult, DelayedBlocks, Forks, RateSpec, SpamStrategy,
+    high_prio_tracker::HighPrioTracker,
 };
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::Timestamp;
@@ -20,7 +20,7 @@ pub(crate) struct SpamLogic {
     pub(crate) high_prio_tracker: HighPrioTracker,
     pub(crate) block_factory: BlockFactory,
     pub(crate) current_bps: usize,
-    limiter: TokenBucket,
+    bps_limiter: TokenBucket,
     next_block: Option<Forks>,
     bps_start: Option<Timestamp>,
     spec: SpamSpec,
@@ -38,7 +38,7 @@ impl SpamLogic {
             high_prio_tracker: Default::default(),
             block_factory: BlockFactory::new(account_map, spec.max_blocks, spec.spam_strategy),
             current_bps: spec.rate.initial_bps,
-            limiter: TokenBucket::new(spec.rate.initial_bps),
+            bps_limiter: TokenBucket::new(spec.rate.initial_bps),
             next_block: None,
             bps_start: None,
             spec,
@@ -74,7 +74,7 @@ impl SpamLogic {
             }
         }
 
-        if !self.limiter.try_consume(1, now) {
+        if !self.bps_limiter.try_consume(1, now) {
             return Some(BlockResult::Waiting);
         }
 
@@ -83,7 +83,7 @@ impl SpamLogic {
 
         if self.bps_start.unwrap().elapsed(now) >= self.spec.rate.interval {
             self.current_bps += self.spec.rate.increment;
-            self.limiter.set_limit(self.current_bps);
+            self.bps_limiter.set_limit(self.current_bps);
             self.bps_start = Some(now);
         }
 

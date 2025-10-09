@@ -5,6 +5,7 @@ mod domain;
 mod frontiers_sync;
 mod handshake;
 mod high_prio_check;
+pub(crate) mod node_lifetime;
 mod setup;
 mod wallets_factory;
 

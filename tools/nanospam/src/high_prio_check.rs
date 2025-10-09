@@ -1,22 +1,18 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Mutex,
-    time::Duration,
-};
+use std::{collections::HashMap, sync::Mutex, time::Duration};
 
 use anyhow::anyhow;
 use tokio::{select, sync::mpsc::Sender, time::sleep};
+use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-use crate::domain::{Forks, spam_logic::SpamLogic};
-use rsnano_nullable_clock::Timestamp;
 use rsnano_rpc_client::NanoRpcClient;
 use rsnano_rpc_messages::SendArgs;
 use rsnano_types::{
     Account, Amount, Block, BlockHash, JsonBlock, Link, PrivateKey, PublicKey, RawKey,
     StateBlockArgs, WalletId,
 };
-use tokio_util::sync::CancellationToken;
+
+use crate::domain::{Forks, spam_logic::SpamLogic};
 
 const PRIO_ACCOUNTS: usize = 20;
 const INITIAL_ACCOUNT_BALANCE: Amount = Amount::millinano(1500); // bucket 16
@@ -167,33 +163,4 @@ fn prio_account_keys() -> impl Iterator<Item = PrivateKey> {
 
 fn account_key(index: usize) -> PrivateKey {
     RawKey::from((1000 + index) as u64).into()
-}
-
-#[derive(Default)]
-pub(crate) struct HighPrioTracker {
-    enqueued: HashSet<BlockHash>,
-    published: HashMap<BlockHash, Timestamp>,
-}
-
-impl HighPrioTracker {
-    pub(crate) fn enqueued(&mut self, hash: BlockHash) {
-        self.enqueued.insert(hash);
-    }
-
-    pub(crate) fn published(&mut self, hash: &BlockHash, now: Timestamp) -> bool {
-        if self.enqueued.remove(hash) {
-            self.published.insert(*hash, now);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub(crate) fn confirmed(&mut self, hash: &BlockHash, now: Timestamp) -> Option<Duration> {
-        if let Some(published) = self.published.remove(hash) {
-            Some(published.elapsed(now))
-        } else {
-            None
-        }
-    }
 }

@@ -1,6 +1,7 @@
 mod account_map;
 mod block_factory;
 mod delayed_blocks;
+pub(crate) mod high_prio_tracker;
 mod rate_spec;
 pub(crate) mod spam_logic;
 

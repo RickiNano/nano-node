@@ -89,6 +89,10 @@ impl Args {
         !self.no_prio
     }
 
+    pub(crate) fn kill_nodes(&self) -> bool {
+        !self.no_kill
+    }
+
     pub(crate) fn fork_probability(&self) -> f64 {
         self.fork_percentage as f64 / 100.0
     }
