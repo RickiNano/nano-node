@@ -118,22 +118,34 @@ pub(crate) struct Args {
 
 impl Args {
     pub(crate) fn spam_spec(&self) -> anyhow::Result<SpamSpec> {
-        let rate: RateSpec = self.rate.as_deref().unwrap_or(DEFAULT_RATE).parse()?;
+        Ok(SpamSpec {
+            spam_strategy: self.strategy(),
+            max_blocks: self.blocks.unwrap_or(0),
+            rate: self.rate_spec()?,
+            fork_probability: self.fork_probability(),
+            track_confirmations: !self.unconfirmed,
+        })
+    }
 
-        let spam_strategy = if self.change {
+    fn fork_probability(&self) -> f64 {
+        self.fork_percentage as f64 / 100.0
+    }
+
+    fn drop_probability(&self) -> f64 {
+        self.drop_percentage as f64 / 100.0
+    }
+
+    fn strategy(&self) -> SpamStrategy {
+        if self.change {
             SpamStrategy::Change
         } else {
             SpamStrategy::SendReceive
-        };
+        }
+    }
 
-        let fork_propability = self.fork_percentage as f64 / 100.0;
-
-        Ok(SpamSpec {
-            spam_strategy,
-            max_blocks: self.blocks.unwrap_or(0),
-            rate,
-            fork_propability,
-        })
+    fn rate_spec(&self) -> Result<RateSpec, anyhow::Error> {
+        let rate: RateSpec = self.rate.as_deref().unwrap_or(DEFAULT_RATE).parse()?;
+        Ok(rate)
     }
 }
 
@@ -191,7 +203,7 @@ impl NanoSpamApp {
 
         let logic = Mutex::new(SpamLogic::new(account_map, args.spam_spec()?));
 
-        let (tx_forks, rx_forks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
+        let (tx_blocks, rx_blocks) = mpsc::channel::<Forks>(MAX_BUFFERED_BLOCKS);
         let mut high_prio_check = HighPrioCheck::new(genesis_rpc, &logic);
 
         if set_up_new_nodes {
@@ -229,7 +241,7 @@ impl NanoSpamApp {
             tcp_readers.push(node_readers);
         }
 
-        let tx_forks_clone = tx_forks.clone();
+        let tx_forks_clone = tx_blocks.clone();
         let cancel_block_creation = CancellationToken::new();
         let cancel_blk = cancel_block_creation.clone();
         let cancel_tcp_recv = CancellationToken::new();
@@ -237,28 +249,20 @@ impl NanoSpamApp {
 
         let ws_queue_len = AtomicUsize::new(0);
         let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Instant)>();
-        let mut sum_conf_time = Duration::ZERO;
 
         info!("Connecting to websocket...");
         let mut conf_receiver = ConfirmationReceiver::connect().await?;
+
         info!("Starting with {} BPS", logic.lock().unwrap().current_bps);
 
         let started = Instant::now();
         std::thread::scope(|s| {
             s.spawn(|| {
-                track_confirmations(
-                    rx_ws_msg,
-                    &logic,
-                    &ws_queue_len,
-                    &mut sum_conf_time,
-                    !args.unconfirmed,
-                )
-            });
-
-            s.spawn(|| {
-                create_blocks(tx_forks, &logic);
+                create_blocks(&logic, tx_blocks);
                 cancel_blk.cancel();
             });
+
+            s.spawn(|| track_confirmations(rx_ws_msg, &logic, &ws_queue_len));
 
             tokio_scoped::scope(|scope| {
                 if !args.no_prio {
@@ -278,22 +282,23 @@ impl NanoSpamApp {
                     ));
                 }
                 scope.spawn(publish_blocks(
-                    rx_forks,
+                    rx_blocks,
                     tcp_writers,
                     protocol,
                     &logic,
                     cancel_tcp_recv,
                     args.unconfirmed,
-                    args.drop_percentage,
+                    args.drop_probability(),
                 ));
             });
         });
         let duration_secs = started.elapsed().as_secs_f64();
-        let created_blocks = logic.lock().unwrap().block_factory.created();
+        let logic = logic.lock().unwrap();
+        let created_blocks = logic.block_factory.created();
         let cps = (created_blocks as f64 / duration_secs) as i32;
         info!("Confirming all blocks took {duration_secs:.2}s");
         info!("Confirmation rate: {cps} cps");
-        let conf_time = sum_conf_time.as_millis() / created_blocks as u128;
+        let conf_time = logic.sum_conf_time.as_millis() / created_blocks as u128;
         info!("Average conf time: {conf_time} ms");
 
         if !args.no_kill {
@@ -305,7 +310,7 @@ impl NanoSpamApp {
     }
 }
 
-fn create_blocks(tx_forks: mpsc::Sender<Forks>, logic: &Mutex<SpamLogic>) {
+fn create_blocks(logic: &Mutex<SpamLogic>, tx_blocks: mpsc::Sender<Forks>) {
     let clock = SteadyClock::default();
 
     loop {
@@ -319,7 +324,7 @@ fn create_blocks(tx_forks: mpsc::Sender<Forks>, logic: &Mutex<SpamLogic>) {
 
         match result {
             Some(BlockResult::Block(forks)) => {
-                tx_forks.blocking_send(forks).unwrap();
+                tx_blocks.blocking_send(forks).unwrap();
             }
             Some(BlockResult::Waiting) => {
                 yield_now();
@@ -339,7 +344,7 @@ async fn publish_blocks(
     logic: &Mutex<SpamLogic>,
     cancel_token: CancellationToken,
     unconfirmed: bool,
-    drop_percentage: usize,
+    drop_probability: f64,
 ) {
     let mut serializer = MessageSerializer::new(protocol);
     let mut fork_serializer = MessageSerializer::new(protocol);
@@ -363,7 +368,8 @@ async fn publish_blocks(
         let mut counter = 0;
         tokio_scoped::scope(|s| {
             for stream in &mut tcp_streams {
-                if drop_percentage > 0 && rng().random_range(0..=100) <= drop_percentage {
+                if rng().random_bool(drop_probability) {
+                    // drop this transmission
                     continue;
                 }
 
@@ -392,7 +398,7 @@ async fn publish_blocks(
             let mut logic = logic.lock().unwrap();
             if unconfirmed {
                 logic.delayed.confirmed(&hash, now);
-                logic.block_factory.confirm(hash);
+                logic.block_factory.confirm(&hash);
             }
             logic.high_prio_tracker.published(hash);
         }

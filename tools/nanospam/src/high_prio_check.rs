@@ -186,8 +186,8 @@ impl HighPrioTracker {
         }
     }
 
-    pub(crate) fn confirmed(&mut self, hash: BlockHash) {
-        if let Some(published) = self.published.remove(&hash) {
+    pub(crate) fn confirmed(&mut self, hash: &BlockHash) {
+        if let Some(published) = self.published.remove(hash) {
             info!(
                 "High prio block confirmed: {hash}. Conf time: {} ms",
                 published.elapsed().as_millis()

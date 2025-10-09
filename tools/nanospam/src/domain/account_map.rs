@@ -193,8 +193,8 @@ impl AccountMap {
         );
     }
 
-    pub fn confirm(&mut self, hash: BlockHash) {
-        let Some(entry) = self.unconfirmed.remove(&hash) else {
+    pub fn confirm(&mut self, hash: &BlockHash) {
+        let Some(entry) = self.unconfirmed.remove(hash) else {
             return;
         };
 
@@ -204,15 +204,15 @@ impl AccountMap {
 
         if let Some(dest) = entry.destination
             && let Some(entries) = self.receivable.get(&dest)
-            && let Some((_, amount)) = entries.iter().find(|(h, _)| *h == hash)
+            && let Some((_, amount)) = entries.iter().find(|(h, _)| h == hash)
         {
-            self.confirmed_receivable.insert((dest, hash), *amount);
+            self.confirmed_receivable.insert((dest, *hash), *amount);
         }
 
         let Some(state) = self.account_states.get_mut(&entry.source) else {
             return;
         };
-        state.confirmed_frontier = hash;
+        state.confirmed_frontier = *hash;
         if state.confirmed() {
             self.confirmed_accounts.insert(entry.source);
         }
@@ -299,7 +299,7 @@ mod tests {
         map.add_unopened(dest_key.clone());
 
         map.process_send(TEST_GENESIS_ACCOUNT, dest_account, send_hash, amount, None);
-        map.confirm(send_hash);
+        map.confirm(&send_hash);
 
         assert_eq!(map.get_receivable(&dest_account), Some((send_hash, amount)));
         assert_eq!(
@@ -330,9 +330,9 @@ mod tests {
             amount,
             None,
         );
-        map.confirm(send_genesis_hash);
+        map.confirm(&send_genesis_hash);
         map.process_receive(key.account(), send_genesis_hash, receive_hash, None);
-        map.confirm(receive_hash);
+        map.confirm(&receive_hash);
         map.process_send(
             key.account(),
             key.account(),
@@ -340,7 +340,7 @@ mod tests {
             Amount::nano(1),
             None,
         );
-        map.confirm(send_hash);
+        map.confirm(&send_hash);
 
         assert_eq!(
             map.state(&key.account()).unwrap().balance,
@@ -363,9 +363,9 @@ mod tests {
         map.add_unopened(dest_key.clone());
 
         map.process_send(TEST_GENESIS_ACCOUNT, dest_account, send_hash, amount, None);
-        map.confirm(send_hash);
+        map.confirm(&send_hash);
         map.process_receive(dest_account, send_hash, receive_hash, None);
-        map.confirm(receive_hash);
+        map.confirm(&receive_hash);
 
         assert!(map.next_receivable().is_none());
         assert_eq!(map.state(&dest_account).unwrap().balance, amount);

@@ -4,12 +4,15 @@ use crate::{
 };
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::Timestamp;
+use rsnano_types::BlockHash;
+use std::time::{Duration, Instant};
 
 pub(crate) struct SpamSpec {
     pub(crate) spam_strategy: SpamStrategy,
     pub(crate) max_blocks: usize,
     pub(crate) rate: RateSpec,
-    pub(crate) fork_propability: f64,
+    pub(crate) fork_probability: f64,
+    pub(crate) track_confirmations: bool,
 }
 
 pub(crate) struct SpamLogic {
@@ -21,6 +24,10 @@ pub(crate) struct SpamLogic {
     next_block: Option<Forks>,
     bps_start: Option<Timestamp>,
     spec: SpamSpec,
+    pub(crate) total: usize,
+    pub(crate) confirmed: usize,
+    pub(crate) sum_conf_time: Duration,
+    sum_conf_time_total: Duration,
 }
 
 impl SpamLogic {
@@ -34,11 +41,15 @@ impl SpamLogic {
             next_block: None,
             bps_start: None,
             spec,
+            total: 0,
+            confirmed: 0,
+            sum_conf_time: Duration::ZERO,
+            sum_conf_time_total: Duration::ZERO,
         }
     }
 
     pub(crate) fn fork_propability(&self) -> f64 {
-        self.spec.fork_propability
+        self.spec.fork_probability
     }
 
     pub(crate) fn next_block(&mut self, is_fork: bool, now: Timestamp) -> Option<BlockResult> {
@@ -65,9 +76,8 @@ impl SpamLogic {
             return Some(BlockResult::Waiting);
         }
 
-        let forks = self.next_block.take().unwrap();
-        self.delayed.insert(forks.block.clone()); // TODO: handle forks!
-        //
+        let next = self.next_block.take().unwrap();
+        self.delayed.insert(next.block.clone()); // TODO: handle forks!
 
         if self.bps_start.unwrap().elapsed(now) >= self.spec.rate.interval {
             self.current_bps += self.spec.rate.increment;
@@ -75,6 +85,27 @@ impl SpamLogic {
             self.bps_start = Some(now);
         }
 
-        Some(BlockResult::Block(forks))
+        Some(BlockResult::Block(next))
+    }
+
+    pub(crate) fn confirmed(&mut self, block_hash: &BlockHash, timestamp: Instant) {
+        if self.spec.track_confirmations {
+            let conf_time = self.delayed.confirmed(block_hash, timestamp);
+
+            if let Some(conf_time) = conf_time {
+                self.confirmed += 1;
+                self.total += 1;
+                self.sum_conf_time += conf_time;
+                self.sum_conf_time_total += conf_time;
+            }
+            self.block_factory.confirm(block_hash);
+        }
+
+        self.high_prio_tracker.confirmed(block_hash);
+    }
+
+    pub(crate) fn reset_cps_counter(&mut self) {
+        self.confirmed = 0;
+        self.sum_conf_time = Duration::ZERO;
     }
 }

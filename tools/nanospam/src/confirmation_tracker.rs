@@ -19,13 +19,8 @@ pub(crate) fn track_confirmations(
     rx_ws_msg: Receiver<(MessageEnvelope, Instant)>,
     logic: &Mutex<SpamLogic>,
     ws_queue_len: &AtomicUsize,
-    sum_conf_time_total: &mut Duration,
-    should_track: bool,
 ) {
-    let mut total = 0;
-    let mut confirmed = 0;
     let mut start = Instant::now();
-    let mut sum_conf_time = Duration::ZERO;
     let mut last_log = Instant::now();
     while let Ok((msg, timestamp)) = rx_ws_msg.recv() {
         let len = ws_queue_len.fetch_sub(1, Ordering::Relaxed);
@@ -33,40 +28,28 @@ pub(crate) fn track_confirmations(
             let data: BlockConfirmed = serde_json::from_value(msg.message.unwrap()).unwrap();
             let block_hash = BlockHash::decode_hex(data.hash).unwrap();
 
-            {
-                let mut logic = logic.lock().unwrap();
-                if should_track {
-                    let conf_time = logic.delayed.confirmed(&block_hash, timestamp);
-
-                    if let Some(conf_time) = conf_time {
-                        confirmed += 1;
-                        total += 1;
-                        sum_conf_time += conf_time;
-                        *sum_conf_time_total += conf_time;
-                    }
-                    logic.block_factory.confirm(block_hash);
-                }
-
-                logic.high_prio_tracker.confirmed(block_hash);
-            }
+            let mut logic = logic.lock().unwrap();
+            logic.confirmed(&block_hash, timestamp);
 
             if last_log.elapsed() > Duration::from_secs(1) {
-                let cps = (confirmed as f64 / start.elapsed().as_secs_f64()) as i32;
-                let avg_conf_time = if confirmed == 0 {
+                let cps = (logic.confirmed as f64 / start.elapsed().as_secs_f64()) as i32;
+                let avg_conf_time = if logic.confirmed == 0 {
                     0
                 } else {
-                    sum_conf_time.as_millis() / confirmed
+                    logic.sum_conf_time.as_millis() / logic.confirmed as u128
                 };
-                let bps = logic.lock().unwrap().current_bps;
+                let bps = logic.current_bps;
+                let total = logic.total;
+                logic.reset_cps_counter();
+                drop(logic);
+
                 info!(
                     "Confirmed {} blocks | {} bps | {} cps | avg conf time: {avg_conf_time} ms | ws queue: {len}",
                     total.to_formatted_string(&Locale::en),
                     bps.to_formatted_string(&Locale::en),
                     cps.to_formatted_string(&Locale::en),
                 );
-                confirmed = 0;
                 start = Instant::now();
-                sum_conf_time = Duration::ZERO;
                 last_log = Instant::now();
             }
         }
