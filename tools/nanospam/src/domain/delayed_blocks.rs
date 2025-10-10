@@ -12,7 +12,6 @@ pub(crate) struct DelayedBlocks {
     /// block + publish timestamp
     blocks: FxHashMap<BlockHash, PublishInfo>,
     by_time: BTreeMap<Timestamp, Vec<BlockHash>>,
-    finished: bool,
 }
 
 impl DelayedBlocks {
@@ -75,14 +74,6 @@ impl DelayedBlocks {
 
     pub fn len(&self) -> usize {
         self.blocks.len()
-    }
-
-    pub fn finished(&mut self) {
-        self.finished = true;
-    }
-
-    pub fn is_finished(&self) -> bool {
-        self.finished && self.len() == 0
     }
 
     fn remove_from_time_index(&mut self, hash: &BlockHash, sent: Timestamp) {

@@ -82,6 +82,10 @@ impl BlockFactory {
         Some(block_result)
     }
 
+    pub fn max_blocks(&self) -> usize {
+        self.max_blocks
+    }
+
     pub fn max_blocks_reached(&mut self) -> bool {
         self.max_blocks > 0 && self.created >= self.max_blocks
     }

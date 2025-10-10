@@ -142,9 +142,6 @@ impl<'a> HighPrioCheck<'a> {
 
             {
                 let mut logic = self.logic.lock().unwrap();
-                if logic.delayed.is_finished() {
-                    break;
-                }
                 logic.delayed.insert(block.clone());
                 logic.high_prio_tracker.enqueued(hash);
             }

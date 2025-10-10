@@ -146,8 +146,7 @@ impl NanoSpamApp {
 
         let tx_forks_clone = tx_blocks.clone();
         let cancel_block_creation = CancellationToken::new();
-        let cancel_blk = cancel_block_creation.clone();
-        let cancel_tcp_recv = CancellationToken::new();
+        let cancel_block_creation2 = cancel_block_creation.clone();
         let cancel_nanospam = CancellationToken::new();
 
         let (tx_ws_msg, rx_ws_msg) = std::sync::mpsc::channel::<(MessageEnvelope, Timestamp)>();
@@ -161,7 +160,7 @@ impl NanoSpamApp {
         std::thread::scope(|s| {
             s.spawn(|| {
                 enqueue_blocks(&logic, tx_blocks, &self.clock);
-                cancel_blk.cancel();
+                cancel_block_creation2.cancel();
             });
 
             s.spawn(|| track_confirmations(rx_ws_msg, &logic));
@@ -177,22 +176,22 @@ impl NanoSpamApp {
                 scope.spawn(receive_messages(
                     tcp_readers,
                     protocol,
-                    cancel_tcp_recv.clone(),
+                    cancel_nanospam.clone(),
                 ));
                 scope.spawn(publish_blocks(
                     rx_blocks,
                     tcp_writers,
                     protocol,
                     &logic,
-                    cancel_tcp_recv,
+                    cancel_nanospam,
                     self.args.drop_probability(),
                     &self.clock,
                 ));
+
                 if !self.args.no_republish {
                     scope.spawn(republish_delayed_blocks(
                         tx_forks_clone,
                         &logic,
-                        cancel_nanospam,
                         &self.clock,
                     ));
                 }
@@ -260,10 +259,6 @@ async fn publish_blocks(
             fork_buffer = Some(fork_serializer.serialize(&publish_fork));
         }
 
-        let now = clock.now();
-        // TODO support delayed forks
-        logic.lock().unwrap().delayed.published(&hash, now);
-
         let mut counter = 0;
         tokio_scoped::scope(|s| {
             for stream in &mut tcp_streams {
@@ -289,12 +284,23 @@ async fn publish_blocks(
             }
         });
 
+        let now = clock.now();
+
         writer_index += 1;
         if writer_index >= CONNECTIONS_PER_NODE {
             writer_index = 0;
         }
 
-        let was_high_prio = logic.lock().unwrap().published(&hash, now);
+        let was_high_prio = {
+            let mut l = logic.lock().unwrap();
+            // TODO support delayed forks
+            let prio = l.published(&hash, now);
+            if l.is_finished() {
+                break;
+            }
+            prio
+        };
+
         if was_high_prio {
             tracing::info!("High prio block published: {hash}");
         }
@@ -305,24 +311,22 @@ async fn publish_blocks(
 async fn republish_delayed_blocks(
     tx_forks: mpsc::Sender<Forks>,
     logic: &Mutex<SpamLogic>,
-    cancel_token: CancellationToken,
     clock: &SteadyClock,
 ) {
     loop {
         while let Some(block) = {
             let now = clock.now();
-            logic.lock().unwrap().delayed.next(now)
+            let mut l = logic.lock().unwrap();
+            if l.is_finished() {
+                return;
+            }
+            l.next_delayed(now)
         } {
             tx_forks.send(Forks::new(block)).await.unwrap();
         }
 
-        if logic.lock().unwrap().delayed.is_finished() {
-            break;
-        }
-
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    cancel_token.cancel();
 }
 
 async fn receive_messages(

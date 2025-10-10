@@ -4,7 +4,7 @@ use crate::domain::{
 };
 use rsnano_network::token_bucket::TokenBucket;
 use rsnano_nullable_clock::Timestamp;
-use rsnano_types::BlockHash;
+use rsnano_types::{Block, BlockHash};
 use std::time::Duration;
 
 pub(crate) struct SpamSpec {
@@ -50,13 +50,17 @@ impl SpamLogic {
         }
     }
 
+    pub(crate) fn is_finished(&self) -> bool {
+        self.block_factory.max_blocks() > 0
+            && self.confirmed_total >= self.block_factory.max_blocks()
+    }
+
     pub(crate) fn fork_propability(&self) -> f64 {
         self.spec.fork_probability
     }
 
     pub(crate) fn next_block(&mut self, is_fork: bool, now: Timestamp) -> Option<BlockResult> {
         if self.block_factory.max_blocks_reached() {
-            self.delayed.finished();
             return None;
         }
 
@@ -90,10 +94,17 @@ impl SpamLogic {
         Some(BlockResult::Block(next))
     }
 
+    pub(crate) fn next_delayed(&mut self, now: Timestamp) -> Option<Block> {
+        self.delayed.next(now)
+    }
+
     pub(crate) fn published(&mut self, hash: &BlockHash, now: Timestamp) -> bool {
+        self.delayed.published(hash, now);
+
         if !self.spec.track_confirmations {
             self.delayed.confirmed(hash, now);
             self.block_factory.confirm(hash);
+            self.confirmed_total += 1;
         }
         self.high_prio_tracker.published(hash, now)
     }
