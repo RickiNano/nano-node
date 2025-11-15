@@ -41,12 +41,6 @@ void nano::store::lmdb::block::put (store::write_transaction const & transaction
 	block_predecessor_mdb_set predecessor (transaction, *this);
 	block.visit (predecessor);
 
-	if (!block.sideband ().successor.is_zero ())
-	{
-		nano::store::lmdb::db_val value{ sizeof (nano::block_hash), (void *)block.sideband ().successor.bytes.data () };
-		auto status = store.put (transaction, tables::successors, hash, value);
-		release_assert (success (status), error_string (status));
-	}
 	debug_assert (block.previous ().is_zero () || successor (transaction, block.previous ()) == hash);
 }
 

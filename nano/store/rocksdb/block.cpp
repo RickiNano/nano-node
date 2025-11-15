@@ -26,7 +26,7 @@ public:
 }
 
 nano::store::rocksdb::block::block (nano::store::rocksdb::component & store_a) :
-	store{ store_a } {};
+	store{ store_a } { };
 
 void nano::store::rocksdb::block::put (store::write_transaction const & transaction, nano::block_hash const & hash, nano::block const & block)
 {
@@ -43,7 +43,6 @@ void nano::store::rocksdb::block::put (store::write_transaction const & transact
 
 	if (!block.sideband ().successor.is_zero ())
 	{
-		std::cout << "put successor.";
 		nano::store::rocksdb::db_val value{ sizeof (nano::block_hash), (void *)block.sideband ().successor.bytes.data () };
 		auto status = store.put (transaction, tables::successors, hash, value);
 		release_assert (success (status), error_string (status));
