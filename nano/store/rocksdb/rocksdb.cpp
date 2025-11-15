@@ -170,7 +170,6 @@ std::unordered_map<char const *, nano::tables> nano::store::rocksdb::component::
 		{ "peers", tables::peers },
 		{ "confirmation_height", tables::confirmation_height },
 		{ "pruned", tables::pruned },
-		{ "successors", tables::successors },
 		{ "final_votes", tables::final_votes },
 		{ "rep_weights", tables::rep_weights } };
 
@@ -232,9 +231,6 @@ void nano::store::rocksdb::component::do_upgrades (store::write_transaction & tr
 			upgrade_v23_to_v24 (transaction);
 			[[fallthrough]];
 		case 24:
-			upgrade_v24_to_v25 (transaction);
-			[[fallthrough]];
-		case 25:
 			break;
 		default:
 			logger.critical (nano::log::type::rocksdb, "The version of the ledger ({}) is too high for this node", version_l);
@@ -396,54 +392,6 @@ void nano::store::rocksdb::component::upgrade_v23_to_v24 (store::write_transacti
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v23 to v24 completed");
 }
 
-void nano::store::rocksdb::component::upgrade_v24_to_v25 (store::write_transaction & transaction)
-{
-	logger.info (nano::log::type::rocksdb, "Upgrading database from v24 to v25...");
-	logger.info (nano::log::type::rocksdb, "Creating block successor table...");
-
-	// Create successors column family if it doesn't exist
-	if (!column_family_exists ("successors"))
-	{
-		::rocksdb::ColumnFamilyOptions new_cf_options = get_cf_options ("successors");
-		::rocksdb::ColumnFamilyHandle * new_cf_handle;
-		::rocksdb::Status status = db->CreateColumnFamily (new_cf_options, "successors", &new_cf_handle);
-		release_assert (success (status.code ()), error_string (status.code ()));
-		handles.emplace_back (new_cf_handle);
-		transaction.refresh ();
-	}
-
-	// Iterate through all blocks and extract successors
-	uint64_t processed = 0;
-	const size_t batch_size = 500000;
-
-	auto it = block_store.begin (transaction);
-	auto const end_it = block_store.end (transaction);
-
-	for (; it != end_it; ++it)
-	{
-		auto const & block_w_sideband = it->second;
-		auto const & sideband = block_w_sideband.sideband;
-		if (!sideband.successor.is_zero ())
-		{
-			auto hash = it->first;
-			nano::store::rocksdb::db_val value{ sizeof (nano::block_hash), (void *)sideband.successor.bytes.data () };
-			auto status = put (transaction, tables::successors, hash, value);
-			release_assert (nano::store::rocksdb::success (status), nano::store::rocksdb::error_string (status));
-		}
-
-		processed++;
-		if (processed % batch_size == 0)
-		{
-			logger.info (nano::log::type::rocksdb, "Processed {} blocks", processed);
-			transaction.refresh (); // Refresh to prevent excessive memory usage
-		}
-	}
-
-	logger.info (nano::log::type::rocksdb, "Processed {} blocks total", processed);
-	version.put (transaction, 25);
-	logger.info (nano::log::type::rocksdb, "Block successor table created successfully");
-}
-
 void nano::store::rocksdb::component::generate_tombstone_map ()
 {
 	tombstone_map.emplace (std::piecewise_construct, std::forward_as_tuple (nano::tables::blocks), std::forward_as_tuple (0, 25000));
@@ -571,8 +519,6 @@ rocksdb::ColumnFamilyHandle * nano::store::rocksdb::component::table_to_column_f
 			return get_column_family ("confirmation_height");
 		case tables::final_votes:
 			return get_column_family ("final_votes");
-		case tables::successors:
-			return get_column_family ("successors");
 		case tables::rep_weights:
 			return get_column_family ("rep_weights");
 		default:
