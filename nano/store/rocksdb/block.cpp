@@ -40,6 +40,14 @@ void nano::store::rocksdb::block::put (store::write_transaction const & transact
 	raw_put (transaction, vector, hash);
 	block_predecessor_rocksdb_set predecessor (transaction, *this);
 	block.visit (predecessor);
+
+	if (!block.sideband ().successor.is_zero ())
+	{
+		std::cout << "put successor.";
+		nano::store::rocksdb::db_val value{ sizeof (nano::block_hash), (void *)block.sideband ().successor.bytes.data () };
+		auto status = store.put (transaction, tables::successors, hash, value);
+		release_assert (success (status), error_string (status));
+	}
 	debug_assert (block.previous ().is_zero () || successor (transaction, block.previous ()) == hash);
 }
 
@@ -92,6 +100,12 @@ std::shared_ptr<nano::block> nano::store::rocksdb::block::get (store::transactio
 		nano::block_sideband sideband;
 		error = (sideband.deserialize (stream, type));
 		release_assert (!error);
+
+		auto successor_hash = successor (transaction, hash);
+		if (successor_hash.has_value ())
+		{
+			sideband.successor = successor_hash.value ();
+		}
 		result->sideband_set (sideband);
 	}
 	return result;
