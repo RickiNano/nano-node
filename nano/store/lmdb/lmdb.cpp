@@ -1,3 +1,5 @@
+#include <nano/lib/block_sideband.hpp>
+#include <nano/lib/block_type.hpp>
 #include <nano/lib/numbers.hpp>
 #include <nano/lib/stream.hpp>
 #include <nano/lib/utility.hpp>
@@ -14,6 +16,7 @@
 #include <boost/format.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <cstring>
 #include <queue>
 #include <stdexcept>
 
@@ -233,6 +236,7 @@ void nano::store::lmdb::component::open_databases (store::transaction const & tr
 	pending_store.pending_handle = pending_store.pending_v0_handle;
 	open_table (transaction_a, "final_votes", flags, final_vote_store.final_votes_handle);
 	open_table (transaction_a, "blocks", MDB_CREATE, block_store.blocks_handle);
+	open_table (transaction_a, "successors", flags, block_store.successors_handle);
 	open_table (transaction_a, "rep_weights", flags, rep_weight_store.rep_weights_handle);
 }
 
@@ -256,6 +260,9 @@ void nano::store::lmdb::component::do_upgrades (store::write_transaction & trans
 			upgrade_v23_to_v24 (transaction);
 			[[fallthrough]];
 		case 24:
+			upgrade_v24_to_v25 (transaction);
+			[[fallthrough]];
+		case 25:
 			break;
 		default:
 			logger.critical (nano::log::type::lmdb, "The version of the ledger ({}) is too high for this node", version_l);
@@ -352,6 +359,130 @@ void nano::store::lmdb::component::upgrade_v23_to_v24 (store::write_transaction 
 	version.put (transaction, 24);
 
 	logger.info (nano::log::type::lmdb, "Upgrading database from v23 to v24 completed");
+}
+
+void nano::store::lmdb::component::upgrade_v24_to_v25 (store::write_transaction & transaction)
+{
+	// Create successors table and populate it
+	logger.info (nano::log::type::lmdb, "Creating block successor table...");
+
+	// Open blocks table directly
+	MDB_dbi blocks_handle{ 0 };
+	auto status1 = mdb_dbi_open (env.tx (transaction), "blocks", 0, &blocks_handle);
+	release_assert (success (status1), error_string (status1));
+
+	MDB_dbi successors_handle{ 0 };
+	auto status2 = mdb_dbi_open (env.tx (transaction), "successors", MDB_CREATE, &successors_handle);
+	release_assert (success (status2), error_string (status2));
+
+	// Get total block count for progress reporting
+	MDB_stat stats;
+	auto stat_status = mdb_stat (env.tx (transaction), blocks_handle, &stats);
+	release_assert (success (stat_status), error_string (stat_status));
+	uint64_t total_blocks = stats.ms_entries;
+
+	logger.info (nano::log::type::lmdb, "Found {} blocks to process", total_blocks);
+
+	// Create cursor for iterating through blocks table
+	MDB_cursor * cursor;
+	auto cursor_status = mdb_cursor_open (env.tx (transaction), blocks_handle, &cursor);
+	release_assert (success (cursor_status), error_string (cursor_status));
+
+	uint64_t processed = 0;
+	const size_t batch_size = 500000;
+	nano::block_hash last_hash{ 0 };
+
+	MDB_val mdb_key;
+	MDB_val mdb_value;
+
+	auto get_status = mdb_cursor_get (cursor, &mdb_key, &mdb_value, MDB_FIRST);
+
+	if (success (get_status))
+	{
+		logger.info (nano::log::type::lmdb, "Starting successor extraction...");
+	}
+
+	while (success (get_status))
+	{
+		// Validate we have data
+		if (mdb_value.mv_size == 0)
+		{
+			logger.error (nano::log::type::lmdb, "Block data without value found");
+			get_status = mdb_cursor_get (cursor, &mdb_key, &mdb_value, MDB_NEXT);
+			continue;
+		}
+
+		// Save the current hash for potential cursor repositioning
+		debug_assert (mdb_key.mv_size == sizeof (nano::block_hash));
+		std::memcpy (last_hash.bytes.data (), mdb_key.mv_data, sizeof (nano::block_hash));
+
+		// Extract block type and calculate sideband offset
+		uint8_t const * raw_bytes = static_cast<uint8_t const *> (mdb_value.mv_data);
+		auto block_type = static_cast<nano::block_type> (raw_bytes[0]);
+		size_t sideband_offset = mdb_value.mv_size - nano::block_sideband::size (block_type);
+
+		// Extract successor (first 32 bytes of sideband in v24)
+		nano::block_hash successor;
+		std::memcpy (successor.bytes.data (), raw_bytes + sideband_offset, sizeof (nano::block_hash));
+
+		// Write hash -> successor mapping with APPEND for optimal performance
+		// (hashes are in sorted order from LMDB iteration, so APPEND works)
+		MDB_val successor_val;
+		successor_val.mv_size = sizeof (nano::block_hash);
+		successor_val.mv_data = successor.bytes.data ();
+
+		auto put_status = mdb_put (env.tx (transaction), successors_handle, &mdb_key, &successor_val, MDB_APPEND);
+		release_assert_success (put_status);
+
+		processed++;
+		if (processed % batch_size == 0)
+		{
+			double percentage = total_blocks > 0 ? (static_cast<double> (processed) / static_cast<double> (total_blocks)) * 100.0 : 0.0;
+			logger.info (nano::log::type::lmdb, "Processed {} blocks ({:.2f}%)", processed, percentage);
+
+			// Close cursor before refresh
+			mdb_cursor_close (cursor);
+
+			transaction.refresh (); // Prevent excessive memory usage
+
+			// Reopen cursor after refresh and seek to the last processed key
+			cursor_status = mdb_cursor_open (env.tx (transaction), blocks_handle, &cursor);
+			release_assert (success (cursor_status), error_string (cursor_status));
+
+			// Seek to the last processed hash and move to the next one
+			MDB_val seek_key;
+			seek_key.mv_size = sizeof (nano::block_hash);
+			seek_key.mv_data = last_hash.bytes.data ();
+			get_status = mdb_cursor_get (cursor, &seek_key, &mdb_value, MDB_SET_RANGE);
+
+			// If we found the exact key or a key after it, check if it's the same key we just processed
+			if (success (get_status))
+			{
+				if (seek_key.mv_size == sizeof (nano::block_hash) && std::memcmp (seek_key.mv_data, last_hash.bytes.data (), sizeof (nano::block_hash)) == 0)
+				{
+					// We found the same key, move to next
+					get_status = mdb_cursor_get (cursor, &mdb_key, &mdb_value, MDB_NEXT);
+				}
+				else
+				{
+					// MDB_SET_RANGE moved us to a key after last_hash, use it
+					mdb_key = seek_key;
+				}
+			}
+			continue;
+		}
+
+		// Move to next block
+		get_status = mdb_cursor_get (cursor, &mdb_key, &mdb_value, MDB_NEXT);
+	}
+
+	mdb_cursor_close (cursor);
+
+	logger.info (nano::log::type::lmdb, "Processed {} blocks total (100.00%)", processed);
+
+	version.put (transaction, 25);
+
+	logger.info (nano::log::type::lmdb, "Block successor table created successfully");
 }
 
 /** Takes a filepath, appends '_backup_<timestamp>' to the end (but before any extension) and saves that file in the same directory */
@@ -460,6 +591,8 @@ MDB_dbi nano::store::lmdb::component::table_to_dbi (tables table_a) const
 			return confirmation_height_store.confirmation_height_handle;
 		case tables::final_votes:
 			return final_vote_store.final_votes_handle;
+		case tables::successors:
+			return block_store.successors_handle;
 		case tables::rep_weights:
 			return rep_weight_store.rep_weights_handle;
 		default:
