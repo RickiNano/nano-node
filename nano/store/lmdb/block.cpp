@@ -30,7 +30,6 @@ nano::store::lmdb::block::block (nano::store::lmdb::component & store_a) :
 
 void nano::store::lmdb::block::put (store::write_transaction const & transaction, nano::block_hash const & hash, nano::block const & block)
 {
-	debug_assert (block.sideband ().successor.is_zero () || exists (transaction, block.sideband ().successor));
 	std::vector<uint8_t> vector;
 	{
 		nano::vectorstream stream (vector);
@@ -40,15 +39,6 @@ void nano::store::lmdb::block::put (store::write_transaction const & transaction
 	raw_put (transaction, vector, hash);
 	block_predecessor_mdb_set predecessor (transaction, *this);
 	block.visit (predecessor);
-
-	// Update the successors table
-	if (!block.sideband ().successor.is_zero ())
-	{
-		// If the block has a successor, write it to the successors table
-		nano::store::lmdb::db_val value{ sizeof (nano::block_hash), (void *)block.sideband ().successor.bytes.data () };
-		auto status = store.put (transaction, tables::successors, hash, value);
-		release_assert (success (status), error_string (status));
-	}
 
 	debug_assert (block.previous ().is_zero () || successor (transaction, block.previous ()) == hash);
 }
