@@ -231,6 +231,9 @@ void nano::store::rocksdb::component::do_upgrades (store::write_transaction & tr
 			upgrade_v23_to_v24 (transaction);
 			[[fallthrough]];
 		case 24:
+			upgrade_v24_to_v25 (transaction);
+			[[fallthrough]];
+		case 25:
 			break;
 		default:
 			logger.critical (nano::log::type::rocksdb, "The version of the ledger ({}) is too high for this node", version_l);
@@ -390,6 +393,12 @@ void nano::store::rocksdb::component::upgrade_v23_to_v24 (store::write_transacti
 
 	version.put (transaction, 24);
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v23 to v24 completed");
+}
+
+void nano::store::rocksdb::component::upgrade_v24_to_v25 (store::write_transaction & transaction)
+{
+	// TODO: Migrate successor from sideband to successor table
+	version.put (transaction, 25);
 }
 
 void nano::store::rocksdb::component::generate_tombstone_map ()
