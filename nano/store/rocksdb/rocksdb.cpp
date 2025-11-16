@@ -231,6 +231,9 @@ void nano::store::rocksdb::component::do_upgrades (store::write_transaction & tr
 			upgrade_v23_to_v24 (transaction);
 			[[fallthrough]];
 		case 24:
+			upgrade_v24_to_v25 (transaction);
+			[[fallthrough]];
+		case 25:
 			break;
 		default:
 			logger.critical (nano::log::type::rocksdb, "The version of the ledger ({}) is too high for this node", version_l);
@@ -390,6 +393,109 @@ void nano::store::rocksdb::component::upgrade_v23_to_v24 (store::write_transacti
 
 	version.put (transaction, 24);
 	logger.info (nano::log::type::rocksdb, "Upgrading database from v23 to v24 completed");
+}
+
+void nano::store::rocksdb::component::upgrade_v24_to_v25 (store::write_transaction & transaction)
+{
+	logger.info (nano::log::type::rocksdb, "Upgrading database from v24 to v25...");
+
+	// Check if successors column family already exists
+	if (column_family_exists ("successors"))
+	{
+		logger.info (nano::log::type::rocksdb, "Dropping existing successors table");
+
+		auto const successors_handle = get_column_family ("successors");
+
+		auto status1 = db->DropColumnFamily (successors_handle);
+		release_assert (success (status1.code ()), error_string (status1.code ()));
+
+		auto status2 = db->DestroyColumnFamilyHandle (successors_handle);
+		release_assert (success (status2.code ()), error_string (status2.code ()));
+
+		std::erase_if (handles, [successors_handle] (auto & handle) {
+			if (handle.get () == successors_handle)
+			{
+				// The handle resource is deleted by RocksDB.
+				[[maybe_unused]] auto ptr = handle.release ();
+				return true;
+			}
+			return false;
+		});
+		transaction.refresh ();
+	}
+
+	// Create successors column family
+	{
+		logger.info (nano::log::type::rocksdb, "Creating successors column family...");
+		::rocksdb::ColumnFamilyOptions new_cf_options = get_cf_options ("successors");
+		::rocksdb::ColumnFamilyHandle * new_cf_handle;
+		::rocksdb::Status status = db->CreateColumnFamily (new_cf_options, "successors", &new_cf_handle);
+		release_assert (success (status.code ()), error_string (status.code ()));
+		handles.emplace_back (new_cf_handle);
+		transaction.refresh ();
+	}
+
+	logger.info (nano::log::type::rocksdb, "Extracting successors from block sidebands...");
+
+	// Get approximate count of blocks for progress reporting
+	uint64_t total_blocks = 0;
+	db->GetIntProperty (table_to_column_family (tables::blocks), "rocksdb.estimate-num-keys", &total_blocks);
+	logger.info (nano::log::type::rocksdb, "Estimated {} blocks to process", total_blocks);
+
+	const size_t batch_size = 500000;
+	uint64_t processed = 0;
+
+	// Iterate through all blocks
+	auto blocks_cf = table_to_column_family (tables::blocks);
+	auto successors_cf = get_column_family ("successors");
+
+	::rocksdb::ReadOptions read_options;
+	std::unique_ptr<::rocksdb::Iterator> it (db->NewIterator (read_options, blocks_cf));
+
+	logger.info (nano::log::type::rocksdb, "Starting successor extraction...");
+
+	for (it->SeekToFirst (); it->Valid (); it->Next ())
+	{
+		auto key = it->key ();
+		auto value = it->value ();
+
+		// Validate we have data
+		if (value.size () == 0)
+		{
+			logger.error (nano::log::type::rocksdb, "Block data without value found");
+			continue;
+		}
+
+		// Extract block type and calculate sideband offset
+		uint8_t const * raw_bytes = reinterpret_cast<uint8_t const *> (value.data ());
+		auto block_type = static_cast<nano::block_type> (raw_bytes[0]);
+		size_t sideband_offset = value.size () - nano::block_sideband::size (block_type);
+
+		// Extract successor (first 32 bytes of sideband in v24)
+		nano::block_hash successor;
+		std::memcpy (successor.bytes.data (), raw_bytes + sideband_offset, sizeof (nano::block_hash));
+
+		// Write hash -> successor mapping
+		::rocksdb::Slice successor_slice (reinterpret_cast<char const *> (successor.bytes.data ()), sizeof (nano::block_hash));
+		auto put_status = std::get<::rocksdb::Transaction *> (rocksdb::tx (transaction))->Put (successors_cf, key, successor_slice);
+		release_assert (success (put_status.code ()), error_string (put_status.code ()));
+
+		processed++;
+		if (processed % batch_size == 0)
+		{
+			double percentage = total_blocks > 0 ? (static_cast<double> (processed) / static_cast<double> (total_blocks)) * 100.0 : 0.0;
+			logger.info (nano::log::type::rocksdb, "Processed {} blocks ({:.2f}%)", processed, percentage);
+			transaction.refresh (); // Prevent excessive memory usage
+		}
+	}
+
+	release_assert (it->status ().ok (), error_string (it->status ().code ()));
+
+	logger.info (nano::log::type::rocksdb, "Processed {} blocks total (100.00%)", processed);
+
+	version.put (transaction, 25);
+
+	logger.info (nano::log::type::rocksdb, "Upgrading database from v24 to v25 completed");
 }
 
 void nano::store::rocksdb::component::generate_tombstone_map ()
