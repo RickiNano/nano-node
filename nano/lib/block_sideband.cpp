@@ -116,7 +116,6 @@ nano::block_sideband::block_sideband (nano::account const & account_a, nano::amo
 size_t nano::block_sideband::size (nano::block_type type_a)
 {
 	size_t result (0);
-	result += sizeof (successor);
 	if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 	{
 		result += sizeof (account);
