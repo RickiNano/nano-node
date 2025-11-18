@@ -436,7 +436,7 @@ void nano::store::rocksdb::component::upgrade_v24_to_v25 (store::write_transacti
 		transaction.refresh ();
 	}
 
-	logger.info (nano::log::type::rocksdb, "Extracting successors from block sidebands...");
+	logger.info (nano::log::type::rocksdb, "Extracting successors from block sidebands and rewriting blocks...");
 
 	// Get approximate count of blocks for progress reporting
 	uint64_t total_blocks = 0;
@@ -467,19 +467,40 @@ void nano::store::rocksdb::component::upgrade_v24_to_v25 (store::write_transacti
 			continue;
 		}
 
-		// Extract block type and calculate sideband offset
+		// Extract block type and calculate sideband offsets
 		uint8_t const * raw_bytes = reinterpret_cast<uint8_t const *> (value.data ());
 		auto block_type = static_cast<nano::block_type> (raw_bytes[0]);
-		size_t sideband_offset = value.size () - nano::block_sideband::size (block_type);
+
+		// v24 sideband includes successor (32 bytes) + rest of sideband
+		size_t v25_sideband_size = nano::block_sideband::size (block_type);
+		size_t v24_sideband_size = v25_sideband_size + sizeof (nano::block_hash);
+		size_t v24_sideband_offset = value.size () - v24_sideband_size;
 
 		// Extract successor (first 32 bytes of sideband in v24)
 		nano::block_hash successor;
-		std::memcpy (successor.bytes.data (), raw_bytes + sideband_offset, sizeof (nano::block_hash));
+		std::memcpy (successor.bytes.data (), raw_bytes + v24_sideband_offset, sizeof (nano::block_hash));
 
 		// Write hash -> successor mapping
 		::rocksdb::Slice successor_slice (reinterpret_cast<char const *> (successor.bytes.data ()), sizeof (nano::block_hash));
 		auto put_status = std::get<::rocksdb::Transaction *> (rocksdb::tx (transaction))->Put (successors_cf, key, successor_slice);
 		release_assert (success (put_status.code ()), error_string (put_status.code ()));
+
+		// Reconstruct block without successor in sideband (v25 format)
+		size_t v25_block_size = v24_sideband_offset + v25_sideband_size;
+		std::vector<uint8_t> v25_block_data (v25_block_size);
+
+		// Copy block type + body (everything before sideband)
+		std::memcpy (v25_block_data.data (), raw_bytes, v24_sideband_offset);
+
+		// Copy rest of sideband (skip successor, which is first 32 bytes of v24 sideband)
+		std::memcpy (v25_block_data.data () + v24_sideband_offset,
+			raw_bytes + v24_sideband_offset + sizeof (nano::block_hash),
+			v25_sideband_size);
+
+		// Write updated block back to blocks table
+		::rocksdb::Slice v25_block_slice (reinterpret_cast<char const *> (v25_block_data.data ()), v25_block_size);
+		auto update_status = std::get<::rocksdb::Transaction *> (rocksdb::tx (transaction))->Put (blocks_cf, key, v25_block_slice);
+		release_assert (success (update_status.code ()), error_string (update_status.code ()));
 
 		processed++;
 		if (processed % batch_size == 0)
@@ -493,6 +514,23 @@ void nano::store::rocksdb::component::upgrade_v24_to_v25 (store::write_transacti
 	release_assert (it->status ().ok (), error_string (it->status ().code ()));
 
 	logger.info (nano::log::type::rocksdb, "Processed {} blocks total (100.00%)", processed);
+
+	// Compact the blocks table to reclaim space from old block data (with successor in sideband)
+	// Without this, the database will be ~2x size because RocksDB keeps old versions until compaction
+	logger.info (nano::log::type::rocksdb, "Compacting blocks table to reclaim space...");
+	::rocksdb::CompactRangeOptions compact_options;
+	compact_options.exclusive_manual_compaction = true;
+	compact_options.change_level = true;
+	auto compact_status = db->CompactRange (compact_options, blocks_cf, nullptr, nullptr);
+	if (!compact_status.ok ())
+	{
+		logger.warn (nano::log::type::rocksdb, "Failed to compact blocks table: {}", compact_status.ToString ());
+		logger.warn (nano::log::type::rocksdb, "Database will be larger than necessary until automatic compaction occurs");
+	}
+	else
+	{
+		logger.info (nano::log::type::rocksdb, "Blocks table compaction completed");
+	}
 
 	version.put (transaction, 25);
 
