@@ -399,7 +399,7 @@ void nano::store::lmdb::component::upgrade_v24_to_v25 (store::write_transaction 
 
 	if (success (get_status))
 	{
-		logger.info (nano::log::type::lmdb, "Starting successor extraction...");
+		logger.info (nano::log::type::lmdb, "Starting successor extraction and block rewriting...");
 	}
 
 	while (success (get_status))
@@ -416,14 +416,18 @@ void nano::store::lmdb::component::upgrade_v24_to_v25 (store::write_transaction 
 		debug_assert (mdb_key.mv_size == sizeof (nano::block_hash));
 		std::memcpy (last_hash.bytes.data (), mdb_key.mv_data, sizeof (nano::block_hash));
 
-		// Extract block type and calculate sideband offset
+		// Extract block type and calculate sideband offsets
 		uint8_t const * raw_bytes = static_cast<uint8_t const *> (mdb_value.mv_data);
 		auto block_type = static_cast<nano::block_type> (raw_bytes[0]);
-		size_t sideband_offset = mdb_value.mv_size - nano::block_sideband::size (block_type);
+
+		// v24 sideband includes successor (32 bytes) + rest of sideband
+		size_t v25_sideband_size = nano::block_sideband::size (block_type);
+		size_t v24_sideband_size = v25_sideband_size + sizeof (nano::block_hash);
+		size_t v24_sideband_offset = mdb_value.mv_size - v24_sideband_size;
 
 		// Extract successor (first 32 bytes of sideband in v24)
 		nano::block_hash successor;
-		std::memcpy (successor.bytes.data (), raw_bytes + sideband_offset, sizeof (nano::block_hash));
+		std::memcpy (successor.bytes.data (), raw_bytes + v24_sideband_offset, sizeof (nano::block_hash));
 
 		// Write hash -> successor mapping with APPEND for optimal performance
 		// (hashes are in sorted order from LMDB iteration, so APPEND works)
@@ -433,6 +437,26 @@ void nano::store::lmdb::component::upgrade_v24_to_v25 (store::write_transaction 
 
 		auto put_status = mdb_put (env.tx (transaction), successors_handle, &mdb_key, &successor_val, MDB_APPEND);
 		release_assert_success (put_status);
+
+		// Reconstruct block without successor in sideband (v25 format)
+		size_t v25_block_size = v24_sideband_offset + v25_sideband_size;
+		std::vector<uint8_t> v25_block_data (v25_block_size);
+
+		// Copy block type + body (everything before sideband)
+		std::memcpy (v25_block_data.data (), raw_bytes, v24_sideband_offset);
+
+		// Copy rest of sideband (skip successor, which is first 32 bytes of v24 sideband)
+		std::memcpy (v25_block_data.data () + v24_sideband_offset,
+			raw_bytes + v24_sideband_offset + sizeof (nano::block_hash),
+			v25_sideband_size);
+
+		// Write updated block back to blocks table
+		MDB_val v25_block_val;
+		v25_block_val.mv_size = v25_block_size;
+		v25_block_val.mv_data = v25_block_data.data ();
+
+		auto update_status = mdb_put (env.tx (transaction), blocks_handle, &mdb_key, &v25_block_val, 0);
+		release_assert_success (update_status);
 
 		processed++;
 		if (processed % batch_size == 0)
