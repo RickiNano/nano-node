@@ -127,21 +127,19 @@ void nano::rpc_connection::parse_request (STREAM_TYPE & stream, std::shared_ptr<
 					nano::log::type::rpc_request, "RPC request {} completed in {} microseconds", request_id, std::chrono::duration_cast<std::chrono::microseconds> (std::chrono::steady_clock::now () - start).count ());
 				});
 
-				std::string api_path_l = "/api/v2";
-				int rpc_version_l = boost::starts_with (path_l, api_path_l) ? 2 : 1;
-
 				auto method = req.method ();
 				switch (method)
 				{
 					case boost::beast::http::verb::post:
 					{
-						auto handler (std::make_shared<nano::rpc_handler> (this_l->rpc_config, req.body (), request_id, response_handler, this_l->rpc_handler_interface, this_l->logger));
+						// Get modern handler from interface if enabled via config (may be nullptr)
+						auto modern_handler_l = this_l->rpc_handler_interface.get_modern_handler ();
+						auto handler (std::make_shared<nano::rpc_handler> (this_l->rpc_config, req.body (), request_id, response_handler, this_l->rpc_handler_interface, this_l->logger, modern_handler_l));
 						nano::rpc_handler_request_params request_params;
-						request_params.rpc_version = rpc_version_l;
+						request_params.rpc_version = 1;  // Always v1 for legacy property_tree path
 						request_params.credentials = header_field_credentials_l;
 						request_params.correlation_id = header_corr_id_l;
-						request_params.path = boost::algorithm::erase_first_copy (path_l, api_path_l);
-						request_params.path = boost::algorithm::erase_first_copy (request_params.path, "/");
+						request_params.path = path_l;
 						handler->process_request (request_params);
 						break;
 					}

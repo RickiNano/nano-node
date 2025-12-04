@@ -179,7 +179,7 @@ public:
 							show_error (error.get_message ());
 							std::exit (1);
 						}
-						rpc_handler = std::make_unique<nano::inprocess_rpc_handler> (*node, ipc, config.rpc);
+						rpc_handler = std::make_unique<nano::inprocess_rpc_handler> (*node, ipc, config.rpc, rpc_config);
 						rpc = nano::get_rpc (io_ctx, rpc_config, *rpc_handler);
 						rpc->start ();
 					}

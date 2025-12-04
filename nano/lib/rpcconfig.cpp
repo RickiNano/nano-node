@@ -24,6 +24,7 @@ nano::error nano::rpc_config::serialize_toml (nano::tomlconfig & toml) const
 	toml.put ("address", address, "Bind address for the RPC server.\ntype:string,ip");
 	toml.put ("port", port, "Listening port for the RPC server.\ntype:uint16");
 	toml.put ("enable_control", enable_control, "Enable or disable control-level requests.\nWARNING: Enabling this gives anyone with RPC access the ability to stop the node and access wallet funds.\ntype:bool");
+	toml.put ("enable_boost_json_api", enable_boost_json_api, "Enable modern Boost.JSON-based RPC API instead of property_tree-based API.\nThe new API provides better performance and improved error handling.\ntype:bool");
 	toml.put ("max_json_depth", max_json_depth, "Maximum number of levels in JSON requests.\ntype:uint8");
 	toml.put ("max_request_size", max_request_size, "Maximum number of bytes allowed in request bodies.\ntype:uint64");
 
@@ -49,6 +50,7 @@ nano::error nano::rpc_config::deserialize_toml (nano::tomlconfig & toml)
 		address = address_l.to_string ();
 		toml.get_optional<uint16_t> ("port", port);
 		toml.get_optional<bool> ("enable_control", enable_control);
+		toml.get_optional<bool> ("enable_boost_json_api", enable_boost_json_api);
 		toml.get_optional<uint8_t> ("max_json_depth", max_json_depth);
 		toml.get_optional<uint64_t> ("max_request_size", max_request_size);
 

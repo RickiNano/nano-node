@@ -449,6 +449,7 @@ set(BOOST_MODULE_LIBS
     io
     iostreams
     iterator
+    json
     lexical_cast
     property_tree
     lambda
