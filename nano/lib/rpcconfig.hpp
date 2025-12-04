@@ -45,6 +45,7 @@ public:
 	std::string address;
 	uint16_t port{ rpc_process.network_constants.default_rpc_port };
 	bool enable_control{ false };
+	bool enable_boost_json_api{ false };
 	uint8_t max_json_depth{ 20 };
 	uint64_t max_request_size{ 32 * 1024 * 1024 };
 	nano::rpc_logging_config rpc_logging;

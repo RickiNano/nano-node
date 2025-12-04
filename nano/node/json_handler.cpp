@@ -17,6 +17,7 @@
 #include <nano/node/node_rpc_config.hpp>
 #include <nano/node/online_reps.hpp>
 #include <nano/node/telemetry.hpp>
+#include <nano/rpc/v3/rpc_v3_handler.hpp>
 #include <nano/secure/ledger.hpp>
 #include <nano/secure/ledger_set_any.hpp>
 #include <nano/secure/ledger_set_confirmed.hpp>
@@ -5259,6 +5260,17 @@ void nano::json_handler::populate_backlog ()
 	node.backlog_scan.trigger ();
 	response_l.put ("success", "");
 	response_errors ();
+}
+
+nano::inprocess_rpc_handler::inprocess_rpc_handler (
+nano::node & node_a, nano::ipc::ipc_server & ipc_server_a, nano::node_rpc_config const & node_rpc_config_a, nano::rpc_config const & rpc_config_a, std::function<void ()> stop_callback_a) :
+	node (node_a),
+	ipc_server (ipc_server_a),
+	stop_callback (stop_callback_a),
+	node_rpc_config (node_rpc_config_a),
+	rpc_config (rpc_config_a),
+	modern_handler (rpc_config_a.enable_boost_json_api ? std::make_shared<nano::rpc_v3_handler> (node, node_rpc_config_a) : nullptr)
+{
 }
 
 void nano::inprocess_rpc_handler::process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a)

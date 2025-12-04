@@ -8,6 +8,7 @@
 namespace nano
 {
 class rpc;
+class rpc_version_handler;
 
 /** Keeps information about http requests, and for v2+ includes path and header values of interest */
 class rpc_handler_request_params final
@@ -62,5 +63,7 @@ public:
 	virtual void process_request_v2 (rpc_handler_request_params const & params_a, std::string const & body, std::function<void (std::shared_ptr<std::string> const &)> response) = 0;
 	virtual void stop () = 0;
 	virtual void rpc_instance (nano::rpc & rpc) = 0;
+	/** Get the modern Boost.JSON handler if enabled via config. Returns nullptr if not enabled. */
+	virtual std::shared_ptr<nano::rpc_version_handler> get_modern_handler () { return nullptr; }
 };
 }
