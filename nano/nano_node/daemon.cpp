@@ -152,7 +152,7 @@ void nano::daemon::run (std::filesystem::path const & data_path, nano::node_flag
 					std::exit (1);
 				}
 
-				rpc_handler = std::make_unique<nano::inprocess_rpc_handler> (*node, *ipc_server, config.rpc, stop_callback);
+				rpc_handler = std::make_unique<nano::inprocess_rpc_handler> (*node, *ipc_server, config.rpc, rpc_config, stop_callback);
 				rpc = nano::get_rpc (io_ctx, rpc_config, *rpc_handler);
 				rpc->start ();
 			}

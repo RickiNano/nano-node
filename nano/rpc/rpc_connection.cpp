@@ -5,6 +5,7 @@
 #include <nano/lib/utility.hpp>
 #include <nano/rpc/rpc_connection.hpp>
 #include <nano/rpc/rpc_handler.hpp>
+#include <nano/rpc/rpc_version_handler.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -127,22 +128,48 @@ void nano::rpc_connection::parse_request (STREAM_TYPE & stream, std::shared_ptr<
 					nano::log::type::rpc_request, "RPC request {} completed in {} microseconds", request_id, std::chrono::duration_cast<std::chrono::microseconds> (std::chrono::steady_clock::now () - start).count ());
 				});
 
-				std::string api_path_l = "/api/v2";
-				int rpc_version_l = boost::starts_with (path_l, api_path_l) ? 2 : 1;
-
 				auto method = req.method ();
 				switch (method)
 				{
 					case boost::beast::http::verb::post:
 					{
-						auto handler (std::make_shared<nano::rpc_handler> (this_l->rpc_config, req.body (), request_id, response_handler, this_l->rpc_handler_interface, this_l->logger));
-						nano::rpc_handler_request_params request_params;
-						request_params.rpc_version = rpc_version_l;
-						request_params.credentials = header_field_credentials_l;
-						request_params.correlation_id = header_corr_id_l;
-						request_params.path = boost::algorithm::erase_first_copy (path_l, api_path_l);
-						request_params.path = boost::algorithm::erase_first_copy (request_params.path, "/");
-						handler->process_request (request_params);
+						// Check if this is a v3 API request (case-sensitive /api/ prefix)
+						bool is_v3_request = boost::starts_with (path_l, "/api/");
+
+						if (is_v3_request)
+						{
+							// Extract action from URL path: /api/uptime -> "uptime"
+							std::string action = path_l.substr (5); // Skip "/api/" (5 chars)
+
+							// Remove leading slash if present (handles /api/uptime and /api//uptime)
+							if (!action.empty () && action[0] == '/')
+							{
+								action = action.substr (1);
+							}
+
+							// Route to v3 handler with path-based action
+							auto modern_handler_l = this_l->rpc_handler_interface.get_modern_handler ();
+							if (modern_handler_l)
+							{
+								modern_handler_l->process_request_with_path_action (action, req.body (), response_handler);
+							}
+							else
+							{
+								// This shouldn't happen since we always create the handler now
+								nano::json_error_response (response_handler, "V3 handler not available");
+							}
+						}
+						else
+						{
+							// Route to v1 handler (legacy path, action in JSON body)
+							auto handler (std::make_shared<nano::rpc_handler> (this_l->rpc_config, req.body (), request_id, response_handler, this_l->rpc_handler_interface, this_l->logger, nullptr));
+							nano::rpc_handler_request_params request_params;
+							request_params.rpc_version = 1;
+							request_params.credentials = header_field_credentials_l;
+							request_params.correlation_id = header_corr_id_l;
+							request_params.path = path_l;
+							handler->process_request (request_params);
+						}
 						break;
 					}
 					case boost::beast::http::verb::options:

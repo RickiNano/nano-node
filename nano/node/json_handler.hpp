@@ -17,6 +17,8 @@ class transaction;
 
 namespace nano
 {
+class rpc_version_handler;
+
 namespace ipc
 {
 	class ipc_server;
@@ -185,16 +187,15 @@ class inprocess_rpc_handler final : public nano::rpc_handler_interface
 {
 public:
 	inprocess_rpc_handler (
-	nano::node & node_a, nano::ipc::ipc_server & ipc_server_a, nano::node_rpc_config const & node_rpc_config_a, std::function<void ()> stop_callback_a = [] () {}) :
-		node (node_a),
-		ipc_server (ipc_server_a),
-		stop_callback (stop_callback_a),
-		node_rpc_config (node_rpc_config_a)
-	{
-	}
+	nano::node & node_a, nano::ipc::ipc_server & ipc_server_a, nano::node_rpc_config const & node_rpc_config_a, nano::rpc_config const & rpc_config_a, std::function<void ()> stop_callback_a = [] () {});
 
 	void process_request (std::string const &, std::string const & body_a, std::function<void (std::string const &)> response_a) override;
 	void process_request_v2 (rpc_handler_request_params const & params_a, std::string const & body_a, std::function<void (std::shared_ptr<std::string> const &)> response_a) override;
+
+	std::shared_ptr<nano::rpc_version_handler> get_modern_handler () override
+	{
+		return modern_handler;
+	}
 
 	void stop () override
 	{
@@ -215,5 +216,7 @@ private:
 	boost::optional<nano::rpc &> rpc;
 	std::function<void ()> stop_callback;
 	nano::node_rpc_config const & node_rpc_config;
+	nano::rpc_config const & rpc_config;
+	std::shared_ptr<nano::rpc_version_handler> modern_handler;
 };
 }

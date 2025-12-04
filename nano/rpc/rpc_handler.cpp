@@ -5,6 +5,7 @@
 #include <nano/lib/rpc_handler_interface.hpp>
 #include <nano/lib/rpcconfig.hpp>
 #include <nano/rpc/rpc_handler.hpp>
+#include <nano/rpc/rpc_version_handler.hpp>
 
 #include <boost/property_tree/json_parser.hpp>
 
@@ -17,13 +18,14 @@ std::unordered_set<std::string> rpc_control_impl_set = create_rpc_control_impls 
 std::string filter_request (boost::property_tree::ptree tree_a);
 }
 
-nano::rpc_handler::rpc_handler (nano::rpc_config const & rpc_config, std::string const & body_a, std::string const & request_id_a, std::function<void (std::string const &)> const & response_a, nano::rpc_handler_interface & rpc_handler_interface_a, nano::logger & logger) :
+nano::rpc_handler::rpc_handler (nano::rpc_config const & rpc_config, std::string const & body_a, std::string const & request_id_a, std::function<void (std::string const &)> const & response_a, nano::rpc_handler_interface & rpc_handler_interface_a, nano::logger & logger, std::shared_ptr<nano::rpc_version_handler> modern_handler_a) :
 	body (body_a),
 	request_id (request_id_a),
 	response (response_a),
 	rpc_config (rpc_config),
 	rpc_handler_interface (rpc_handler_interface_a),
-	logger (logger)
+	logger (logger),
+	modern_handler (modern_handler_a)
 {
 }
 
@@ -31,6 +33,13 @@ void nano::rpc_handler::process_request (nano::rpc_handler_request_params const 
 {
 	try
 	{
+		// Handle modern Boost.JSON API if enabled via config
+		if (modern_handler)
+		{
+			modern_handler->process_request (body, response);
+			return;
+		}
+
 		auto max_depth_exceeded (false);
 		auto max_depth_possible (0u);
 		for (auto ch : body)
