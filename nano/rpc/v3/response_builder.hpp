@@ -7,30 +7,25 @@
 namespace nano::rpc::v3
 {
 /**
- * Utility class for building standardized v3 API responses.
- * All v3 responses follow a consistent format with success/data/error envelope.
+ * Utility class for building API responses compatible with the legacy format.
+ * Responses match the old property_tree API format for backward compatibility.
  */
 class response_builder
 {
 public:
 	/**
 	 * Build a success response.
-	 * @param data The response data (will be placed in "data" field)
-	 * @return JSON object with success=true, data, error=null
+	 * @param data The response data (returned directly without envelope)
+	 * @return JSON object containing the data fields directly
 	 */
-	static boost::json::object success (boost::json::value data);
+	static boost::json::object success (boost::json::object data);
 
 	/**
 	 * Build an error response.
-	 * @param code Error code string (e.g., "ACCOUNT_NOT_FOUND")
 	 * @param message Human-readable error message
-	 * @param details Optional additional error details
-	 * @return JSON object with success=false, data=null, error object
+	 * @return JSON object with single "error" field
 	 */
-	static boost::json::object error (
-	std::string const & code,
-	std::string const & message,
-	boost::json::object details = {});
+	static boost::json::object error (std::string const & message);
 
 	/**
 	 * Serialize a JSON object to string.

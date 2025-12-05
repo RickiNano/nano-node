@@ -10,6 +10,7 @@
 #include <nano/secure/ledger.hpp>
 #include <nano/secure/ledger_set_any.hpp>
 
+#include <boost/format.hpp>
 #include <boost/json.hpp>
 
 #include <sstream>
@@ -59,9 +60,7 @@ std::function<void (std::string const &)> response)
 		// Ensure request is an object
 		if (!request_value.is_object ())
 		{
-			auto error_response = nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Request must be a JSON object");
+			auto error_response = nano::rpc::v3::response_builder::error ("Request must be a JSON object");
 			response (nano::rpc::v3::response_builder::serialize (error_response));
 			return;
 		}
@@ -71,9 +70,7 @@ std::function<void (std::string const &)> response)
 		// Extract action field
 		if (!request_obj.contains ("action"))
 		{
-			auto error_response = nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-			"Missing required field: action");
+			auto error_response = nano::rpc::v3::response_builder::error ("Missing required field: action");
 			response (nano::rpc::v3::response_builder::serialize (error_response));
 			return;
 		}
@@ -82,9 +79,7 @@ std::function<void (std::string const &)> response)
 		auto const & action_value = request_obj.at ("action");
 		if (!action_value.is_string ())
 		{
-			auto error_response = nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'action' must be a string");
+			auto error_response = nano::rpc::v3::response_builder::error ("Field 'action' must be a string");
 			response (nano::rpc::v3::response_builder::serialize (error_response));
 			return;
 		}
@@ -95,9 +90,7 @@ std::function<void (std::string const &)> response)
 		auto handler_it = action_handlers.find (action);
 		if (handler_it == action_handlers.end ())
 		{
-			auto error_response = nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::UNKNOWN_ACTION),
-			"Unknown action: " + action);
+			auto error_response = nano::rpc::v3::response_builder::error ("Unknown action: " + action);
 			response (nano::rpc::v3::response_builder::serialize (error_response));
 			return;
 		}
@@ -109,29 +102,29 @@ std::function<void (std::string const &)> response)
 	catch (boost::system::system_error const & e)
 	{
 		// JSON parsing error
-		auto error_response = nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_JSON),
-		std::string ("JSON parsing error: ") + e.what ());
+		auto error_response = nano::rpc::v3::response_builder::error (std::string ("JSON parsing error: ") + e.what ());
 		response (nano::rpc::v3::response_builder::serialize (error_response));
 	}
 	catch (std::exception const & e)
 	{
 		// General error
-		auto error_response = nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INTERNAL_ERROR),
-		std::string ("Internal error: ") + e.what ());
+		auto error_response = nano::rpc::v3::response_builder::error (std::string ("Internal error: ") + e.what ());
 		response (nano::rpc::v3::response_builder::serialize (error_response));
 	}
 }
 
 boost::json::object rpc_v3_handler::handle_version (boost::json::object const & request)
 {
-	// Build version information
+	// Build version information matching legacy format
 	boost::json::object data;
-	data["rpc_version"] = 3;
-	data["node_vendor"] = NANO_VERSION_STRING;
+	data["rpc_version"] = "1";
+	data["store_version"] = std::to_string (node.store_version ());
 	data["protocol_version"] = std::to_string (node.network_params.network.protocol_version);
+	data["node_vendor"] = boost::str (boost::format ("Nano %1%") % NANO_VERSION_STRING);
+	data["store_vendor"] = node.store.vendor_get ();
 	data["network"] = node.network_params.network.get_current_network_as_string ();
+	data["network_identifier"] = node.network_params.ledger.genesis->hash ().to_string ();
+	data["build_info"] = BUILD_INFO;
 
 	return nano::rpc::v3::response_builder::success (data);
 }
@@ -141,17 +134,13 @@ boost::json::object rpc_v3_handler::handle_account_balance (boost::json::object 
 	// Validate required field: account
 	if (!request.contains ("account"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: account");
+		return nano::rpc::v3::response_builder::error ("Bad account number");
 	}
 
 	auto const & account_value = request.at ("account");
 	if (!account_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'account' must be a string");
+		return nano::rpc::v3::response_builder::error ("Bad account number");
 	}
 
 	std::string account_text = std::string (account_value.as_string ());
@@ -160,9 +149,7 @@ boost::json::object rpc_v3_handler::handle_account_balance (boost::json::object 
 	// Decode account address
 	if (account.decode_account (account_text))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_ACCOUNT_FORMAT),
-		"Invalid account format");
+		return nano::rpc::v3::response_builder::error ("Bad account number");
 	}
 
 	// Get optional parameter: include_only_confirmed (default: true)
@@ -193,17 +180,13 @@ boost::json::object rpc_v3_handler::handle_account_info (boost::json::object con
 	// Validate required field: account
 	if (!request.contains ("account"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: account");
+		return nano::rpc::v3::response_builder::error ("Missing required field: account");
 	}
 
 	auto const & account_value = request.at ("account");
 	if (!account_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'account' must be a string");
+		return nano::rpc::v3::response_builder::error ("Field 'account' must be a string");
 	}
 
 	std::string account_text = std::string (account_value.as_string ());
@@ -211,9 +194,7 @@ boost::json::object rpc_v3_handler::handle_account_info (boost::json::object con
 
 	if (account.decode_account (account_text))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_ACCOUNT_FORMAT),
-		"Invalid account format");
+		return nano::rpc::v3::response_builder::error ("Invalid account format");
 	}
 
 	// Get account info from ledger
@@ -222,9 +203,7 @@ boost::json::object rpc_v3_handler::handle_account_info (boost::json::object con
 
 	if (!node.store.account.get (transaction, account, info))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::ACCOUNT_NOT_FOUND),
-		"Account not found");
+		return nano::rpc::v3::response_builder::error ("Account not found");
 	}
 
 	// Get confirmation height info
@@ -262,17 +241,13 @@ boost::json::object rpc_v3_handler::handle_block_info (boost::json::object const
 	// Validate required field: hash
 	if (!request.contains ("hash"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: hash");
+		return nano::rpc::v3::response_builder::error ("Missing required field: hash");
 	}
 
 	auto const & hash_value = request.at ("hash");
 	if (!hash_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'hash' must be a string");
+		return nano::rpc::v3::response_builder::error ("Field 'hash' must be a string");
 	}
 
 	std::string hash_text = std::string (hash_value.as_string ());
@@ -280,9 +255,7 @@ boost::json::object rpc_v3_handler::handle_block_info (boost::json::object const
 
 	if (hash.decode_hex (hash_text))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_BLOCK_HASH),
-		"Invalid block hash");
+		return nano::rpc::v3::response_builder::error ("Invalid block hash");
 	}
 
 	// Get block from ledger
@@ -291,9 +264,7 @@ boost::json::object rpc_v3_handler::handle_block_info (boost::json::object const
 
 	if (!block)
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::BLOCK_NOT_FOUND),
-		"Block not found");
+		return nano::rpc::v3::response_builder::error ("Block not found");
 	}
 
 	// Get block account
@@ -394,17 +365,13 @@ boost::json::object rpc_v3_handler::handle_validate_account_number (boost::json:
 	// Validate required field: account
 	if (!request.contains ("account"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: account");
+		return nano::rpc::v3::response_builder::error ("Missing required field: account");
 	}
 
 	auto const & account_value = request.at ("account");
 	if (!account_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'account' must be a string");
+		return nano::rpc::v3::response_builder::error ("Field 'account' must be a string");
 	}
 
 	std::string account_text = std::string (account_value.as_string ());
@@ -423,17 +390,13 @@ boost::json::object rpc_v3_handler::handle_account_representative (boost::json::
 	// Validate required field: account
 	if (!request.contains ("account"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: account");
+		return nano::rpc::v3::response_builder::error ("Missing required field: account");
 	}
 
 	auto const & account_value = request.at ("account");
 	if (!account_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'account' must be a string");
+		return nano::rpc::v3::response_builder::error ("Field 'account' must be a string");
 	}
 
 	std::string account_text = std::string (account_value.as_string ());
@@ -441,9 +404,7 @@ boost::json::object rpc_v3_handler::handle_account_representative (boost::json::
 
 	if (account.decode_account (account_text))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_ACCOUNT_FORMAT),
-		"Invalid account format");
+		return nano::rpc::v3::response_builder::error ("Invalid account format");
 	}
 
 	// Get account info
@@ -452,9 +413,7 @@ boost::json::object rpc_v3_handler::handle_account_representative (boost::json::
 
 	if (!node.store.account.get (transaction, account, info))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::ACCOUNT_NOT_FOUND),
-		"Account not found");
+		return nano::rpc::v3::response_builder::error ("Account not found");
 	}
 
 	boost::json::object data;
@@ -468,17 +427,13 @@ boost::json::object rpc_v3_handler::handle_accounts_balances (boost::json::objec
 	// Validate required field: accounts
 	if (!request.contains ("accounts"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: accounts");
+		return nano::rpc::v3::response_builder::error ("Missing required field: accounts");
 	}
 
 	auto const & accounts_value = request.at ("accounts");
 	if (!accounts_value.is_array ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'accounts' must be an array");
+		return nano::rpc::v3::response_builder::error ("Field 'accounts' must be an array");
 	}
 
 	auto const & accounts_array = accounts_value.as_array ();
@@ -524,17 +479,13 @@ boost::json::object rpc_v3_handler::handle_blocks_info (boost::json::object cons
 	// Validate required field: hashes
 	if (!request.contains ("hashes"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: hashes");
+		return nano::rpc::v3::response_builder::error ("Missing required field: hashes");
 	}
 
 	auto const & hashes_value = request.at ("hashes");
 	if (!hashes_value.is_array ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'hashes' must be an array");
+		return nano::rpc::v3::response_builder::error ("Field 'hashes' must be an array");
 	}
 
 	auto const & hashes_array = hashes_value.as_array ();
@@ -602,17 +553,13 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 	// Validate required field: type
 	if (!request.contains ("type"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::MISSING_REQUIRED_FIELD),
-		"Missing required field: type");
+		return nano::rpc::v3::response_builder::error ("Missing required field: type");
 	}
 
 	auto const & type_value = request.at ("type");
 	if (!type_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'type' must be a string");
+		return nano::rpc::v3::response_builder::error ("Field 'type' must be a string");
 	}
 
 	std::string type = std::string (type_value.as_string ());
@@ -620,26 +567,20 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 	// Validate required field: key (private key)
 	if (!request.contains ("key"))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::BLOCK_CREATE_KEY_REQUIRED),
-		"Missing required field: key (private key)");
+		return nano::rpc::v3::response_builder::error ("Missing required field: key (private key)");
 	}
 
 	auto const & key_value = request.at ("key");
 	if (!key_value.is_string ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-		"Field 'key' must be a string");
+		return nano::rpc::v3::response_builder::error ("Field 'key' must be a string");
 	}
 
 	std::string key_text = std::string (key_value.as_string ());
 	nano::raw_key prv;
 	if (prv.decode_hex (key_text))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::BAD_PRIVATE_KEY),
-		"Invalid private key format");
+		return nano::rpc::v3::response_builder::error ("Invalid private key format");
 	}
 
 	nano::account pub (nano::pub_key (prv));
@@ -659,9 +600,7 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 			}
 			catch (...)
 			{
-				return nano::rpc::v3::response_builder::error (
-				std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-				"Invalid work format");
+				return nano::rpc::v3::response_builder::error ("Invalid work format");
 			}
 		}
 	}
@@ -669,9 +608,7 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 	// Check if work generation is available when work is not provided
 	if (work == 0 && !node.work_generation_enabled ())
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::DISABLED_WORK_GENERATION),
-		"Work generation is disabled and no work was provided");
+		return nano::rpc::v3::response_builder::error ("Work generation is disabled and no work was provided");
 	}
 
 	// Parse common optional fields
@@ -681,16 +618,12 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & rep_value = request.at ("representative");
 		if (!rep_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'representative' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'representative' must be a string");
 		}
 		std::string rep_text = std::string (rep_value.as_string ());
 		if (representative.decode_account (rep_text))
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BAD_REPRESENTATIVE_NUMBER),
-			"Invalid representative account format");
+			return nano::rpc::v3::response_builder::error ("Invalid representative account format");
 		}
 	}
 
@@ -700,16 +633,12 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & dest_value = request.at ("destination");
 		if (!dest_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'destination' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'destination' must be a string");
 		}
 		std::string dest_text = std::string (dest_value.as_string ());
 		if (destination.decode_account (dest_text))
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BAD_DESTINATION),
-			"Invalid destination account format");
+			return nano::rpc::v3::response_builder::error ("Invalid destination account format");
 		}
 	}
 
@@ -719,16 +648,12 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & source_value = request.at ("source");
 		if (!source_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'source' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'source' must be a string");
 		}
 		std::string source_text = std::string (source_value.as_string ());
 		if (source.decode_hex (source_text))
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BAD_SOURCE),
-			"Invalid source block hash");
+			return nano::rpc::v3::response_builder::error ("Invalid source block hash");
 		}
 	}
 
@@ -738,16 +663,12 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & prev_value = request.at ("previous");
 		if (!prev_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'previous' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'previous' must be a string");
 		}
 		std::string prev_text = std::string (prev_value.as_string ());
 		if (previous.decode_hex (prev_text))
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BAD_PREVIOUS),
-			"Invalid previous block hash");
+			return nano::rpc::v3::response_builder::error ("Invalid previous block hash");
 		}
 	}
 
@@ -757,16 +678,12 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & balance_value = request.at ("balance");
 		if (!balance_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'balance' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'balance' must be a string");
 		}
 		std::string balance_text = std::string (balance_value.as_string ());
 		if (balance.decode_dec (balance_text))
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_BALANCE),
-			"Invalid balance format");
+			return nano::rpc::v3::response_builder::error ("Invalid balance format");
 		}
 	}
 
@@ -776,16 +693,12 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & amount_value = request.at ("amount");
 		if (!amount_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'amount' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'amount' must be a string");
 		}
 		std::string amount_text = std::string (amount_value.as_string ());
 		if (amount.decode_dec (amount_text))
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_AMOUNT),
-			"Invalid amount format");
+			return nano::rpc::v3::response_builder::error ("Invalid amount format");
 		}
 	}
 
@@ -795,18 +708,14 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		auto const & link_value = request.at ("link");
 		if (!link_value.is_string ())
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::INVALID_REQUEST_FORMAT),
-			"Field 'link' must be a string");
+			return nano::rpc::v3::response_builder::error ("Field 'link' must be a string");
 		}
 		std::string link_text = std::string (link_value.as_string ());
 		if (link.decode_account (link_text))
 		{
 			if (link.decode_hex (link_text))
 			{
-				return nano::rpc::v3::response_builder::error (
-				std::string (nano::rpc::v3::errors::BAD_LINK),
-				"Invalid link format");
+				return nano::rpc::v3::response_builder::error ("Invalid link format");
 			}
 		}
 	}
@@ -853,9 +762,7 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		}
 		else
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BLOCK_CREATE_REQUIREMENTS_STATE),
-			"State block requires: previous, representative, link");
+			return nano::rpc::v3::response_builder::error ("State block requires: previous, representative, link");
 		}
 	}
 	else if (type == "open")
@@ -872,9 +779,7 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		}
 		else
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BLOCK_CREATE_REQUIREMENTS_OPEN),
-			"Open block requires: source, representative");
+			return nano::rpc::v3::response_builder::error ("Open block requires: source, representative");
 		}
 	}
 	else if (type == "receive")
@@ -890,9 +795,7 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		}
 		else
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BLOCK_CREATE_REQUIREMENTS_RECEIVE),
-			"Receive block requires: source, previous");
+			return nano::rpc::v3::response_builder::error ("Receive block requires: source, previous");
 		}
 	}
 	else if (type == "change")
@@ -908,9 +811,7 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 		}
 		else
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BLOCK_CREATE_REQUIREMENTS_CHANGE),
-			"Change block requires: previous, representative");
+			return nano::rpc::v3::response_builder::error ("Change block requires: previous, representative");
 		}
 	}
 	else if (type == "send")
@@ -929,30 +830,22 @@ boost::json::object rpc_v3_handler::handle_block_create (boost::json::object con
 			}
 			else
 			{
-				return nano::rpc::v3::response_builder::error (
-				std::string (nano::rpc::v3::errors::INSUFFICIENT_BALANCE),
-				"Insufficient balance for send");
+				return nano::rpc::v3::response_builder::error ("Insufficient balance for send");
 			}
 		}
 		else
 		{
-			return nano::rpc::v3::response_builder::error (
-			std::string (nano::rpc::v3::errors::BLOCK_CREATE_REQUIREMENTS_SEND),
-			"Send block requires: destination, previous, balance, amount");
+			return nano::rpc::v3::response_builder::error ("Send block requires: destination, previous, balance, amount");
 		}
 	}
 	else
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INVALID_BLOCK_TYPE),
-		"Invalid block type: " + type);
+		return nano::rpc::v3::response_builder::error ("Invalid block type: " + type);
 	}
 
 	if (!block || (ec_build && ec_build != nano::error_common::missing_work))
 	{
-		return nano::rpc::v3::response_builder::error (
-		std::string (nano::rpc::v3::errors::INTERNAL_ERROR),
-		"Failed to build block");
+		return nano::rpc::v3::response_builder::error ("Failed to build block");
 	}
 
 	// Set work if provided

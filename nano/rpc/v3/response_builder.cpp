@@ -2,32 +2,17 @@
 
 namespace nano::rpc::v3
 {
-boost::json::object response_builder::success (boost::json::value data)
+boost::json::object response_builder::success (boost::json::object data)
 {
-	boost::json::object response;
-	response["success"] = true;
-	response["data"] = data;
-	response["error"] = nullptr;
-	return response;
+	// Return data directly without envelope for backward compatibility
+	return data;
 }
 
-boost::json::object response_builder::error (
-std::string const & code,
-std::string const & message,
-boost::json::object details)
+boost::json::object response_builder::error (std::string const & message)
 {
-	boost::json::object error_obj;
-	error_obj["code"] = code;
-	error_obj["message"] = message;
-	if (!details.empty ())
-	{
-		error_obj["details"] = details;
-	}
-
+	// Return simple error format matching legacy API
 	boost::json::object response;
-	response["success"] = false;
-	response["data"] = nullptr;
-	response["error"] = error_obj;
+	response["error"] = message;
 	return response;
 }
 
