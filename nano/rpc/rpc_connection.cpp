@@ -141,10 +141,21 @@ void nano::rpc_connection::parse_request (STREAM_TYPE & stream, std::shared_ptr<
 							// Extract action from URL path: /api/uptime -> "uptime"
 							std::string action = path_l.substr (5); // Skip "/api/" (5 chars)
 
-							// Remove leading slash if present (handles /api/uptime and /api//uptime)
-							if (!action.empty () && action[0] == '/')
+							// Remove query parameters if present: uptime?foo=bar -> uptime
+							auto query_pos = action.find ('?');
+							if (query_pos != std::string::npos)
+							{
+								action = action.substr (0, query_pos);
+							}
+
+							// Remove leading/trailing slashes
+							while (!action.empty () && action[0] == '/')
 							{
 								action = action.substr (1);
+							}
+							while (!action.empty () && action[action.length () - 1] == '/')
+							{
+								action = action.substr (0, action.length () - 1);
 							}
 
 							// Route to v3 handler with path-based action

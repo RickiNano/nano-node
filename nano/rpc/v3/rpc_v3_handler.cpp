@@ -117,71 +117,12 @@ void rpc_v3_handler::process_request (
 std::string const & body,
 std::function<void (std::string const &)> response)
 {
-	try
-	{
-		// Parse JSON request
-		boost::json::value request_value = boost::json::parse (body);
-
-		// Ensure request is an object
-		if (!request_value.is_object ())
-		{
-			auto error_response = nano::rpc::v3::response_builder::error ("Request must be a JSON object");
-			response (nano::rpc::v3::response_builder::serialize (error_response));
-			return;
-		}
-
-		auto & request_obj = request_value.as_object ();
-
-		// Extract action field
-		if (!request_obj.contains ("action"))
-		{
-			auto error_response = nano::rpc::v3::response_builder::error ("Missing required field: action");
-			response (nano::rpc::v3::response_builder::serialize (error_response));
-			return;
-		}
-
-		// Get action as string
-		auto const & action_value = request_obj.at ("action");
-		if (!action_value.is_string ())
-		{
-			auto error_response = nano::rpc::v3::response_builder::error ("Field 'action' must be a string");
-			response (nano::rpc::v3::response_builder::serialize (error_response));
-			return;
-		}
-
-		std::string action = std::string (action_value.as_string ());
-
-		// Look up handler for this action
-		auto handler_it = action_handlers.find (action);
-		if (handler_it == action_handlers.end ())
-		{
-			auto error_response = nano::rpc::v3::response_builder::error ("Unknown action: " + action);
-			response (nano::rpc::v3::response_builder::serialize (error_response));
-			return;
-		}
-
-		// Call the handler
-		auto result = handler_it->second (request_obj);
-		response (nano::rpc::v3::response_builder::serialize (result));
-	}
-	catch (boost::system::system_error const & e)
-	{
-		// JSON parsing error
-		auto error_response = nano::rpc::v3::response_builder::error (std::string ("JSON parsing error: ") + e.what ());
-		response (nano::rpc::v3::response_builder::serialize (error_response));
-	}
-	catch (std::exception const & e)
-	{
-		// General error
-		auto error_response = nano::rpc::v3::response_builder::error (std::string ("Internal error: ") + e.what ());
-		response (nano::rpc::v3::response_builder::serialize (error_response));
-	}
-	catch (...)
-	{
-		// Catch-all for any non-standard exceptions (compiler-specific issues)
-		auto error_response = nano::rpc::v3::response_builder::error ("Unknown error occurred");
-		response (nano::rpc::v3::response_builder::serialize (error_response));
-	}
+	// V3 API uses RESTful URL-based actions only.
+	// This method is deprecated for HTTP requests - use /api/{action} endpoints instead.
+	// Return error directing users to the correct API format.
+	auto error_response = nano::rpc::v3::response_builder::error (
+		"V3 API requires URL-based actions. Use /api/{action} endpoints (e.g., POST /api/uptime) instead of including action in the request body.");
+	response (nano::rpc::v3::response_builder::serialize (error_response));
 }
 
 void rpc_v3_handler::process_request_with_path_action (
@@ -205,7 +146,13 @@ std::function<void (std::string const &)> response)
 			}
 		}
 
-		// Inject/override the action from URL path
+		// Remove any "action" field from the body - for v3, action comes only from URL
+		if (request_obj.contains ("action"))
+		{
+			request_obj.erase ("action");
+		}
+
+		// Set the action from URL path (the only source of action for v3)
 		request_obj["action"] = action;
 
 		// Look up handler for this action
