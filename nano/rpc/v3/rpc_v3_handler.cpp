@@ -146,12 +146,6 @@ std::function<void (std::string const &)> response)
 			}
 		}
 
-		// Remove any "action" field from the body - for v3, action comes only from URL
-		if (request_obj.contains ("action"))
-		{
-			request_obj.erase ("action");
-		}
-
 		// Set the action from URL path (the only source of action for v3)
 		request_obj["action"] = action;
 
