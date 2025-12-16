@@ -1,0 +1,93 @@
+name: Verify block_count_pruning
+
+on:
+  workflow_dispatch: # Allow manual trigger
+  push:
+    branches:
+      - '*block_count_pruning*' # Trigger on branches with 'block_count_pruning' in the name
+
+jobs:
+  verify_fix:
+    name: Verify block_count_pruning test (${{ matrix.os }} - ${{ matrix.backend }})
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+        backend: [lmdb, rocksdb]
+    runs-on: ${{ matrix.os }}
+    env:
+      BACKEND: ${{ matrix.backend }}
+      BUILD_TYPE: Debug
+      TEST_USE_ROCKSDB: ${{ matrix.backend == 'rocksdb' && '1' || '0' }}
+      DEADLINE_SCALE_FACTOR: ${{ matrix.backend == 'rocksdb' && '2' || '1' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Prepare (Linux)
+        if: runner.os == 'Linux'
+        run: sudo -E ci/prepare/linux/prepare.sh
+
+      - name: Prepare (macOS)
+        if: runner.os == 'macOS'
+        run: ci/prepare/macos/prepare.sh
+
+      - name: Build Tests
+        id: build
+        run: ci/build-tests.sh
+
+      - name: Run block_count_pruning test 50 times
+        if: steps.build.outcome == 'success'
+        working-directory: build
+        run: |
+          echo "Running node.block_count_pruning test 50 times..."
+          echo "================================================"
+
+          FAILURES=0
+          FAILED_RUNS=""
+
+          for i in {1..50}; do
+            printf "Run %2d/50: " $i
+
+            if ./core_test --gtest_filter=node.block_count_pruning --gtest_brief=1 > test_run_$i.log 2>&1; then
+              echo "✓ PASS"
+              rm -f test_run_$i.log  # Clean up passing test logs
+            else
+              echo "✗ FAIL"
+              FAILURES=$((FAILURES + 1))
+              FAILED_RUNS="$FAILED_RUNS $i"
+              echo "  Log saved to: test_run_$i.log"
+            fi
+          done
+
+          echo ""
+          echo "================================================"
+          echo "Results: $((50 - FAILURES))/50 passed"
+
+          if [ $FAILURES -eq 0 ]; then
+            echo "✓ SUCCESS: All 50 test runs passed!"
+            exit 0
+          else
+            echo "✗ FAILURE: $FAILURES test(s) failed on run(s):$FAILED_RUNS"
+            echo "Failure rate: $(( FAILURES * 100 / 50 ))%"
+
+            # Show logs from first failure
+            if [ -f test_run_${FAILED_RUNS##* }.log ]; then
+              echo ""
+              echo "Log from first failed run:"
+              cat test_run_${FAILED_RUNS##* }.log | tail -100
+            fi
+
+            exit 1
+          fi
+
+      - name: Upload failed test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-test-logs-${{ matrix.os }}-${{ matrix.backend }}
+          path: build/test_run_*.log
+          retention-days: 7
