@@ -3741,7 +3741,6 @@ TEST (node, bootstrap_poison)
 	// Now create a bootstrapping node that will try to sync from both nodes
 	nano::node_config node_config = system.default_config ();
 	node_config.bootstrap.account_sets.cooldown = 100ms; // Short cooldown between requests to speed up the test
-	node_config.bootstrap.frontier_scan.cooldown = 500ms; // Short cooldown for frontier scans to speed up fork detection
 	node_config.bootstrap.request_timeout = 250ms;
 	node_config.bootstrap.frontier_rate_limit = 100;
 	// Disable schedulers
