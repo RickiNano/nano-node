@@ -4,7 +4,7 @@ on:
   workflow_dispatch: # Allow manual trigger
   push:
     branches:
-      - 'verify-bootstrap-poison-*' # Trigger on branches with this prefix
+      - '*poison*' # Trigger on branches with 'poison' in the name
 
 jobs:
   verify_fix:
