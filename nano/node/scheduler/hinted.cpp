@@ -8,6 +8,8 @@
 #include <nano/secure/ledger.hpp>
 #include <nano/secure/ledger_set_any.hpp>
 
+#include <stack>
+
 /*
  * hinted
  */
