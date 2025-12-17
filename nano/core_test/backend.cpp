@@ -2,6 +2,7 @@
 #include <nano/lib/logging.hpp>
 #include <nano/store/backend.hpp>
 #include <nano/store/db_val.hpp>
+#include <nano/store/db_val_templ.hpp>
 #include <nano/store/tables.hpp>
 #include <nano/test_common/make_store.hpp>
 #include <nano/test_common/testutil.hpp>
