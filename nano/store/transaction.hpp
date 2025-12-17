@@ -3,8 +3,8 @@
 #include <nano/lib/id_dispenser.hpp>
 #include <nano/store/tables.hpp>
 
-#include <memory>
 #include <chrono>
+#include <memory>
 
 namespace nano::store
 {
