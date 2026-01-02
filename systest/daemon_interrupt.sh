@@ -16,7 +16,8 @@ case "$(uname -s)" in
         echo "Detected Windows environment, using taskkill"
         # Get the actual Windows PID (WINPID) from ps output
         # The bash $! variable returns bash-internal PID, but we need the Windows PID
-        WINPID=$(ps -p $NODE_PID | tail -n 1 | awk '{print $4}')
+        # Use awk to explicitly search for the line matching our PID in column 1
+        WINPID=$(ps -p $NODE_PID | awk -v pid="$NODE_PID" '$1 == pid {print $4}')
         echo "Bash PID: $NODE_PID, Windows PID: $WINPID"
 
         # Use taskkill without /F flag for graceful shutdown on Windows
