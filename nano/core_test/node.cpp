@@ -3226,6 +3226,12 @@ TEST (node, dependency_graph_frontier)
 	// node1 can vote, but only on the first block
 	system.wallet (0)->insert_adhoc (nano::dev::genesis_key.prv);
 
+	// Ensure nodes are connected to exchange votes
+	ASSERT_NE (nullptr, nano::test::establish_tcp (system, node1, node2.network.endpoint ()));
+
+	// Manually trigger backlog scan on node2 to ensure all unconfirmed blocks are discovered
+	node2.backlog_scan.trigger ();
+
 	ASSERT_TIMELY (10s, node2.active.active (gen_send1->qualified_root ()));
 	node1.start_election (gen_send1);
 
