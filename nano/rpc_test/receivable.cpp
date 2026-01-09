@@ -193,6 +193,14 @@ TEST (rpc, receivable_offset_and_sorting)
 	auto block5 = system.wallet (0)->send_action (nano::dev::genesis_key.pub, key1.pub, 300);
 	auto block6 = system.wallet (0)->send_action (nano::dev::genesis_key.pub, key1.pub, 300);
 
+	// wait for all blocks to be confirmed before checking receivable
+	ASSERT_TIMELY (5s, node->block_confirmed (block1->hash ()));
+	ASSERT_TIMELY (5s, node->block_confirmed (block2->hash ()));
+	ASSERT_TIMELY (5s, node->block_confirmed (block3->hash ()));
+	ASSERT_TIMELY (5s, node->block_confirmed (block4->hash ()));
+	ASSERT_TIMELY (5s, node->block_confirmed (block5->hash ()));
+	ASSERT_TIMELY (5s, node->block_confirmed (block6->hash ()));
+
 	// check that all blocks got confirmed
 	ASSERT_TIMELY_EQ (5s, node->ledger.account_receivable (node->ledger.tx_begin_read (), key1.pub, true), 1600);
 
