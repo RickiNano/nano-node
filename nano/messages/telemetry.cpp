@@ -166,6 +166,17 @@ void telemetry_data::deserialize (nano::stream & stream_a, uint16_t payload_leng
 	timestamp = std::chrono::system_clock::time_point (std::chrono::milliseconds (timestamp_l));
 	read (stream_a, active_difficulty);
 	boost::endian::big_to_native_inplace (active_difficulty);
+	// Only read database_backend if payload includes it (backwards compatibility)
+	if (payload_length_a >= latest_size)
+	{
+		read (stream_a, database_backend);
+		is_old_format = false;
+	}
+	else
+	{
+		// Old format: database_backend remains at default value 0 (unknown)
+		is_old_format = true;
+	}
 	if (payload_length_a > latest_size)
 	{
 		read (stream_a, unknown_data, payload_length_a - latest_size);
@@ -192,6 +203,11 @@ void telemetry_data::serialize_without_signature (nano::stream & stream_a) const
 	write (stream_a, maker);
 	write (stream_a, boost::endian::native_to_big (std::chrono::duration_cast<std::chrono::milliseconds> (timestamp.time_since_epoch ()).count ()));
 	write (stream_a, boost::endian::native_to_big (active_difficulty));
+	// Only include database_backend if this is new format
+	if (!is_old_format)
+	{
+		write (stream_a, database_backend);
+	}
 	write (stream_a, unknown_data);
 }
 
@@ -219,6 +235,9 @@ nano::error telemetry_data::serialize_json (nano::jsonconfig & json, bool ignore
 	json.put ("maker", maker);
 	json.put ("timestamp", std::chrono::duration_cast<std::chrono::milliseconds> (timestamp.time_since_epoch ()).count ());
 	json.put ("active_difficulty", nano::to_string_hex (active_difficulty));
+	std::string database_backend_str = (database_backend == 1) ? "lmdb" : (database_backend == 2) ? "rocksdb"
+																								  : "unknown";
+	json.put ("database_backend", database_backend_str);
 	// Keep these last for UI purposes
 	if (!ignore_identification_metrics_a)
 	{
@@ -280,12 +299,29 @@ nano::error telemetry_data::deserialize_json (nano::jsonconfig & json, bool igno
 	auto current_active_difficulty_text = json.get<std::string> ("active_difficulty");
 	auto ec = nano::from_string_hex (current_active_difficulty_text, active_difficulty);
 	debug_assert (!ec);
+	std::string database_backend_str;
+	json.get ("database_backend", database_backend_str);
+	if (!json.get_error ())
+	{
+		if (database_backend_str == "lmdb")
+		{
+			database_backend = 1;
+		}
+		else if (database_backend_str == "rocksdb")
+		{
+			database_backend = 2;
+		}
+		else
+		{
+			database_backend = 0; // unknown
+		}
+	}
 	return json.get_error ();
 }
 
 bool telemetry_data::operator== (telemetry_data const & data_a) const
 {
-	return (signature == data_a.signature && node_id == data_a.node_id && block_count == data_a.block_count && cemented_count == data_a.cemented_count && unchecked_count == data_a.unchecked_count && account_count == data_a.account_count && bandwidth_cap == data_a.bandwidth_cap && uptime == data_a.uptime && peer_count == data_a.peer_count && protocol_version == data_a.protocol_version && genesis_block == data_a.genesis_block && major_version == data_a.major_version && minor_version == data_a.minor_version && patch_version == data_a.patch_version && pre_release_version == data_a.pre_release_version && maker == data_a.maker && timestamp == data_a.timestamp && active_difficulty == data_a.active_difficulty && unknown_data == data_a.unknown_data);
+	return (signature == data_a.signature && node_id == data_a.node_id && block_count == data_a.block_count && cemented_count == data_a.cemented_count && unchecked_count == data_a.unchecked_count && account_count == data_a.account_count && bandwidth_cap == data_a.bandwidth_cap && uptime == data_a.uptime && peer_count == data_a.peer_count && protocol_version == data_a.protocol_version && genesis_block == data_a.genesis_block && major_version == data_a.major_version && minor_version == data_a.minor_version && patch_version == data_a.patch_version && pre_release_version == data_a.pre_release_version && maker == data_a.maker && timestamp == data_a.timestamp && active_difficulty == data_a.active_difficulty && database_backend == data_a.database_backend && is_old_format == data_a.is_old_format && unknown_data == data_a.unknown_data);
 }
 
 bool telemetry_data::operator!= (telemetry_data const & data_a) const
@@ -307,6 +343,7 @@ void telemetry_data::sign (nano::keypair const & node_id_a)
 
 bool telemetry_data::validate_signature () const
 {
+	// Use serialize_without_signature which respects is_old_format flag
 	std::vector<uint8_t> bytes;
 	{
 		nano::vectorstream stream (bytes);
