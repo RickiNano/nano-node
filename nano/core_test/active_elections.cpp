@@ -940,6 +940,8 @@ TEST (active_elections, fork_filter_cleanup)
  */
 TEST (active_elections, fork_replacement_tally)
 {
+	for (int iteration = 0; iteration < 50; ++iteration)
+	{
 	nano::test::system system;
 	nano::node_config node_config = system.default_config ();
 	node_config.backlog_scan.enable = false;
@@ -1093,6 +1095,7 @@ TEST (active_elections, fork_replacement_tally)
 
 	auto votes2 (election->votes ());
 	ASSERT_TRUE (votes2.find (nano::dev::genesis_key.pub) != votes2.end ());
+	} // iteration loop
 }
 
 namespace nano
