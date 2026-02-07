@@ -613,18 +613,21 @@ public:
 		backend->open (schema_v24, nano::store::open_mode::read_write);
 	}
 
-	// Write a block with the OLD v24 sideband format (successor as first field in sideband)
-	void add_block_v24 (nano::block const & block, nano::block_hash const & successor_hash)
+	// Write a block with the v24 sideband format (successor as first field in sideband)
+	void add_block_v24 (nano::block & block, nano::block_hash const & successor_hash)
 	{
 		auto tx = backend->tx_begin_write ();
 
-		// Serialize block
+		// Set successor in the block's sideband before serializing
+		auto sideband = block.sideband ();
+		sideband.successor = successor_hash;
+		block.sideband_set (sideband);
+
+		// Serialize block + sideband (sideband now includes successor as first field)
 		std::vector<uint8_t> data;
 		{
 			nano::vectorstream stream{ data };
 			nano::serialize_block (stream, block);
-			// Write old-format sideband: successor first (32 bytes), then remaining sideband fields
-			nano::write (stream, successor_hash.bytes);
 			block.sideband ().serialize (stream, block.type ());
 		}
 
@@ -712,15 +715,19 @@ TEST (ledger_upgrades, upgrade_v24_to_v25)
 	auto no_successor = store.block.successor (tx, block2->hash ());
 	ASSERT_FALSE (no_successor.has_value ());
 
-	// Verify blocks can be read with new sideband format
+	// Verify blocks can be read (successor bytes remain in sideband)
 	auto stored_block1 = store.block.get (tx, block1->hash ());
 	ASSERT_NE (nullptr, stored_block1);
 	// Open block account is in the block itself, not the sideband
 	ASSERT_EQ (stored_block1->sideband ().height, 1);
+	// Successor is still in the sideband data
+	ASSERT_EQ (stored_block1->sideband ().successor, block2->hash ());
 
 	auto stored_block2 = store.block.get (tx, block2->hash ());
 	ASSERT_NE (nullptr, stored_block2);
 	ASSERT_EQ (stored_block2->sideband ().height, 2);
+	// Block2 had zero successor
+	ASSERT_TRUE (stored_block2->sideband ().successor.is_zero ());
 }
 
 /*

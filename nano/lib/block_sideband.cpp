@@ -93,21 +93,23 @@ std::string nano::state_subtype (nano::block_details const details_a)
  * block_sideband
  */
 
-nano::block_sideband::block_sideband (nano::account const & account_a, nano::amount const & balance_a, uint64_t const height_a, nano::seconds_t const timestamp_a, nano::block_details const & details_a, nano::epoch const source_epoch_a) :
+nano::block_sideband::block_sideband (nano::account const & account_a, nano::amount const & balance_a, uint64_t const height_a, nano::seconds_t const timestamp_a, nano::block_details const & details_a, nano::epoch const source_epoch_a, nano::block_hash const & successor_a) :
 	account (account_a),
 	balance (balance_a),
 	height (height_a),
 	timestamp (timestamp_a),
+	successor (successor_a),
 	details (details_a),
 	source_epoch (source_epoch_a)
 {
 }
 
-nano::block_sideband::block_sideband (nano::account const & account_a, nano::amount const & balance_a, uint64_t const height_a, nano::seconds_t const timestamp_a, nano::epoch const epoch_a, bool const is_send, bool const is_receive, bool const is_epoch, nano::epoch const source_epoch_a) :
+nano::block_sideband::block_sideband (nano::account const & account_a, nano::amount const & balance_a, uint64_t const height_a, nano::seconds_t const timestamp_a, nano::epoch const epoch_a, bool const is_send, bool const is_receive, bool const is_epoch, nano::epoch const source_epoch_a, nano::block_hash const & successor_a) :
 	account (account_a),
 	balance (balance_a),
 	height (height_a),
 	timestamp (timestamp_a),
+	successor (successor_a),
 	details (epoch_a, is_send, is_receive, is_epoch),
 	source_epoch (source_epoch_a)
 {
@@ -116,6 +118,7 @@ nano::block_sideband::block_sideband (nano::account const & account_a, nano::amo
 size_t nano::block_sideband::size (nano::block_type type_a)
 {
 	size_t result (0);
+	result += sizeof (successor);
 	if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 	{
 		result += sizeof (account);
@@ -139,6 +142,7 @@ size_t nano::block_sideband::size (nano::block_type type_a)
 
 void nano::block_sideband::serialize (nano::stream & stream_a, nano::block_type type_a) const
 {
+	nano::write (stream_a, successor.bytes);
 	if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 	{
 		nano::write (stream_a, account.bytes);
@@ -164,6 +168,7 @@ bool nano::block_sideband::deserialize (nano::stream & stream_a, nano::block_typ
 	bool result (false);
 	try
 	{
+		nano::read (stream_a, successor.bytes);
 		if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 		{
 			nano::read (stream_a, account.bytes);
@@ -204,6 +209,7 @@ void nano::block_sideband::operator() (nano::object_stream & obs) const
 	obs.write ("account", account);
 	obs.write ("balance", balance);
 	obs.write ("height", height);
+	obs.write ("successor", successor);
 	obs.write ("timestamp", timestamp);
 	obs.write ("source_epoch", source_epoch);
 	obs.write ("details", details);
