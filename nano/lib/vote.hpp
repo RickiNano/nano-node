@@ -6,7 +6,7 @@
 #include <nano/lib/uniquer.hpp>
 
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/json/fwd.hpp>
 
 #include <vector>
 
@@ -35,7 +35,7 @@ public:
 	bool operator== (nano::vote const &) const;
 	bool operator!= (nano::vote const &) const;
 
-	void serialize_json (boost::property_tree::ptree & tree) const;
+	void serialize_json (boost::json::object & obj) const;
 	std::string to_json () const;
 	std::string hashes_string () const;
 

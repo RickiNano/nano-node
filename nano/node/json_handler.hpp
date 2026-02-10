@@ -5,7 +5,7 @@
 #include <nano/node/ipc/flatbuffers_handler.hpp>
 #include <nano/rpc/rpc.hpp>
 
-#include <boost/property_tree/ptree.hpp>
+#include <boost/json.hpp>
 
 #include <functional>
 #include <string>
@@ -152,12 +152,12 @@ public:
 	void work_validate ();
 	std::string body;
 	nano::node & node;
-	boost::property_tree::ptree request;
+	boost::json::object request;
 	std::function<void (std::string const &)> response;
 	void response_errors ();
 	std::error_code ec;
 	std::string action;
-	boost::property_tree::ptree response_l;
+	boost::json::object response_l;
 	std::shared_ptr<nano::wallet> wallet_impl ();
 	bool wallet_locked_impl (std::shared_ptr<nano::wallet> const &);
 	bool wallet_account_impl (std::shared_ptr<nano::wallet> const &, nano::account const &);

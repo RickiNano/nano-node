@@ -20,8 +20,8 @@
 #include <nano/store/typed_iterator_templ.hpp>
 
 #include <boost/format.hpp>
+#include <boost/json.hpp>
 #include <boost/polymorphic_cast.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include <future>
 
@@ -287,24 +287,23 @@ nano::wallet_store::wallet_store (bool & init_a, nano::kdf & kdf_a, nano::store:
 		nano::store::lmdb::db_val version_key (version_special);
 		auto mdb_version_key = nano::store::lmdb::to_mdb_val (version_key);
 		debug_assert (mdb_get (env.tx (transaction_a), handle, &mdb_version_key, &junk) == MDB_NOTFOUND);
-		boost::property_tree::ptree wallet_l;
-		std::stringstream istream (json_a);
+		boost::json::object wallet_l;
 		try
 		{
-			boost::property_tree::read_json (istream, wallet_l);
+			wallet_l = boost::json::parse (json_a).as_object ();
 		}
 		catch (...)
 		{
 			init_a = true;
 		}
-		for (auto i (wallet_l.begin ()), n (wallet_l.end ()); i != n; ++i)
+		for (auto const & kv : wallet_l)
 		{
 			nano::account key;
-			init_a = key.decode_hex (i->first);
+			init_a = key.decode_hex (std::string (kv.key ()));
 			if (!init_a)
 			{
 				nano::raw_key value;
-				init_a = value.decode_hex (wallet_l.get<std::string> (i->first));
+				init_a = value.decode_hex (kv.value ().as_string ().c_str ());
 				if (!init_a)
 				{
 					entry_put_raw (transaction_a, key, nano::wallet_value (value, 0));
@@ -582,15 +581,13 @@ bool nano::wallet_store::exists (nano::store::transaction const & transaction_a,
 
 void nano::wallet_store::serialize_json (nano::store::transaction const & transaction_a, std::string & string_a) const
 {
-	boost::property_tree::ptree tree;
+	boost::json::object obj;
 	using iterator = store::typed_iterator<nano::uint256_union, nano::wallet_value>;
 	for (iterator i{ store::iterator{ store::lmdb::iterator::begin (env.tx (transaction_a), handle) } }, n{ store::iterator{ store::lmdb::iterator::end (env.tx (transaction_a), handle) } }; i != n; ++i)
 	{
-		tree.put (i->first.to_string (), i->second.key.to_string ());
+		obj[i->first.to_string ()] = i->second.key.to_string ();
 	}
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, tree);
-	string_a = ostream.str ();
+	string_a = boost::json::serialize (obj);
 }
 
 void nano::wallet_store::write_backup (nano::store::transaction const & transaction_a, std::filesystem::path const & path_a) const

@@ -2,7 +2,7 @@
 
 #include <nano/lib/rpcconfig.hpp>
 
-#include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/json/fwd.hpp>
 
 #include <string>
 
@@ -26,7 +26,7 @@ public:
 	nano::rpc_child_process_config child_process;
 
 	// Used in tests to ensure requests are modified in specific cases
-	void set_request_callback (std::function<void (boost::property_tree::ptree const &)>);
-	std::function<void (boost::property_tree::ptree const &)> request_callback;
+	void set_request_callback (std::function<void (boost::json::object const &)>);
+	std::function<void (boost::json::object const &)> request_callback;
 };
 }

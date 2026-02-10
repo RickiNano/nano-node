@@ -2,7 +2,7 @@
 #include <nano/lib/tomlconfig.hpp>
 #include <nano/node/node_rpc_config.hpp>
 
-#include <boost/property_tree/ptree.hpp>
+#include <boost/json.hpp>
 
 nano::error nano::node_rpc_config::serialize_toml (nano::tomlconfig & toml) const
 {
@@ -30,7 +30,7 @@ nano::error nano::node_rpc_config::deserialize_toml (nano::tomlconfig & toml)
 	return toml.get_error ();
 }
 
-void nano::node_rpc_config::set_request_callback (std::function<void (boost::property_tree::ptree const &)> callback_a)
+void nano::node_rpc_config::set_request_callback (std::function<void (boost::json::object const &)> callback_a)
 {
 	request_callback = std::move (callback_a);
 }

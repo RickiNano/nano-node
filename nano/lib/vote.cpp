@@ -4,7 +4,7 @@
 #include <nano/lib/utility.hpp>
 #include <nano/lib/vote.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
+#include <boost/json.hpp>
 
 nano::vote::vote (bool & error_a, nano::stream & stream_a)
 {
@@ -144,30 +144,26 @@ bool nano::vote::is_final () const
 	return is_final_timestamp (timestamp_m);
 }
 
-void nano::vote::serialize_json (boost::property_tree::ptree & tree) const
+void nano::vote::serialize_json (boost::json::object & obj) const
 {
-	tree.put ("account", account.to_account ());
-	tree.put ("signature", signature.to_string ());
-	tree.put ("sequence", std::to_string (timestamp ()));
-	tree.put ("timestamp", std::to_string (timestamp ()));
-	tree.put ("duration", std::to_string (duration_bits ()));
-	boost::property_tree::ptree blocks_tree;
+	obj["account"] = account.to_account ();
+	obj["signature"] = signature.to_string ();
+	obj["sequence"] = std::to_string (timestamp ());
+	obj["timestamp"] = std::to_string (timestamp ());
+	obj["duration"] = std::to_string (duration_bits ());
+	boost::json::array blocks_array;
 	for (auto const & hash : hashes)
 	{
-		boost::property_tree::ptree entry;
-		entry.put ("", hash.to_string ());
-		blocks_tree.push_back (std::make_pair ("", entry));
+		blocks_array.push_back (boost::json::value (hash.to_string ()));
 	}
-	tree.add_child ("blocks", blocks_tree);
+	obj["blocks"] = std::move (blocks_array);
 }
 
 std::string nano::vote::to_json () const
 {
-	std::stringstream stream;
-	boost::property_tree::ptree tree;
-	serialize_json (tree);
-	boost::property_tree::write_json (stream, tree);
-	return stream.str ();
+	boost::json::object obj;
+	serialize_json (obj);
+	return boost::json::serialize (obj);
 }
 
 std::string nano::vote::hashes_string () const

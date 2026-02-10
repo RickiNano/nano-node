@@ -6,7 +6,7 @@
 #include <nano/lib/rpcconfig.hpp>
 #include <nano/rpc/rpc_handler.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
+#include <boost/json.hpp>
 
 #include <unordered_set>
 
@@ -14,7 +14,7 @@ namespace
 {
 std::unordered_set<std::string> create_rpc_control_impls ();
 std::unordered_set<std::string> rpc_control_impl_set = create_rpc_control_impls ();
-std::string filter_request (boost::property_tree::ptree tree_a);
+std::string filter_request (boost::json::object obj);
 }
 
 nano::rpc_handler::rpc_handler (nano::rpc_config const & rpc_config, std::string const & body_a, std::string const & request_id_a, std::function<void (std::string const &)> const & response_a, nano::rpc_handler_interface & rpc_handler_interface_a, nano::logger & logger) :
@@ -53,14 +53,9 @@ void nano::rpc_handler::process_request (nano::rpc_handler_request_params const 
 		{
 			if (request_params.rpc_version == 1)
 			{
-				boost::property_tree::ptree request;
-				{
-					std::stringstream ss;
-					ss << body;
-					boost::property_tree::read_json (ss, request);
-				}
+				boost::json::object request = boost::json::parse (body).as_object ();
 
-				auto action = request.get<std::string> ("action");
+				auto action = std::string (request.at ("action").as_string ().c_str ());
 
 				// Bump logging level if RPC request logging is enabled
 				logger.log (rpc_config.rpc_logging.log_rpc ? nano::log::level::info : nano::log::level::debug,
@@ -81,7 +76,7 @@ void nano::rpc_handler::process_request (nano::rpc_handler_request_params const 
 					// Special case with stats, type -> objects
 					if (action == "stats" && !rpc_config.enable_control)
 					{
-						if (request.get<std::string> ("type") == "objects")
+						if (std::string (request.at ("type").as_string ().c_str ()) == "objects")
 						{
 							json_error_response (response, rpc_control_disabled_ec.message ());
 							error = true;
@@ -89,7 +84,11 @@ void nano::rpc_handler::process_request (nano::rpc_handler_request_params const 
 					}
 					else if (action == "process")
 					{
-						auto force = request.get_optional<bool> ("force").value_or (false);
+						bool force = false;
+						if (auto * p = request.if_contains ("force"))
+						{
+							force = p->as_bool ();
+						}
 						if (force && !rpc_config.enable_control)
 						{
 							json_error_response (response, rpc_control_disabled_ec.message ());
@@ -97,15 +96,13 @@ void nano::rpc_handler::process_request (nano::rpc_handler_request_params const 
 						}
 					}
 					// Add random id to RPC send via IPC if not included
-					else if (action == "send" && request.find ("id") == request.not_found ())
+					else if (action == "send" && !request.contains ("id"))
 					{
 						nano::uint128_union random_id;
 						nano::random_pool::generate_block (random_id.bytes.data (), random_id.bytes.size ());
 						std::string random_id_text = random_id.to_string ();
-						request.put ("id", random_id_text);
-						std::stringstream ostream;
-						boost::property_tree::write_json (ostream, request);
-						body = ostream.str ();
+						request["id"] = random_id_text;
+						body = boost::json::serialize (request);
 					}
 				}
 
@@ -128,7 +125,7 @@ void nano::rpc_handler::process_request (nano::rpc_handler_request_params const 
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		json_error_response (response, "Unable to parse JSON");
 	}
@@ -191,39 +188,38 @@ std::unordered_set<std::string> create_rpc_control_impls ()
 	return set;
 }
 
-std::string filter_request (boost::property_tree::ptree tree_a)
+std::string filter_request (boost::json::object obj)
 {
 	// Replace password
-	boost::optional<std::string> password_text (tree_a.get_optional<std::string> ("password"));
-	if (password_text.is_initialized ())
+	if (auto * p = obj.if_contains ("password"))
 	{
-		tree_a.put ("password", "password");
+		obj["password"] = "password";
 	}
 	// Save first 2 symbols of wallet, key, seed
-	boost::optional<std::string> wallet_text (tree_a.get_optional<std::string> ("wallet"));
-	if (wallet_text.is_initialized () && wallet_text.get ().length () > 2)
+	if (auto * p = obj.if_contains ("wallet"))
 	{
-		tree_a.put ("wallet", wallet_text.get ().replace (wallet_text.get ().begin () + 2, wallet_text.get ().end (), wallet_text.get ().length () - 2, 'X'));
+		std::string wallet_text = p->as_string ().c_str ();
+		if (wallet_text.length () > 2)
+		{
+			obj["wallet"] = wallet_text.replace (wallet_text.begin () + 2, wallet_text.end (), wallet_text.length () - 2, 'X');
+		}
 	}
-	boost::optional<std::string> key_text (tree_a.get_optional<std::string> ("key"));
-	if (key_text.is_initialized () && key_text.get ().length () > 2)
+	if (auto * p = obj.if_contains ("key"))
 	{
-		tree_a.put ("key", key_text.get ().replace (key_text.get ().begin () + 2, key_text.get ().end (), key_text.get ().length () - 2, 'X'));
+		std::string key_text = p->as_string ().c_str ();
+		if (key_text.length () > 2)
+		{
+			obj["key"] = key_text.replace (key_text.begin () + 2, key_text.end (), key_text.length () - 2, 'X');
+		}
 	}
-	boost::optional<std::string> seed_text (tree_a.get_optional<std::string> ("seed"));
-	if (seed_text.is_initialized () && seed_text.get ().length () > 2)
+	if (auto * p = obj.if_contains ("seed"))
 	{
-		tree_a.put ("seed", seed_text.get ().replace (seed_text.get ().begin () + 2, seed_text.get ().end (), seed_text.get ().length () - 2, 'X'));
+		std::string seed_text = p->as_string ().c_str ();
+		if (seed_text.length () > 2)
+		{
+			obj["seed"] = seed_text.replace (seed_text.begin () + 2, seed_text.end (), seed_text.length () - 2, 'X');
+		}
 	}
-	std::string result;
-	std::stringstream stream;
-	boost::property_tree::write_json (stream, tree_a, false);
-	result = stream.str ();
-	// removing std::endl
-	if (result.length () > 1)
-	{
-		result.pop_back ();
-	}
-	return result;
+	return boost::json::serialize (obj);
 }
 }

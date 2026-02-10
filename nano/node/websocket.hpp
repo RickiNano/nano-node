@@ -8,7 +8,7 @@
 #include <nano/node/websocketconfig.hpp>
 #include <nano/secure/common.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
+#include <boost/json.hpp>
 
 #include <deque>
 #include <memory>
@@ -79,14 +79,14 @@ namespace websocket
 			topic (topic_a)
 		{
 		}
-		message (nano::websocket::topic topic_a, boost::property_tree::ptree & tree_a) :
+		message (nano::websocket::topic topic_a, boost::json::object & tree_a) :
 			topic (topic_a), contents (tree_a)
 		{
 		}
 
 		std::string to_string () const;
 		nano::websocket::topic topic;
-		boost::property_tree::ptree contents;
+		boost::json::object contents;
 	};
 
 	/** Message builder. This is expanded with new builder functions are necessary. */
@@ -134,7 +134,7 @@ namespace websocket
 		 * Update options, if available for a given topic
 		 * @return false on success
 		 */
-		virtual bool update (boost::property_tree::ptree const & options_a)
+		virtual bool update (boost::json::object const & options_a)
 		{
 			return true;
 		}
@@ -156,7 +156,7 @@ namespace websocket
 	{
 	public:
 		confirmation_options (nano::wallets & wallets_a, nano::logger &);
-		confirmation_options (boost::property_tree::ptree const & options_a, nano::wallets & wallets_a, nano::logger &);
+		confirmation_options (boost::json::object const & options_a, nano::wallets & wallets_a, nano::logger &);
 
 		/**
 		 * Checks if a message should be filtered for given block confirmation options.
@@ -172,7 +172,7 @@ namespace websocket
 		 * - "accounts_del" (array of std::strings) - accounts for which blocks should be filtered
 		 * @return false
 		 */
-		bool update (boost::property_tree::ptree const & options_a) override;
+		bool update (boost::json::object const & options_a) override;
 
 		/** Returns whether or not block contents should be included */
 		bool get_include_block () const
@@ -235,7 +235,7 @@ namespace websocket
 	class vote_options final : public options
 	{
 	public:
-		vote_options (boost::property_tree::ptree const & options_a, nano::logger &);
+		vote_options (boost::json::object const & options_a, nano::logger &);
 
 		/**
 		 * Checks if a message should be filtered for given vote received options.
@@ -307,7 +307,7 @@ namespace websocket
 		nano::mutex subscriptions_mutex;
 
 		/** Handle incoming message */
-		void handle_message (boost::property_tree::ptree const & message_a);
+		void handle_message (boost::json::object const & message_a);
 		/** Acknowledge incoming message */
 		void send_ack (std::string action_a, std::string id_a);
 		/** Send all queued messages. This must be called from the write strand. */

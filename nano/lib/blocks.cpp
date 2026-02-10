@@ -11,7 +11,7 @@
 #include <nano/secure/common.hpp>
 
 #include <boost/endian/conversion.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include <boost/json.hpp>
 
 #include <bitset>
 
@@ -399,13 +399,13 @@ nano::send_hashables::send_hashables (bool & error_a, nano::stream & stream_a)
 	}
 }
 
-nano::send_hashables::send_hashables (bool & error_a, boost::property_tree::ptree const & tree_a)
+nano::send_hashables::send_hashables (bool & error_a, boost::json::object const & obj)
 {
 	try
 	{
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto destination_l (tree_a.get<std::string> ("destination"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto destination_l (obj.at ("destination").as_string ().c_str ());
+		auto balance_l (obj.at ("balance").as_string ().c_str ());
 		error_a = previous.decode_hex (previous_l);
 		if (!error_a)
 		{
@@ -416,7 +416,7 @@ nano::send_hashables::send_hashables (bool & error_a, boost::property_tree::ptre
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error_a = true;
 	}
@@ -462,34 +462,32 @@ bool nano::send_block::deserialize (nano::stream & stream_a)
 
 void nano::send_block::serialize_json (std::string & string_a, bool single_line) const
 {
-	boost::property_tree::ptree tree;
-	serialize_json (tree);
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, tree, !single_line);
-	string_a = ostream.str ();
+	boost::json::object obj;
+	serialize_json (obj);
+	string_a = boost::json::serialize (obj);
 }
 
-void nano::send_block::serialize_json (boost::property_tree::ptree & tree) const
+void nano::send_block::serialize_json (boost::json::object & obj) const
 {
-	tree.put ("type", "send");
-	tree.put ("previous", hashables.previous.to_string ());
-	tree.put ("destination", hashables.destination.to_account ());
-	tree.put ("balance", hashables.balance.to_string ());
-	tree.put ("work", nano::to_string_hex (work));
-	tree.put ("signature", signature.to_string ());
+	obj["type"] = "send";
+	obj["previous"] = hashables.previous.to_string ();
+	obj["destination"] = hashables.destination.to_account ();
+	obj["balance"] = hashables.balance.to_string ();
+	obj["work"] = nano::to_string_hex (work);
+	obj["signature"] = signature.to_string ();
 }
 
-bool nano::send_block::deserialize_json (boost::property_tree::ptree const & tree_a)
+bool nano::send_block::deserialize_json (boost::json::object const & obj)
 {
 	auto error (false);
 	try
 	{
-		debug_assert (tree_a.get<std::string> ("type") == "send");
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto destination_l (tree_a.get<std::string> ("destination"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		debug_assert (obj.at ("type").as_string () == "send");
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto destination_l (obj.at ("destination").as_string ().c_str ());
+		auto balance_l (obj.at ("balance").as_string ().c_str ());
+		auto work_l (obj.at ("work").as_string ().c_str ());
+		auto signature_l (obj.at ("signature").as_string ().c_str ());
 		error = hashables.previous.decode_hex (previous_l);
 		if (!error)
 		{
@@ -508,7 +506,7 @@ bool nano::send_block::deserialize_json (boost::property_tree::ptree const & tre
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error = true;
 	}
@@ -541,22 +539,22 @@ nano::send_block::send_block (bool & error_a, nano::stream & stream_a) :
 	}
 }
 
-nano::send_block::send_block (bool & error_a, boost::property_tree::ptree const & tree_a) :
-	hashables (error_a, tree_a)
+nano::send_block::send_block (bool & error_a, boost::json::object const & obj) :
+	hashables (error_a, obj)
 {
 	if (!error_a)
 	{
 		try
 		{
-			auto signature_l (tree_a.get<std::string> ("signature"));
-			auto work_l (tree_a.get<std::string> ("work"));
+			auto signature_l (obj.at ("signature").as_string ().c_str ());
+			auto work_l (obj.at ("work").as_string ().c_str ());
 			error_a = signature.decode_hex (signature_l);
 			if (!error_a)
 			{
 				error_a = nano::from_string_hex (work_l, work);
 			}
 		}
-		catch (std::runtime_error const &)
+		catch (std::exception const &)
 		{
 			error_a = true;
 		}
@@ -668,13 +666,13 @@ nano::open_hashables::open_hashables (bool & error_a, nano::stream & stream_a)
 	}
 }
 
-nano::open_hashables::open_hashables (bool & error_a, boost::property_tree::ptree const & tree_a)
+nano::open_hashables::open_hashables (bool & error_a, boost::json::object const & obj)
 {
 	try
 	{
-		auto source_l (tree_a.get<std::string> ("source"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto account_l (tree_a.get<std::string> ("account"));
+		auto source_l (obj.at ("source").as_string ().c_str ());
+		auto representative_l (obj.at ("representative").as_string ().c_str ());
+		auto account_l (obj.at ("account").as_string ().c_str ());
 		error_a = source.decode_hex (source_l);
 		if (!error_a)
 		{
@@ -685,7 +683,7 @@ nano::open_hashables::open_hashables (bool & error_a, boost::property_tree::ptre
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error_a = true;
 	}
@@ -735,22 +733,22 @@ nano::open_block::open_block (bool & error_a, nano::stream & stream_a) :
 	}
 }
 
-nano::open_block::open_block (bool & error_a, boost::property_tree::ptree const & tree_a) :
-	hashables (error_a, tree_a)
+nano::open_block::open_block (bool & error_a, boost::json::object const & obj) :
+	hashables (error_a, obj)
 {
 	if (!error_a)
 	{
 		try
 		{
-			auto work_l (tree_a.get<std::string> ("work"));
-			auto signature_l (tree_a.get<std::string> ("signature"));
+			auto work_l (obj.at ("work").as_string ().c_str ());
+			auto signature_l (obj.at ("signature").as_string ().c_str ());
 			error_a = nano::from_string_hex (work_l, work);
 			if (!error_a)
 			{
 				error_a = signature.decode_hex (signature_l);
 			}
 		}
-		catch (std::runtime_error const &)
+		catch (std::exception const &)
 		{
 			error_a = true;
 		}
@@ -817,34 +815,32 @@ bool nano::open_block::deserialize (nano::stream & stream_a)
 
 void nano::open_block::serialize_json (std::string & string_a, bool single_line) const
 {
-	boost::property_tree::ptree tree;
-	serialize_json (tree);
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, tree, !single_line);
-	string_a = ostream.str ();
+	boost::json::object obj;
+	serialize_json (obj);
+	string_a = boost::json::serialize (obj);
 }
 
-void nano::open_block::serialize_json (boost::property_tree::ptree & tree) const
+void nano::open_block::serialize_json (boost::json::object & obj) const
 {
-	tree.put ("type", "open");
-	tree.put ("source", hashables.source.to_string ());
-	tree.put ("representative", hashables.representative.to_account ());
-	tree.put ("account", hashables.account.to_account ());
-	tree.put ("work", nano::to_string_hex (work));
-	tree.put ("signature", signature.to_string ());
+	obj["type"] = "open";
+	obj["source"] = hashables.source.to_string ();
+	obj["representative"] = hashables.representative.to_account ();
+	obj["account"] = hashables.account.to_account ();
+	obj["work"] = nano::to_string_hex (work);
+	obj["signature"] = signature.to_string ();
 }
 
-bool nano::open_block::deserialize_json (boost::property_tree::ptree const & tree_a)
+bool nano::open_block::deserialize_json (boost::json::object const & obj)
 {
 	auto error (false);
 	try
 	{
-		debug_assert (tree_a.get<std::string> ("type") == "open");
-		auto source_l (tree_a.get<std::string> ("source"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto account_l (tree_a.get<std::string> ("account"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		debug_assert (obj.at ("type").as_string () == "open");
+		auto source_l (obj.at ("source").as_string ().c_str ());
+		auto representative_l (obj.at ("representative").as_string ().c_str ());
+		auto account_l (obj.at ("account").as_string ().c_str ());
+		auto work_l (obj.at ("work").as_string ().c_str ());
+		auto signature_l (obj.at ("signature").as_string ().c_str ());
 		error = hashables.source.decode_hex (source_l);
 		if (!error)
 		{
@@ -863,7 +859,7 @@ bool nano::open_block::deserialize_json (boost::property_tree::ptree const & tre
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error = true;
 	}
@@ -959,19 +955,19 @@ nano::change_hashables::change_hashables (bool & error_a, nano::stream & stream_
 	}
 }
 
-nano::change_hashables::change_hashables (bool & error_a, boost::property_tree::ptree const & tree_a)
+nano::change_hashables::change_hashables (bool & error_a, boost::json::object const & obj)
 {
 	try
 	{
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto representative_l (obj.at ("representative").as_string ().c_str ());
 		error_a = previous.decode_hex (previous_l);
 		if (!error_a)
 		{
 			error_a = representative.decode_account (representative_l);
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error_a = true;
 	}
@@ -1009,22 +1005,22 @@ nano::change_block::change_block (bool & error_a, nano::stream & stream_a) :
 	}
 }
 
-nano::change_block::change_block (bool & error_a, boost::property_tree::ptree const & tree_a) :
-	hashables (error_a, tree_a)
+nano::change_block::change_block (bool & error_a, boost::json::object const & obj) :
+	hashables (error_a, obj)
 {
 	if (!error_a)
 	{
 		try
 		{
-			auto work_l (tree_a.get<std::string> ("work"));
-			auto signature_l (tree_a.get<std::string> ("signature"));
+			auto work_l (obj.at ("work").as_string ().c_str ());
+			auto signature_l (obj.at ("signature").as_string ().c_str ());
 			error_a = nano::from_string_hex (work_l, work);
 			if (!error_a)
 			{
 				error_a = signature.decode_hex (signature_l);
 			}
 		}
-		catch (std::runtime_error const &)
+		catch (std::exception const &)
 		{
 			error_a = true;
 		}
@@ -1084,32 +1080,30 @@ bool nano::change_block::deserialize (nano::stream & stream_a)
 
 void nano::change_block::serialize_json (std::string & string_a, bool single_line) const
 {
-	boost::property_tree::ptree tree;
-	serialize_json (tree);
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, tree, !single_line);
-	string_a = ostream.str ();
+	boost::json::object obj;
+	serialize_json (obj);
+	string_a = boost::json::serialize (obj);
 }
 
-void nano::change_block::serialize_json (boost::property_tree::ptree & tree) const
+void nano::change_block::serialize_json (boost::json::object & obj) const
 {
-	tree.put ("type", "change");
-	tree.put ("previous", hashables.previous.to_string ());
-	tree.put ("representative", hashables.representative.to_account ());
-	tree.put ("work", nano::to_string_hex (work));
-	tree.put ("signature", signature.to_string ());
+	obj["type"] = "change";
+	obj["previous"] = hashables.previous.to_string ();
+	obj["representative"] = hashables.representative.to_account ();
+	obj["work"] = nano::to_string_hex (work);
+	obj["signature"] = signature.to_string ();
 }
 
-bool nano::change_block::deserialize_json (boost::property_tree::ptree const & tree_a)
+bool nano::change_block::deserialize_json (boost::json::object const & obj)
 {
 	auto error (false);
 	try
 	{
-		debug_assert (tree_a.get<std::string> ("type") == "change");
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		debug_assert (obj.at ("type").as_string () == "change");
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto representative_l (obj.at ("representative").as_string ().c_str ());
+		auto work_l (obj.at ("work").as_string ().c_str ());
+		auto signature_l (obj.at ("signature").as_string ().c_str ());
 		error = hashables.previous.decode_hex (previous_l);
 		if (!error)
 		{
@@ -1124,7 +1118,7 @@ bool nano::change_block::deserialize_json (boost::property_tree::ptree const & t
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error = true;
 	}
@@ -1233,15 +1227,15 @@ nano::state_hashables::state_hashables (bool & error_a, nano::stream & stream_a)
 	}
 }
 
-nano::state_hashables::state_hashables (bool & error_a, boost::property_tree::ptree const & tree_a)
+nano::state_hashables::state_hashables (bool & error_a, boost::json::object const & obj)
 {
 	try
 	{
-		auto account_l (tree_a.get<std::string> ("account"));
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
-		auto link_l (tree_a.get<std::string> ("link"));
+		auto account_l (obj.at ("account").as_string ().c_str ());
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto representative_l (obj.at ("representative").as_string ().c_str ());
+		auto balance_l (obj.at ("balance").as_string ().c_str ());
+		auto link_l (obj.at ("link").as_string ().c_str ());
 		error_a = account.decode_account (account_l);
 		if (!error_a)
 		{
@@ -1260,7 +1254,7 @@ nano::state_hashables::state_hashables (bool & error_a, boost::property_tree::pt
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error_a = true;
 	}
@@ -1304,16 +1298,16 @@ nano::state_block::state_block (bool & error_a, nano::stream & stream_a) :
 	}
 }
 
-nano::state_block::state_block (bool & error_a, boost::property_tree::ptree const & tree_a) :
-	hashables (error_a, tree_a)
+nano::state_block::state_block (bool & error_a, boost::json::object const & obj) :
+	hashables (error_a, obj)
 {
 	if (!error_a)
 	{
 		try
 		{
-			auto type_l (tree_a.get<std::string> ("type"));
-			auto signature_l (tree_a.get<std::string> ("signature"));
-			auto work_l (tree_a.get<std::string> ("work"));
+			auto type_l (obj.at ("type").as_string ());
+			auto signature_l (obj.at ("signature").as_string ().c_str ());
+			auto work_l (obj.at ("work").as_string ().c_str ());
 			error_a = type_l != "state";
 			if (!error_a)
 			{
@@ -1324,7 +1318,7 @@ nano::state_block::state_block (bool & error_a, boost::property_tree::ptree cons
 				}
 			}
 		}
-		catch (std::runtime_error const &)
+		catch (std::exception const &)
 		{
 			error_a = true;
 		}
@@ -1398,39 +1392,37 @@ bool nano::state_block::deserialize (nano::stream & stream_a)
 
 void nano::state_block::serialize_json (std::string & string_a, bool single_line) const
 {
-	boost::property_tree::ptree tree;
-	serialize_json (tree);
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, tree, !single_line);
-	string_a = ostream.str ();
+	boost::json::object obj;
+	serialize_json (obj);
+	string_a = boost::json::serialize (obj);
 }
 
-void nano::state_block::serialize_json (boost::property_tree::ptree & tree) const
+void nano::state_block::serialize_json (boost::json::object & obj) const
 {
-	tree.put ("type", "state");
-	tree.put ("account", hashables.account.to_account ());
-	tree.put ("previous", hashables.previous.to_string ());
-	tree.put ("representative", hashables.representative.to_account ());
-	tree.put ("balance", hashables.balance.to_string_dec ());
-	tree.put ("link", hashables.link.to_string ());
-	tree.put ("link_as_account", hashables.link.to_account ());
-	tree.put ("signature", signature.to_string ());
-	tree.put ("work", nano::to_string_hex (work));
+	obj["type"] = "state";
+	obj["account"] = hashables.account.to_account ();
+	obj["previous"] = hashables.previous.to_string ();
+	obj["representative"] = hashables.representative.to_account ();
+	obj["balance"] = hashables.balance.to_string_dec ();
+	obj["link"] = hashables.link.to_string ();
+	obj["link_as_account"] = hashables.link.to_account ();
+	obj["signature"] = signature.to_string ();
+	obj["work"] = nano::to_string_hex (work);
 }
 
-bool nano::state_block::deserialize_json (boost::property_tree::ptree const & tree_a)
+bool nano::state_block::deserialize_json (boost::json::object const & obj)
 {
 	auto error (false);
 	try
 	{
-		debug_assert (tree_a.get<std::string> ("type") == "state");
-		auto account_l (tree_a.get<std::string> ("account"));
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto representative_l (tree_a.get<std::string> ("representative"));
-		auto balance_l (tree_a.get<std::string> ("balance"));
-		auto link_l (tree_a.get<std::string> ("link"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		debug_assert (obj.at ("type").as_string () == "state");
+		auto account_l (obj.at ("account").as_string ().c_str ());
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto representative_l (obj.at ("representative").as_string ().c_str ());
+		auto balance_l (obj.at ("balance").as_string ().c_str ());
+		auto link_l (obj.at ("link").as_string ().c_str ());
+		auto work_l (obj.at ("work").as_string ().c_str ());
+		auto signature_l (obj.at ("signature").as_string ().c_str ());
 		error = hashables.account.decode_account (account_l);
 		if (!error)
 		{
@@ -1457,7 +1449,7 @@ bool nano::state_block::deserialize_json (boost::property_tree::ptree const & tr
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error = true;
 	}
@@ -1548,33 +1540,33 @@ void nano::state_block::operator() (nano::object_stream & obs) const
  *
  */
 
-std::shared_ptr<nano::block> nano::deserialize_block_json (boost::property_tree::ptree const & tree_a, nano::block_uniquer * uniquer_a)
+std::shared_ptr<nano::block> nano::deserialize_block_json (boost::json::object const & obj_a, nano::block_uniquer * uniquer_a)
 {
 	std::shared_ptr<nano::block> result;
 	try
 	{
-		auto type (tree_a.get<std::string> ("type"));
+		auto type (obj_a.at ("type").as_string ());
 		bool error (false);
 		std::unique_ptr<nano::block> obj;
 		if (type == "receive")
 		{
-			obj = std::make_unique<nano::receive_block> (error, tree_a);
+			obj = std::make_unique<nano::receive_block> (error, obj_a);
 		}
 		else if (type == "send")
 		{
-			obj = std::make_unique<nano::send_block> (error, tree_a);
+			obj = std::make_unique<nano::send_block> (error, obj_a);
 		}
 		else if (type == "open")
 		{
-			obj = std::make_unique<nano::open_block> (error, tree_a);
+			obj = std::make_unique<nano::open_block> (error, obj_a);
 		}
 		else if (type == "change")
 		{
-			obj = std::make_unique<nano::change_block> (error, tree_a);
+			obj = std::make_unique<nano::change_block> (error, obj_a);
 		}
 		else if (type == "state")
 		{
-			obj = std::make_unique<nano::state_block> (error, tree_a);
+			obj = std::make_unique<nano::state_block> (error, obj_a);
 		}
 
 		if (!error)
@@ -1582,7 +1574,7 @@ std::shared_ptr<nano::block> nano::deserialize_block_json (boost::property_tree:
 			result = std::move (obj);
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 	}
 	if (uniquer_a != nullptr)
@@ -1700,32 +1692,30 @@ bool nano::receive_block::deserialize (nano::stream & stream_a)
 
 void nano::receive_block::serialize_json (std::string & string_a, bool single_line) const
 {
-	boost::property_tree::ptree tree;
-	serialize_json (tree);
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, tree, !single_line);
-	string_a = ostream.str ();
+	boost::json::object obj;
+	serialize_json (obj);
+	string_a = boost::json::serialize (obj);
 }
 
-void nano::receive_block::serialize_json (boost::property_tree::ptree & tree) const
+void nano::receive_block::serialize_json (boost::json::object & obj) const
 {
-	tree.put ("type", "receive");
-	tree.put ("previous", hashables.previous.to_string ());
-	tree.put ("source", hashables.source.to_string ());
-	tree.put ("work", nano::to_string_hex (work));
-	tree.put ("signature", signature.to_string ());
+	obj["type"] = "receive";
+	obj["previous"] = hashables.previous.to_string ();
+	obj["source"] = hashables.source.to_string ();
+	obj["work"] = nano::to_string_hex (work);
+	obj["signature"] = signature.to_string ();
 }
 
-bool nano::receive_block::deserialize_json (boost::property_tree::ptree const & tree_a)
+bool nano::receive_block::deserialize_json (boost::json::object const & obj)
 {
 	auto error (false);
 	try
 	{
-		debug_assert (tree_a.get<std::string> ("type") == "receive");
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto source_l (tree_a.get<std::string> ("source"));
-		auto work_l (tree_a.get<std::string> ("work"));
-		auto signature_l (tree_a.get<std::string> ("signature"));
+		debug_assert (obj.at ("type").as_string () == "receive");
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto source_l (obj.at ("source").as_string ().c_str ());
+		auto work_l (obj.at ("work").as_string ().c_str ());
+		auto signature_l (obj.at ("signature").as_string ().c_str ());
 		error = hashables.previous.decode_hex (previous_l);
 		if (!error)
 		{
@@ -1740,7 +1730,7 @@ bool nano::receive_block::deserialize_json (boost::property_tree::ptree const & 
 			}
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error = true;
 	}
@@ -1772,22 +1762,22 @@ nano::receive_block::receive_block (bool & error_a, nano::stream & stream_a) :
 	}
 }
 
-nano::receive_block::receive_block (bool & error_a, boost::property_tree::ptree const & tree_a) :
-	hashables (error_a, tree_a)
+nano::receive_block::receive_block (bool & error_a, boost::json::object const & obj) :
+	hashables (error_a, obj)
 {
 	if (!error_a)
 	{
 		try
 		{
-			auto signature_l (tree_a.get<std::string> ("signature"));
-			auto work_l (tree_a.get<std::string> ("work"));
+			auto signature_l (obj.at ("signature").as_string ().c_str ());
+			auto work_l (obj.at ("work").as_string ().c_str ());
 			error_a = signature.decode_hex (signature_l);
 			if (!error_a)
 			{
 				error_a = nano::from_string_hex (work_l, work);
 			}
 		}
-		catch (std::runtime_error const &)
+		catch (std::exception const &)
 		{
 			error_a = true;
 		}
@@ -1886,19 +1876,19 @@ nano::receive_hashables::receive_hashables (bool & error_a, nano::stream & strea
 	}
 }
 
-nano::receive_hashables::receive_hashables (bool & error_a, boost::property_tree::ptree const & tree_a)
+nano::receive_hashables::receive_hashables (bool & error_a, boost::json::object const & obj)
 {
 	try
 	{
-		auto previous_l (tree_a.get<std::string> ("previous"));
-		auto source_l (tree_a.get<std::string> ("source"));
+		auto previous_l (obj.at ("previous").as_string ().c_str ());
+		auto source_l (obj.at ("source").as_string ().c_str ());
 		error_a = previous.decode_hex (previous_l);
 		if (!error_a)
 		{
 			error_a = source.decode_hex (source_l);
 		}
 	}
-	catch (std::runtime_error const &)
+	catch (std::exception const &)
 	{
 		error_a = true;
 	}

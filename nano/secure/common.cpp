@@ -12,7 +12,7 @@
 #include <nano/secure/common.hpp>
 
 #include <boost/endian/conversion.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include <boost/json.hpp>
 #include <boost/variant/get.hpp>
 
 #include <limits>
@@ -67,9 +67,7 @@ std::string const test_genesis_data = nano::env::get ("NANO_TEST_GENESIS_BLOCK")
 
 std::shared_ptr<nano::block> parse_block_from_genesis_data (std::string const & genesis_data_a)
 {
-	boost::property_tree::ptree tree;
-	std::stringstream istream (genesis_data_a);
-	boost::property_tree::read_json (istream, tree);
+	auto tree = boost::json::parse (genesis_data_a).as_object ();
 	return nano::deserialize_block_json (tree);
 }
 }

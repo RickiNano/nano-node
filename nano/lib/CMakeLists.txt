@@ -157,6 +157,7 @@ target_link_libraries(
   Boost::asio
   Boost::circular_buffer
   Boost::dll
+  Boost::json
   Boost::multiprecision
   Boost::program_options
   Boost::property_tree

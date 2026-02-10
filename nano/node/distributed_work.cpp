@@ -5,6 +5,7 @@
 
 #include <boost/algorithm/string/erase.hpp>
 #include <boost/format.hpp>
+#include <boost/json.hpp>
 #include <boost/range/iterator_range.hpp>
 
 std::shared_ptr<request_type> nano::distributed_work::peer_request::get_prepared_json_request (std::string const & request_string_a) const
@@ -142,17 +143,15 @@ void nano::distributed_work::do_request (nano::tcp_endpoint const & endpoint_a)
 		{
 			std::string request_string;
 			{
-				boost::property_tree::ptree rpc_request;
-				rpc_request.put ("action", "work_generate");
-				rpc_request.put ("hash", this_l->request.root.to_string ());
-				rpc_request.put ("difficulty", nano::to_string_hex (this_l->request.difficulty));
+				boost::json::object rpc_request;
+				rpc_request["action"] = "work_generate";
+				rpc_request["hash"] = this_l->request.root.to_string ();
+				rpc_request["difficulty"] = nano::to_string_hex (this_l->request.difficulty);
 				if (this_l->request.account.has_value ())
 				{
-					rpc_request.put ("account", this_l->request.account.value ().to_account ());
+					rpc_request["account"] = this_l->request.account.value ().to_account ();
 				}
-				std::stringstream ostream;
-				boost::property_tree::write_json (ostream, rpc_request);
-				request_string = ostream.str ();
+				request_string = boost::json::serialize (rpc_request);
 			}
 			auto peer_request (connection->get_prepared_json_request (request_string));
 			boost::beast::http::async_write (connection->socket, *peer_request,
@@ -219,12 +218,10 @@ void nano::distributed_work::do_cancel (nano::tcp_endpoint const & endpoint_a)
 		{
 			std::string request_string;
 			{
-				boost::property_tree::ptree rpc_request;
-				rpc_request.put ("action", "work_cancel");
-				rpc_request.put ("hash", this_l->request.root.to_string ());
-				std::stringstream ostream;
-				boost::property_tree::write_json (ostream, rpc_request);
-				request_string = ostream.str ();
+				boost::json::object rpc_request;
+				rpc_request["action"] = "work_cancel";
+				rpc_request["hash"] = this_l->request.root.to_string ();
+				request_string = boost::json::serialize (rpc_request);
 			}
 			auto peer_cancel (cancelling_l->get_prepared_json_request (request_string));
 			boost::beast::http::async_write (cancelling_l->socket, *peer_cancel,
@@ -246,10 +243,8 @@ void nano::distributed_work::success (std::string const & body_a, nano::tcp_endp
 	bool error = true;
 	try
 	{
-		std::stringstream istream (body_a);
-		boost::property_tree::ptree result;
-		boost::property_tree::read_json (istream, result);
-		auto work_text (result.get<std::string> ("work"));
+		auto result = boost::json::parse (body_a).as_object ();
+		auto work_text = std::string (result.at ("work").as_string ().c_str ());
 		uint64_t work;
 		if (!nano::from_string_hex (work_text, work))
 		{

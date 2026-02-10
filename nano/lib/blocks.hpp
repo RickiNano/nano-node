@@ -7,7 +7,7 @@
 #include <nano/lib/numbers.hpp>
 #include <nano/lib/optional_ptr.hpp>
 
-#include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/json/fwd.hpp>
 
 #include <optional>
 
@@ -40,7 +40,7 @@ public:
 	virtual nano::qualified_root qualified_root () const;
 	virtual void serialize (nano::stream &) const = 0;
 	virtual void serialize_json (std::string &, bool = false) const = 0;
-	virtual void serialize_json (boost::property_tree::ptree &) const = 0;
+	virtual void serialize_json (boost::json::object &) const = 0;
 	virtual void visit (nano::block_visitor &) const = 0;
 	virtual void visit (nano::mutable_block_visitor &) = 0;
 	virtual bool operator== (nano::block const &) const = 0;
@@ -107,7 +107,7 @@ public:
 	send_hashables () = default;
 	send_hashables (nano::block_hash const &, nano::account const &, nano::amount const &);
 	send_hashables (bool &, nano::stream &);
-	send_hashables (bool &, boost::property_tree::ptree const &);
+	send_hashables (bool &, boost::json::object const &);
 	void hash (blake2b_state &) const;
 	nano::block_hash previous;
 	nano::account destination;
@@ -121,7 +121,7 @@ public:
 	send_block () = default;
 	send_block (nano::block_hash const &, nano::account const &, nano::amount const &, nano::raw_key const &, nano::public_key const &, uint64_t);
 	send_block (bool &, nano::stream &);
-	send_block (bool &, boost::property_tree::ptree const &);
+	send_block (bool &, boost::json::object const &);
 	virtual ~send_block () = default;
 	uint64_t block_work () const override;
 	void block_work_set (uint64_t) override;
@@ -129,8 +129,8 @@ public:
 	void serialize (nano::stream &) const override;
 	bool deserialize (nano::stream &);
 	void serialize_json (std::string &, bool = false) const override;
-	void serialize_json (boost::property_tree::ptree &) const override;
-	bool deserialize_json (boost::property_tree::ptree const &);
+	void serialize_json (boost::json::object &) const override;
+	bool deserialize_json (boost::json::object const &);
 	void visit (nano::block_visitor &) const override;
 	void visit (nano::mutable_block_visitor &) override;
 	nano::block_type type () const override;
@@ -163,7 +163,7 @@ public:
 	receive_hashables () = default;
 	receive_hashables (nano::block_hash const &, nano::block_hash const &);
 	receive_hashables (bool &, nano::stream &);
-	receive_hashables (bool &, boost::property_tree::ptree const &);
+	receive_hashables (bool &, boost::json::object const &);
 	void hash (blake2b_state &) const;
 	nano::block_hash previous;
 	nano::block_hash source;
@@ -176,7 +176,7 @@ public:
 	receive_block () = default;
 	receive_block (nano::block_hash const &, nano::block_hash const &, nano::raw_key const &, nano::public_key const &, uint64_t);
 	receive_block (bool &, nano::stream &);
-	receive_block (bool &, boost::property_tree::ptree const &);
+	receive_block (bool &, boost::json::object const &);
 	virtual ~receive_block () = default;
 	uint64_t block_work () const override;
 	void block_work_set (uint64_t) override;
@@ -184,8 +184,8 @@ public:
 	void serialize (nano::stream &) const override;
 	bool deserialize (nano::stream &);
 	void serialize_json (std::string &, bool = false) const override;
-	void serialize_json (boost::property_tree::ptree &) const override;
-	bool deserialize_json (boost::property_tree::ptree const &);
+	void serialize_json (boost::json::object &) const override;
+	bool deserialize_json (boost::json::object const &);
 	void visit (nano::block_visitor &) const override;
 	void visit (nano::mutable_block_visitor &) override;
 	nano::block_type type () const override;
@@ -217,7 +217,7 @@ public:
 	open_hashables () = default;
 	open_hashables (nano::block_hash const &, nano::account const &, nano::account const &);
 	open_hashables (bool &, nano::stream &);
-	open_hashables (bool &, boost::property_tree::ptree const &);
+	open_hashables (bool &, boost::json::object const &);
 	void hash (blake2b_state &) const;
 	nano::block_hash source;
 	nano::account representative;
@@ -232,7 +232,7 @@ public:
 	open_block (nano::block_hash const &, nano::account const &, nano::account const &, nano::raw_key const &, nano::public_key const &, uint64_t);
 	open_block (nano::block_hash const &, nano::account const &, nano::account const &, std::nullptr_t);
 	open_block (bool &, nano::stream &);
-	open_block (bool &, boost::property_tree::ptree const &);
+	open_block (bool &, boost::json::object const &);
 	virtual ~open_block () = default;
 	uint64_t block_work () const override;
 	void block_work_set (uint64_t) override;
@@ -240,8 +240,8 @@ public:
 	void serialize (nano::stream &) const override;
 	bool deserialize (nano::stream &);
 	void serialize_json (std::string &, bool = false) const override;
-	void serialize_json (boost::property_tree::ptree &) const override;
-	bool deserialize_json (boost::property_tree::ptree const &);
+	void serialize_json (boost::json::object &) const override;
+	bool deserialize_json (boost::json::object const &);
 	void visit (nano::block_visitor &) const override;
 	void visit (nano::mutable_block_visitor &) override;
 	nano::block_type type () const override;
@@ -275,7 +275,7 @@ public:
 	change_hashables () = default;
 	change_hashables (nano::block_hash const &, nano::account const &);
 	change_hashables (bool &, nano::stream &);
-	change_hashables (bool &, boost::property_tree::ptree const &);
+	change_hashables (bool &, boost::json::object const &);
 	void hash (blake2b_state &) const;
 	nano::block_hash previous;
 	nano::account representative;
@@ -288,7 +288,7 @@ public:
 	change_block () = default;
 	change_block (nano::block_hash const &, nano::account const &, nano::raw_key const &, nano::public_key const &, uint64_t);
 	change_block (bool &, nano::stream &);
-	change_block (bool &, boost::property_tree::ptree const &);
+	change_block (bool &, boost::json::object const &);
 	virtual ~change_block () = default;
 	uint64_t block_work () const override;
 	void block_work_set (uint64_t) override;
@@ -296,8 +296,8 @@ public:
 	void serialize (nano::stream &) const override;
 	bool deserialize (nano::stream &);
 	void serialize_json (std::string &, bool = false) const override;
-	void serialize_json (boost::property_tree::ptree &) const override;
-	bool deserialize_json (boost::property_tree::ptree const &);
+	void serialize_json (boost::json::object &) const override;
+	bool deserialize_json (boost::json::object const &);
 	void visit (nano::block_visitor &) const override;
 	void visit (nano::mutable_block_visitor &) override;
 	nano::block_type type () const override;
@@ -329,7 +329,7 @@ public:
 	state_hashables () = default;
 	state_hashables (nano::account const &, nano::block_hash const &, nano::account const &, nano::amount const &, nano::link const &);
 	state_hashables (bool &, nano::stream &);
-	state_hashables (bool &, boost::property_tree::ptree const &);
+	state_hashables (bool &, boost::json::object const &);
 	void hash (blake2b_state &) const;
 	// Account# / public key that operates this account
 	// Uses:
@@ -362,7 +362,7 @@ public:
 	nano::public_key const & pub,
 	uint64_t work);
 	state_block (bool &, nano::stream &);
-	state_block (bool &, boost::property_tree::ptree const &);
+	state_block (bool &, boost::json::object const &);
 	virtual ~state_block () = default;
 	uint64_t block_work () const override;
 	void block_work_set (uint64_t) override;
@@ -370,8 +370,8 @@ public:
 	void serialize (nano::stream &) const override;
 	bool deserialize (nano::stream &);
 	void serialize_json (std::string &, bool = false) const override;
-	void serialize_json (boost::property_tree::ptree &) const override;
-	bool deserialize_json (boost::property_tree::ptree const &);
+	void serialize_json (boost::json::object &) const override;
+	bool deserialize_json (boost::json::object const &);
 	void visit (nano::block_visitor &) const override;
 	void visit (nano::mutable_block_visitor &) override;
 	nano::block_type type () const override;
@@ -423,7 +423,7 @@ public:
 
 std::shared_ptr<nano::block> deserialize_block (nano::stream &);
 std::shared_ptr<nano::block> deserialize_block (nano::stream &, nano::block_type, nano::block_uniquer * = nullptr);
-std::shared_ptr<nano::block> deserialize_block_json (boost::property_tree::ptree const &, nano::block_uniquer * = nullptr);
+std::shared_ptr<nano::block> deserialize_block_json (boost::json::object const &, nano::block_uniquer * = nullptr);
 /**
  * Serialize a block prefixed with an 8-bit typecode
  */

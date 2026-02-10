@@ -4,6 +4,8 @@
 #include <nano/node/rpc_callbacks.hpp>
 #include <nano/secure/ledger.hpp>
 
+#include <boost/json.hpp>
+
 nano::http_callbacks::http_callbacks (nano::node & node_a) :
 	node{ node_a },
 	config{ node_a.config },
@@ -61,20 +63,20 @@ void nano::http_callbacks::setup_callbacks ()
 			// Post callback processing to worker thread
 			// Safe to capture 'this' by reference as workers are stopped before this component destruction
 			workers.post ([this, block_a, account_a, amount_a, is_state_send_a, is_state_epoch_a] () {
-				// Construct the callback payload as a property tree
-				boost::property_tree::ptree event;
-				event.add ("account", account_a.to_account ());
-				event.add ("hash", block_a->hash ().to_string ());
+				// Construct the callback payload as JSON
+				boost::json::object event;
+				event["account"] = account_a.to_account ();
+				event["hash"] = block_a->hash ().to_string ();
 				std::string block_text;
 				block_a->serialize_json (block_text);
-				event.add ("block", block_text);
-				event.add ("amount", amount_a.to_string_dec ());
+				event["block"] = block_text;
+				event["amount"] = amount_a.to_string_dec ();
 
 				// Add transaction type information
 				if (is_state_send_a)
 				{
-					event.add ("is_send", is_state_send_a);
-					event.add ("subtype", "send");
+					event["is_send"] = is_state_send_a;
+					event["subtype"] = "send";
 				}
 
 				// Handle different state block subtypes
@@ -82,26 +84,21 @@ void nano::http_callbacks::setup_callbacks ()
 				{
 					if (block_a->is_change ())
 					{
-						event.add ("subtype", "change");
+						event["subtype"] = "change";
 					}
 					else if (is_state_epoch_a)
 					{
 						debug_assert (amount_a == 0 && ledger.is_epoch_link (block_a->link_field ().value ()));
-						event.add ("subtype", "epoch");
+						event["subtype"] = "epoch";
 					}
 					else
 					{
-						event.add ("subtype", "receive");
+						event["subtype"] = "receive";
 					}
 				}
 
-				// Serialize the event to JSON
-				std::stringstream ostream;
-				boost::property_tree::write_json (ostream, event);
-				ostream.flush ();
-
 				// Prepare callback request parameters
-				auto body = std::make_shared<std::string> (ostream.str ());
+				auto body = std::make_shared<std::string> (boost::json::serialize (event));
 				auto address = config.callback_address;
 				auto port = config.callback_port;
 				auto target = std::make_shared<std::string> (config.callback_target);

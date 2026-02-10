@@ -2,7 +2,7 @@
 
 #include <nano/lib/logging.hpp>
 
-#include <boost/property_tree/ptree.hpp>
+#include <boost/json.hpp>
 
 #include <functional>
 #include <string>
@@ -22,7 +22,7 @@ public:
 private:
 	std::string body;
 	std::string request_id;
-	boost::property_tree::ptree request;
+	boost::json::object request;
 	std::function<void (std::string const &)> response;
 	nano::rpc_config const & rpc_config;
 	nano::rpc_handler_interface & rpc_handler_interface;

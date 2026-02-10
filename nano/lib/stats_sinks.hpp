@@ -3,16 +3,15 @@
 #include <nano/lib/stats.hpp>
 
 #include <boost/format.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/json.hpp>
 
 namespace nano
 {
-/** JSON sink. The resulting JSON object is provided as both a property_tree::ptree (to_object) and a string (to_string) */
+/** JSON sink. The resulting JSON object is provided as both a json::object (to_object) and a string (to_string) */
 class stat_json_writer : public nano::stat_log_sink
 {
-	boost::property_tree::ptree tree;
-	boost::property_tree::ptree entries;
+	boost::json::object tree;
+	boost::json::array entries;
 
 public:
 	std::ostream & out () override
@@ -23,58 +22,58 @@ public:
 	void begin () override
 	{
 		tree.clear ();
+		entries.clear ();
 	}
 
 	void write_header (std::string const & header, std::chrono::system_clock::time_point & walltime) override
 	{
 		std::time_t now = std::chrono::system_clock::to_time_t (walltime);
 		tm tm = *localtime (&now);
-		tree.put ("type", header);
-		tree.put ("created", tm_to_string (tm));
+		tree["type"] = header;
+		tree["created"] = tm_to_string (tm);
 	}
 
 	void write_counter_entry (tm & tm, std::string const & type, std::string const & detail, std::string const & dir, uint64_t value) override
 	{
-		boost::property_tree::ptree entry;
-		entry.put ("time", boost::format ("%02d:%02d:%02d") % tm.tm_hour % tm.tm_min % tm.tm_sec);
-		entry.put ("type", type);
-		entry.put ("detail", detail);
-		entry.put ("dir", dir);
-		entry.put ("value", value);
-		entries.push_back (std::make_pair ("", entry));
+		boost::json::object entry;
+		entry["time"] = (boost::format ("%02d:%02d:%02d") % tm.tm_hour % tm.tm_min % tm.tm_sec).str ();
+		entry["type"] = type;
+		entry["detail"] = detail;
+		entry["dir"] = dir;
+		entry["value"] = value;
+		entries.push_back (std::move (entry));
 	}
 
 	void write_sampler_entry (tm & tm, const std::string & sample, const std::vector<stats::sampler_value_t> & values, std::pair<stats::sampler_value_t, stats::sampler_value_t> expected_min_max) override
 	{
-		boost::property_tree::ptree entry;
-		entry.put ("time", boost::format ("%02d:%02d:%02d") % tm.tm_hour % tm.tm_min % tm.tm_sec);
-		entry.put ("sample", sample);
-		entry.put ("min", expected_min_max.first);
-		entry.put ("max", expected_min_max.second);
-		boost::property_tree::ptree values_tree;
+		boost::json::object entry;
+		entry["time"] = (boost::format ("%02d:%02d:%02d") % tm.tm_hour % tm.tm_min % tm.tm_sec).str ();
+		entry["sample"] = sample;
+		entry["min"] = expected_min_max.first;
+		entry["max"] = expected_min_max.second;
+		boost::json::array values_array;
 		for (const auto & value : values)
 		{
-			boost::property_tree::ptree value_tree;
-			value_tree.put ("", value);
-			values_tree.push_back (std::make_pair ("", value_tree));
+			values_array.push_back (value);
 		}
-		entry.add_child ("values", values_tree);
-		entries.push_back (std::make_pair ("", entry));
+		entry["values"] = std::move (values_array);
+		entries.push_back (std::move (entry));
 	}
 
 	void finalize () override
 	{
-		tree.add_child ("entries", entries);
+		tree["entries"] = std::move (entries);
 	}
 
 	std::string to_string () override
 	{
-		boost::property_tree::write_json (sstr, tree);
+		sstr.str ("");
+		sstr << boost::json::serialize (tree);
 		return sstr.str ();
 	}
 
-	// WARNING: This method moves the ptree out of the object, leaving it in an undefined state
-	boost::property_tree::ptree && to_ptree ()
+	// WARNING: This method moves the object out, leaving it in an undefined state
+	boost::json::object && to_object ()
 	{
 		return std::move (tree);
 	}
