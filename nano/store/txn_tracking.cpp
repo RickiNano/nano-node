@@ -1,5 +1,4 @@
 #include <nano/boost/stacktrace.hpp>
-#include <nano/lib/jsonconfig.hpp>
 #include <nano/lib/logging.hpp>
 #include <nano/lib/thread_roles.hpp>
 #include <nano/lib/tomlconfig.hpp>
@@ -7,6 +6,7 @@
 #include <nano/store/txn_tracking.hpp>
 
 #include <boost/format.hpp>
+#include <boost/json.hpp>
 
 namespace
 {
@@ -55,7 +55,7 @@ nano::store::txn_tracker::txn_tracker (nano::logger & logger_a, txn_tracking_con
 {
 }
 
-void nano::store::txn_tracker::serialize_json (boost::property_tree::ptree & json, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time)
+void nano::store::txn_tracker::serialize_json (boost::json::object & json, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time)
 {
 	// Copying is cheap compared to generating the stack trace strings, so reduce time holding the mutex
 	std::vector<txn_stats> copy_stats;
@@ -77,6 +77,7 @@ void nano::store::txn_tracker::serialize_json (boost::property_tree::ptree & jso
 	});
 	debug_assert (times_since_start.size () == copy_stats.size ());
 
+	boost::json::array transactions;
 	for (std::size_t i = 0; i < times_since_start.size (); ++i)
 	{
 		auto const & stat = copy_stats[i];
@@ -84,28 +85,27 @@ void nano::store::txn_tracker::serialize_json (boost::property_tree::ptree & jso
 
 		if ((are_writes[i] && time_held_open >= min_write_time) || (!are_writes[i] && time_held_open >= min_read_time))
 		{
-			nano::jsonconfig lock_config;
+			boost::json::object lock_info;
+			lock_info["thread"] = stat.thread_name;
+			lock_info["time_held_open"] = time_held_open.count ();
+			lock_info["write"] = are_writes[i];
 
-			lock_config.put ("thread", stat.thread_name);
-			lock_config.put ("time_held_open", time_held_open.count ());
-			lock_config.put ("write", !!are_writes[i]);
-
-			boost::property_tree::ptree stacktrace_config;
-			for (auto frame : *stat.stacktrace)
+			boost::json::array stacktrace_array;
+			for (auto const & frame : *stat.stacktrace)
 			{
-				nano::jsonconfig frame_json;
-				frame_json.put ("name", frame.name ());
-				frame_json.put ("address", frame.address ());
-				frame_json.put ("source_file", frame.source_file ());
-				frame_json.put ("source_line", frame.source_line ());
-				stacktrace_config.push_back (std::make_pair ("", frame_json.get_tree ()));
+				boost::json::object frame_json;
+				frame_json["name"] = frame.name ();
+				frame_json["address"] = reinterpret_cast<uintptr_t> (frame.address ());
+				frame_json["source_file"] = frame.source_file ();
+				frame_json["source_line"] = frame.source_line ();
+				stacktrace_array.push_back (std::move (frame_json));
 			}
 
-			nano::jsonconfig stack (stacktrace_config);
-			lock_config.put_child ("stacktrace", stack);
-			json.push_back (std::make_pair ("", lock_config.get_tree ()));
+			lock_info["stacktrace"] = std::move (stacktrace_array);
+			transactions.push_back (std::move (lock_info));
 		}
 	}
+	json["transactions"] = std::move (transactions);
 }
 
 void nano::store::txn_tracker::log_if_held_long_enough (txn_stats const & stats) const

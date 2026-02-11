@@ -11,7 +11,7 @@
 #include <nano/store/transaction.hpp>
 #include <nano/store/txn_tracking.hpp>
 
-#include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/json/fwd.hpp>
 
 #include <chrono>
 #include <functional>
@@ -107,8 +107,8 @@ public:
 	virtual void backup () = 0;
 
 	// Diagnostics (optional, backend-specific)
-	virtual void collect_txn_tracker (boost::property_tree::ptree &, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time) const;
-	virtual void collect_memory_stats (boost::property_tree::ptree &) const;
+	virtual void collect_txn_tracker (boost::json::object &, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time) const;
+	virtual void collect_memory_stats (boost::json::object &) const;
 
 	// Status checking
 	virtual bool success (int status) const = 0;

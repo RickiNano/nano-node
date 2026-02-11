@@ -252,11 +252,11 @@ void backend::copy_to (backend & destination, copy_progress_callback callback, s
 	}
 }
 
-void backend::collect_txn_tracker (boost::property_tree::ptree & ptree, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time) const
+void backend::collect_txn_tracker (boost::json::object & json, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time) const
 {
 	if (tracker)
 	{
-		tracker->serialize_json (ptree, min_read_time, min_write_time);
+		tracker->serialize_json (json, min_read_time, min_write_time);
 	}
 }
 
@@ -275,7 +275,7 @@ auto backend::txn_tracking_callbacks () const -> nano::store::txn_callbacks
 	return callbacks;
 }
 
-void backend::collect_memory_stats (boost::property_tree::ptree &) const
+void backend::collect_memory_stats (boost::json::object &) const
 {
 	// Default implementation does nothing - backend-specific
 }

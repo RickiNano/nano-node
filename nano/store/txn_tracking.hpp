@@ -6,7 +6,7 @@
 #include <nano/lib/timer.hpp>
 #include <nano/store/transaction.hpp>
 
-#include <boost/property_tree/ptree_fwd.hpp>
+#include <boost/json/fwd.hpp>
 #include <boost/stacktrace/stacktrace_fwd.hpp>
 
 #include <chrono>
@@ -70,7 +70,7 @@ class txn_tracker
 public:
 	txn_tracker (nano::logger &, txn_tracking_config const & txn_tracking_config);
 
-	void serialize_json (boost::property_tree::ptree & json, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time);
+	void serialize_json (boost::json::object & json, std::chrono::milliseconds min_read_time, std::chrono::milliseconds min_write_time);
 	void add (transaction_impl const * transaction_impl);
 	void erase (transaction_impl const * transaction_impl);
 

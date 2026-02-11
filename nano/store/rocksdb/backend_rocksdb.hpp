@@ -52,7 +52,7 @@ public:
 	void copy_with_compaction (std::filesystem::path const & destination) override;
 	void backup () override;
 
-	void collect_memory_stats (boost::property_tree::ptree &) const override;
+	void collect_memory_stats (boost::json::object &) const override;
 
 	std::string vendor_get () const override;
 	std::string get_database_path () const override;
