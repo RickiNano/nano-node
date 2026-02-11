@@ -2296,9 +2296,9 @@ void nano::json_handler::database_txn_tracker ()
 
 		if (!ec)
 		{
-			boost::property_tree::ptree json_ptree;
-			node.store.backend.collect_txn_tracker (json_ptree, std::chrono::milliseconds (min_read_time_milliseconds), std::chrono::milliseconds (min_write_time_milliseconds));
-			response_l["txn_tracking"] = ptree_to_json (json_ptree);
+			boost::json::object txn_tracking;
+			node.store.backend.collect_txn_tracker (txn_tracking, std::chrono::milliseconds (min_read_time_milliseconds), std::chrono::milliseconds (min_write_time_milliseconds));
+			response_l["txn_tracking"] = std::move (txn_tracking);
 		}
 	}
 	else
@@ -4085,9 +4085,7 @@ void nano::json_handler::stats ()
 	}
 	else if (type == "database")
 	{
-		boost::property_tree::ptree stats_ptree;
-		node.store.backend.collect_memory_stats (stats_ptree);
-		merge_ptree_to_json (stats_ptree, response_l);
+		node.store.backend.collect_memory_stats (response_l);
 	}
 	else
 	{
