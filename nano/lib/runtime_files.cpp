@@ -1,8 +1,7 @@
 #include <nano/boost/process/process.hpp>
 #include <nano/lib/runtime_files.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/json.hpp>
 
 #include <cstdlib>
 #include <fstream>
@@ -87,18 +86,16 @@ void nano::runtime_files::create_pid_file (std::filesystem::path const & path)
 
 void nano::runtime_files::create_runtime_info (std::filesystem::path const & path, runtime_info const & info)
 {
-	boost::property_tree::ptree tree;
-	tree.put ("peering_port", info.peering_port);
+	boost::json::object obj;
+	obj["peering_port"] = info.peering_port;
 	if (info.rpc_port != 0)
 	{
-		tree.put ("rpc_port", info.rpc_port);
+		obj["rpc_port"] = info.rpc_port;
 	}
 	if (!info.node_id.empty ())
 	{
-		tree.put ("node_id", info.node_id);
+		obj["node_id"] = info.node_id;
 	}
 
-	std::ostringstream oss;
-	boost::property_tree::write_json (oss, tree);
-	nano::runtime_files::create (path, oss.str ());
+	nano::runtime_files::create (path, boost::json::serialize (obj));
 }

@@ -15,8 +15,8 @@
 #include <nano/test_common/testutil.hpp>
 
 #include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/json.hpp>
 #include <boost/program_options.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include <csignal>
 #include <future>
@@ -150,18 +150,16 @@ private:
 
 	void request_receive ()
 	{
-		boost::property_tree::ptree request;
-		request.put ("action", "receive");
-		request.put ("wallet", wallet);
-		request.put ("account", destination);
-		request.put ("block", block);
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, request);
+		boost::json::object request;
+		request["action"] = "receive";
+		request["wallet"] = wallet;
+		request["account"] = destination;
+		request["block"] = block;
 
 		req.method (http::verb::post);
 		req.version (11);
 		req.target ("/");
-		req.body () = ostream.str ();
+		req.body () = boost::json::serialize (request);
 		req.prepare_payload ();
 
 		async_write ();
@@ -250,19 +248,17 @@ private:
 
 	void request_send ()
 	{
-		boost::property_tree::ptree request;
-		request.put ("action", "send");
-		request.put ("wallet", wallet);
-		request.put ("source", source);
-		request.put ("destination", destination);
-		request.put ("amount", "1");
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, request);
+		boost::json::object request;
+		request["action"] = "send";
+		request["wallet"] = wallet;
+		request["source"] = source;
+		request["destination"] = destination;
+		request["amount"] = "1";
 
 		req.method (http::verb::post);
 		req.version (11);
 		req.target ("/");
-		req.body () = ostream.str ();
+		req.body () = boost::json::serialize (request);
 		req.prepare_payload ();
 
 		async_write ();
@@ -299,10 +295,8 @@ private:
 
 	void receive_start ()
 	{
-		boost::property_tree::ptree json;
-		std::stringstream body (res.body ());
-		boost::property_tree::read_json (body, json);
-		auto block = json.get<std::string> ("block");
+		auto json = boost::json::parse (res.body ()).as_object ();
+		auto block = std::string (json.at ("block").as_string ());
 
 		start_receive_session = std::make_shared<start_receive_session_impl> (
 		io_ctx, results, wallet, source, destination, send_calls_remaining, block);
@@ -313,7 +307,7 @@ private:
 class rpc_request_impl : public std::enable_shared_from_this<rpc_request_impl>
 {
 private:
-	boost::property_tree::ptree const request;
+	boost::json::object const request;
 	boost::asio::io_context & ioc;
 	tcp::resolver::results_type const results;
 	socket_type socket;
@@ -322,11 +316,11 @@ private:
 	http::request<http::string_body> req;
 	http::response<http::string_body> res;
 
-	std::promise<boost::optional<boost::property_tree::ptree>> promise;
+	std::promise<std::optional<boost::json::object>> promise;
 
 public:
 	rpc_request_impl (
-	boost::property_tree::ptree const & request_a,
+	boost::json::object const & request_a,
 	boost::asio::io_context & ioc_a,
 	tcp::resolver::results_type const & results_a) :
 		request{ request_a },
@@ -342,7 +336,7 @@ public:
 		async_connect ();
 	}
 
-	boost::property_tree::ptree value_get ()
+	boost::json::object value_get ()
 	{
 		auto future = promise.get_future ();
 		if (future.wait_for (std::chrono::seconds (5)) != std::future_status::ready)
@@ -350,8 +344,8 @@ public:
 			throw std::runtime_error ("RPC request timed out");
 		}
 		auto response = future.get ();
-		debug_assert (response.is_initialized ());
-		return response.value_or (decltype (response)::argument_type{});
+		debug_assert (response.has_value ());
+		return response.value_or (boost::json::object{});
 	}
 
 private:
@@ -365,13 +359,10 @@ private:
 
 	void request_do ()
 	{
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, request);
-
 		req.method (http::verb::post);
 		req.version (11);
 		req.target ("/");
-		req.body () = ostream.str ();
+		req.body () = boost::json::serialize (request);
 		req.prepare_payload ();
 
 		async_write ();
@@ -399,14 +390,12 @@ private:
 
 	void value_set ()
 	{
-		boost::property_tree::ptree json;
-		std::stringstream body (res.body ());
-		boost::property_tree::read_json (body, json);
+		auto json = boost::json::parse (res.body ()).as_object ();
 		promise.set_value (json);
 	}
 };
 
-boost::property_tree::ptree rpc_request (boost::property_tree::ptree const & request, boost::asio::io_context & ioc, tcp::resolver::results_type const & results)
+boost::json::object rpc_request (boost::json::object const & request, boost::asio::io_context & ioc, tcp::resolver::results_type const & results)
 {
 	auto rpc_request = std::make_shared<rpc_request_impl> (request, ioc, results);
 	boost::asio::strand<boost::asio::io_context::executor_type> strand{ ioc.get_executor () };
@@ -419,73 +408,72 @@ boost::property_tree::ptree rpc_request (boost::property_tree::ptree const & req
 
 void keepalive_rpc (boost::asio::io_context & ioc, tcp::resolver::results_type const & results, uint16_t port)
 {
-	boost::property_tree::ptree request;
-	request.put ("action", "keepalive");
-	request.put ("address", "::1");
-	request.put ("port", port);
+	boost::json::object request;
+	request["action"] = "keepalive";
+	request["address"] = "::1";
+	request["port"] = port;
 
 	rpc_request (request, ioc, results);
 }
 
 account key_create_rpc (boost::asio::io_context & ioc, tcp::resolver::results_type const & results)
 {
-	boost::property_tree::ptree request;
-	request.put ("action", "key_create");
+	boost::json::object request;
+	request["action"] = "key_create";
 
 	auto json = rpc_request (request, ioc, results);
 
 	account account_l;
-	account_l.private_key = json.get<std::string> ("private");
-	account_l.public_key = json.get<std::string> ("public");
-	account_l.as_string = json.get<std::string> ("account");
+	account_l.private_key = std::string (json.at ("private").as_string ());
+	account_l.public_key = std::string (json.at ("public").as_string ());
+	account_l.as_string = std::string (json.at ("account").as_string ());
 
 	return account_l;
 }
 
 std::string wallet_create_rpc (boost::asio::io_context & ioc, tcp::resolver::results_type const & results)
 {
-	boost::property_tree::ptree request;
-	request.put ("action", "wallet_create");
+	boost::json::object request;
+	request["action"] = "wallet_create";
 
 	auto json = rpc_request (request, ioc, results);
-	return json.get<std::string> ("wallet");
+	return std::string (json.at ("wallet").as_string ());
 }
 
 void wallet_add_rpc (boost::asio::io_context & ioc, tcp::resolver::results_type const & results, std::string const & wallet, std::string const & prv_key)
 {
-	boost::property_tree::ptree request;
-	request.put ("action", "wallet_add");
-	request.put ("wallet", wallet);
-	request.put ("key", prv_key);
+	boost::json::object request;
+	request["action"] = "wallet_add";
+	request["wallet"] = wallet;
+	request["key"] = prv_key;
 	rpc_request (request, ioc, results);
 }
 
 void stop_rpc (boost::asio::io_context & ioc, tcp::resolver::results_type const & results)
 {
-	boost::property_tree::ptree request;
-	request.put ("action", "stop");
+	boost::json::object request;
+	request["action"] = "stop";
 	rpc_request (request, ioc, results);
 }
 
 account_info account_info_rpc (boost::asio::io_context & ioc, tcp::resolver::results_type const & results, std::string const & account)
 {
-	boost::property_tree::ptree request;
-	request.put ("action", "account_info");
-	request.put ("account", account);
+	boost::json::object request;
+	request["action"] = "account_info";
+	request["account"] = account;
 
 	account_info account_info;
 	auto json = rpc_request (request, ioc, results);
 
-	auto error = json.get_optional<std::string> ("error");
-	if (error)
+	if (json.contains ("error"))
 	{
 		account_info.error = true;
 	}
 	else
 	{
-		account_info.balance = json.get<std::string> ("balance");
-		account_info.block_count = json.get<std::string> ("block_count");
-		account_info.frontier = json.get<std::string> ("frontier");
+		account_info.balance = std::string (json.at ("balance").as_string ());
+		account_info.block_count = std::string (json.at ("block_count").as_string ());
+		account_info.frontier = std::string (json.at ("frontier").as_string ());
 	}
 	return account_info;
 }

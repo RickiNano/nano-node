@@ -68,7 +68,6 @@
 #include <nano/weights/bootstrap_weights.hpp>
 
 #include <boost/format.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include <algorithm>
 #include <cstdlib>

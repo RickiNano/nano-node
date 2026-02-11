@@ -9,8 +9,7 @@
 #include <nano/secure/ledger_set_any.hpp>
 #include <nano/store/ledger/account.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/json.hpp>
 
 #include <cmath>
 #include <iomanip>
@@ -900,46 +899,51 @@ void nano_qt::stats_viewer::refresh_stats ()
 
 	nano::stat_json_writer sink;
 	wallet.node.stats.log_counters (sink);
-	auto json = sink.to_ptree ();
+	auto json = sink.to_object ();
 	if (!json.empty ())
 	{
 		// Format the stat data to make totals and values easier to read
-		for (boost::property_tree::ptree::value_type const & child : json.get_child ("entries"))
+		auto * entries = json.if_contains ("entries");
+		if (entries && entries->is_array ())
 		{
-			auto time = child.second.get<std::string> ("time");
-			auto type = child.second.get<std::string> ("type");
-			auto detail = child.second.get<std::string> ("detail");
-			auto dir = child.second.get<std::string> ("dir");
-			auto value = child.second.get<std::string> ("value", "0");
-
-			if (detail == "all")
+			for (auto const & child : entries->as_array ())
 			{
-				detail = "total";
+				auto const & obj = child.as_object ();
+				auto time = std::string (obj.at ("time").as_string ());
+				auto type = std::string (obj.at ("type").as_string ());
+				auto detail = std::string (obj.at ("detail").as_string ());
+				auto dir = std::string (obj.at ("dir").as_string ());
+				auto value = obj.contains ("value") ? std::to_string (obj.at ("value").as_int64 ()) : std::string ("0");
+
+				if (detail == "all")
+				{
+					detail = "total";
+				}
+
+				if (type == "traffic_tcp")
+				{
+					std::vector<std::string> const units = { " bytes", " KB", " MB", " GB", " TB", " PB" };
+					double bytes = std::stod (value);
+					auto index = bytes == 0 ? 0 : std::min (units.size () - 1, static_cast<size_t> (std::floor (std::log2 (bytes) / 10)));
+					std::string unit = units[index];
+					bytes /= std::pow (1024, index);
+
+					// Only show decimals from MB and up
+					int precision = index < 2 ? 0 : 2;
+					std::stringstream numstream;
+					numstream << std::fixed << std::setprecision (precision) << bytes;
+					value = numstream.str () + unit;
+				}
+
+				QList<QStandardItem *> items;
+				items.push_back (new QStandardItem (QString (time.c_str ())));
+				items.push_back (new QStandardItem (QString (type.c_str ())));
+				items.push_back (new QStandardItem (QString (detail.c_str ())));
+				items.push_back (new QStandardItem (QString (dir.c_str ())));
+				items.push_back (new QStandardItem (QString (value.c_str ())));
+
+				model->appendRow (items);
 			}
-
-			if (type == "traffic_tcp")
-			{
-				std::vector<std::string> const units = { " bytes", " KB", " MB", " GB", " TB", " PB" };
-				double bytes = std::stod (value);
-				auto index = bytes == 0 ? 0 : std::min (units.size () - 1, static_cast<size_t> (std::floor (std::log2 (bytes) / 10)));
-				std::string unit = units[index];
-				bytes /= std::pow (1024, index);
-
-				// Only show decimals from MB and up
-				int precision = index < 2 ? 0 : 2;
-				std::stringstream numstream;
-				numstream << std::fixed << std::setprecision (precision) << bytes;
-				value = numstream.str () + unit;
-			}
-
-			QList<QStandardItem *> items;
-			items.push_back (new QStandardItem (QString (time.c_str ())));
-			items.push_back (new QStandardItem (QString (type.c_str ())));
-			items.push_back (new QStandardItem (QString (detail.c_str ())));
-			items.push_back (new QStandardItem (QString (dir.c_str ())));
-			items.push_back (new QStandardItem (QString (value.c_str ())));
-
-			model->appendRow (items);
 		}
 	}
 }
@@ -1993,10 +1997,8 @@ nano_qt::block_entry::block_entry (nano_qt::wallet & wallet_a) :
 		auto string (block->toPlainText ().toStdString ());
 		try
 		{
-			boost::property_tree::ptree tree;
-			std::stringstream istream (string);
-			boost::property_tree::read_json (istream, tree);
-			auto block_l (nano::deserialize_block_json (tree));
+			auto json = boost::json::parse (string).as_object ();
+			auto block_l (nano::deserialize_block_json (json));
 			if (block_l != nullptr)
 			{
 				show_label_ok (*status);
