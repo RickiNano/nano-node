@@ -7,6 +7,7 @@
 #include <nano/messages/telemetry.hpp>
 
 #include <boost/endian/conversion.hpp>
+#include <boost/json.hpp>
 
 namespace nano::messages
 {
@@ -226,6 +227,32 @@ nano::error telemetry_data::serialize_json (nano::jsonconfig & json, bool ignore
 		json.put ("signature", signature.to_string ());
 	}
 	return json.get_error ();
+}
+
+void telemetry_data::serialize_json (boost::json::object & json, bool ignore_identification_metrics_a) const
+{
+	json["block_count"] = block_count;
+	json["cemented_count"] = cemented_count;
+	json["unchecked_count"] = unchecked_count;
+	json["account_count"] = account_count;
+	json["bandwidth_cap"] = bandwidth_cap;
+	json["peer_count"] = peer_count;
+	json["protocol_version"] = protocol_version;
+	json["uptime"] = uptime;
+	json["genesis_block"] = genesis_block.to_string ();
+	json["major_version"] = major_version;
+	json["minor_version"] = minor_version;
+	json["patch_version"] = patch_version;
+	json["pre_release_version"] = pre_release_version;
+	json["maker"] = maker;
+	json["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds> (timestamp.time_since_epoch ()).count ();
+	json["active_difficulty"] = nano::to_string_hex (active_difficulty);
+	// Keep these last for UI purposes
+	if (!ignore_identification_metrics_a)
+	{
+		json["node_id"] = node_id.to_node_id ();
+		json["signature"] = signature.to_string ();
+	}
 }
 
 nano::error telemetry_data::deserialize_json (nano::jsonconfig & json, bool ignore_identification_metrics_a)

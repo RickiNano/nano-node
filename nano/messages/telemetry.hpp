@@ -6,6 +6,8 @@
 #include <nano/lib/numbers.hpp>
 #include <nano/messages/message.hpp>
 
+#include <boost/json/fwd.hpp>
+
 #include <chrono>
 #include <cstdint>
 #include <vector>
@@ -44,6 +46,7 @@ public:
 	void serialize (nano::stream &) const;
 	void deserialize (nano::stream &, uint16_t);
 	nano::error serialize_json (nano::jsonconfig &, bool) const;
+	void serialize_json (boost::json::object &, bool) const;
 	nano::error deserialize_json (nano::jsonconfig &, bool);
 	void sign (nano::keypair const &);
 	bool validate_signature () const;

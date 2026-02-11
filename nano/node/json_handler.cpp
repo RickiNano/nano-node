@@ -2,7 +2,6 @@
 #include <nano/lib/blocks.hpp>
 #include <nano/lib/config.hpp>
 #include <nano/lib/json_error_response.hpp>
-#include <nano/lib/jsonconfig.hpp>
 #include <nano/lib/stats_sinks.hpp>
 #include <nano/lib/timer.hpp>
 #include <nano/lib/version.hpp>
@@ -28,7 +27,6 @@
 #include <nano/store/ledger/pruned.hpp>
 
 #include <boost/json.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -42,67 +40,6 @@ ipc_json_handler_no_arg_func_map create_ipc_json_handler_no_arg_func_map ();
 auto ipc_json_handler_no_arg_funcs = create_ipc_json_handler_no_arg_func_map ();
 bool block_confirmed (nano::node & node, nano::secure::transaction & transaction, nano::block_hash const & hash, bool include_active, bool include_only_confirmed);
 char const * epoch_as_string (nano::epoch);
-
-// Helper to convert property_tree to boost::json (needed for jsonconfig compatibility)
-boost::json::value ptree_to_json (boost::property_tree::ptree const & pt)
-{
-	// Check if this is an array (property_tree arrays have empty keys)
-	bool is_array = !pt.empty () && pt.front ().first.empty ();
-
-	if (is_array)
-	{
-		boost::json::array arr;
-		for (auto const & child : pt)
-		{
-			if (child.second.empty ())
-			{
-				arr.push_back (boost::json::value (child.second.get_value<std::string> ()));
-			}
-			else
-			{
-				arr.push_back (ptree_to_json (child.second));
-			}
-		}
-		return arr;
-	}
-	else
-	{
-		boost::json::object obj;
-		auto value = pt.get_value<std::string> ();
-		if (!value.empty () && pt.empty ())
-		{
-			return boost::json::value (value);
-		}
-		for (auto const & child : pt)
-		{
-			if (child.second.empty ())
-			{
-				obj[child.first] = child.second.get_value<std::string> ();
-			}
-			else
-			{
-				obj[child.first] = ptree_to_json (child.second);
-			}
-		}
-		return obj;
-	}
-}
-
-// Helper to merge property_tree into boost::json::object
-void merge_ptree_to_json (boost::property_tree::ptree const & pt, boost::json::object & obj)
-{
-	for (auto const & child : pt)
-	{
-		if (child.second.empty ())
-		{
-			obj[child.first] = child.second.get_value<std::string> ();
-		}
-		else
-		{
-			obj[child.first] = ptree_to_json (child.second);
-		}
-	}
-}
 }
 
 nano::json_handler::json_handler (nano::node & node_a, nano::node_rpc_config const & node_rpc_config_a, std::string const & body_a, std::function<void (std::string const &)> const & response_a, std::function<void ()> stop_callback_a) :
@@ -4150,15 +4087,8 @@ void nano::json_handler::telemetry ()
 					{
 						// Requesting telemetry metrics locally
 						auto telemetry_data = node.local_telemetry ();
-
-						nano::jsonconfig config_l;
 						auto const should_ignore_identification_metrics = false;
-						auto err = telemetry_data.serialize_json (config_l, should_ignore_identification_metrics);
-
-						if (!err)
-						{
-							merge_ptree_to_json (config_l.get_tree (), response_l);
-						}
+						telemetry_data.serialize_json (response_l, should_ignore_identification_metrics);
 
 						response_errors ();
 						return;
@@ -4185,18 +4115,8 @@ void nano::json_handler::telemetry ()
 			if (maybe_telemetry)
 			{
 				auto telemetry = *maybe_telemetry;
-				nano::jsonconfig config_l;
 				auto const should_ignore_identification_metrics = false;
-				auto err = telemetry.serialize_json (config_l, should_ignore_identification_metrics);
-
-				if (!err)
-				{
-					merge_ptree_to_json (config_l.get_tree (), response_l);
-				}
-				else
-				{
-					ec = nano::error_rpc::generic;
-				}
+				telemetry.serialize_json (response_l, should_ignore_identification_metrics);
 			}
 			else
 			{
@@ -4226,19 +4146,12 @@ void nano::json_handler::telemetry ()
 			boost::json::array metrics;
 			for (auto & telemetry_metrics : telemetry_responses)
 			{
-				nano::jsonconfig config_l;
+				boost::json::object metric;
 				auto const should_ignore_identification_metrics = false;
-				auto err = telemetry_metrics.second.serialize_json (config_l, should_ignore_identification_metrics);
-				config_l.put ("address", telemetry_metrics.first.address ());
-				config_l.put ("port", telemetry_metrics.first.port ());
-				if (!err)
-				{
-					metrics.push_back (ptree_to_json (config_l.get_tree ()));
-				}
-				else
-				{
-					ec = nano::error_rpc::generic;
-				}
+				telemetry_metrics.second.serialize_json (metric, should_ignore_identification_metrics);
+				metric["address"] = telemetry_metrics.first.address ().to_string ();
+				metric["port"] = telemetry_metrics.first.port ();
+				metrics.push_back (std::move (metric));
 			}
 
 			response_l["metrics"] = std::move (metrics);
@@ -4247,15 +4160,8 @@ void nano::json_handler::telemetry ()
 		{
 			// Default case without any parameters, requesting telemetry metrics locally
 			auto telemetry_data = node.local_telemetry ();
-
-			nano::jsonconfig config_l;
 			auto const should_ignore_identification_metrics = false;
-			auto err = telemetry_data.serialize_json (config_l, should_ignore_identification_metrics);
-
-			if (!err)
-			{
-				merge_ptree_to_json (config_l.get_tree (), response_l);
-			}
+			telemetry_data.serialize_json (response_l, should_ignore_identification_metrics);
 
 			response_errors ();
 			return;

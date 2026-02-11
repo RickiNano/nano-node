@@ -3,7 +3,6 @@
 #include <nano/boost/asio/strand.hpp>
 #include <nano/lib/block_type.hpp>
 #include <nano/lib/blocks.hpp>
-#include <nano/lib/jsonconfig.hpp>
 #include <nano/lib/logging.hpp>
 #include <nano/lib/vote.hpp>
 #include <nano/lib/work.hpp>
@@ -18,56 +17,9 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/json.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 #include <algorithm>
 #include <chrono>
-
-namespace
-{
-// Helper to convert property_tree to boost::json (needed for jsonconfig compatibility)
-boost::json::value ptree_to_json (boost::property_tree::ptree const & pt)
-{
-	bool is_array = !pt.empty () && pt.front ().first.empty ();
-	if (is_array)
-	{
-		boost::json::array arr;
-		for (auto const & child : pt)
-		{
-			if (child.second.empty ())
-			{
-				arr.push_back (boost::json::value (child.second.get_value<std::string> ()));
-			}
-			else
-			{
-				arr.push_back (ptree_to_json (child.second));
-			}
-		}
-		return arr;
-	}
-	else
-	{
-		boost::json::object obj;
-		auto value = pt.get_value<std::string> ();
-		if (!value.empty () && pt.empty ())
-		{
-			return boost::json::value (value);
-		}
-		for (auto const & child : pt)
-		{
-			if (child.second.empty ())
-			{
-				obj[child.first] = child.second.get_value<std::string> ();
-			}
-			else
-			{
-				obj[child.first] = ptree_to_json (child.second);
-			}
-		}
-		return obj;
-	}
-}
-}
 
 nano::websocket::confirmation_options::confirmation_options (nano::wallets & wallets_a, nano::logger & logger_a) :
 	wallets (wallets_a),
@@ -1054,13 +1006,12 @@ nano::websocket::message nano::websocket::message_builder::telemetry_received (n
 	set_common_fields (message_l);
 
 	// Telemetry information
-	nano::jsonconfig telemetry_config;
-	telemetry_data_a.serialize_json (telemetry_config, false);
-	auto telemetry_l = ptree_to_json (telemetry_config.get_tree ()).as_object ();
+	boost::json::object telemetry_l;
+	telemetry_data_a.serialize_json (telemetry_l, false);
 	telemetry_l["address"] = endpoint_a.address ().to_string ();
 	telemetry_l["port"] = endpoint_a.port ();
 
-	message_l.contents["message"] = telemetry_l;
+	message_l.contents["message"] = std::move (telemetry_l);
 	return message_l;
 }
 
