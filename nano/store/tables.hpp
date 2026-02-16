@@ -8,7 +8,9 @@ namespace nano::store
 enum class table
 {
 	accounts,
-	blocks,
+	block_data, // u64 ID -> block+sideband (v26+)
+	block_index, // hash -> u64 ID (v26+)
+	blocks, // dropped in v26
 	confirmation_height,
 	default_unused, // RocksDB only
 	final_votes,

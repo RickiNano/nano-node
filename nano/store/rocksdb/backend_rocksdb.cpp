@@ -351,6 +351,8 @@ bool backend_rocksdb::count_is_exact (nano::store::table table) const
 			// These tables use rocksdb.estimate-num-keys which may be inaccurate
 			return false;
 		case nano::store::table::accounts:
+		case nano::store::table::block_data:
+		case nano::store::table::block_index:
 		case nano::store::table::blocks:
 		case nano::store::table::confirmation_height:
 		case nano::store::table::default_unused:
@@ -769,7 +771,8 @@ void backend_rocksdb::collect_memory_stats (boost::property_tree::ptree & ptree)
 
 void backend_rocksdb::generate_tombstone_map ()
 {
-	tombstone_map.emplace (std::piecewise_construct, std::forward_as_tuple (nano::store::table::blocks), std::forward_as_tuple (0, 25000));
+	tombstone_map.emplace (std::piecewise_construct, std::forward_as_tuple (nano::store::table::block_data), std::forward_as_tuple (0, 25000));
+	tombstone_map.emplace (std::piecewise_construct, std::forward_as_tuple (nano::store::table::block_index), std::forward_as_tuple (0, 25000));
 	tombstone_map.emplace (std::piecewise_construct, std::forward_as_tuple (nano::store::table::accounts), std::forward_as_tuple (0, 25000));
 	tombstone_map.emplace (std::piecewise_construct, std::forward_as_tuple (nano::store::table::pending), std::forward_as_tuple (0, 25000));
 }
