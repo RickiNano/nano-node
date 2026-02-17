@@ -1,7 +1,7 @@
 #include <nano/lib/stream.hpp>
 #include <nano/secure/account_info.hpp>
 
-nano::account_info::account_info (nano::block_hash const & head_a, nano::account const & representative_a, nano::block_hash const & open_block_a, nano::amount const & balance_a, nano::seconds_t modified_a, uint64_t block_count_a, nano::epoch epoch_a) :
+nano::account_info::account_info (nano::block_hash const & head_a, nano::account const & representative_a, nano::block_hash const & open_block_a, nano::amount const & balance_a, nano::millis_t modified_a, uint64_t block_count_a, nano::epoch epoch_a) :
 	head (head_a),
 	representative (representative_a),
 	open_block (open_block_a),

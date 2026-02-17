@@ -118,7 +118,6 @@ nano::block_sideband::block_sideband (nano::account const & account_a, nano::blo
 size_t nano::block_sideband::size (nano::block_type type_a)
 {
 	size_t result (0);
-	result += sizeof (successor);
 	if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 	{
 		result += sizeof (account);
@@ -142,7 +141,6 @@ size_t nano::block_sideband::size (nano::block_type type_a)
 
 void nano::block_sideband::serialize (nano::stream & stream_a, nano::block_type type_a) const
 {
-	nano::write (stream_a, successor.bytes);
 	if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 	{
 		nano::write (stream_a, account.bytes);
@@ -168,7 +166,6 @@ bool nano::block_sideband::deserialize (nano::stream & stream_a, nano::block_typ
 	bool result (false);
 	try
 	{
-		nano::read (stream_a, successor.bytes);
 		if (type_a != nano::block_type::state && type_a != nano::block_type::open)
 		{
 			nano::read (stream_a, account.bytes);

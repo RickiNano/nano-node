@@ -167,7 +167,7 @@ void ledger_store::initialize (nano::store::write_transaction const & txn, nano:
 	// TODO: Use designated initialization
 	block.put (txn, constants.genesis->hash (), *constants.genesis);
 	confirmation_height.put (txn, constants.genesis->account (), nano::confirmation_height_info{ 1, constants.genesis->hash () });
-	account.put (txn, constants.genesis->account (), { constants.genesis->hash (), constants.genesis->account (), constants.genesis->hash (), std::numeric_limits<nano::uint128_t>::max (), nano::seconds_since_epoch (), 1, nano::epoch::epoch_0 });
+	account.put (txn, constants.genesis->account (), { constants.genesis->hash (), constants.genesis->account (), constants.genesis->hash (), std::numeric_limits<nano::uint128_t>::max (), nano::milliseconds_since_epoch (), 1, nano::epoch::epoch_0 });
 	rep_weight.put (txn, constants.genesis->account (), std::numeric_limits<nano::uint128_t>::max ());
 }
 
@@ -414,28 +414,61 @@ void ledger_store::upgrade_v24_to_v25 ()
 
 		auto transaction = backend.tx_begin_write ();
 
+		// v24 sideband size (including 32-byte successor) by block type
+		auto v24_sideband_len = [] (uint8_t block_type_byte) -> size_t {
+			switch (static_cast<nano::block_type> (block_type_byte))
+			{
+				case nano::block_type::send:
+					return 80; // successor(32) + account(32) + height(8) + timestamp(8)
+				case nano::block_type::receive:
+					return 96; // successor(32) + account(32) + height(8) + balance(16) + timestamp(8)
+				case nano::block_type::open:
+					return 56; // successor(32) + balance(16) + timestamp(8)
+				case nano::block_type::change:
+					return 96; // successor(32) + account(32) + height(8) + balance(16) + timestamp(8)
+				case nano::block_type::state:
+					return 50; // successor(32) + height(8) + timestamp(8) + details(1) + source_epoch(1)
+				default:
+					release_assert (false, "unknown block type during v24 to v25 upgrade");
+					return 0;
+			}
+		};
+
 		// Smaller batch size for dev runs to potentially trigger edge cases
 		const size_t batch_size = nano::is_dev_run () ? 2 : 250000;
 		size_t processed = 0;
 		auto const total_blocks = backend.count (backend.tx_begin_read (), nano::store::table::blocks);
 
-		// Iterate all blocks using a separate read transaction
+		// Iterate all blocks using raw byte access
 		auto iterate_blocks = [this] (auto && func) {
 			auto read_txn = backend.tx_begin_read ();
-			auto it = nano::store::typed_iterator<nano::block_hash, nano::store::block_w_sideband>{ backend.begin (read_txn, nano::store::table::blocks) };
-			auto const end = nano::store::typed_iterator<nano::block_hash, nano::store::block_w_sideband>{ backend.end (read_txn, nano::store::table::blocks) };
+			auto it = backend.begin (read_txn, nano::store::table::blocks);
+			auto const end = backend.end (read_txn, nano::store::table::blocks);
 			for (; it != end; ++it)
 			{
-				auto const & [hash, block_w_sideband] = *it;
-				func (hash, block_w_sideband);
+				auto const & [key, val] = *it;
+				func (key, val);
 			}
 		};
 
-		iterate_blocks ([this, &transaction, &processed, batch_size, total_blocks] (nano::block_hash const & hash, nano::store::block_w_sideband const & block_w_sideband) {
-			// If successor is non-zero, write to successor table
-			if (!block_w_sideband.sideband.successor.is_zero ())
+		iterate_blocks ([&] (std::span<uint8_t const> hash_bytes, std::span<uint8_t const> value_bytes) {
+			release_assert (value_bytes.size () > 0, "empty block value during upgrade");
+
+			uint8_t block_type_byte = value_bytes[0];
+			size_t sb_len = v24_sideband_len (block_type_byte);
+			release_assert (value_bytes.size () > sb_len, "block value too small for sideband");
+
+			size_t sb_offset = value_bytes.size () - sb_len;
+
+			// Successor is the first 32 bytes of sideband
+			nano::block_hash successor;
+			std::memcpy (successor.bytes.data (), value_bytes.data () + sb_offset, 32);
+
+			if (!successor.is_zero ())
 			{
-				auto status = backend.put (transaction, nano::store::table::successor, hash, block_w_sideband.sideband.successor);
+				nano::block_hash hash;
+				std::memcpy (hash.bytes.data (), hash_bytes.data (), 32);
+				auto status = backend.put (transaction, nano::store::table::successor, hash, successor);
 				backend.release_assert_success (status);
 			}
 
@@ -583,6 +616,50 @@ void ledger_store::upgrade_v25_to_v26 ()
 		});
 
 		logger.info (nano::log::type::ledger_upgrade, "Done processing {} blocks", processed);
+
+		// Migrate account timestamps from seconds to milliseconds
+		{
+			auto iterate_accounts = [this] (auto && func) {
+				auto read_txn = backend.tx_begin_read ();
+				auto it = backend.begin (read_txn, nano::store::table::accounts);
+				auto const end = backend.end (read_txn, nano::store::table::accounts);
+				for (; it != end; ++it)
+				{
+					auto const & [key, val] = *it;
+					func (key, val);
+				}
+			};
+
+			size_t accounts_processed = 0;
+
+			iterate_accounts ([&] (std::span<uint8_t const> key_bytes, std::span<uint8_t const> value_bytes) {
+				// account_info layout: head(32) + representative(32) + open_block(32) + balance(16) + modified(8) + ...
+				constexpr size_t modified_offset = 32 + 32 + 32 + 16; // = 112
+				release_assert (value_bytes.size () > modified_offset + 8);
+
+				std::vector<uint8_t> new_value (value_bytes.begin (), value_bytes.end ());
+				uint64_t modified;
+				std::memcpy (&modified, new_value.data () + modified_offset, 8);
+				// modified is in native endian (not big-endian like sideband)
+				modified *= 1000;
+				std::memcpy (new_value.data () + modified_offset, &modified, 8);
+
+				nano::store::db_val key_val{ key_bytes.size (), key_bytes.data () };
+				nano::store::db_val val_val{ new_value.size (), new_value.data () };
+				auto status = backend.put (transaction, nano::store::table::accounts, key_val, val_val);
+				backend.release_assert_success (status);
+
+				accounts_processed++;
+				if (accounts_processed % batch_size == 0)
+				{
+					logger.info (nano::log::type::ledger_upgrade, "Processed {} accounts", accounts_processed);
+					transaction.refresh ();
+				}
+			});
+
+			logger.info (nano::log::type::ledger_upgrade, "Done processing {} accounts", accounts_processed);
+		}
+
 		version.put (transaction, 26);
 	}
 
