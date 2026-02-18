@@ -4,6 +4,7 @@
 #include <nano/lib/files.hpp>
 #include <nano/lib/logging.hpp>
 #include <nano/lib/stats.hpp>
+#include <nano/lib/stream.hpp>
 #include <nano/node/make_store.hpp>
 #include <nano/secure/account_info.hpp>
 #include <nano/secure/common.hpp>

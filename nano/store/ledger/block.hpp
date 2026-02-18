@@ -16,7 +16,7 @@ class successor_view;
 class block_view
 {
 public:
-	using iterator = store::typed_iterator<nano::block_hash, block_w_sideband>;
+	using iterator = store::typed_iterator<uint64_t, block_w_sideband>;
 
 public:
 	block_view (nano::store::backend &, nano::store::ledger::successor_view &);
@@ -27,10 +27,13 @@ public:
 	void del (nano::store::write_transaction const &, nano::block_hash const &);
 	bool exists (nano::store::transaction const &, nano::block_hash const &) const;
 	uint64_t count (nano::store::transaction const &) const;
-	iterator begin (nano::store::transaction const &, nano::block_hash const &) const;
+	iterator begin (nano::store::transaction const &, uint64_t index) const;
 	iterator begin (nano::store::transaction const &) const;
 	iterator end (nano::store::transaction const &) const;
 	void for_each_par (std::function<void (nano::store::read_transaction const &, iterator, iterator)> const & action) const;
+
+	void load_sequence_counter (nano::store::transaction const &);
+	uint64_t allocate_index (nano::store::write_transaction const &);
 
 private:
 	void block_raw_get (nano::store::transaction const &, nano::block_hash const &, nano::store::db_val & value) const;
@@ -38,5 +41,6 @@ private:
 private:
 	nano::store::backend & backend;
 	nano::store::ledger::successor_view & successor_store;
+	uint64_t next_index{ 1 };
 };
 }
