@@ -96,7 +96,7 @@ TEST (block_store, sideband_serialization)
 	sideband1.account = 1;
 	sideband1.balance = 2;
 	sideband1.height = 3;
-	sideband1.successor = 4;
+	sideband1.successor = 4; // successor is not serialized (stored in successor table)
 	sideband1.timestamp = 5;
 	std::vector<uint8_t> vector;
 	{
@@ -109,7 +109,8 @@ TEST (block_store, sideband_serialization)
 	ASSERT_EQ (sideband1.account, sideband2.account);
 	ASSERT_EQ (sideband1.balance, sideband2.balance);
 	ASSERT_EQ (sideband1.height, sideband2.height);
-	ASSERT_EQ (sideband1.successor, sideband2.successor);
+	// successor is NOT serialized/deserialized - it's stored in dedicated successor table
+	ASSERT_EQ (sideband2.successor, nano::block_hash{ 0 });
 	ASSERT_EQ (sideband1.timestamp, sideband2.timestamp);
 }
 
@@ -1479,4 +1480,179 @@ TEST (block_store, rocksdb_tombstone_count)
 	// Perform delete and check tombstone counter
 	store.account.del (tx, account);
 	ASSERT_EQ (rocksdb_backend->get_tombstone_map ().at (nano::store::table::accounts).num_since_last_flush.load (), 1);
+}
+
+TEST (block_store, split_table_put_get_del)
+{
+	nano::logger logger;
+	nano::stats stats{ logger };
+	auto store = nano::make_store (logger, stats, nano::unique_path (), nano::dev::constants);
+
+	nano::block_builder builder;
+	auto block = builder
+				 .state ()
+				 .account (nano::dev::genesis_key.pub)
+				 .previous (nano::dev::genesis->hash ())
+				 .representative (nano::dev::genesis_key.pub)
+				 .balance (100)
+				 .link (0)
+				 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
+				 .work (0)
+				 .build ();
+	block->sideband_set (nano::block_sideband{
+	nano::dev::genesis_key.pub,
+	nano::block_hash{ 0 },
+	nano::amount{ 100 },
+	2, 0, nano::epoch::epoch_0,
+	true, false, false, nano::epoch::epoch_0 });
+
+	auto hash = block->hash ();
+
+	auto txn = store->tx_begin_write ();
+
+	// Put
+	store->block.put (txn, hash, *block);
+	ASSERT_TRUE (store->block.exists (txn, hash));
+
+	// Get
+	auto retrieved = store->block.get (txn, hash);
+	ASSERT_NE (nullptr, retrieved);
+	ASSERT_EQ (*block, *retrieved);
+	ASSERT_EQ (retrieved->sideband ().height, 2);
+
+	// Count includes genesis + this block
+	ASSERT_GE (store->block.count (txn), 1);
+
+	// Del
+	store->block.del (txn, hash);
+	ASSERT_FALSE (store->block.exists (txn, hash));
+	ASSERT_EQ (nullptr, store->block.get (txn, hash));
+}
+
+TEST (block_store, split_table_sequence_counter_persistence)
+{
+	auto path = nano::unique_path ();
+	nano::block_hash hash1;
+	{
+		nano::logger logger;
+		nano::stats stats{ logger };
+		auto store = nano::make_store (logger, stats, path, nano::dev::constants);
+
+		auto txn = store->tx_begin_write ();
+		store->initialize (txn, nano::dev::constants);
+
+		nano::block_builder builder;
+		auto block = builder
+					 .state ()
+					 .account (nano::dev::genesis_key.pub)
+					 .previous (nano::dev::genesis->hash ())
+					 .representative (nano::dev::genesis_key.pub)
+					 .balance (100)
+					 .link (0)
+					 .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
+					 .work (0)
+					 .build ();
+		block->sideband_set (nano::block_sideband{
+		nano::dev::genesis_key.pub,
+		nano::block_hash{ 0 },
+		nano::amount{ 100 },
+		2, 0, nano::epoch::epoch_0,
+		true, false, false, nano::epoch::epoch_0 });
+
+		hash1 = block->hash ();
+		store->block.put (txn, hash1, *block);
+	}
+
+	// Reopen store and verify block still accessible
+	{
+		nano::logger logger;
+		nano::stats stats{ logger };
+		auto store = nano::make_store (logger, stats, path, nano::dev::constants);
+
+		auto txn = store->tx_begin_read ();
+		ASSERT_TRUE (store->block.exists (txn, hash1));
+		auto retrieved = store->block.get (txn, hash1);
+		ASSERT_NE (nullptr, retrieved);
+		ASSERT_EQ (retrieved->sideband ().height, 2);
+	}
+}
+
+TEST (block_store, split_table_get_populates_successor)
+{
+	nano::logger logger;
+	nano::stats stats{ logger };
+	auto store = nano::make_store (logger, stats, nano::unique_path (), nano::dev::constants);
+
+	auto txn = store->tx_begin_write ();
+	store->initialize (txn, nano::dev::constants);
+
+	// Genesis block should have no successor initially
+	auto genesis_block = store->block.get (txn, nano::dev::genesis->hash ());
+	ASSERT_NE (nullptr, genesis_block);
+	ASSERT_EQ (genesis_block->sideband ().successor, nano::block_hash{ 0 });
+
+	// Add a block that has genesis as previous (this sets successor for genesis)
+	nano::block_builder builder;
+	auto block2 = builder
+				  .state ()
+				  .account (nano::dev::genesis_key.pub)
+				  .previous (nano::dev::genesis->hash ())
+				  .representative (nano::dev::genesis_key.pub)
+				  .balance (100)
+				  .link (0)
+				  .sign (nano::dev::genesis_key.prv, nano::dev::genesis_key.pub)
+				  .work (0)
+				  .build ();
+	block2->sideband_set (nano::block_sideband{
+	nano::dev::genesis_key.pub,
+	nano::block_hash{ 0 },
+	nano::amount{ 100 },
+	2, 0, nano::epoch::epoch_0,
+	true, false, false, nano::epoch::epoch_0 });
+
+	store->block.put (txn, block2->hash (), *block2);
+
+	// Now genesis should have block2 as successor (populated from successor table)
+	auto genesis_with_successor = store->block.get (txn, nano::dev::genesis->hash ());
+	ASSERT_NE (nullptr, genesis_with_successor);
+	ASSERT_EQ (genesis_with_successor->sideband ().successor, block2->hash ());
+
+	// block2 itself has no successor
+	auto block2_retrieved = store->block.get (txn, block2->hash ());
+	ASSERT_NE (nullptr, block2_retrieved);
+	ASSERT_EQ (block2_retrieved->sideband ().successor, nano::block_hash{ 0 });
+}
+
+TEST (block_store, split_table_iterator_no_successor)
+{
+	nano::logger logger;
+	nano::stats stats{ logger };
+	auto store = nano::make_store (logger, stats, nano::unique_path (), nano::dev::constants);
+
+	auto txn = store->tx_begin_write ();
+	store->initialize (txn, nano::dev::constants);
+
+	// Iterate blocks - successor should be zero for all blocks (not populated during iteration)
+	for (auto it = store->block.begin (txn), end = store->block.end (txn); it != end; ++it)
+	{
+		auto & bws = it->second;
+		ASSERT_EQ (bws.sideband.successor, nano::block_hash{ 0 });
+	}
+}
+
+TEST (block_store, sideband_size_no_successor)
+{
+	// Verify sideband size is 32 bytes smaller than it would be with successor
+	// State block sideband: height(8) + timestamp(8) + details(1) + source_epoch(1) = 18 bytes
+	// (no account, no balance for state blocks)
+	auto state_size = nano::block_sideband::size (nano::block_type::state);
+	ASSERT_EQ (state_size, sizeof (uint64_t) + sizeof (uint64_t) + nano::block_details::size () + sizeof (nano::epoch));
+
+	// Receive block sideband: account(32) + height(8) + balance(16) + timestamp(8) = 64 bytes
+	auto receive_size = nano::block_sideband::size (nano::block_type::receive);
+	ASSERT_EQ (receive_size, sizeof (nano::account) + sizeof (uint64_t) + sizeof (nano::amount) + sizeof (uint64_t));
+
+	// Open block sideband: timestamp(8) = 8 bytes (no account, no height, no balance for open; but balance IS included)
+	auto open_size = nano::block_sideband::size (nano::block_type::open);
+	ASSERT_EQ (open_size, sizeof (nano::amount) + sizeof (uint64_t));
 }
