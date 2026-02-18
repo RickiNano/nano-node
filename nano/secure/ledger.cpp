@@ -466,10 +466,11 @@ std::deque<std::shared_ptr<nano::block>> nano::ledger::random_blocks (secure::tr
 {
 	std::deque<std::shared_ptr<nano::block>> result;
 
-	auto const starting_hash = nano::random_pool::generate<nano::block_hash> ();
+	auto const total = store.block.count (transaction);
+	auto const starting_index = total > 0 ? (nano::random_pool::generate<uint64_t> () % total + 1) : uint64_t{ 1 };
 
 	// It is more efficient to choose a random starting point and pick a few sequential blocks from there
-	auto it = store.block.begin (transaction, starting_hash);
+	auto it = store.block.begin (transaction, starting_index);
 	auto const end = store.block.end (transaction);
 	while (result.size () < count)
 	{
