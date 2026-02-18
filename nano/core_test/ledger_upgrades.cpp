@@ -87,20 +87,6 @@ nano::store::column_schema const schema_v24{
 	{ nano::store::table::final_votes, "final_votes" },
 	{ nano::store::table::meta, "meta" }
 };
-
-nano::store::column_schema const schema_v25{
-	{ nano::store::table::blocks, "blocks" },
-	{ nano::store::table::accounts, "accounts" },
-	{ nano::store::table::pending, "pending" },
-	{ nano::store::table::rep_weights, "rep_weights" },
-	{ nano::store::table::online_weight, "online_weight" },
-	{ nano::store::table::pruned, "pruned" },
-	{ nano::store::table::successor, "successor" },
-	{ nano::store::table::peers, "peers" },
-	{ nano::store::table::confirmation_height, "confirmation_height" },
-	{ nano::store::table::final_votes, "final_votes" },
-	{ nano::store::table::meta, "meta" }
-};
 }
 
 /*
@@ -628,11 +614,12 @@ public:
 		backend->open (schema_v24, nano::store::open_mode::read_write);
 	}
 
-	// Write a block with v24 sideband format (successor is first field of sideband)
+	// Write a block with v24 sideband format (successor is part of sideband)
 	void add_block (nano::block & block, nano::block_hash const & successor_hash)
 	{
 		auto tx = backend->tx_begin_write ();
 
+		// Set successor in sideband before serializing
 		auto sideband = block.sideband ();
 		sideband.successor = successor_hash;
 		block.sideband_set (sideband);
@@ -641,26 +628,7 @@ public:
 		{
 			nano::vectorstream stream{ data };
 			nano::serialize_block (stream, block);
-			// Manually serialize old sideband format (successor first, then rest)
-			nano::write (stream, sideband.successor.bytes);
-			if (nano::block_sideband::includes_account (block.type ()))
-			{
-				nano::write (stream, sideband.account.bytes);
-			}
-			if (nano::block_sideband::includes_height (block.type ()))
-			{
-				nano::write (stream, boost::endian::native_to_big (sideband.height));
-			}
-			if (nano::block_sideband::includes_balance (block.type ()))
-			{
-				nano::write (stream, sideband.balance.bytes);
-			}
-			nano::write (stream, boost::endian::native_to_big (sideband.timestamp));
-			if (nano::block_sideband::includes_details (block.type ()))
-			{
-				sideband.details.serialize (stream);
-				nano::write (stream, static_cast<uint8_t> (sideband.source_epoch));
-			}
+			block.sideband ().serialize (stream, block.type ());
 		}
 
 		nano::store::db_val value{ data.size (), data.data () };
@@ -753,178 +721,6 @@ TEST (ledger_upgrades, upgrade_v24_to_v25)
 	ASSERT_NE (nullptr, stored_block2);
 	ASSERT_EQ (stored_block2->sideband ().height, 2);
 	ASSERT_EQ (stored_block2->sideband ().successor, nano::block_hash{ 0 });
-}
-
-namespace
-{
-class legacy_database_v25
-{
-public:
-	legacy_database_v25 (std::filesystem::path const & path_a) :
-		path{ path_a },
-		backend{ nano::test::make_backend (path_a) }
-	{
-		backend->create (schema_v25, 25);
-		backend->open (schema_v25, nano::store::open_mode::read_write);
-	}
-
-	// Write a block with v25 sideband format (successor is part of sideband, same as v24)
-	void add_block (nano::block & block, nano::block_hash const & successor_hash)
-	{
-		auto tx = backend->tx_begin_write ();
-
-		// Set successor in sideband before serializing (v25 still has successor in sideband)
-		auto sideband = block.sideband ();
-		sideband.successor = successor_hash;
-		block.sideband_set (sideband);
-
-		std::vector<uint8_t> data;
-		{
-			nano::vectorstream stream{ data };
-			nano::serialize_block (stream, block);
-			// Serialize with old format (successor included) by manually writing successor first
-			nano::write (stream, sideband.successor.bytes);
-			// Then the rest of the sideband (account if needed, height, balance, timestamp, details)
-			if (nano::block_sideband::includes_account (block.type ()))
-			{
-				nano::write (stream, sideband.account.bytes);
-			}
-			if (nano::block_sideband::includes_height (block.type ()))
-			{
-				nano::write (stream, boost::endian::native_to_big (sideband.height));
-			}
-			if (nano::block_sideband::includes_balance (block.type ()))
-			{
-				nano::write (stream, sideband.balance.bytes);
-			}
-			nano::write (stream, boost::endian::native_to_big (sideband.timestamp));
-			if (nano::block_sideband::includes_details (block.type ()))
-			{
-				sideband.details.serialize (stream);
-				nano::write (stream, static_cast<uint8_t> (sideband.source_epoch));
-			}
-		}
-
-		nano::store::db_val value{ data.size (), data.data () };
-		auto status = backend->put (tx, nano::store::table::blocks, block.hash (), value);
-		backend->release_assert_success (status);
-
-		// Also populate successor table (as v24->v25 upgrade would have done)
-		if (!successor_hash.is_zero ())
-		{
-			status = backend->put (tx, nano::store::table::successor, block.hash (), successor_hash);
-			backend->release_assert_success (status);
-		}
-	}
-
-	std::filesystem::path path;
-	std::unique_ptr<nano::store::backend> backend;
-};
-}
-
-/*
- * Test v25 to v26 upgrade: splits blocks table into block_data and block_index,
- * removes successor from sideband
- */
-TEST (ledger_upgrades, upgrade_v25_to_v26)
-{
-	nano::keypair key1;
-	nano::keypair key2;
-
-	nano::block_builder builder;
-
-	// Create an open block (genesis-like)
-	auto block1 = builder
-				  .open ()
-				  .source (nano::block_hash{ key1.pub.number () })
-				  .representative (key1.pub)
-				  .account (key1.pub)
-				  .sign (key1.prv, key1.pub)
-				  .work (0)
-				  .build ();
-	block1->sideband_set (nano::block_sideband{
-	key1.pub,
-	nano::block_hash{ 0 },
-	nano::amount{ 1000 },
-	1, 0, nano::epoch::epoch_0,
-	false, false, false, nano::epoch::epoch_0 });
-
-	// Create a state block with a previous (block1)
-	auto block2 = builder
-				  .state ()
-				  .account (key1.pub)
-				  .previous (block1->hash ())
-				  .representative (key1.pub)
-				  .balance (500)
-				  .link (key2.pub)
-				  .sign (key1.prv, key1.pub)
-				  .work (0)
-				  .build ();
-	block2->sideband_set (nano::block_sideband{
-	key1.pub,
-	nano::block_hash{ 0 },
-	nano::amount{ 500 },
-	2, 0, nano::epoch::epoch_0,
-	true, false, false, nano::epoch::epoch_0 });
-
-	auto const path = nano::unique_path ();
-	{
-		legacy_database_v25 legacy_db{ path };
-
-		// block1 has block2 as successor
-		legacy_db.add_block (*block1, block2->hash ());
-
-		// block2 has no successor (zero hash)
-		legacy_db.add_block (*block2, nano::block_hash{ 0 });
-	}
-
-	// Open through ledger_store which should trigger upgrade
-	nano::store::ledger_store store (
-	nano::test::make_backend (path),
-	nano::store::open_mode::read_write,
-	nano::test::default_stats (),
-	nano::test::default_logger ());
-
-	auto tx = store.tx_begin_read ();
-
-	// Verify version
-	ASSERT_EQ (store.version.get (tx), nano::store::ledger_store::version_current);
-
-	// Verify blocks are accessible via the new two-table structure
-	auto stored_block1 = store.block.get (tx, block1->hash ());
-	ASSERT_NE (nullptr, stored_block1);
-	ASSERT_EQ (stored_block1->sideband ().height, 1); // open blocks default to height 1
-	// account is not serialized for open blocks (includes_account returns false)
-
-	auto stored_block2 = store.block.get (tx, block2->hash ());
-	ASSERT_NE (nullptr, stored_block2);
-	ASSERT_EQ (stored_block2->sideband ().height, 2);
-	ASSERT_TRUE (stored_block2->sideband ().details.is_send);
-
-	// Verify successor is populated from successor table via get()
-	ASSERT_EQ (stored_block1->sideband ().successor, block2->hash ());
-	ASSERT_EQ (stored_block2->sideband ().successor, nano::block_hash{ 0 });
-
-	// Verify exists works
-	ASSERT_TRUE (store.block.exists (tx, block1->hash ()));
-	ASSERT_TRUE (store.block.exists (tx, block2->hash ()));
-	ASSERT_FALSE (store.block.exists (tx, nano::block_hash{ 999 }));
-
-	// Verify count
-	ASSERT_EQ (store.block.count (tx), 2);
-
-	// Verify old blocks table was dropped
-	ASSERT_FALSE (store.backend.table_exists ("blocks"));
-
-	// Verify iterator works (should iterate in index order)
-	auto it = store.block.begin (tx);
-	auto end = store.block.end (tx);
-	size_t count = 0;
-	for (; it != end; ++it)
-	{
-		count++;
-	}
-	ASSERT_EQ (count, 2);
 }
 
 /*
