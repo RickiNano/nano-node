@@ -561,7 +561,12 @@ void nano::active_elections::run ()
 
 void nano::active_elections::checkup_elections (nano::unique_lock<nano::mutex> & lock)
 {
-	auto all_elections = index.list ();
+	// Collect election shared_ptrs without copying all of them via list()
+	std::vector<std::shared_ptr<nano::election>> all_elections;
+	all_elections.reserve (index.size ());
+	index.for_each ([&all_elections] (auto const & election) {
+		all_elections.push_back (election);
+	});
 
 	lock.unlock ();
 
@@ -723,18 +728,8 @@ std::vector<std::shared_ptr<nano::election>> nano::active_elections::list_active
 
 std::vector<std::shared_ptr<nano::election>> nano::active_elections::list_active_impl (std::size_t max_count) const
 {
-	std::vector<std::shared_ptr<nano::election>> result_l;
-	auto entries = index.list ();
-	result_l.reserve (std::min (max_count, entries.size ()));
-	for (auto const & entry : entries)
-	{
-		if (result_l.size () >= max_count)
-		{
-			break;
-		}
-		result_l.push_back (entry);
-	}
-	return result_l;
+	auto entries = index.list (max_count);
+	return { entries.begin (), entries.end () };
 }
 
 bool nano::active_elections::active (nano::qualified_root const & root_a) const
@@ -788,15 +783,9 @@ std::size_t nano::active_elections::size (nano::election_behavior behavior, nano
 std::size_t nano::active_elections::stale_count () const
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
-	std::size_t count = 0;
-	for (auto const & election : index.list ())
-	{
-		if (election->duration () > config.stale_threshold)
-		{
-			++count;
-		}
-	}
-	return count;
+	return index.count_if ([threshold = config.stale_threshold] (auto const & election) {
+		return election->duration () > threshold;
+	});
 }
 
 void nano::active_elections::clear ()

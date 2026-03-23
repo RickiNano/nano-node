@@ -62,11 +62,18 @@ public:
 	priority_result last (nano::election_behavior, nano::bucket_index) const;
 
 	std::deque<std::shared_ptr<nano::election>> list () const;
+	std::deque<std::shared_ptr<nano::election>> list (std::size_t max_count) const;
 
 	// Return list of elections with a timestamp before the specified cutoff time
 	std::deque<std::shared_ptr<nano::election>> list (
 	std::chrono::steady_clock::time_point cutoff,
 	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now ());
+
+	// Iterate all elections without copying
+	void for_each (std::function<void (std::shared_ptr<nano::election> const &)> const & callback) const;
+
+	// Count elections matching a predicate without copying
+	std::size_t count_if (std::function<bool (std::shared_ptr<nano::election> const &)> const & predicate) const;
 
 	// Mark an election for update (reset its timestamp)
 	bool trigger (std::shared_ptr<nano::election> const &);

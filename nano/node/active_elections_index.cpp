@@ -99,6 +99,41 @@ auto nano::active_elections_index::list () const -> std::deque<std::shared_ptr<n
 	return { r.begin (), r.end () };
 }
 
+auto nano::active_elections_index::list (std::size_t max_count) const -> std::deque<std::shared_ptr<nano::election>>
+{
+	std::deque<std::shared_ptr<nano::election>> result;
+	for (auto const & entry : entries.get<tag_sequenced> ())
+	{
+		if (result.size () >= max_count)
+		{
+			break;
+		}
+		result.push_back (entry.election);
+	}
+	return result;
+}
+
+void nano::active_elections_index::for_each (std::function<void (std::shared_ptr<nano::election> const &)> const & callback) const
+{
+	for (auto const & entry : entries.get<tag_sequenced> ())
+	{
+		callback (entry.election);
+	}
+}
+
+std::size_t nano::active_elections_index::count_if (std::function<bool (std::shared_ptr<nano::election> const &)> const & predicate) const
+{
+	std::size_t count = 0;
+	for (auto const & entry : entries.get<tag_sequenced> ())
+	{
+		if (predicate (entry.election))
+		{
+			++count;
+		}
+	}
+	return count;
+}
+
 bool nano::active_elections_index::empty () const
 {
 	return entries.empty ();
