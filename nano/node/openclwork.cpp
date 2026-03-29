@@ -8,6 +8,7 @@
 #include <boost/format.hpp>
 
 #include <array>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -125,6 +126,51 @@ __kernel void nano_work(__constant ulong *attempt,
         *result_a = attempt_l;
 }
 )%%%";
+
+std::string opencl_summary (nano::opencl_environment const & env)
+{
+	if (!nano::opencl_loaded)
+	{
+		return "OpenCL library could not be found";
+	}
+
+	std::size_t device_count = 0;
+	for (auto const & platform : env.platforms)
+	{
+		device_count += platform.devices.size ();
+	}
+
+	std::ostringstream stream;
+	stream << boost::str (boost::format ("OpenCL found %1% platform(s) and %2% device(s)") % env.platforms.size () % device_count);
+
+	for (auto const & platform : env.platforms)
+	{
+		for (auto const & device : platform.devices)
+		{
+			std::size_t name_size = 0;
+			clGetDeviceInfo (device, CL_DEVICE_NAME, 0, nullptr, &name_size);
+			std::vector<char> name (name_size);
+			clGetDeviceInfo (device, CL_DEVICE_NAME, name.size (), name.data (), nullptr);
+
+			cl_device_type type{};
+			clGetDeviceInfo (device, CL_DEVICE_TYPE, sizeof (type), &type, nullptr);
+			char const * type_str = "Unknown";
+			if (type & CL_DEVICE_TYPE_GPU)
+				type_str = "GPU";
+			else if (type & CL_DEVICE_TYPE_CPU)
+				type_str = "CPU";
+			else if (type & CL_DEVICE_TYPE_ACCELERATOR)
+				type_str = "Accelerator";
+
+			cl_uint compute_units = 0;
+			clGetDeviceInfo (device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof (compute_units), &compute_units, nullptr);
+
+			stream << " | " << name.data () << " (" << type_str << ", " << compute_units << " CU)";
+		}
+	}
+
+	return stream.str ();
+}
 }
 
 nano::opencl_environment::opencl_environment (bool & error_a)
@@ -530,9 +576,11 @@ std::unique_ptr<nano::opencl_work> nano::opencl_work::create (bool create_a, nan
 		auto error (false);
 
 		nano::opencl_environment environment (error);
+		logger_a.info (nano::log::type::opencl_work, "OpenCL environment: {}", opencl_summary (environment));
+
 		std::stringstream stream;
 		environment.dump (stream);
-		logger_a.info (nano::log::type::opencl_work, "OpenCL environment: {}", stream.str ());
+		logger_a.debug (nano::log::type::opencl_work, "OpenCL environment details:\n{}", stream.str ());
 
 		if (!error)
 		{
