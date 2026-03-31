@@ -939,6 +939,8 @@ TEST (active_elections, fork_filter_cleanup)
  */
 TEST (active_elections, fork_replacement_tally)
 {
+	for (auto iteration = 0; iteration < 100; iteration++)
+	{
 	nano::test::system system;
 	nano::node_config node_config = system.default_config ();
 	node_config.backlog_scan.enable = false;
@@ -1010,7 +1012,7 @@ TEST (active_elections, fork_replacement_tally)
 		node1.process_active (fork);
 
 		// Assert election exists and is the same for each fork
-		ASSERT_TIMELY (1s, election = node1.active.election (fork->qualified_root ()));
+		ASSERT_TIMELY (5s, election = node1.active.election (fork->qualified_root ()));
 	}
 
 	// Check overflow of blocks
@@ -1092,6 +1094,7 @@ TEST (active_elections, fork_replacement_tally)
 
 	auto votes2 (election->votes ());
 	ASSERT_TRUE (votes2.find (nano::dev::genesis_key.pub) != votes2.end ());
+	} // end iteration loop
 }
 
 // Blocks that won an election must always be seen as confirming or cemented
