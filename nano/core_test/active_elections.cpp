@@ -1012,7 +1012,7 @@ TEST (active_elections, fork_replacement_tally)
 		node1.process_active (fork);
 
 		// Assert election exists and is the same for each fork
-		ASSERT_TIMELY (5s, election = node1.active.election (fork->qualified_root ()));
+		ASSERT_TIMELY (1s, election = node1.active.election (fork->qualified_root ()));
 	}
 
 	// Check overflow of blocks
