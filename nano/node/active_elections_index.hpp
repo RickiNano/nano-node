@@ -63,6 +63,9 @@ public:
 
 	std::deque<std::shared_ptr<nano::election>> list () const;
 
+	// Count elections matching a predicate without copying the list
+	size_t count_if (std::function<bool (std::shared_ptr<nano::election> const &)> const &) const;
+
 	// Return list of elections with a timestamp before the specified cutoff time
 	std::deque<std::shared_ptr<nano::election>> list (
 	std::chrono::steady_clock::time_point cutoff,

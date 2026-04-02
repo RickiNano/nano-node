@@ -99,6 +99,19 @@ auto nano::active_elections_index::list () const -> std::deque<std::shared_ptr<n
 	return { r.begin (), r.end () };
 }
 
+size_t nano::active_elections_index::count_if (std::function<bool (std::shared_ptr<nano::election> const &)> const & pred) const
+{
+	size_t count = 0;
+	for (auto const & entry : entries.get<tag_sequenced> ())
+	{
+		if (pred (entry.election))
+		{
+			++count;
+		}
+	}
+	return count;
+}
+
 bool nano::active_elections_index::empty () const
 {
 	return entries.empty ();

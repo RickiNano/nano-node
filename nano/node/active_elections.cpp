@@ -788,15 +788,9 @@ std::size_t nano::active_elections::size (nano::election_behavior behavior, nano
 std::size_t nano::active_elections::stale_count () const
 {
 	nano::lock_guard<nano::mutex> guard{ mutex };
-	std::size_t count = 0;
-	for (auto const & election : index.list ())
-	{
-		if (election->duration () > config.stale_threshold)
-		{
-			++count;
-		}
-	}
-	return count;
+	return index.count_if ([threshold = config.stale_threshold] (auto const & election) {
+		return election->duration () > threshold;
+	});
 }
 
 void nano::active_elections::clear ()
