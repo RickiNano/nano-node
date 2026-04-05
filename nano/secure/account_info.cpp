@@ -33,16 +33,6 @@ bool nano::account_info::deserialize (nano::stream & stream_a)
 	return error;
 }
 
-bool nano::account_info::operator== (nano::account_info const & other_a) const
-{
-	return head == other_a.head && representative == other_a.representative && open_block == other_a.open_block && balance == other_a.balance && modified == other_a.modified && block_count == other_a.block_count && epoch () == other_a.epoch ();
-}
-
-bool nano::account_info::operator!= (nano::account_info const & other_a) const
-{
-	return !(*this == other_a);
-}
-
 size_t nano::account_info::db_size () const
 {
 	debug_assert (reinterpret_cast<uint8_t const *> (this) == reinterpret_cast<uint8_t const *> (&head));

@@ -16,8 +16,7 @@ public:
 	account_info () = default;
 	account_info (nano::block_hash const &, nano::account const &, nano::block_hash const &, nano::amount const &, nano::seconds_t modified, uint64_t, epoch);
 	bool deserialize (nano::stream &);
-	bool operator== (nano::account_info const &) const;
-	bool operator!= (nano::account_info const &) const;
+	auto operator<=> (nano::account_info const &) const = default;
 	size_t db_size () const;
 	nano::epoch epoch () const;
 	nano::block_hash head{ 0 };

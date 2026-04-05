@@ -23,7 +23,7 @@ public:
 	{
 		return 1;
 	}
-	bool operator== (block_details const &) const;
+	auto operator<=> (block_details const &) const = default;
 	void serialize (nano::stream &) const;
 	bool deserialize (nano::stream &);
 

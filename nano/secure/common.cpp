@@ -438,16 +438,6 @@ bool nano::unchecked_key::deserialize (nano::stream & stream_a)
 	return error;
 }
 
-bool nano::unchecked_key::operator== (nano::unchecked_key const & other_a) const
-{
-	return previous == other_a.previous && hash == other_a.hash;
-}
-
-bool nano::unchecked_key::operator< (nano::unchecked_key const & other_a) const
-{
-	return previous != other_a.previous ? previous < other_a.previous : hash < other_a.hash;
-}
-
 nano::block_hash const & nano::unchecked_key::key () const
 {
 	return previous;

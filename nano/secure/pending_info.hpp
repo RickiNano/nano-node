@@ -19,7 +19,7 @@ public:
 	pending_info (nano::account const &, nano::amount const &, nano::epoch);
 	size_t db_size () const;
 	bool deserialize (nano::stream &);
-	bool operator== (nano::pending_info const &) const;
+	auto operator<=> (nano::pending_info const &) const = default;
 	nano::account source{}; // the account sending the funds
 	nano::amount amount{ 0 }; // amount receivable in this transaction
 	nano::epoch epoch{ nano::epoch::epoch_0 }; // epoch of sending block, this info is stored here to make it possible to prune the send block
@@ -40,8 +40,7 @@ public:
 	pending_key () = default;
 	pending_key (nano::account const &, nano::block_hash const &);
 	bool deserialize (nano::stream &);
-	bool operator== (nano::pending_key const &) const;
-	bool operator< (nano::pending_key const &) const;
+	auto operator<=> (nano::pending_key const &) const = default;
 	nano::account const & key () const;
 	nano::account account{}; // receiving account
 	nano::block_hash hash{ 0 }; // hash of the send block

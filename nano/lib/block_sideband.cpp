@@ -14,11 +14,6 @@ nano::block_details::block_details (nano::epoch const epoch_a, bool const is_sen
 {
 }
 
-bool nano::block_details::operator== (nano::block_details const & other_a) const
-{
-	return epoch == other_a.epoch && is_send == other_a.is_send && is_receive == other_a.is_receive && is_epoch == other_a.is_epoch;
-}
-
 uint8_t nano::block_details::packed () const
 {
 	std::bitset<8> result (static_cast<uint8_t> (epoch));

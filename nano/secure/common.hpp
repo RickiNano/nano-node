@@ -62,8 +62,7 @@ public:
 	unchecked_key (nano::hash_or_account const &, nano::block_hash const &);
 	unchecked_key (nano::uint512_union const &);
 	bool deserialize (nano::stream &);
-	bool operator== (nano::unchecked_key const &) const;
-	bool operator< (nano::unchecked_key const &) const;
+	auto operator<=> (nano::unchecked_key const &) const = default;
 	nano::block_hash const & key () const;
 	nano::block_hash previous{ 0 };
 	nano::block_hash hash{ 0 };
