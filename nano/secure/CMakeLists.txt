@@ -30,7 +30,7 @@ add_library(
   voting_policy.hpp
   voting_policy.cpp)
 
-target_link_libraries(secure nano_lib ed25519 crypto_lib Boost::system)
+target_link_libraries(secure nano_lib nano_store ed25519 crypto_lib Boost::system)
 
 target_compile_definitions(secure PUBLIC -DQT_NO_KEYWORDS
                                          -DBOOST_ASIO_HAS_STD_ARRAY=1)

@@ -119,6 +119,9 @@ set_property(
 set(NANO_FUZZER_TEST
     OFF
     CACHE BOOL "")
+set(NANO_UNITY_BUILD
+    OFF
+    CACHE BOOL "Enable unity (jumbo) builds to reduce compilation times")
 set(NANO_ASIO_HANDLER_TRACKING
     OFF
     CACHE BOOL "")
@@ -656,6 +659,15 @@ add_library(blake2 crypto/blake2/blake2-config.h crypto/blake2/blake2-impl.h
                    crypto/blake2/blake2.h ${BLAKE2_IMPLEMENTATION})
 
 target_compile_definitions(blake2 PRIVATE -D__SSE2__)
+
+if(NANO_UNITY_BUILD)
+  if(CMAKE_VERSION VERSION_LESS "3.16")
+    message(WARNING "NANO_UNITY_BUILD requires CMake 3.16 or later, ignoring")
+  else()
+    set(CMAKE_UNITY_BUILD ON)
+    message(STATUS "Unity builds enabled")
+  endif()
+endif()
 
 add_subdirectory(nano/crypto_lib)
 add_subdirectory(nano/secure)

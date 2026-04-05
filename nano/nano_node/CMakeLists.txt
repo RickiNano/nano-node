@@ -20,7 +20,8 @@ target_compile_definitions(
 
 set_target_properties(
   nano_node PROPERTIES COMPILE_FLAGS
-                       "-DQT_NO_KEYWORDS -DBOOST_ASIO_HAS_STD_ARRAY=1")
+                       "-DQT_NO_KEYWORDS -DBOOST_ASIO_HAS_STD_ARRAY=1"
+                       UNITY_BUILD OFF)
 
 add_custom_command(
   TARGET nano_node
