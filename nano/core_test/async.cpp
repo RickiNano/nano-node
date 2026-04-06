@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 
 namespace
 {
-class test_context
+class async_test_context
 {
 public:
 	std::shared_ptr<asio::io_context> io_ctx{ std::make_shared<asio::io_context> () };
@@ -26,7 +26,7 @@ public:
 
 TEST (async, sleep)
 {
-	test_context ctx;
+	async_test_context ctx;
 
 	auto fut = asio::co_spawn (
 	ctx.strand,
@@ -41,7 +41,7 @@ TEST (async, sleep)
 
 TEST (async, cancellation)
 {
-	test_context ctx;
+	async_test_context ctx;
 
 	nano::async::cancellation cancellation{ ctx.strand };
 
@@ -63,7 +63,7 @@ TEST (async, cancellation)
 // Test that cancellation signal behaves well when the cancellation is emitted after the task has completed
 TEST (async, cancellation_lifetime)
 {
-	test_context ctx;
+	async_test_context ctx;
 
 	nano::async::cancellation cancellation{ ctx.strand };
 	{
@@ -83,7 +83,7 @@ TEST (async, cancellation_lifetime)
 TEST (async, task)
 {
 	nano::test::system system;
-	test_context ctx;
+	async_test_context ctx;
 
 	nano::async::task task{ ctx.strand };
 
@@ -122,7 +122,7 @@ TEST (async, task)
 TEST (async, task_cancel)
 {
 	nano::test::system system;
-	test_context ctx;
+	async_test_context ctx;
 
 	nano::async::task task = nano::async::task (ctx.strand, [&] () -> asio::awaitable<void> {
 		co_await nano::async::sleep_for (10s);
@@ -146,7 +146,7 @@ TEST (async, task_cancel)
 TEST (async, task_join)
 {
 	nano::test::system system;
-	test_context ctx;
+	async_test_context ctx;
 
 	nano::async::task task = nano::async::task (ctx.strand, [&] () -> asio::awaitable<void> {
 		co_await nano::async::sleep_for (500ms);
@@ -168,7 +168,7 @@ TEST (async, task_join)
 TEST (async, task_join_multithread)
 {
 	nano::test::system system;
-	test_context ctx;
+	async_test_context ctx;
 
 	nano::async::task task = nano::async::task (ctx.strand, [&] () -> asio::awaitable<void> {
 		co_await nano::async::sleep_for (500ms);
