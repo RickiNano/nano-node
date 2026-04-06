@@ -46,6 +46,8 @@ jobs:
     strategy:
       matrix:
         network: ["TEST", "BETA", "LIVE"]
+    env:
+      CCACHE_MAXSIZE: 200M
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,9 +56,17 @@ jobs:
           ref: ${{ needs.prepare_build.outputs.ci_tag }}
           repository: ${{ github.repository }}
 
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ matrix.network }}-${{ needs.prepare_build.outputs.ci_tag }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ matrix.network }}-
+
       - name: Prepare
         run: ci/prepare/macos/prepare.sh
-        
+
       - name: Build Artifact
         run: ci/build-deploy.sh "/tmp/qt/lib/cmake/Qt5";
         env:
@@ -83,6 +93,8 @@ jobs:
     strategy:
       matrix:
         network: ["TEST", "BETA", "LIVE"]
+    env:
+      CCACHE_MAXSIZE: 200M
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,6 +102,14 @@ jobs:
           submodules: "recursive"
           ref: ${{ needs.prepare_build.outputs.ci_tag }}
           repository: ${{ github.repository }}
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ matrix.network }}-${{ needs.prepare_build.outputs.ci_tag }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ matrix.network }}-
 
       - name: Prepare
         run: sudo -E ci/prepare/linux/prepare.sh

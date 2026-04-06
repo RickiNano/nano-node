@@ -17,6 +17,7 @@ python3 \
 zlib1g-dev \
 cmake \
 git \
+ccache \
 qtbase5-dev \
 qtchooser \
 qt5-qmake \

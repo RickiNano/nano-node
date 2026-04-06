@@ -40,6 +40,13 @@ if [[ ${SANITIZER:-} ]]; then
     esac
 fi
 
+CMAKE_COMPILER_LAUNCHER=""
+if command -v ccache &>/dev/null 2>&1; then
+    CMAKE_COMPILER_LAUNCHER="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+elif command -v sccache &>/dev/null 2>&1; then
+    CMAKE_COMPILER_LAUNCHER="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+fi
+
 BUILD_DIR="build"
 
 mkdir -p $BUILD_DIR
@@ -57,6 +64,7 @@ cmake \
 -DCI_VERSION_PRE_RELEASE=${CI_VERSION_PRE_RELEASE:-OFF} \
 ${CMAKE_SANITIZER:-} \
 ${CMAKE_QT_DIR:-} \
+${CMAKE_COMPILER_LAUNCHER} \
 ${SRC}
 
 number_of_processors() {

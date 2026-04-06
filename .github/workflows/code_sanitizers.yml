@@ -32,12 +32,21 @@ jobs:
       ASAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:suppressions=../asan_suppressions:detect_leaks=${{ matrix.SANITIZER.leak_check && '1' || '0' }}
       TSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:suppressions=../tsan_suppressions
       UBSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:print_stacktrace=1
+      CCACHE_MAXSIZE: 200M
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: "recursive"
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ matrix.COMPILER }}-${{ matrix.BACKEND }}-${{ matrix.SANITIZER.name }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ matrix.COMPILER }}-${{ matrix.BACKEND }}-${{ matrix.SANITIZER.name }}-
 
       - name: Prepare
         run: sudo -E ci/prepare/linux/prepare.sh
@@ -88,12 +97,21 @@ jobs:
       ASAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:suppressions=../asan_suppressions
       TSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:suppressions=../tsan_suppressions
       UBSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:print_stacktrace=1
+      CCACHE_MAXSIZE: 200M
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: "recursive"
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ matrix.COMPILER }}-${{ matrix.BACKEND }}-${{ matrix.SANITIZER.name }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ matrix.COMPILER }}-${{ matrix.BACKEND }}-${{ matrix.SANITIZER.name }}-
 
       - name: Prepare
         run: ci/prepare/macos/prepare.sh
