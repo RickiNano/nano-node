@@ -23,6 +23,7 @@ executable=./${target}$(get_exec_extension)
 if [ -n "${GTEST_WORKERS-}" ]; then
     python3 "$(dirname "$BASH_SOURCE")/../gtest_parallel.py" \
         --workers="${GTEST_WORKERS}" \
+        --serialize_test_cases \
         --print_test_times \
         "${executable}" -- "$@"
 else
