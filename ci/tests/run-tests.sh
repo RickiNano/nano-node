@@ -19,7 +19,15 @@ fi
 # Run the test
 shift
 executable=./${target}$(get_exec_extension)
-"${executable}" "$@"
+
+if [ -n "${GTEST_WORKERS-}" ]; then
+    python3 "$(dirname "$BASH_SOURCE")/../gtest_parallel.py" \
+        --workers="${GTEST_WORKERS}" \
+        --print_test_times \
+        "${executable}" -- "$@"
+else
+    "${executable}" "$@"
+fi
 status=$?
 
 if [ $status -ne 0 ]; then
