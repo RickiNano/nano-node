@@ -127,8 +127,20 @@ jobs:
         with:
           submodules: "recursive"
 
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: C:\Qt
+          key: qt-5.15.2-msvc2019-64
+
       - name: Prepare
-        run: ci/prepare/windows/prepare.ps1
+        run: |
+          ci/prepare/windows/disable-defender.ps1
+          if ('${{ steps.cache-qt.outputs.cache-hit }}' -ne 'true') {
+            ci/prepare/windows/install-qt.ps1
+          }
+        shell: pwsh
 
       - name: Build Tests
         id: build
