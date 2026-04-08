@@ -140,6 +140,7 @@ jobs:
           if ('${{ steps.cache-qt.outputs.cache-hit }}' -ne 'true') {
             ci/prepare/windows/install-qt.ps1
           }
+          "QT_DIR=C:\Qt\5.15.2\msvc2019_64\lib\cmake\Qt5" >> $env:GITHUB_ENV
         shell: pwsh
 
       - name: Build Tests

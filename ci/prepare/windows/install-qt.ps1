@@ -40,6 +40,3 @@ foreach ($entry in $toDownload) {
     # Decompress archive
     7z x $tempFile -o"$targetFolder" -aoa
 }
-
-# Save install location for subsequent steps
-"QT_DIR=C:\Qt\5.15.2\msvc2019_64\lib\cmake\Qt5" >> $env:GITHUB_ENV
