@@ -27,7 +27,7 @@ jobs:
       SCCACHE_GHA_VERSION: macos-${{ matrix.RELEASE }}
       # Only the develop branch populates the cache.
       SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
-      GTEST_WORKERS: 3
+      GTEST_WORKERS: 2
     runs-on: macos-14
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
@@ -91,7 +91,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_GHA_VERSION: linux-${{ matrix.COMPILER }}-${{ matrix.RELEASE }}
       SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
-      GTEST_WORKERS: 4
+      GTEST_WORKERS: 2
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
@@ -152,7 +152,7 @@ jobs:
       BUILD_TYPE: ${{ matrix.RELEASE && 'RelWithDebInfo' || 'Debug' }}
       TEST_USE_ROCKSDB: ${{ matrix.BACKEND == 'rocksdb' && '1' || '0' }}
       DEADLINE_SCALE_FACTOR: ${{ matrix.BACKEND == 'rocksdb' && '2' || '1' }}
-      GTEST_WORKERS: 4
+      GTEST_WORKERS: 2
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
