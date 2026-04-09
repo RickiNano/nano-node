@@ -33,6 +33,7 @@ jobs:
       TSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:suppressions=../tsan_suppressions
       UBSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:print_stacktrace=1
       CMAKE_COMPILER_LAUNCHER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
@@ -93,6 +94,7 @@ jobs:
       TSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:suppressions=../tsan_suppressions
       UBSAN_OPTIONS: log_exe_name=1:log_path=sanitizer_report:print_stacktrace=1
       CMAKE_COMPILER_LAUNCHER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
