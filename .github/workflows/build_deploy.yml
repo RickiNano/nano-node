@@ -50,9 +50,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: "recursive"
           ref: ${{ needs.prepare_build.outputs.ci_tag }}
           repository: ${{ github.repository }}
+
+      - name: Cache submodules
+        id: cache-submodules
+        uses: actions/cache@v4
+        with:
+          path: |
+            submodules
+            .git/modules
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+          restore-keys: submodules-${{ runner.os }}-
+
+      - name: Initialize submodules
+        if: steps.cache-submodules.outputs.cache-hit != 'true'
+        run: git submodule update --init --recursive
 
       - name: Prepare
         run: ci/prepare/macos/prepare.sh
@@ -87,9 +100,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: "recursive"
           ref: ${{ needs.prepare_build.outputs.ci_tag }}
           repository: ${{ github.repository }}
+
+      - name: Cache submodules
+        id: cache-submodules
+        uses: actions/cache@v4
+        with:
+          path: |
+            submodules
+            .git/modules
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+          restore-keys: submodules-${{ runner.os }}-
+
+      - name: Initialize submodules
+        if: steps.cache-submodules.outputs.cache-hit != 'true'
+        run: git submodule update --init --recursive
 
       - name: Prepare
         run: sudo -E ci/prepare/linux/prepare.sh
@@ -130,9 +156,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: "recursive"
           ref: ${{ needs.prepare_build.outputs.ci_tag }}
           repository: ${{ github.repository }}
+
+      - name: Cache submodules
+        id: cache-submodules
+        uses: actions/cache@v4
+        with:
+          path: |
+            submodules
+            .git/modules
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+          restore-keys: submodules-${{ runner.os }}-
+
+      - name: Initialize submodules
+        if: steps.cache-submodules.outputs.cache-hit != 'true'
+        run: git submodule update --init --recursive
 
       - name: Free Disk Space
         uses: ./.github/actions/free-disk-space
@@ -170,9 +209,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: "recursive"
           ref: ${{ needs.prepare_build.outputs.ci_tag }}
           repository: ${{ github.repository }}
+
+      - name: Cache submodules
+        id: cache-submodules
+        uses: actions/cache@v4
+        with:
+          path: |
+            submodules
+            .git/modules
+          key: submodules-${{ runner.os }}-${{ hashFiles('.gitmodules') }}
+          restore-keys: submodules-${{ runner.os }}-
+
+      - name: Initialize submodules
+        if: steps.cache-submodules.outputs.cache-hit != 'true'
+        run: git submodule update --init --recursive
+        shell: bash
 
       - name: Prepare
         run: ci/prepare/windows/prepare.ps1
