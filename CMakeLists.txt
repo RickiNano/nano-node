@@ -435,8 +435,38 @@ set(BOOST_INCLUDE_LIBRARIES
     unordered
     variant)
 
+# Compiler launcher (e.g. sccache) — scoped to stable/submodule targets only.
+# nano's own sources rebuild on nearly every commit and would just churn the
+# cache, so we confine caching to code that rarely changes (submodules, boost,
+# rocksdb, cryptopp, etc.). See nano_add_cached_subdirectory / nano_apply_launcher.
+set(NANO_COMPILER_LAUNCHER
+    ""
+    CACHE STRING "Compiler launcher (e.g. sccache) applied to submodule targets")
+
+# Wraps add_subdirectory() with the compiler launcher enabled. All targets
+# created within inherit C_COMPILER_LAUNCHER / CXX_COMPILER_LAUNCHER at
+# creation time; the launcher does NOT leak back into the parent scope.
+function(nano_add_cached_subdirectory DIR)
+  if(NANO_COMPILER_LAUNCHER)
+    set(CMAKE_C_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}")
+  endif()
+  add_subdirectory(${DIR} ${ARGN})
+endfunction()
+
+# Applies the compiler launcher to an existing target (for libraries built
+# directly from submodule sources, e.g. cryptopp, argon2, lmdb).
+function(nano_apply_launcher TARGET)
+  if(NANO_COMPILER_LAUNCHER)
+    set_target_properties(
+      ${TARGET}
+      PROPERTIES C_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}"
+                 CXX_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}")
+  endif()
+endfunction()
+
 add_definitions(-DBOOST_ALL_NO_LIB) # Disable automatic boost linking
-add_subdirectory(submodules/boost EXCLUDE_FROM_ALL)
+nano_add_cached_subdirectory(submodules/boost EXCLUDE_FROM_ALL)
 include_directories(${BOOST_LIBRARY_INCLUDES})
 
 # Configure stacktrace with appropriate backend
@@ -493,7 +523,7 @@ else()
       1
       CACHE BOOL "" FORCE)
 endif()
-add_subdirectory(submodules/rocksdb EXCLUDE_FROM_ALL)
+nano_add_cached_subdirectory(submodules/rocksdb EXCLUDE_FROM_ALL)
 
 # cpptoml
 include_directories(submodules/cpptoml/include)
@@ -507,19 +537,19 @@ add_subdirectory(nano/ipc_flatbuffers_lib)
 add_subdirectory(nano/ipc_flatbuffers_test)
 
 # fmt
-add_subdirectory(submodules/fmt EXCLUDE_FROM_ALL)
+nano_add_cached_subdirectory(submodules/fmt EXCLUDE_FROM_ALL)
 include_directories(submodules/fmt/include)
 
 # spdlog
 add_definitions(-DSPDLOG_FMT_EXTERNAL)
-add_subdirectory(submodules/spdlog EXCLUDE_FROM_ALL)
+nano_add_cached_subdirectory(submodules/spdlog EXCLUDE_FROM_ALL)
 include_directories(submodules/spdlog/include)
 
 # miniupnp
 set(UPNPC_BUILD_SHARED
     OFF
     CACHE BOOL "")
-add_subdirectory(submodules/miniupnp/miniupnpc EXCLUDE_FROM_ALL)
+nano_add_cached_subdirectory(submodules/miniupnp/miniupnpc EXCLUDE_FROM_ALL)
 
 set(BUILD_SHARED
     OFF
@@ -609,6 +639,7 @@ add_library(
   ${CRYPTOPP_EXTRA})
 
 target_include_directories(cryptopp PUBLIC submodules)
+nano_apply_launcher(cryptopp)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86(_64)?)$")
   set(ARGON_CORE submodules/phc-winner-argon2/src/opt.c)
@@ -628,6 +659,7 @@ add_library(
 target_include_directories(argon2 PUBLIC submodules/phc-winner-argon2/include)
 target_include_directories(argon2 PUBLIC submodules/phc-winner-argon2/src)
 target_include_directories(argon2 PUBLIC crypto/blake2)
+nano_apply_launcher(argon2)
 
 # LMDB
 add_library(
@@ -635,6 +667,7 @@ add_library(
   submodules/lmdb/libraries/liblmdb/lmdb.h
   submodules/lmdb/libraries/liblmdb/mdb.c
   submodules/lmdb/libraries/liblmdb/midl.c)
+nano_apply_launcher(lmdb)
 
 if(WIN32)
   target_link_libraries(lmdb ntdll)
@@ -701,7 +734,7 @@ if(NANO_TEST OR RAIBLOCKS_TEST)
 
   # FIXME: This fixes googletest GOOGLETEST_VERSION requirement
   set(GOOGLETEST_VERSION 1.11.0)
-  add_subdirectory(submodules/gtest/googletest)
+  nano_add_cached_subdirectory(submodules/gtest/googletest)
   # FIXME: This fixes gtest include directories without modifying gtest's
   # CMakeLists.txt. Ideally we should use GTest::GTest and GTest::Main as
   # dependencies but it requires building gtest differently
@@ -710,7 +743,7 @@ if(NANO_TEST OR RAIBLOCKS_TEST)
                      "${CMAKE_SOURCE_DIR}/submodules/gtest/googletest/include")
 
   set(BENCHMARK_ENABLE_TESTING OFF)
-  add_subdirectory(submodules/benchmark)
+  nano_add_cached_subdirectory(submodules/benchmark)
 
   add_subdirectory(nano/test_common)
   add_subdirectory(nano/core_test)

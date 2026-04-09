@@ -15,6 +15,16 @@ if [[ ${QT_DIR:-} ]]; then
     CMAKE_QT_DIR="-DQt5_DIR=${QT_DIR}"
 fi
 
+CMAKE_LAUNCHER_FLAGS=""
+if [[ ${CMAKE_COMPILER_LAUNCHER:-} ]]; then
+    # Scoped to submodule/stable targets only (see nano_add_cached_subdirectory
+    # in CMakeLists.txt) — nano's own sources change every commit and would just
+    # churn the cache, so we don't pass CMAKE_<LANG>_COMPILER_LAUNCHER globally.
+    CMAKE_LAUNCHER_FLAGS="-DNANO_COMPILER_LAUNCHER=${CMAKE_COMPILER_LAUNCHER}"
+    # MSVC's default /Zi writes to a shared PDB which sccache cannot cache; force /Z7 (embedded debug info) via CMP0141 so the launcher is actually effective on Windows.
+    CMAKE_LAUNCHER_FLAGS="${CMAKE_LAUNCHER_FLAGS} -DCMAKE_POLICY_DEFAULT_CMP0141=NEW -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded"
+fi
+
 CMAKE_SANITIZER=""
 if [[ ${SANITIZER:-} ]]; then
     case "${SANITIZER}" in
@@ -57,6 +67,7 @@ cmake \
 -DCI_VERSION_PRE_RELEASE=${CI_VERSION_PRE_RELEASE:-OFF} \
 ${CMAKE_SANITIZER:-} \
 ${CMAKE_QT_DIR:-} \
+${CMAKE_LAUNCHER_FLAGS:-} \
 ${SRC}
 
 number_of_processors() {
