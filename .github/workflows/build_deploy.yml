@@ -48,6 +48,7 @@ jobs:
         network: ["TEST", "BETA", "LIVE"]
     env:
       CCACHE_MAXSIZE: 200M
+      CCACHE_DIR: ~/.ccache
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,6 +96,7 @@ jobs:
         network: ["TEST", "BETA", "LIVE"]
     env:
       CCACHE_MAXSIZE: 200M
+      CCACHE_DIR: ~/.ccache
     steps:
       - name: Checkout
         uses: actions/checkout@v4
