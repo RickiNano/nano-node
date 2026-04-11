@@ -443,6 +443,10 @@ set(NANO_COMPILER_LAUNCHER
     ""
     CACHE STRING "Compiler launcher (e.g. sccache) applied to submodule targets")
 
+# DIAG(sccache): report the launcher value that actually reached the configure
+# so we can tell whether -DNANO_COMPILER_LAUNCHER= made it from ci/build.sh.
+message(STATUS "[sccache-diag] NANO_COMPILER_LAUNCHER='${NANO_COMPILER_LAUNCHER}'")
+
 # Wraps add_subdirectory() with the compiler launcher enabled. All targets
 # created within inherit C_COMPILER_LAUNCHER / CXX_COMPILER_LAUNCHER at
 # creation time; the launcher does NOT leak back into the parent scope.
@@ -450,6 +454,9 @@ function(nano_add_cached_subdirectory DIR)
   if(NANO_COMPILER_LAUNCHER)
     set(CMAKE_C_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}")
+    message(STATUS "[sccache-diag] cached add_subdirectory(${DIR}) with launcher='${NANO_COMPILER_LAUNCHER}'")
+  else()
+    message(STATUS "[sccache-diag] cached add_subdirectory(${DIR}) WITHOUT launcher")
   endif()
   add_subdirectory(${DIR} ${ARGN})
 endfunction()
@@ -462,6 +469,11 @@ function(nano_apply_launcher TARGET)
       ${TARGET}
       PROPERTIES C_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}"
                  CXX_COMPILER_LAUNCHER "${NANO_COMPILER_LAUNCHER}")
+    get_target_property(_nano_diag_c_launcher ${TARGET} C_COMPILER_LAUNCHER)
+    get_target_property(_nano_diag_cxx_launcher ${TARGET} CXX_COMPILER_LAUNCHER)
+    message(STATUS "[sccache-diag] ${TARGET}: C_COMPILER_LAUNCHER='${_nano_diag_c_launcher}' CXX_COMPILER_LAUNCHER='${_nano_diag_cxx_launcher}'")
+  else()
+    message(STATUS "[sccache-diag] ${TARGET}: launcher not applied (NANO_COMPILER_LAUNCHER empty)")
   endif()
 endfunction()
 
