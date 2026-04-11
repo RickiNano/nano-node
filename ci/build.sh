@@ -25,18 +25,6 @@ if [[ ${CMAKE_COMPILER_LAUNCHER:-} ]]; then
     CMAKE_LAUNCHER_FLAGS="${CMAKE_LAUNCHER_FLAGS} -DCMAKE_POLICY_DEFAULT_CMP0141=NEW -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded"
 fi
 
-# DIAG(sccache): confirm the env var reached this script and show what will be
-# forwarded to cmake. Also verify sccache is actually reachable on PATH.
-echo "[sccache-diag] CMAKE_COMPILER_LAUNCHER='${CMAKE_COMPILER_LAUNCHER:-unset}'"
-echo "[sccache-diag] CMAKE_LAUNCHER_FLAGS='${CMAKE_LAUNCHER_FLAGS}'"
-echo "[sccache-diag] SCCACHE_GHA_ENABLED='${SCCACHE_GHA_ENABLED:-unset}' SCCACHE_GHA_VERSION='${SCCACHE_GHA_VERSION:-unset}'"
-if command -v sccache >/dev/null 2>&1; then
-    echo "[sccache-diag] sccache on PATH: $(command -v sccache)"
-    sccache --version || true
-else
-    echo "[sccache-diag] sccache NOT on PATH"
-fi
-
 CMAKE_SANITIZER=""
 if [[ ${SANITIZER:-} ]]; then
     case "${SANITIZER}" in
@@ -69,7 +57,6 @@ pushd $BUILD_DIR
 
 cmake \
 -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-"Debug"} \
--DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 -DPORTABLE=ON \
 -DACTIVE_NETWORK=nano_${NANO_NETWORK:-"live"}_network \
 -DNANO_TEST=${NANO_TEST:-OFF} \
@@ -113,25 +100,5 @@ parallel_build_flag() {
 }
 
 cmake --build ${PWD} ${BUILD_TARGET} $(parallel_build_flag)
-
-# DIAG(sccache): sample compile_commands.json to verify the launcher was baked
-# into at least one submodule compile line, then show stats from the SAME
-# process tree as the build (the separate "sccache stats" CI step runs in a
-# fresh shell — if its numbers diverge from this, the post-step is restarting
-# the server and the CI step's output is a red herring).
-if [[ ${CMAKE_COMPILER_LAUNCHER:-} ]]; then
-    if [[ -f compile_commands.json ]]; then
-        echo "[sccache-diag] compile_commands.json entries mentioning '${CMAKE_COMPILER_LAUNCHER}':"
-        grep -c "${CMAKE_COMPILER_LAUNCHER}" compile_commands.json || true
-        echo "[sccache-diag] first launcher-prefixed compile line:"
-        grep -m1 "${CMAKE_COMPILER_LAUNCHER}" compile_commands.json || echo "[sccache-diag] (none — launcher is not in compile_commands.json)"
-    else
-        echo "[sccache-diag] compile_commands.json missing — cannot verify launcher landed in compile lines"
-    fi
-    if command -v sccache >/dev/null 2>&1; then
-        echo "[sccache-diag] sccache stats from inside build.sh (same process tree as the build):"
-        sccache --show-stats || true
-    fi
-fi
 
 popd
