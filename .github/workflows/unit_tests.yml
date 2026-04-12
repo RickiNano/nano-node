@@ -140,15 +140,9 @@ jobs:
         run: ci/tests/setup-core-dumps.sh
         shell: bash
 
-      - name: Core Tests
+      - name: Core & RPC Tests
         if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-core-tests.sh
-        working-directory: build
-        shell: bash
-
-      - name: RPC Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
-        run: ../ci/tests/run-rpc-tests.sh
+        run: ../ci/tests/run-core-and-rpc-tests.sh
         working-directory: build
         shell: bash
 
