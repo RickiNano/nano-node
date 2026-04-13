@@ -130,6 +130,11 @@ jobs:
       - name: Prepare
         run: ci/prepare/windows/prepare.ps1
 
+      - name: Setup MSVC Environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Build Tests
         id: build
         run: ci/build-tests.sh

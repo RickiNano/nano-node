@@ -45,7 +45,16 @@ BUILD_DIR="build"
 mkdir -p $BUILD_DIR
 pushd $BUILD_DIR
 
+CMAKE_GENERATOR_FLAG=""
+case "$(uname -s)" in
+    CYGWIN*|MINGW32*|MSYS*|MINGW*)
+        # Ninja avoids MSBuild's per-project overhead and is significantly faster on Windows.
+        CMAKE_GENERATOR_FLAG="-G Ninja"
+        ;;
+esac
+
 cmake \
+${CMAKE_GENERATOR_FLAG} \
 -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-"Debug"} \
 -DPORTABLE=ON \
 -DACTIVE_NETWORK=nano_${NANO_NETWORK:-"live"}_network \
@@ -77,17 +86,6 @@ number_of_processors() {
     esac
 }
 
-parallel_build_flag() {
-    case "$(uname -s)" in
-        CYGWIN*|MINGW32*|MSYS*|MINGW*)
-            echo "-- -m"
-            ;;
-        *)
-            echo "--parallel $(number_of_processors)"
-            ;;
-    esac
-}
-
-cmake --build ${PWD} ${BUILD_TARGET} $(parallel_build_flag)
+cmake --build ${PWD} ${BUILD_TARGET} --parallel $(number_of_processors)
 
 popd
