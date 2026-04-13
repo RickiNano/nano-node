@@ -7,13 +7,13 @@ goto %RUN%
 cmake --build . ^
   --target core_test ^
   --config %BUILD_TYPE% ^
-  -- /m:2
+  -- /m:4
 set exit_code=%errorlevel%
 if %exit_code% neq 0 goto exit
 cmake --build . ^
   --target rpc_test ^
   --config %BUILD_TYPE% ^
-  -- /m:2
+  -- /m:4
 set exit_code=%errorlevel%
 goto exit
 
@@ -21,7 +21,7 @@ goto exit
 cmake --build . ^
   --target INSTALL ^
   --config %BUILD_TYPE% ^
-  -- /m:2
+  -- /m:4
 set exit_code=%errorlevel%
 
 echo "Packaging NSIS"
