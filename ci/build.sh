@@ -45,7 +45,18 @@ BUILD_DIR="build"
 mkdir -p $BUILD_DIR
 pushd $BUILD_DIR
 
+CMAKE_GENERATOR_FLAG=""
+case "$(uname -s)" in
+    CYGWIN*|MINGW32*|MSYS*|MINGW*)
+        # Use Ninja on Windows: MSBuild ignores CMAKE_<LANG>_COMPILER_LAUNCHER,
+        # so sccache only works with the Ninja generator. Requires the MSVC
+        # environment to be active (e.g. ilammy/msvc-dev-cmd in CI).
+        CMAKE_GENERATOR_FLAG="-G Ninja"
+        ;;
+esac
+
 cmake \
+${CMAKE_GENERATOR_FLAG} \
 -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-"Debug"} \
 -DPORTABLE=ON \
 -DACTIVE_NETWORK=nano_${NANO_NETWORK:-"live"}_network \
@@ -78,14 +89,7 @@ number_of_processors() {
 }
 
 parallel_build_flag() {
-    case "$(uname -s)" in
-        CYGWIN*|MINGW32*|MSYS*|MINGW*)
-            echo "-- -m"
-            ;;
-        *)
-            echo "--parallel $(number_of_processors)"
-            ;;
-    esac
+    echo "--parallel $(number_of_processors)"
 }
 
 cmake --build ${PWD} ${BUILD_TARGET} $(parallel_build_flag)

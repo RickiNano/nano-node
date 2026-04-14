@@ -12,6 +12,10 @@ endif()
 if(POLICY CMP0156)
   cmake_policy(SET CMP0156 NEW)
 endif()
+# Honor CMAKE_MSVC_DEBUG_INFORMATION_FORMAT so we can select /Z7 for sccache
+if(POLICY CMP0141)
+  cmake_policy(SET CMP0141 NEW)
+endif()
 
 # OSX compatibility needs to be set before project is declared
 set(CMAKE_OSX_DEPLOYMENT_TARGET
@@ -38,9 +42,18 @@ if(COVERAGE)
 endif()
 
 if(MSVC)
-  add_definitions(/MP)
+  # /MP parallelizes cl.exe across TUs inside a single invocation, which is
+  # incompatible with compiler launchers like sccache (one TU per call).
+  if(NOT CMAKE_CXX_COMPILER_LAUNCHER)
+    add_definitions(/MP)
+  endif()
   add_definitions(
     -D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING) # Suppress iterator warning
+  # sccache cannot cache compilations that write to a shared .pdb (/Zi, /ZI);
+  # embedded debug info (/Z7) is required for caching to work on MSVC.
+  if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT CMAKE_MSVC_DEBUG_INFORMATION_FORMAT)
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "Embedded")
+  endif()
 endif()
 
 set(CPACK_PACKAGE_VENDOR "Nano Currency")
