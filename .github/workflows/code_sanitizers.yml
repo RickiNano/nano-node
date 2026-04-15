@@ -36,6 +36,8 @@ jobs:
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_GHA_VERSION: linux-sanitizers-${{ matrix.SANITIZER.name }}-${{ matrix.COMPILER }}
+      SCCACHE_LOG: debug
+      SCCACHE_ERROR_LOG: /tmp/sccache.log
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
@@ -49,6 +51,17 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: sccache environment diagnostics
+        run: |
+          echo "event_name: ${{ github.event_name }}"
+          echo "head repo: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "base repo: ${{ github.repository }}"
+          echo "is fork PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}"
+          echo "ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL:-<unset>}"
+          echo "ACTIONS_RESULTS_URL=${ACTIONS_RESULTS_URL:-<unset>}"
+          echo "ACTIONS_RUNTIME_TOKEN set: ${ACTIONS_RUNTIME_TOKEN:+yes}${ACTIONS_RUNTIME_TOKEN:-no}"
+          sccache --version
+
       - name: Build Tests
         id: build
         run: ci/build-tests.sh
@@ -56,6 +69,24 @@ jobs:
       - name: Build cache stats
         if: always()
         run: sccache --show-stats
+
+      - name: sccache error log
+        if: always()
+        run: |
+          if [ -f /tmp/sccache.log ]; then
+            echo "=== sccache error log (last 500 lines) ==="
+            tail -n 500 /tmp/sccache.log
+          else
+            echo "No sccache error log at /tmp/sccache.log"
+          fi
+
+      - name: Upload sccache log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sccache-log-linux-${{ matrix.SANITIZER.name }}-${{ matrix.BACKEND }}-${{ matrix.COMPILER }}
+          path: /tmp/sccache.log
+          if-no-files-found: ignore
 
       - name: Core Tests
         if: steps.build.outcome == 'success' && (success() || failure())
@@ -103,6 +134,8 @@ jobs:
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_GHA_VERSION: macos-sanitizers-${{ matrix.SANITIZER.name }}-${{ matrix.COMPILER }}
+      SCCACHE_LOG: debug
+      SCCACHE_ERROR_LOG: /tmp/sccache.log
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
@@ -116,6 +149,17 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: sccache environment diagnostics
+        run: |
+          echo "event_name: ${{ github.event_name }}"
+          echo "head repo: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "base repo: ${{ github.repository }}"
+          echo "is fork PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}"
+          echo "ACTIONS_CACHE_URL=${ACTIONS_CACHE_URL:-<unset>}"
+          echo "ACTIONS_RESULTS_URL=${ACTIONS_RESULTS_URL:-<unset>}"
+          echo "ACTIONS_RUNTIME_TOKEN set: ${ACTIONS_RUNTIME_TOKEN:+yes}${ACTIONS_RUNTIME_TOKEN:-no}"
+          sccache --version
+
       - name: Build Tests
         id: build
         run: ci/build-tests.sh
@@ -123,6 +167,24 @@ jobs:
       - name: Build cache stats
         if: always()
         run: sccache --show-stats
+
+      - name: sccache error log
+        if: always()
+        run: |
+          if [ -f /tmp/sccache.log ]; then
+            echo "=== sccache error log (last 500 lines) ==="
+            tail -n 500 /tmp/sccache.log
+          else
+            echo "No sccache error log at /tmp/sccache.log"
+          fi
+
+      - name: Upload sccache log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sccache-log-macos-${{ matrix.SANITIZER.name }}-${{ matrix.BACKEND }}-${{ matrix.COMPILER }}
+          path: /tmp/sccache.log
+          if-no-files-found: ignore
 
       - name: Core Tests
         if: steps.build.outcome == 'success' && (success() || failure())
