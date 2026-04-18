@@ -15,7 +15,13 @@ USE_NINJA=0
 case "$(uname -s)" in
     CYGWIN*|MINGW32*|MSYS*|MINGW*)
         if command -v ninja >/dev/null 2>&1; then
-            CMAKE_GENERATOR_ARGS="-G Ninja"
+            # rocksdb's CMakeLists declares `LANGUAGES ... ASM` unconditionally.
+            # The VS generator silently routes plain ASM to MASM on Windows;
+            # Ninja doesn't, so the ASM probe fails and CMAKE_ASM_COMPILE_OBJECT
+            # ends up empty. No ASM sources actually compile for Windows x64
+            # (rocksdb only assembles .S on PowerPC), so pointing CMAKE_ASM_COMPILER
+            # at ml64 just to satisfy the probe is sufficient.
+            CMAKE_GENERATOR_ARGS="-G Ninja -DCMAKE_ASM_COMPILER=ml64"
             USE_NINJA=1
         fi
         ;;
