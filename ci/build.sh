@@ -10,6 +10,17 @@ fi
 SRC=${SRC:-${PWD}}
 OS=$(uname)
 
+CMAKE_GENERATOR_ARGS=""
+USE_NINJA=0
+case "$(uname -s)" in
+    CYGWIN*|MINGW32*|MSYS*|MINGW*)
+        if command -v ninja >/dev/null 2>&1; then
+            CMAKE_GENERATOR_ARGS="-G Ninja"
+            USE_NINJA=1
+        fi
+        ;;
+esac
+
 CMAKE_QT_DIR=""
 if [[ ${QT_DIR:-} ]]; then
     CMAKE_QT_DIR="-DQt5_DIR=${QT_DIR}"
@@ -46,6 +57,7 @@ mkdir -p $BUILD_DIR
 pushd $BUILD_DIR
 
 cmake \
+${CMAKE_GENERATOR_ARGS} \
 -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-"Debug"} \
 -DPORTABLE=ON \
 -DACTIVE_NETWORK=nano_${NANO_NETWORK:-"live"}_network \
@@ -78,6 +90,11 @@ number_of_processors() {
 }
 
 parallel_build_flag() {
+    if [[ "${USE_NINJA}" -eq 1 ]]; then
+        # Ninja auto-parallelizes to all available cores.
+        echo ""
+        return
+    fi
     case "$(uname -s)" in
         CYGWIN*|MINGW32*|MSYS*|MINGW*)
             echo "-- -m"

@@ -156,6 +156,14 @@ jobs:
       - name: Prepare
         run: ci/prepare/windows/prepare.ps1
 
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
       - name: Build Tests
         id: build
         run: ci/build-tests.sh
