@@ -12,7 +12,7 @@ nano::node_wrapper::node_wrapper (std::filesystem::path const & path_a, std::fil
 	 */
 	std::filesystem::create_directories (path_a);
 
-	boost::system::error_code error_chmod;
+	std::error_code error_chmod;
 	nano::set_secure_perm_directory (path_a, error_chmod);
 
 	nano::daemon_config daemon_config{ path_a, network_params };

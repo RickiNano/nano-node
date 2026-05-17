@@ -88,7 +88,7 @@ public:
 
 		int result (0);
 		nano_qt::eventloop_processor processor;
-		boost::system::error_code error_chmod;
+		std::error_code error_chmod;
 		std::filesystem::create_directories (data_path);
 		nano::set_secure_perm_directory (data_path, error_chmod);
 		QPixmap pixmap (":/logo.png");

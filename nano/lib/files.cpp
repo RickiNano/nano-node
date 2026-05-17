@@ -2,8 +2,6 @@
 #include <nano/lib/env.hpp>
 #include <nano/lib/files.hpp>
 
-#include <boost/system/error_code.hpp>
-
 #include <cstddef>
 #include <cstring>
 #include <fstream>
@@ -176,7 +174,7 @@ void nano::remove_temporary_directories ()
 {
 	for (auto & path : all_unique_paths)
 	{
-		boost::system::error_code ec;
+		std::error_code ec;
 		std::filesystem::remove_all (path, ec);
 		if (ec)
 		{

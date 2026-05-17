@@ -31,7 +31,7 @@ void run (std::filesystem::path const & data_path, std::vector<std::string> cons
 
 	std::filesystem::create_directories (data_path);
 
-	boost::system::error_code error_chmod;
+	std::error_code error_chmod;
 	nano::set_secure_perm_directory (data_path, error_chmod);
 
 	std::unique_ptr<nano::thread_runner> runner;

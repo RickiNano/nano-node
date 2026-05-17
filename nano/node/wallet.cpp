@@ -371,7 +371,7 @@ void wallet_store::write_backup (nano::store::transaction const & transaction_a,
 	if (!backup_file.fail ())
 	{
 		// Set permissions to 600
-		boost::system::error_code ec;
+		std::error_code ec;
 		nano::set_secure_perm_file (path_a, ec);
 
 		std::string json;

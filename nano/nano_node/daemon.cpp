@@ -77,7 +77,7 @@ void nano::daemon::run (std::filesystem::path const & data_path, nano::node_flag
 	logger.info (nano::log::type::daemon, "Start time: {:%c} UTC", fmt::gmtime (dateTime));
 
 	std::filesystem::create_directories (data_path);
-	boost::system::error_code error_chmod;
+	std::error_code error_chmod;
 	nano::set_secure_perm_directory (data_path, error_chmod);
 
 	std::unique_ptr<nano::thread_runner> runner;

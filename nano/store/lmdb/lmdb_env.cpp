@@ -17,7 +17,7 @@ void nano::store::lmdb::env::init (std::filesystem::path const & path_a, nano::s
 {
 	debug_assert (path_a.extension () == ".ldb", "invalid filename extension for lmdb database file");
 
-	boost::system::error_code error_mkdir, error_chmod;
+	std::error_code error_mkdir, error_chmod;
 	if (path_a.has_parent_path ())
 	{
 		std::filesystem::create_directories (path_a.parent_path (), error_mkdir);

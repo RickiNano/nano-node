@@ -81,7 +81,7 @@ void backend_rocksdb::open_impl (column_schema schema, nano::store::open_mode mo
 	// Create database directory if needed
 	if (mode != nano::store::open_mode::read_only)
 	{
-		boost::system::error_code error_mkdir, error_chmod;
+		std::error_code error_mkdir, error_chmod;
 		std::filesystem::create_directories (database_path, error_mkdir);
 		nano::set_secure_perm_directory (database_path, error_chmod);
 

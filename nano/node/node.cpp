@@ -699,7 +699,7 @@ void nano::node::backup_wallet ()
 {
 	for (auto const & [id, wallet] : wallets.all_wallets ())
 	{
-		boost::system::error_code error_chmod;
+		std::error_code error_chmod;
 		auto backup_path (application_path / "backup");
 
 		std::filesystem::create_directories (backup_path);

@@ -41,7 +41,7 @@ nano::rocksdb_config const & rocksdb_config)
 	}
 
 	// Set secure permissions
-	boost::system::error_code error_chmod;
+	std::error_code error_chmod;
 	nano::set_secure_perm_directory (data_path, error_chmod);
 
 	// Create and open source LMDB backend (read-only)
