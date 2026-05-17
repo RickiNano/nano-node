@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include <future>
+#include <thread>
 
 using namespace std::chrono_literals;
 
