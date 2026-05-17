@@ -13,7 +13,6 @@
 #ifdef NANO_SECURE_RPC
 #include <boost/asio/ssl/stream.hpp>
 #endif
-#include <boost/format.hpp>
 
 nano::rpc_connection::rpc_connection (nano::rpc_config const & rpc_config, boost::asio::io_context & io_ctx, nano::logger & logger, nano::rpc_handler_interface & rpc_handler_interface) :
 	socket (io_ctx),

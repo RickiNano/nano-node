@@ -10,8 +10,6 @@
 #include <nano/node/wallet.hpp>
 #include <nano/secure/network_params.hpp>
 
-#include <boost/format.hpp>
-
 uint64_t nano::ip_address_hash_raw (boost::asio::ip::address const & ip_a, uint16_t port)
 {
 	debug_assert (ip_a.is_v6 ());

@@ -15,8 +15,6 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-#include <bitset>
-
 #include <cryptopp/words.h>
 
 size_t constexpr nano::send_block::size;

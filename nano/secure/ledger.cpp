@@ -33,8 +33,6 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 
-#include <stack>
-
 #include <cryptopp/words.h>
 
 nano::ledger::ledger (nano::store::ledger_store & store_a, nano::network_params const & params_a, nano::stats & stats_a, nano::logger & logger_a, ledger_options options_a) :

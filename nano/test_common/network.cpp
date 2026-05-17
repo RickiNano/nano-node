@@ -11,7 +11,6 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <future>
 
 using namespace std::chrono_literals;
 

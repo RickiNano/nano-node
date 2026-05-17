@@ -7,8 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include <sstream>
-
 TEST (enums, stat_type)
 {
 	ASSERT_FALSE (to_string (static_cast<nano::stat::type> (0)).empty ());

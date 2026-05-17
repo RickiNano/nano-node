@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
-#include <iostream>
 
 TEST (rep_weight_store, empty)
 {

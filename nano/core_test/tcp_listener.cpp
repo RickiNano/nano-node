@@ -14,8 +14,6 @@
 
 #include <gtest/gtest.h>
 
-#include <future>
-#include <map>
 #include <memory>
 #include <utility>
 #include <vector>

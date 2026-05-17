@@ -10,9 +10,6 @@
 
 #include <boost/container_hash/hash.hpp>
 
-#include <thread>
-#include <unordered_set>
-
 TEST (numbers, identity)
 {
 	ASSERT_EQ (1, nano::uint128_union (1).number ().convert_to<uint8_t> ());

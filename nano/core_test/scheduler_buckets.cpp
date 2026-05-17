@@ -6,8 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include <unordered_set>
-
 nano::keypair & keyzero ()
 {
 	static nano::keypair result;

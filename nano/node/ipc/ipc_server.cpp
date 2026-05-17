@@ -21,7 +21,6 @@
 
 #include <boost/array.hpp>
 #include <boost/endian/conversion.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include <atomic>
 #include <chrono>

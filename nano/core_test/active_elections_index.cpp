@@ -10,7 +10,6 @@
 
 #include <chrono>
 #include <deque>
-#include <numeric>
 
 using namespace std::chrono_literals;
 

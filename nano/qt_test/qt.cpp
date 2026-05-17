@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <nano/qt_test/QTest>
-#include <thread>
 
 using namespace std::chrono_literals;
 

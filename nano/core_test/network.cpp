@@ -30,7 +30,6 @@
 
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/range/join.hpp>
-#include <boost/thread.hpp>
 
 using namespace std::chrono_literals;
 

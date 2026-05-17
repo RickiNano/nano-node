@@ -23,7 +23,6 @@
 
 #include <csignal>
 #include <iostream>
-#include <latch>
 
 #include <fmt/chrono.h>
 

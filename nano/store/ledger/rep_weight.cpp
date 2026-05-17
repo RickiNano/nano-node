@@ -4,7 +4,6 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 
-#include <iostream>
 #include <stdexcept>
 
 namespace nano::store::ledger

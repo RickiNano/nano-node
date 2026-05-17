@@ -7,8 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include <map>
-
 TEST (fork_cache, construction)
 {
 	nano::test::system system;

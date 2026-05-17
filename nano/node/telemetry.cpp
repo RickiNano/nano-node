@@ -11,13 +11,8 @@
 #include <nano/node/transport/transport.hpp>
 #include <nano/secure/ledger.hpp>
 
-#include <boost/algorithm/string.hpp>
-
 #include <algorithm>
 #include <cstdint>
-#include <future>
-#include <numeric>
-#include <set>
 
 using namespace std::chrono_literals;
 

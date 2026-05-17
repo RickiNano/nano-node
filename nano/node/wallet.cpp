@@ -22,7 +22,6 @@
 #include <nano/wallet/wallet_value.hpp>
 #include <nano/wallet/wallets_backend.hpp>
 
-#include <boost/format.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 #include <future>

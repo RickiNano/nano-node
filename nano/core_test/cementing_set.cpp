@@ -20,8 +20,6 @@
 
 #include <gtest/gtest.h>
 
-#include <latch>
-
 using namespace std::chrono_literals;
 
 namespace

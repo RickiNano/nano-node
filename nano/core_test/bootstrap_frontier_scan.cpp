@@ -9,8 +9,6 @@
 
 #include <gtest/gtest.h>
 
-#include <sstream>
-
 using namespace std::chrono_literals;
 
 namespace

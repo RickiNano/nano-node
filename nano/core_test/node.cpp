@@ -56,7 +56,6 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
-#include <numeric>
 
 using namespace std::chrono_literals;
 

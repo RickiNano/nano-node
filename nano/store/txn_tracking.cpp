@@ -6,8 +6,6 @@
 #include <nano/lib/utility.hpp>
 #include <nano/store/txn_tracking.hpp>
 
-#include <boost/format.hpp>
-
 namespace
 {
 class matches_txn final

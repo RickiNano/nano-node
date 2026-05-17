@@ -21,8 +21,6 @@
 
 #include <gtest/gtest.h>
 
-#include <numeric>
-
 using namespace std::chrono_literals;
 
 // Test that nodes can track nodes that have rep weight for priority broadcasting

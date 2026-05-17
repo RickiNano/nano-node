@@ -35,7 +35,6 @@
 #include <gtest/gtest.h>
 
 #include <future>
-#include <numeric>
 #include <random>
 
 using namespace std::chrono_literals;

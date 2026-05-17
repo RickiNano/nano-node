@@ -85,14 +85,10 @@
 #include <nano/wallet/lmdb/wallets_backend_lmdb.hpp>
 #include <nano/weights/bootstrap_weights.hpp>
 
-#include <boost/format.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <future>
-#include <sstream>
 
 nano::node::node (uint16_t peering_port_a, std::filesystem::path const & application_path_a, nano::work_pool & work_a, nano::node_flags flags_a, unsigned seq) :
 	node (

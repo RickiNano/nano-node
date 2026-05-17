@@ -13,8 +13,6 @@
 
 #include <boost/endian/conversion.hpp>
 
-#include <numeric>
-
 using namespace std::chrono_literals;
 
 TEST (telemetry, signatures)

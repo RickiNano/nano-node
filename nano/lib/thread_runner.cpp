@@ -2,7 +2,6 @@
 #include <nano/lib/thread_runner.hpp>
 #include <nano/lib/timer.hpp>
 
-#include <iostream>
 #include <thread>
 
 /*

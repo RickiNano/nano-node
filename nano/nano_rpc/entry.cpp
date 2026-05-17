@@ -14,10 +14,7 @@
 #include <nano/rpc/rpc.hpp>
 #include <nano/rpc/rpc_request_processor.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
-
-#include <latch>
 
 using namespace nano;
 

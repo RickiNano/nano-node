@@ -4,9 +4,6 @@
 #include <nano/lib/ipc.hpp>
 #include <nano/lib/ipc_client.hpp>
 
-#include <boost/endian/conversion.hpp>
-#include <boost/program_options.hpp>
-
 #include <iostream>
 
 #include <flatbuffers/flatbuffers.h>

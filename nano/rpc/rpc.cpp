@@ -5,10 +5,6 @@
 #include <nano/rpc/rpc.hpp>
 #include <nano/rpc/rpc_connection.hpp>
 
-#include <boost/format.hpp>
-
-#include <iostream>
-
 nano::rpc::rpc (std::shared_ptr<boost::asio::io_context> io_ctx_a, nano::rpc_config config_a, nano::rpc_handler_interface & rpc_handler_interface_a) :
 	config (std::move (config_a)),
 	io_ctx_shared (io_ctx_a),
