@@ -19,7 +19,7 @@ jobs:
       CMAKE_C_COMPILER_LAUNCHER: sccache
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
       SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_VERSION: macos-${{ matrix.RELEASE }}
+      SCCACHE_GHA_VERSION: macos
     runs-on: macos-14
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
@@ -81,7 +81,7 @@ jobs:
       CMAKE_C_COMPILER_LAUNCHER: sccache
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
       SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_VERSION: linux-${{ matrix.COMPILER }}-${{ matrix.RELEASE }}
+      SCCACHE_GHA_VERSION: linux
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
