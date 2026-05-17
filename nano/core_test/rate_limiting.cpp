@@ -3,6 +3,8 @@
 
 #include <gtest/gtest.h>
 
+#include <future>
+
 using namespace std::chrono_literals;
 
 TEST (rate, basic)
