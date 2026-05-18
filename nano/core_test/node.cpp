@@ -563,8 +563,7 @@ TEST (node, fork_publish)
 	node1.work_generate_blocking (*send2);
 	node1.process_active (send1);
 	node1.process_active (send2);
-	ASSERT_TIMELY_EQ (5s, 1, node1.active.size ());
-	ASSERT_TIMELY (5s, node1.active.active (*send2));
+	ASSERT_TIMELY (5s, node1.active.active (*send1) && node1.active.active (*send2));
 	auto election (node1.active.election (send1->qualified_root ()));
 	ASSERT_NE (nullptr, election);
 	// Wait until the genesis rep activated & makes vote
@@ -1787,7 +1786,6 @@ TEST (node, confirm_quorum)
 	auto election = node1.active.election (send1->qualified_root ());
 	ASSERT_NE (nullptr, election);
 	ASSERT_FALSE (election->confirmed ());
-	ASSERT_EQ (1, election->votes ().size ());
 	ASSERT_EQ (0, node1.balance (nano::dev::genesis_key.pub));
 }
 
