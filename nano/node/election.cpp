@@ -587,6 +587,15 @@ nano::vote_code nano::election::vote (nano::account const & rep, uint64_t timest
 		}
 	}
 
+	// Only record votes for blocks that are currently part of this election.
+	// vote_router::vote releases its lock before calling election::vote, so a concurrent
+	// replace_by_weight can evict the block (remove_block) in between. Without this check the
+	// vote would be re-recorded for a block no longer in the election, inflating last_votes.
+	if (last_blocks.find (block_hash_a) == last_blocks.end ())
+	{
+		return vote_code::indeterminate;
+	}
+
 	// Update voter list entry
 	last_votes[rep] = { std::chrono::steady_clock::now (), timestamp_a, block_hash_a };
 
