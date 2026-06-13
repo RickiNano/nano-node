@@ -44,6 +44,16 @@ public:
 
 public:
 	std::chrono::milliseconds query_timeout{ 1000 * 60 };
+	// Number of peers to crawl when we already have sufficient total peer weight.
+	std::size_t conservative_count{ 160 };
+	// Number of peers to crawl when we lack sufficient total peer weight.
+	std::size_t aggressive_count{ 160 };
+	// Max times to query the same peer when we already have sufficient total peer weight.
+	std::size_t conservative_max_attempts{ 4 };
+	// Max times to query the same peer when we lack sufficient total peer weight.
+	std::size_t aggressive_max_attempts{ 8 };
+	// Throttle interval between repeated queries to the same active rep.
+	std::chrono::milliseconds rep_query_interval{ 1000 * 60 };
 };
 
 /**

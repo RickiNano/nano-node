@@ -264,17 +264,10 @@ std::deque<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::prepare
 {
 	debug_assert (!mutex.try_lock ());
 
-	// TODO: Make these values configurable
-	constexpr std::size_t conservative_count = 160;
-	constexpr std::size_t aggressive_count = 160;
-	constexpr std::size_t conservative_max_attempts = 4;
-	constexpr std::size_t aggressive_max_attempts = 8;
-	std::chrono::milliseconds rep_query_interval = node.network_params.network.is_dev_network () ? std::chrono::milliseconds{ 500 } : std::chrono::milliseconds{ 60 * 1000 };
-
 	stats.inc (nano::stat::type::rep_crawler, sufficient_weight ? nano::stat::detail::crawl_normal : nano::stat::detail::crawl_aggressive);
 
 	// Crawl more aggressively if we lack sufficient total peer weight.
-	auto const required_peer_count = sufficient_weight ? conservative_count : aggressive_count;
+	auto const required_peer_count = sufficient_weight ? config.conservative_count : config.aggressive_count;
 
 	auto random_peers = node.network.random_set (required_peer_count);
 
@@ -282,12 +275,12 @@ std::deque<std::shared_ptr<nano::transport::channel>> nano::rep_crawler::prepare
 		if (auto rep = reps.get<tag_channel> ().find (channel); rep != reps.get<tag_channel> ().end ())
 		{
 			// Throttle queries to active reps
-			return elapsed (rep->last_request, rep_query_interval);
+			return elapsed (rep->last_request, config.rep_query_interval);
 		}
 		else
 		{
 			// Avoid querying the same peer multiple times when rep crawler is warmed up
-			auto const max_attempts = sufficient_weight ? conservative_max_attempts : aggressive_max_attempts;
+			auto const max_attempts = sufficient_weight ? config.conservative_max_attempts : config.aggressive_max_attempts;
 			return queries.get<tag_channel> ().count (channel) < max_attempts;
 		}
 	};
@@ -526,12 +519,18 @@ nano::rep_crawler_config::rep_crawler_config (nano::network_constants const & ne
 	if (network_constants.is_dev_network ())
 	{
 		query_timeout = std::chrono::milliseconds{ 1000 };
+		rep_query_interval = std::chrono::milliseconds{ 500 };
 	}
 }
 
 nano::error nano::rep_crawler_config::serialize (nano::tomlconfig & toml) const
 {
 	toml.put ("query_timeout", query_timeout.count (), "Timeout for rep crawler queries.\ntype:milliseconds");
+	toml.put ("conservative_count", conservative_count, "Number of peers to crawl when total peer weight is sufficient.\ntype:uint64");
+	toml.put ("aggressive_count", aggressive_count, "Number of peers to crawl when total peer weight is insufficient.\ntype:uint64");
+	toml.put ("conservative_max_attempts", conservative_max_attempts, "Max times to query the same peer when total peer weight is sufficient.\ntype:uint64");
+	toml.put ("aggressive_max_attempts", aggressive_max_attempts, "Max times to query the same peer when total peer weight is insufficient.\ntype:uint64");
+	toml.put ("rep_query_interval", rep_query_interval.count (), "Throttle interval between repeated queries to the same active representative.\ntype:milliseconds");
 
 	return toml.get_error ();
 }
@@ -539,6 +538,11 @@ nano::error nano::rep_crawler_config::serialize (nano::tomlconfig & toml) const
 nano::error nano::rep_crawler_config::deserialize (nano::tomlconfig & toml)
 {
 	toml.get_duration ("query_timeout", query_timeout);
+	toml.get ("conservative_count", conservative_count);
+	toml.get ("aggressive_count", aggressive_count);
+	toml.get ("conservative_max_attempts", conservative_max_attempts);
+	toml.get ("aggressive_max_attempts", aggressive_max_attempts);
+	toml.get_duration ("rep_query_interval", rep_query_interval);
 
 	return toml.get_error ();
 }
