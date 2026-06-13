@@ -636,6 +636,13 @@ add_library(
 
 target_include_directories(cryptopp PUBLIC submodules)
 
+# CryptoPP 8.7's integer.cpp uses stdext::make_checked_array_iterator, a
+# Microsoft extension that newer MSVC toolsets compile out under C++20. Restore
+# it for this target so the submodule keeps building without patching its source.
+if(MSVC)
+  target_compile_definitions(cryptopp PRIVATE _HAS_DEPRECATED_STDEXT_ARR_ITERS=1)
+endif()
+
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86(_64)?)$")
   set(ARGON_CORE submodules/phc-winner-argon2/src/opt.c)
 else()
