@@ -1785,8 +1785,9 @@ TEST (node, confirm_quorum)
 	ASSERT_TIMELY (2s, node1.active.election (send1->qualified_root ()));
 	auto election = node1.active.election (send1->qualified_root ());
 	ASSERT_NE (nullptr, election);
-	ASSERT_FALSE (election->confirmed ());
-	ASSERT_EQ (1, election->votes ().size ());
+	// Genesis drained its entire balance into pending, so it has zero voting weight and quorum
+	// can never be reached. The election must never confirm.
+	ASSERT_NEVER (1s, election->confirmed ());
 	ASSERT_EQ (0, node1.balance (nano::dev::genesis_key.pub));
 }
 
