@@ -458,8 +458,7 @@ set(BOOST_INCLUDE_LIBRARIES
     stacktrace
     system
     thread
-    unordered
-    variant)
+    unordered)
 
 add_definitions(-DBOOST_ALL_NO_LIB) # Disable automatic boost linking
 add_subdirectory(submodules/boost EXCLUDE_FROM_ALL)

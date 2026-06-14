@@ -81,5 +81,4 @@ target_link_libraries(
   Boost::iostreams
   Boost::multiprecision
   Boost::pool
-  Boost::stacktrace
-  Boost::variant)
+  Boost::stacktrace)
