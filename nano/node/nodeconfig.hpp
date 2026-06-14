@@ -97,6 +97,7 @@ public: // Subsystem configs
 	nano::indirect<nano::scheduler::hinted_config> hinted_scheduler;
 	nano::indirect<nano::scheduler::priority_config> priority_scheduler;
 	nano::indirect<nano::websocket::config> websocket_config;
+	nano::indirect<nano::insight::config> insight_config;
 	nano::indirect<nano::store::txn_tracking_config> txn_tracking;
 	nano::indirect<nano::stats_config> stats_config;
 	nano::indirect<nano::ipc::ipc_config> ipc_config;

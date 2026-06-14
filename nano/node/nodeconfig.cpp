@@ -17,6 +17,7 @@
 #include <nano/node/bounded_backlog.hpp>
 #include <nano/node/cementing_set.hpp>
 #include <nano/node/fork_cache.hpp>
+#include <nano/node/insight/insight_config.hpp>
 #include <nano/node/ipc/ipc_config.hpp>
 #include <nano/node/local_block_broadcaster.hpp>
 #include <nano/node/message_processor.hpp>
@@ -74,6 +75,7 @@ nano::node_config::node_config (nano::network_params const & network_params) :
 	external_address{ boost::asio::ip::address_v6{}.to_string () },
 	hinted_scheduler{ network_params.network },
 	websocket_config{ network_params.network },
+	insight_config{ network_params.network },
 	ipc_config{ network_params.network },
 	rep_crawler{ network_params.network },
 	block_processor{ network_params.network },
@@ -212,6 +214,10 @@ nano::error nano::node_config::serialize_toml (nano::tomlconfig & toml) const
 	nano::tomlconfig websocket_l;
 	websocket_config->serialize_toml (websocket_l);
 	toml.put_child ("websocket", websocket_l);
+
+	nano::tomlconfig insight_l;
+	insight_config->serialize_toml (insight_l);
+	toml.put_child ("insight", insight_l);
 
 	nano::tomlconfig ipc_l;
 	ipc_config->serialize_toml (ipc_l);
@@ -354,6 +360,12 @@ nano::error nano::node_config::deserialize_toml (nano::tomlconfig & toml)
 		{
 			auto websocket_config_l (toml.get_required_child ("websocket"));
 			websocket_config->deserialize_toml (websocket_config_l);
+		}
+
+		if (toml.has_key ("insight"))
+		{
+			auto insight_config_l (toml.get_required_child ("insight"));
+			insight_config->deserialize_toml (insight_config_l);
 		}
 
 		if (toml.has_key ("ipc"))

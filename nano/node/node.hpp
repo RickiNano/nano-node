@@ -187,6 +187,7 @@ public:
 	nano::bootstrap_service & bootstrap;
 	std::unique_ptr<nano::websocket_server> websocket_impl;
 	nano::websocket_server & websocket;
+	std::shared_ptr<nano::insight::server> insight;
 	std::unique_ptr<nano::epoch_upgrader> epoch_upgrader_impl;
 	nano::epoch_upgrader & epoch_upgrader;
 	std::unique_ptr<nano::local_block_broadcaster> local_block_broadcaster_impl;

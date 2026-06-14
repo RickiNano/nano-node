@@ -34,6 +34,7 @@ add_executable(
   fair_queue.cpp
   fork_cache.cpp
   ipc.cpp
+  insight.cpp
   ledger.cpp
   ledger_cement.cpp
   ledger_priority.cpp

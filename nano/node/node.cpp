@@ -32,6 +32,7 @@
 #include <nano/node/endpoint.hpp>
 #include <nano/node/epoch_upgrader.hpp>
 #include <nano/node/fork_cache.hpp>
+#include <nano/node/insight/insight_server.hpp>
 #include <nano/node/ledger_notifications.hpp>
 #include <nano/node/local_block_broadcaster.hpp>
 #include <nano/node/local_vote_history.hpp>
@@ -219,6 +220,7 @@ nano::node::node (std::filesystem::path const & application_path_a, nano::node_c
 	bootstrap{ *bootstrap_impl },
 	websocket_impl{ std::make_unique<nano::websocket_server> (config.websocket_config, *this, observers, wallets, ledger, io_ctx, logger) },
 	websocket{ *websocket_impl },
+	insight{ std::make_shared<nano::insight::server> (config.insight_config, *this, io_ctx, logger) },
 	epoch_upgrader_impl{ std::make_unique<nano::epoch_upgrader> (*this, ledger, store, network_params, logger) },
 	epoch_upgrader{ *epoch_upgrader_impl },
 	local_block_broadcaster_impl{ std::make_unique<nano::local_block_broadcaster> (config.local_block_broadcaster, *this, ledger_notifications, network, cementing_set, stats, logger) },
@@ -584,6 +586,7 @@ void nano::node::start ()
 	bootstrap_server.start ();
 	bootstrap.start ();
 	websocket.start ();
+	insight->start ();
 	telemetry.start ();
 	stats.start ();
 	local_block_broadcaster.start ();
@@ -633,6 +636,7 @@ void nano::node::stop ()
 	ledger_notifications.stop ();
 	telemetry.stop ();
 	websocket.stop ();
+	insight->stop ();
 	bootstrap_server.stop ();
 	port_mapping.stop ();
 	wallets.stop ();

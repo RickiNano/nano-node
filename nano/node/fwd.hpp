@@ -112,3 +112,9 @@ namespace nano::websocket
 {
 class config;
 }
+
+namespace nano::insight
+{
+class config;
+class server;
+}

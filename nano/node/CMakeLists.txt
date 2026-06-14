@@ -103,6 +103,13 @@ add_library(
   ipc/ipc_config.cpp
   ipc/ipc_server.hpp
   ipc/ipc_server.cpp
+  insight/insight_collector.hpp
+  insight/insight_collector.cpp
+  insight/insight_config.hpp
+  insight/insight_config.cpp
+  insight/insight_server.hpp
+  insight/insight_server.cpp
+  insight/insight_web.cpp
   json_handler.hpp
   json_handler.cpp
   ledger_notifications.hpp
