@@ -360,7 +360,6 @@ bool nano::election::tick (nano::confirmation_solicitor & solicitor)
 			break;
 		case nano::election_state::confirmed:
 			result = true; // Return true to indicate this election should be cleaned up
-			broadcast_block (solicitor); // Ensure election winner is broadcasted
 			state_change (nano::election_state::confirmed, nano::election_state::expired_confirmed);
 			break;
 		case nano::election_state::expired_unconfirmed:

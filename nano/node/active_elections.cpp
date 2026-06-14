@@ -172,9 +172,29 @@ auto nano::active_elections::insert (std::shared_ptr<nano::block> const & block,
 				node.online_reps.observe (rep);
 			};
 
-			// On any election state update, schedule a call to tick it immediately
+			// On any election state update, immediately clean up finished elections,
+			// otherwise schedule a call to tick it immediately
 			auto update_action = [this] (auto const & root) {
-				trigger (root);
+				nano::unique_lock<nano::mutex> lock{ mutex };
+				auto election = index.election (root);
+				if (!election)
+				{
+					return;
+				}
+				// Immediately remove confirmed elections from the container instead of
+				// waiting for the AEC loop to tick and clean them up
+				if (election->confirmed ())
+				{
+					erase_election (lock, election); // releases lock
+					return;
+				}
+				// Otherwise nudge the AEC loop to re-tick this election promptly
+				bool triggered = index.trigger (election);
+				lock.unlock ();
+				if (triggered)
+				{
+					condition.notify_all ();
+				}
 			};
 
 			result.election = std::make_shared<nano::election> (node, block, behavior, bucket, nullptr, observe_rep_action, update_action);
