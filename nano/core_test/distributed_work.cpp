@@ -149,8 +149,7 @@ TEST (distributed_work, peer)
 	ASSERT_EQ (0, work_peer->cancels);
 }
 
-// This fails intermittently, the observed behavior is different than what is expected. Disabling because `fake_work_peer` class is not actually used in production.
-TEST (distributed_work, DISABLED_peer_malicious)
+TEST (distributed_work, peer_malicious)
 {
 	nano::test::system system (1);
 	auto node (system.nodes[0]);
@@ -190,10 +189,7 @@ TEST (distributed_work, DISABLED_peer_malicious)
 	ASSERT_EQ (0, malicious_peer2->cancels);
 }
 
-// Test disabled because it's failing intermittently.
-// PR in which it got disabled: https://github.com/nanocurrency/nano-node/pull/3629
-// Issue for investigating it: https://github.com/nanocurrency/nano-node/issues/3630
-TEST (distributed_work, DISABLED_peer_multi)
+TEST (distributed_work, peer_multi)
 {
 	nano::test::system system (1);
 	auto node (system.nodes[0]);
