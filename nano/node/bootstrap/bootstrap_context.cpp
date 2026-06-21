@@ -480,6 +480,11 @@ bool bootstrap_context::process (nano::messages::asc_pull_ack::blocks_payload co
 			stats.inc (nano::stat::type::bootstrap_verify_blocks, nano::stat::detail::ok);
 			stats.add (nano::stat::type::bootstrap, nano::stat::detail::blocks, nano::stat::dir::in, response.blocks.size ());
 
+			// TODO: Full-batch multiplicative ramp (follow-up to the target_block_count pull sizing).
+			// When the response is full (response.blocks.size () >= query.count) the chain very likely has more
+			// blocks, so the pull count could be ramped here at response time rather than waiting for per-block
+			// priority_up during processing (which lags the request loop). Gate behind stats showing accounts
+			// re-pulled at small counts while the block processor queue is deep.
 			auto blocks = response.blocks;
 
 			// Avoid re-processing the block we already have

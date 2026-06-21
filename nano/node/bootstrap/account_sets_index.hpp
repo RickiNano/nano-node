@@ -49,6 +49,12 @@ public:
 	void timestamp_reset (nano::account const & account);
 
 	/**
+	 * Records a peer-reported chain length for an account, used to size pulls directly instead of
+	 * waiting for the priority ramp. No-op if the account is not currently prioritized.
+	 */
+	void target_block_count_set (nano::account const & account, uint64_t block_count);
+
+	/**
 	 * Sets information about the account chain that contains the block hash
 	 */
 	void dependency_update (nano::block_hash const & hash, nano::account const & dependency_account);
@@ -68,6 +74,7 @@ public:
 		nano::account account;
 		double priority;
 		unsigned fails;
+		uint64_t target_block_count{ 0 }; // Peer-reported chain length, 0 if unknown
 	};
 
 	/**
@@ -105,6 +112,7 @@ private:
 
 		unsigned fails{ 0 };
 		std::chrono::steady_clock::time_point timestamp{}; // Use for cooldown, set to current time when this account is sampled
+		uint64_t target_block_count{ 0 }; // Peer-reported chain length, used to size pulls; 0 if unknown
 		id_t id{ generate_id () }; // Uniformly distributed, used for random querying
 	};
 

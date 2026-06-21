@@ -592,6 +592,7 @@ enum class detail
 	priority_insert,
 	priority_set,
 	priority_erase,
+	priority_target,
 	priority_unblocked,
 	erase_by_threshold,
 	erase_by_blocking,

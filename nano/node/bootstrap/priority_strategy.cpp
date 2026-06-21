@@ -110,9 +110,24 @@ void priority_strategy::refill (std::deque<priority_result> const & batch)
 
 blocks_query priority_strategy::prepare_query (nano::store::transaction const & transaction, priority_result const & entry) const
 {
+	auto info = ctx.ledger.store.account.get (transaction, entry.account);
+
 	// Decide how many blocks to request based on the account priority
 	size_t const min_pull_count = 2;
 	auto count = std::clamp (static_cast<size_t> (entry.priority), min_pull_count, nano::bootstrap_server::max_blocks);
+
+	// If a peer has told us how many blocks this account has, size the pull to close the remaining
+	// gap in one shot instead of waiting for the priority ramp to grow the count over many round-trips
+	if (entry.target_block_count > 0)
+	{
+		uint64_t const local_block_count = info ? info->block_count : 0;
+		if (entry.target_block_count > local_block_count)
+		{
+			auto const gap = entry.target_block_count - local_block_count;
+			count = std::max<size_t> (count, std::min<size_t> (gap, nano::bootstrap_server::max_blocks));
+		}
+	}
+
 	count = std::min (count, ctx.config.max_pull_count);
 
 	blocks_query query{};
@@ -125,7 +140,7 @@ blocks_query priority_strategy::prepare_query (nano::store::transaction const & 
 	bool const optimistic = ctx.rng.random (100) < ctx.config.optimistic_request_percentage;
 
 	// Check if the account picked has blocks, if it does, start the pull from the highest block
-	if (auto info = ctx.ledger.store.account.get (transaction, entry.account))
+	if (info)
 	{
 		if (optimistic) // Optimistic request case
 		{

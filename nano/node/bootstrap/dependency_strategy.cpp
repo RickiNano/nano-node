@@ -122,6 +122,10 @@ bool dependency_strategy::process (nano::messages::asc_pull_ack::account_info_pa
 	ctx.accounts.dependency_update (tag.hash, response.account);
 	ctx.accounts.priority_set (response.account, account_sets_index::priority_cutoff); // Use the lowest possible priority here
 
+	// Use the peer-reported chain length to size future pulls directly, closing the gap in fewer
+	// round-trips instead of relying solely on the priority ramp
+	ctx.accounts.target_block_count_set (response.account, response.account_block_count);
+
 	return true; // OK, no way to verify the response
 }
 

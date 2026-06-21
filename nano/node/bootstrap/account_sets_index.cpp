@@ -197,6 +197,24 @@ void account_sets_index::timestamp_reset (const nano::account & account)
 	}
 }
 
+void account_sets_index::target_block_count_set (nano::account const & account, uint64_t block_count)
+{
+	if (account.is_zero () || block_count == 0)
+	{
+		return;
+	}
+
+	if (auto it = priorities.get<tag_account> ().find (account); it != priorities.get<tag_account> ().end ())
+	{
+		stats.inc (nano::stat::type::bootstrap_account_sets, nano::stat::detail::priority_target);
+
+		// Keep the largest reported count, never shrink it
+		priorities.get<tag_account> ().modify (it, [block_count] (auto & entry) {
+			entry.target_block_count = std::max (entry.target_block_count, block_count);
+		});
+	}
+}
+
 void account_sets_index::dependency_update (nano::block_hash const & hash, nano::account const & dependency_account)
 {
 	debug_assert (!dependency_account.is_zero ());
@@ -268,7 +286,8 @@ auto account_sets_index::next_priority_batch (std::function<bool (nano::account 
 		}
 		result.push_back ({ .account = entry.account,
 		.priority = entry.priority,
-		.fails = entry.fails });
+		.fails = entry.fails,
+		.target_block_count = entry.target_block_count });
 	}
 
 	return result;
