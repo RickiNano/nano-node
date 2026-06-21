@@ -447,6 +447,7 @@ set(BOOST_INCLUDE_LIBRARIES
     endian
     format
     iostreams
+    json
     lexical_cast
     multi_index
     multiprecision

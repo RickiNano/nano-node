@@ -77,6 +77,8 @@ add_library(
   ipc_client.hpp
   ipc_client.cpp
   json_error_response.hpp
+  json_writer.hpp
+  json_writer.cpp
   jsonconfig.hpp
   jsonconfig.cpp
   kdf.hpp
@@ -175,6 +177,7 @@ target_link_libraries(
   Boost::asio
   Boost::circular_buffer
   Boost::dll
+  Boost::json
   Boost::multiprecision
   Boost::program_options
   Boost::property_tree
