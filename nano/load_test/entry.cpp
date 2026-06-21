@@ -578,12 +578,12 @@ int main (int argc, char * const * argv)
 	}
 
 	std::string current_network{ nano::dev::network_params.network.get_current_network_as_string () };
-	std::vector<std::unique_ptr<boost::process::child>> nodes;
-	std::vector<std::unique_ptr<boost::process::child>> rpc_servers;
+	std::vector<std::unique_ptr<nano::process::child>> nodes;
+	std::vector<std::unique_ptr<nano::process::child>> rpc_servers;
 	for (auto const & data_path : data_paths)
 	{
-		nodes.emplace_back (std::make_unique<boost::process::child> (node_path, "--daemon", "--data_path", data_path.string (), "--network", current_network));
-		rpc_servers.emplace_back (std::make_unique<boost::process::child> (rpc_path, "--daemon", "--data_path", data_path.string (), "--network", current_network));
+		nodes.emplace_back (std::make_unique<nano::process::child> (node_path, "--daemon", "--data_path", data_path.string (), "--network", current_network));
+		rpc_servers.emplace_back (std::make_unique<nano::process::child> (rpc_path, "--daemon", "--data_path", data_path.string (), "--network", current_network));
 	}
 
 	std::cout << "Waiting for nodes to spin up..." << std::endl;

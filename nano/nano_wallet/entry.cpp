@@ -173,7 +173,7 @@ public:
 				node->start ();
 				nano::ipc::ipc_server ipc (*node, config.rpc);
 
-				std::unique_ptr<boost::process::child> rpc_process;
+				std::unique_ptr<nano::process::child> rpc_process;
 				std::shared_ptr<nano::rpc> rpc;
 				std::unique_ptr<nano::rpc_handler_interface> rpc_handler;
 				bool const rpc_enabled = config.rpc_enable || flags.enable_rpc;
@@ -211,7 +211,7 @@ public:
 						logger.debug (nano::log::type::daemon, "Spawning RPC process with command: {}", config.rpc.child_process.rpc_path);
 
 						std::string network{ node->network_params.network.get_current_network_as_string () };
-						rpc_process = std::make_unique<boost::process::child> (config.rpc.child_process.rpc_path, "--daemon", "--data_path", data_path.string (), "--network", network);
+						rpc_process = std::make_unique<nano::process::child> (config.rpc.child_process.rpc_path, "--daemon", "--data_path", data_path.string (), "--network", network);
 					}
 				}
 				QObject::connect (&application, &QApplication::aboutToQuit, [&] () {

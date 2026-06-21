@@ -1,7 +1,6 @@
 #pragma once
 
-#include <nano/boost/private/macro_warnings.hpp>
-
-DISABLE_PROCESS_WARNINGS
-#include <boost/process/v1.hpp>
-REENABLE_WARNINGS
+// Umbrella header. Boost.Process v1 (the historic `boost/process/v1.hpp`) was
+// removed in Boost 1.88; the only facility nano uses is child-process spawning,
+// which is now provided by the v2-backed wrapper below.
+#include <nano/boost/process/child.hpp>
