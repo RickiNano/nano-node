@@ -24,6 +24,29 @@ void object_writer::put_child (std::string const & key, array_writer const & chi
 	add_child (key, child);
 }
 
+void object_writer::add_child (std::string const & key, boost::property_tree::ptree const & child)
+{
+	obj[key] = from_ptree (child);
+}
+
+void object_writer::put_child (std::string const & key, boost::property_tree::ptree const & child)
+{
+	add_child (key, child);
+}
+
+void object_writer::replace (boost::property_tree::ptree const & tree)
+{
+	auto value = from_ptree (tree);
+	if (auto * source = value.if_object ())
+	{
+		obj = *source;
+	}
+	else
+	{
+		obj.clear ();
+	}
+}
+
 bool object_writer::empty () const
 {
 	return obj.empty ();

@@ -47,6 +47,17 @@ public:
 	void add_child (std::string const & key, array_writer const & child);
 	void put_child (std::string const & key, array_writer const & child);
 
+	// Bridge overloads: embed a foreign property_tree (block serialize_json, bootstrap
+	// info, telemetry, container_info, and the response handlers' local ptree builders)
+	// via from_ptree, preserving the quoting contract.
+	void add_child (std::string const & key, boost::property_tree::ptree const & child);
+	void put_child (std::string const & key, boost::property_tree::ptree const & child);
+
+	// Replace all contents from a property_tree object. Used where external code fills a
+	// ptree by reference (stats counters/samples/objects/database). A non-object or empty
+	// source clears the contents, matching property_tree's empty-response behaviour.
+	void replace (boost::property_tree::ptree const & tree);
+
 	bool empty () const;
 
 	boost::json::object const & value () const;

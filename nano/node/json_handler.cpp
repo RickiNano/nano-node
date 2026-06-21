@@ -175,17 +175,13 @@ void nano::json_handler::response_errors ()
 	}
 	if (ec)
 	{
-		boost::property_tree::ptree response_error;
+		nano::json::object_writer response_error;
 		response_error.put ("error", ec.message ());
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, response_error);
-		response (ostream.str ());
+		response (response_error.serialize ());
 	}
 	else
 	{
-		std::stringstream ostream;
-		boost::property_tree::write_json (ostream, response_l);
-		response (ostream.str ());
+		response (response_l.serialize ());
 	}
 }
 
@@ -872,15 +868,13 @@ void nano::json_handler::account_representative_set ()
 			{
 				bool generate_work (work == 0); // Disable work generation if "work" option is provided
 				auto response_a (rpc_l->response);
-				auto response_data (std::make_shared<boost::property_tree::ptree> (rpc_l->response_l));
+				auto response_data (std::make_shared<nano::json::object_writer> (rpc_l->response_l));
 				wallet->change_async (
 				account, representative, [response_a, response_data] (std::shared_ptr<nano::block> const & block) {
 					if (block != nullptr)
 					{
 						response_data->put ("block", block->hash ().to_string ());
-						std::stringstream ostream;
-						boost::property_tree::write_json (ostream, *response_data);
-						response_a (ostream.str ());
+						response_a (response_data->serialize ());
 					}
 					else
 					{
@@ -3841,15 +3835,13 @@ void nano::json_handler::send ()
 			auto send_id_boost (request.get_optional<std::string> ("id"));
 			std::optional<std::string> send_id = send_id_boost ? std::make_optional (*send_id_boost) : std::nullopt;
 			auto response_a (response);
-			auto response_data (std::make_shared<boost::property_tree::ptree> (response_l));
+			auto response_data (std::make_shared<nano::json::object_writer> (response_l));
 			wallet->send_async (
 			source, destination, amount.number (), [balance, amount, response_a, response_data] (std::shared_ptr<nano::block> const & block_a) {
 				if (block_a != nullptr)
 				{
 					response_data->put ("block", block_a->hash ().to_string ());
-					std::stringstream ostream;
-					boost::property_tree::write_json (ostream, *response_data);
-					response_a (ostream.str ());
+					response_a (response_data->serialize ());
 				}
 				else
 				{
@@ -3980,7 +3972,7 @@ void nano::json_handler::stats ()
 	auto respond_with_sink = [this] (auto & sink) {
 		auto stat_ptree = sink.to_ptree ();
 		stat_ptree.put ("stat_duration_seconds", node.stats.last_reset ().count ());
-		response_l = stat_ptree;
+		response_l.replace (stat_ptree);
 	};
 
 	if (type == "counters")
@@ -3997,11 +3989,15 @@ void nano::json_handler::stats ()
 	}
 	else if (type == "objects")
 	{
-		construct_json (node.container_info ().to_legacy ("node").get (), response_l);
+		boost::property_tree::ptree tree;
+		construct_json (node.container_info ().to_legacy ("node").get (), tree);
+		response_l.replace (tree);
 	}
 	else if (type == "database")
 	{
-		node.store.backend.collect_memory_stats (response_l);
+		boost::property_tree::ptree tree;
+		node.store.backend.collect_memory_stats (tree);
+		response_l.replace (tree);
 	}
 	else
 	{
@@ -4015,9 +4011,7 @@ void nano::json_handler::stats_clear ()
 {
 	node.stats.clear ();
 	response_l.put ("success", "");
-	std::stringstream ostream;
-	boost::property_tree::write_json (ostream, response_l);
-	response (ostream.str ());
+	response (response_l.serialize ());
 }
 
 void nano::json_handler::stop ()
@@ -4068,7 +4062,7 @@ void nano::json_handler::telemetry ()
 
 						if (!err)
 						{
-							response_l.insert (response_l.begin (), ptree.begin (), ptree.end ());
+							response_l.replace (ptree);
 						}
 
 						response_errors ();
@@ -4103,7 +4097,7 @@ void nano::json_handler::telemetry ()
 
 				if (!err)
 				{
-					response_l.insert (response_l.begin (), ptree.begin (), ptree.end ());
+					response_l.replace (ptree);
 				}
 				else
 				{
@@ -4164,7 +4158,7 @@ void nano::json_handler::telemetry ()
 
 			if (!err)
 			{
-				response_l.insert (response_l.begin (), ptree.begin (), ptree.end ());
+				response_l.replace (ptree);
 			}
 
 			response_errors ();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nano/lib/json_writer.hpp>
 #include <nano/lib/numbers.hpp>
 #include <nano/node/fwd.hpp>
 #include <nano/node/ipc/flatbuffers_handler.hpp>
@@ -158,7 +159,7 @@ public:
 	void response_errors ();
 	std::error_code ec;
 	std::string action;
-	boost::property_tree::ptree response_l;
+	nano::json::object_writer response_l;
 	std::shared_ptr<nano::wallet::wallet> wallet_impl ();
 	bool wallet_locked_impl (std::shared_ptr<nano::wallet::wallet> const &);
 	bool wallet_account_impl (std::shared_ptr<nano::wallet::wallet> const &, nano::account const &);

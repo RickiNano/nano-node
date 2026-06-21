@@ -248,3 +248,68 @@ TEST (json_writer, from_ptree_scalar_leaf)
 	ASSERT_TRUE (converted.is_string ());
 	ASSERT_EQ (std::string (converted.as_string ().c_str ()), "solo");
 }
+
+// The handlers embed local/foreign ptrees directly via response_l.add_child(key, ptree).
+TEST (json_writer, add_child_ptree_bridge)
+{
+	boost::property_tree::ptree child;
+	child.put ("count", 7);
+	child.put ("flag", false);
+	boost::property_tree::ptree pt;
+	pt.add_child ("inner", child);
+
+	nano::json::object_writer writer;
+	writer.add_child ("inner", child);
+
+	assert_equivalent (pt, writer.serialize ());
+}
+
+TEST (json_writer, put_child_ptree_bridge)
+{
+	// Mirrors response_l.put_child("metrics", metrics) in telemetry().
+	boost::property_tree::ptree metrics;
+	for (int i = 0; i < 2; ++i)
+	{
+		boost::property_tree::ptree entry;
+		entry.put ("address", "::1");
+		entry.put ("port", 7075 + i);
+		metrics.push_back (std::make_pair ("", entry));
+	}
+	boost::property_tree::ptree pt;
+	pt.put_child ("metrics", metrics);
+
+	nano::json::object_writer writer;
+	writer.put_child ("metrics", metrics);
+
+	assert_equivalent (pt, writer.serialize ());
+}
+
+// stats()/telemetry() let external code fill a ptree, then replace response_l with it.
+TEST (json_writer, replace_from_ptree)
+{
+	boost::property_tree::ptree tree;
+	tree.put ("blocks", 100);
+	tree.put ("cemented", 90);
+	boost::property_tree::ptree nested;
+	nested.put ("x", 1);
+	tree.add_child ("nested", nested);
+
+	nano::json::object_writer writer;
+	writer.put ("stale", "should be cleared");
+	writer.replace (tree);
+
+	assert_equivalent (tree, writer.serialize ());
+	ASSERT_FALSE (writer.empty ());
+	ASSERT_FALSE (writer.value ().contains ("stale"));
+}
+
+TEST (json_writer, replace_empty_clears)
+{
+	// An empty source must leave response_l empty, so response_errors() reports
+	// empty_response exactly as the property_tree path did.
+	boost::property_tree::ptree empty_tree;
+	nano::json::object_writer writer;
+	writer.put ("stale", "x");
+	writer.replace (empty_tree);
+	ASSERT_TRUE (writer.empty ());
+}
