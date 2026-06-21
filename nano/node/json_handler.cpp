@@ -738,12 +738,10 @@ void nano::json_handler::account_list ()
 	auto wallet (wallet_impl ());
 	if (!ec)
 	{
-		boost::property_tree::ptree accounts;
+		nano::json::array_writer accounts;
 		for (auto const & account : wallet->accounts ())
 		{
-			boost::property_tree::ptree entry;
-			entry.put ("", account.to_account ());
-			accounts.push_back (std::make_pair ("", entry));
+			accounts.push (account.to_account ());
 		}
 		response_l.add_child ("accounts", accounts);
 	}
@@ -977,7 +975,7 @@ void nano::json_handler::accounts_create ()
 		if (!rpc_l->ec)
 		{
 			bool const generate_work = rpc_l->request.get<bool> ("work", false);
-			boost::property_tree::ptree accounts;
+			nano::json::array_writer accounts;
 			// TODO: this should be atomic, either all accounts are created or none
 			for (decltype (count) i = 0; i < count; ++i)
 			{
@@ -987,9 +985,7 @@ void nano::json_handler::accounts_create ()
 					rpc_l->ec = key_result.error ();
 					break;
 				}
-				boost::property_tree::ptree entry;
-				entry.put ("", key_result.value ().to_account ());
-				accounts.push_back (std::make_pair ("", entry));
+				accounts.push (key_result.value ().to_account ());
 			}
 			rpc_l->response_l.add_child ("accounts", accounts);
 		}
@@ -1127,12 +1123,10 @@ void nano::json_handler::active_difficulty ()
 	response_l.put ("multiplier", 1.0);
 	if (include_trend)
 	{
-		boost::property_tree::ptree difficulty_trend_l;
+		nano::json::array_writer difficulty_trend_l;
 
 		// To keep this RPC backwards-compatible
-		boost::property_tree::ptree entry;
-		entry.put ("", "1.000000000000000");
-		difficulty_trend_l.push_back (std::make_pair ("", entry));
+		difficulty_trend_l.push ("1.000000000000000");
 
 		response_l.add_child ("difficulty_trend", difficulty_trend_l);
 	}
@@ -1317,7 +1311,7 @@ void nano::json_handler::blocks_info ()
 	bool const include_not_found = request.get<bool> ("include_not_found", false);
 
 	boost::property_tree::ptree blocks;
-	boost::property_tree::ptree blocks_not_found;
+	nano::json::array_writer blocks_not_found;
 	auto transaction = node.ledger.tx_begin_read ();
 	for (boost::property_tree::ptree::value_type & hashes : request.get_child ("hashes"))
 	{
@@ -1434,9 +1428,7 @@ void nano::json_handler::blocks_info ()
 				}
 				else if (include_not_found)
 				{
-					boost::property_tree::ptree entry;
-					entry.put ("", hash_text);
-					blocks_not_found.push_back (std::make_pair ("", entry));
+					blocks_not_found.push (hash_text);
 				}
 				else
 				{
@@ -1933,7 +1925,7 @@ void nano::json_handler::chain (bool successors)
 	auto offset (offset_optional_impl (0));
 	if (!ec)
 	{
-		boost::property_tree::ptree blocks;
+		nano::json::array_writer blocks;
 		auto transaction = node.ledger.tx_begin_read ();
 		while (!hash.is_zero () && blocks.size () < count)
 		{
@@ -1946,9 +1938,7 @@ void nano::json_handler::chain (bool successors)
 				}
 				else
 				{
-					boost::property_tree::ptree entry;
-					entry.put ("", hash.to_string ());
-					blocks.push_back (std::make_pair ("", entry));
+					blocks.push (hash.to_string ());
 				}
 				hash = successors ? node.ledger.any.block_successor (transaction, hash).value_or (0) : block_l->previous ();
 			}
@@ -1971,7 +1961,7 @@ void nano::json_handler::confirmation_active ()
 	{
 		announcements = strtoul (announcements_text.value ().c_str (), NULL, 10);
 	}
-	boost::property_tree::ptree elections;
+	nano::json::array_writer elections;
 	auto active_elections = node.active.list_active ();
 	for (auto const & election : active_elections)
 	{
@@ -1979,9 +1969,7 @@ void nano::json_handler::confirmation_active ()
 		{
 			if (!election->confirmed ())
 			{
-				boost::property_tree::ptree entry;
-				entry.put ("", election->qualified_root.to_string ());
-				elections.push_back (std::make_pair ("", entry));
+				elections.push (election->qualified_root.to_string ());
 			}
 			else
 			{
@@ -2053,7 +2041,7 @@ void nano::json_handler::election_statistics ()
 
 void nano::json_handler::confirmation_history ()
 {
-	boost::property_tree::ptree elections;
+	nano::json::array_writer elections;
 	boost::property_tree::ptree confirmation_stats;
 	std::chrono::milliseconds running_total (0);
 	nano::block_hash hash (0);
@@ -2079,7 +2067,7 @@ void nano::json_handler::confirmation_history ()
 				election.put ("blocks", std::to_string (status.block_count));
 				election.put ("voters", std::to_string (status.voter_count));
 				election.put ("request_count", std::to_string (status.confirmation_request_count));
-				elections.push_back (std::make_pair ("", election));
+				elections.push (election);
 			}
 			running_total += status.election_duration;
 		}
@@ -2191,14 +2179,14 @@ void nano::json_handler::confirmation_quorum ()
 	response_l.put ("peers_stake_total", node.rep_crawler.total_weight ().convert_to<std::string> ());
 	if (request.get<bool> ("peer_details", false))
 	{
-		boost::property_tree::ptree peers;
+		nano::json::array_writer peers;
 		for (auto & peer : node.rep_crawler.representatives ())
 		{
 			boost::property_tree::ptree peer_node;
 			peer_node.put ("account", peer.account.to_account ());
 			peer_node.put ("ip", peer.channel->to_string ());
 			peer_node.put ("weight", nano::amount{ node.ledger.weight (peer.account) }.to_string_dec ());
-			peers.push_back (std::make_pair ("", peer_node));
+			peers.push (peer_node);
 		}
 		response_l.add_child ("peers", peers);
 	}
@@ -2687,7 +2675,7 @@ void nano::json_handler::account_history ()
 	}
 	if (!ec)
 	{
-		boost::property_tree::ptree history;
+		nano::json::array_writer history;
 		bool include_linked_account (request.get_optional<bool> ("include_linked_account") == true);
 		bool output_raw (request.get_optional<bool> ("raw") == true);
 		response_l.put ("account", account.to_account ());
@@ -2727,7 +2715,7 @@ void nano::json_handler::account_history ()
 						entry.put ("work", nano::to_string_hex (block->block_work ()));
 						entry.put ("signature", block->block_signature ().to_string ());
 					}
-					history.push_back (std::make_pair ("", entry));
+					history.push (entry);
 					--count;
 				}
 			}
@@ -3673,7 +3661,7 @@ void nano::json_handler::republish ()
 	auto hash (hash_impl ());
 	if (!ec)
 	{
-		boost::property_tree::ptree blocks;
+		nano::json::array_writer blocks;
 		auto transaction = node.ledger.tx_begin_read ();
 		auto block = node.ledger.any.block_get (transaction, hash);
 		if (block != nullptr)
@@ -3698,15 +3686,11 @@ void nano::json_handler::republish ()
 					{
 						block_a = node.ledger.any.block_get (transaction, hash_l);
 						republish_bundle.push_back (std::move (block_a));
-						boost::property_tree::ptree entry_l;
-						entry_l.put ("", hash_l.to_string ());
-						blocks.push_back (std::make_pair ("", entry_l));
+						blocks.push (hash_l.to_string ());
 					}
 				}
 				republish_bundle.push_back (std::move (block)); // Republish block
-				boost::property_tree::ptree entry;
-				entry.put ("", hash.to_string ());
-				blocks.push_back (std::make_pair ("", entry));
+				blocks.push (hash.to_string ());
 				if (destinations != 0) // Republish destination chain
 				{
 					auto block_b = node.ledger.any.block_get (transaction, hash);
@@ -3735,9 +3719,7 @@ void nano::json_handler::republish ()
 							{
 								block_d = node.ledger.any.block_get (transaction, hash_l);
 								republish_bundle.push_back (std::move (block_d));
-								boost::property_tree::ptree entry_l;
-								entry_l.put ("", hash_l.to_string ());
-								blocks.push_back (std::make_pair ("", entry_l));
+								blocks.push (hash_l.to_string ());
 							}
 						}
 					}
@@ -4126,7 +4108,7 @@ void nano::json_handler::telemetry ()
 		auto telemetry_responses = node.telemetry.get_all_telemetries ();
 		if (output_raw)
 		{
-			boost::property_tree::ptree metrics;
+			nano::json::array_writer metrics;
 			for (auto & telemetry_metrics : telemetry_responses)
 			{
 				nano::jsonconfig config_l;
@@ -4136,7 +4118,7 @@ void nano::json_handler::telemetry ()
 				config_l.put ("port", telemetry_metrics.first.port ());
 				if (!err)
 				{
-					metrics.push_back (std::make_pair ("", config_l.get_tree ()));
+					metrics.push (config_l.get_tree ());
 				}
 				else
 				{
@@ -4254,7 +4236,7 @@ void nano::json_handler::unchecked_keys ()
 	}
 	if (!ec)
 	{
-		boost::property_tree::ptree unchecked;
+		nano::json::array_writer unchecked;
 		node.unchecked.for_each (
 		key,
 		[&unchecked, json_block_l] (nano::unchecked_key const & key, nano::unchecked_info const & info) {
@@ -4274,7 +4256,7 @@ void nano::json_handler::unchecked_keys ()
 				info.block->serialize_json (contents);
 				entry.put ("contents", contents);
 			}
-			unchecked.push_back (std::make_pair ("", entry)); }, [&unchecked, &count] () { return unchecked.size () < count; });
+			unchecked.push (entry); }, [&unchecked, &count] () { return unchecked.size () < count; });
 		response_l.add_child ("unchecked", unchecked);
 	}
 	response_errors ();
@@ -4703,10 +4685,10 @@ void nano::json_handler::wallet_history ()
 				}
 			}
 		}
-		boost::property_tree::ptree history;
+		nano::json::array_writer history;
 		for (auto i (entries.begin ()), n (entries.end ()); i != n; ++i)
 		{
-			history.push_back (std::make_pair ("", i->second));
+			history.push (i->second);
 		}
 		response_l.add_child ("history", history);
 	}
@@ -4926,7 +4908,7 @@ void nano::json_handler::wallet_republish ()
 	auto count (count_impl ());
 	if (!ec)
 	{
-		boost::property_tree::ptree blocks;
+		nano::json::array_writer blocks;
 		std::deque<std::shared_ptr<nano::block>> republish_bundle;
 		auto block_transaction = node.ledger.tx_begin_read ();
 		for (auto const & account : wallet->accounts ())
@@ -4952,9 +4934,7 @@ void nano::json_handler::wallet_republish ()
 			{
 				block = node.ledger.any.block_get (block_transaction, hash);
 				republish_bundle.push_back (std::move (block));
-				boost::property_tree::ptree entry;
-				entry.put ("", hash.to_string ());
-				blocks.push_back (std::make_pair ("", entry));
+				blocks.push (hash.to_string ());
 			}
 		}
 		node.network.flood_block_many (std::move (republish_bundle), nano::transport::traffic_type::keepalive, 25ms);
@@ -5224,12 +5204,10 @@ void nano::json_handler::work_peer_add ()
 
 void nano::json_handler::work_peers ()
 {
-	boost::property_tree::ptree work_peers_l;
+	nano::json::array_writer work_peers_l;
 	for (auto i (node.config.work_peers.begin ()), n (node.config.work_peers.end ()); i != n; ++i)
 	{
-		boost::property_tree::ptree entry;
-		entry.put ("", boost::str (boost::format ("%1%:%2%") % i->first % i->second));
-		work_peers_l.push_back (std::make_pair ("", entry));
+		work_peers_l.push (boost::str (boost::format ("%1%:%2%") % i->first % i->second));
 	}
 	response_l.add_child ("work_peers", work_peers_l);
 	response_errors ();

@@ -303,6 +303,52 @@ TEST (json_writer, replace_from_ptree)
 	ASSERT_FALSE (writer.value ().contains ("stale"));
 }
 
+// PR3: array_writer::push(ptree) bridges object/foreign entries; size() supports
+// loop bounds like `blocks.size () < count`.
+TEST (json_writer, array_push_ptree_objects)
+{
+	boost::property_tree::ptree arr;
+	nano::json::array_writer aw;
+	for (int i = 0; i < 3; ++i)
+	{
+		boost::property_tree::ptree entry;
+		entry.put ("hash", std::to_string (i));
+		entry.put ("confirmed", (i % 2) == 0);
+		arr.push_back (std::make_pair ("", entry));
+		aw.push (entry);
+	}
+	boost::property_tree::ptree pt;
+	pt.add_child ("history", arr);
+	nano::json::object_writer writer;
+	writer.add_child ("history", aw);
+
+	ASSERT_EQ (aw.size (), 3u);
+	assert_equivalent (pt, writer.serialize ());
+}
+
+TEST (json_writer, array_push_scalars_direct)
+{
+	// account_list/chain/work_peers style: scalars pushed directly, no entry ptree.
+	boost::property_tree::ptree arr;
+	for (auto const & v : { "a", "b" })
+	{
+		boost::property_tree::ptree entry;
+		entry.put ("", v);
+		arr.push_back (std::make_pair ("", entry));
+	}
+	boost::property_tree::ptree pt;
+	pt.add_child ("accounts", arr);
+
+	nano::json::array_writer aw;
+	aw.push ("a");
+	aw.push ("b");
+	nano::json::object_writer writer;
+	writer.add_child ("accounts", aw);
+
+	ASSERT_EQ (aw.size (), 2u);
+	assert_equivalent (pt, writer.serialize ());
+}
+
 TEST (json_writer, replace_empty_clears)
 {
 	// An empty source must leave response_l empty, so response_errors() reports

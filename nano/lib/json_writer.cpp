@@ -77,6 +77,16 @@ void array_writer::push (array_writer const & child)
 	arr.push_back (child.arr);
 }
 
+void array_writer::push (boost::property_tree::ptree const & child)
+{
+	arr.push_back (from_ptree (child));
+}
+
+std::size_t array_writer::size () const
+{
+	return arr.size ();
+}
+
 bool array_writer::empty () const
 {
 	return arr.empty ();

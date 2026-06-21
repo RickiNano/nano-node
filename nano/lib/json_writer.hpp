@@ -6,6 +6,7 @@
 #include <boost/property_tree/ptree.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -109,6 +110,11 @@ public:
 
 	void push (object_writer const & child);
 	void push (array_writer const & child);
+
+	// Bridge: push a foreign/local property_tree element (object or scalar leaf).
+	void push (boost::property_tree::ptree const & child);
+
+	std::size_t size () const;
 
 	// Sort the underlying array. Comparator receives boost::json::value const &.
 	template <typename Compare>
