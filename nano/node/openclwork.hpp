@@ -36,6 +36,7 @@ class opencl_environment
 public:
 	opencl_environment (bool &);
 	void dump (std::ostream & stream);
+	void summary (std::ostream & stream);
 	std::vector<nano::opencl_platform> platforms;
 };
 
