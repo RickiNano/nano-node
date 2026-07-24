@@ -125,6 +125,8 @@ private:
 	void process_batch (nano::unique_lock<nano::mutex> &);
 	/// Pops up to max_count blocks from the queue
 	std::deque<nano::block_context> next_batch (size_t max_count);
+	/// Verifies block signatures ahead of the write transaction, recording the results on each context
+	void verify_signatures (std::deque<nano::block_context> &) const;
 	/// Pops the next block from the queue
 	nano::block_context next ();
 

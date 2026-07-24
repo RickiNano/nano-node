@@ -18,10 +18,23 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 
-nano::ledger_processor::ledger_processor (nano::secure::write_transaction const & transaction_a, nano::ledger & ledger_a) :
+nano::ledger_processor::ledger_processor (nano::secure::write_transaction const & transaction_a, nano::ledger & ledger_a, nano::verified_signatures const & verified_a) :
 	transaction (transaction_a),
-	ledger (ledger_a)
+	ledger (ledger_a),
+	verified (verified_a)
 {
+}
+
+bool nano::ledger_processor::validate_signature (nano::account const & signer, nano::block_hash const & hash, nano::signature const & signature) const
+{
+	if (auto cached = verified.lookup (signer))
+	{
+		// The pre-pass must agree with what verifying here would have concluded
+		debug_assert (*cached == !validate_message (signer, hash, signature));
+		return !*cached;
+	}
+	// No pre-pass result for this key, verify inline
+	return validate_message (signer, hash, signature);
 }
 
 void nano::ledger_processor::send_block (nano::send_block & block_a)
@@ -44,14 +57,13 @@ void nano::ledger_processor::send_block (nano::send_block & block_a)
 				result = info->head != block_a.hashables.previous ? nano::block_status::fork : nano::block_status::progress;
 				if (result == nano::block_status::progress)
 				{
-					result = validate_message (account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Malformed)
+					result = validate_signature (account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Malformed)
 					if (result == nano::block_status::progress)
 					{
 						nano::block_details block_details (nano::epoch::epoch_0, false /* unused */, false /* unused */, false /* unused */);
 						result = ledger.work.difficulty (block_a) >= ledger.work.threshold (block_a.work_version (), block_details) ? nano::block_status::progress : nano::block_status::insufficient_work; // Does this block have sufficient work? (Malformed)
 						if (result == nano::block_status::progress)
 						{
-							debug_assert (!validate_message (account, hash, block_a.signature));
 							release_assert (info->head == block_a.hashables.previous);
 							result = info->balance.number () >= block_a.hashables.balance.number () ? nano::block_status::progress : nano::block_status::negative_spend; // Is this trying to spend a negative amount (Malicious)
 							if (result == nano::block_status::progress)
@@ -105,10 +117,9 @@ void nano::ledger_processor::receive_block (nano::receive_block & block_a)
 				result = info->head != block_a.hashables.previous ? nano::block_status::fork : nano::block_status::progress; // If we have the block but it's not the latest we have a signed fork (Malicious)
 				if (result == nano::block_status::progress)
 				{
-					result = validate_message (account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is the signature valid (Malformed)
+					result = validate_signature (account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is the signature valid (Malformed)
 					if (result == nano::block_status::progress)
 					{
-						debug_assert (!validate_message (account, hash, block_a.signature));
 						result = ledger.any.block_exists_or_pruned (transaction, block_a.hashables.source) ? nano::block_status::progress : nano::block_status::gap_source; // Have we seen the source block already? (Harmless)
 						if (result == nano::block_status::progress)
 						{
@@ -172,10 +183,9 @@ void nano::ledger_processor::open_block (nano::open_block & block_a)
 	result = existing ? nano::block_status::old : nano::block_status::progress; // Have we seen this block already? (Harmless)
 	if (result == nano::block_status::progress)
 	{
-		result = validate_message (block_a.hashables.account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is the signature valid (Malformed)
+		result = validate_signature (block_a.hashables.account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is the signature valid (Malformed)
 		if (result == nano::block_status::progress)
 		{
-			debug_assert (!validate_message (block_a.hashables.account, hash, block_a.signature));
 			result = ledger.any.block_exists_or_pruned (transaction, block_a.hashables.source) ? nano::block_status::progress : nano::block_status::gap_source; // Have we seen the source block? (Harmless)
 			if (result == nano::block_status::progress)
 			{
@@ -254,14 +264,13 @@ void nano::ledger_processor::change_block (nano::change_block & block_a)
 				if (result == nano::block_status::progress)
 				{
 					release_assert (info->head == block_a.hashables.previous);
-					result = validate_message (account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Malformed)
+					result = validate_signature (account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Malformed)
 					if (result == nano::block_status::progress)
 					{
 						nano::block_details block_details (nano::epoch::epoch_0, false /* unused */, false /* unused */, false /* unused */);
 						result = ledger.work.difficulty (block_a) >= ledger.work.threshold (block_a.work_version (), block_details) ? nano::block_status::progress : nano::block_status::insufficient_work; // Does this block have sufficient work? (Malformed)
 						if (result == nano::block_status::progress)
 						{
-							debug_assert (!validate_message (account, hash, block_a.signature));
 							auto const topo = topology_height (previous);
 							block_a.sideband_set (nano::block_sideband{
 							/* account */ account,
@@ -319,10 +328,9 @@ void nano::ledger_processor::state_block_impl (nano::state_block & block_a)
 	result = existing ? nano::block_status::old : nano::block_status::progress; // Have we seen this block before? (Unambiguous)
 	if (result == nano::block_status::progress)
 	{
-		result = validate_message (block_a.hashables.account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Unambiguous)
+		result = validate_signature (block_a.hashables.account, hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Unambiguous)
 		if (result == nano::block_status::progress)
 		{
-			debug_assert (!validate_message (block_a.hashables.account, hash, block_a.signature));
 			result = block_a.hashables.account.is_zero () ? nano::block_status::opened_burn_account : nano::block_status::progress; // Is this for the burn account? (Unambiguous)
 			if (result == nano::block_status::progress)
 			{
@@ -463,10 +471,9 @@ void nano::ledger_processor::epoch_block_impl (nano::state_block & block_a)
 	result = existing ? nano::block_status::old : nano::block_status::progress; // Have we seen this block before? (Unambiguous)
 	if (result == nano::block_status::progress)
 	{
-		result = validate_message (ledger.epoch_signer (block_a.hashables.link), hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Unambiguous)
+		result = validate_signature (ledger.epoch_signer (block_a.hashables.link), hash, block_a.signature) ? nano::block_status::bad_signature : nano::block_status::progress; // Is this block signed correctly (Unambiguous)
 		if (result == nano::block_status::progress)
 		{
-			debug_assert (!validate_message (ledger.epoch_signer (block_a.hashables.link), hash, block_a.signature));
 			result = block_a.hashables.account.is_zero () ? nano::block_status::opened_burn_account : nano::block_status::progress; // Is this for the burn account? (Unambiguous)
 			if (result == nano::block_status::progress)
 			{
@@ -566,10 +573,10 @@ bool nano::ledger_processor::validate_epoch_block (nano::state_block const & blo
 		else
 		{
 			// Check for possible regular state blocks with epoch link (send subtype)
-			if (validate_message (block_a.hashables.account, block_a.hash (), block_a.signature))
+			if (validate_signature (block_a.hashables.account, block_a.hash (), block_a.signature))
 			{
 				// Is epoch block signed correctly
-				if (validate_message (ledger.epoch_signer (block_a.link_field ().value ()), block_a.hash (), block_a.signature))
+				if (validate_signature (ledger.epoch_signer (block_a.link_field ().value ()), block_a.hash (), block_a.signature))
 				{
 					result = nano::block_status::bad_signature;
 				}

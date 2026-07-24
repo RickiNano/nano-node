@@ -223,6 +223,10 @@ enum class detail
 	overfill,
 	batch,
 
+	// signature verification
+	signature_checked,
+	signature_invalid,
+
 	// error specific
 	insufficient_work,
 	http_callback,

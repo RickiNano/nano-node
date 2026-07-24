@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace nano
 {
@@ -476,6 +477,21 @@ bool validate_message (nano::public_key const &, nano::uint256_union const &, na
 bool validate_message (nano::public_key const &, uint8_t const *, size_t, nano::signature const &);
 nano::raw_key deterministic_key (nano::raw_key const &, uint32_t);
 nano::public_key pub_key (nano::raw_key const &);
+
+/** A single signature to verify: `signature` over the 32 byte `message`, produced by `key`. The pointed-to values must outlive the verification call. */
+struct signature_check
+{
+	nano::public_key const * key;
+	nano::uint256_union const * message;
+	nano::signature const * signature;
+};
+
+/**
+ * Verifies many signatures in a single operation, roughly twice as fast per signature as calling `validate_message` in a loop.
+ * A batch that fails falls back internally to verifying its members individually, so the per-entry results are always exact.
+ * @returns one flag per check, in the order supplied; true means the signature is valid
+ */
+std::vector<bool> validate_message_batch (std::vector<nano::signature_check> const &);
 
 /* Conversion methods */
 std::string to_string_hex (uint64_t const);

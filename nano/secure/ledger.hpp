@@ -11,6 +11,7 @@
 #include <nano/secure/pending_info.hpp>
 #include <nano/secure/rep_weights.hpp>
 #include <nano/secure/transaction.hpp>
+#include <nano/secure/verified_signatures.hpp>
 #include <nano/store/ledger_store.hpp>
 #include <nano/weights/bootstrap_weights.hpp>
 
@@ -81,7 +82,8 @@ public:
 	std::deque<std::shared_ptr<nano::block>> random_blocks (secure::transaction const &, size_t count) const;
 	std::optional<nano::pending_info> pending_info (secure::transaction const &, nano::pending_key const & key) const;
 	std::deque<std::shared_ptr<nano::block>> cement (secure::write_transaction &, nano::block_hash const & hash, size_t max_blocks = 1024 * 128);
-	nano::block_status process (secure::write_transaction const &, std::shared_ptr<nano::block> block);
+	/// `verified` optionally carries signature checks already performed outside the write transaction; anything it does not cover is verified inline
+	nano::block_status process (secure::write_transaction const &, std::shared_ptr<nano::block> block, nano::verified_signatures const & verified = {});
 	bool rollback (secure::write_transaction const &, nano::block_hash const &, std::deque<std::shared_ptr<nano::block>> & rollback_list, size_t depth = 0, size_t max_depth = nano::ledger_max_rollback_depth ());
 	bool rollback (secure::write_transaction const &, nano::block_hash const &);
 	void update_account (secure::write_transaction const &, nano::account const &, nano::account_info const &, nano::account_info const &);

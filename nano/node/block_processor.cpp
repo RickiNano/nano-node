@@ -427,6 +427,86 @@ auto nano::block_processor::next_batch (size_t max_count) -> std::deque<nano::bl
 	return results;
 }
 
+void nano::block_processor::verify_signatures (std::deque<nano::block_context> & batch) const
+{
+	// One signature check, tied back to the batch entry it belongs to. Built in full before any pointers are taken into it.
+	struct check
+	{
+		size_t index;
+		nano::account signer;
+		nano::block_hash hash;
+	};
+
+	std::vector<check> checks;
+	checks.reserve (batch.size ());
+
+	for (size_t index = 0; index < batch.size (); ++index)
+	{
+		auto const & block = *batch[index].block;
+		// Also warms the cached hash, keeping the blake2b out of the write transaction
+		auto const & hash = block.hash ();
+
+		switch (block.type ())
+		{
+			case nano::block_type::state:
+			{
+				checks.push_back ({ index, block.account_field ().value (), hash });
+
+				// An epoch link leaves the signer ambiguous: the ledger picks between the block's own account and the epoch
+				// signer based on the previous block's balance, which we cannot read here. Check both so either choice hits.
+				auto const link = block.link_field ().value ();
+				if (ledger.is_epoch_link (link))
+				{
+					checks.push_back ({ index, ledger.epoch_signer (link), hash });
+				}
+				break;
+			}
+			case nano::block_type::open:
+				checks.push_back ({ index, block.account_field ().value (), hash });
+				break;
+			default:
+				// Legacy send/receive/change derive their signer from the previous block, which needs a ledger read.
+				// Leave them for the ledger to verify inline.
+				break;
+		}
+	}
+
+	if (checks.empty ())
+	{
+		return;
+	}
+
+	std::vector<nano::signature_check> to_verify;
+	to_verify.reserve (checks.size ());
+	for (auto const & check : checks)
+	{
+		to_verify.push_back ({ &check.signer, &check.hash, &batch[check.index].block->block_signature () });
+	}
+
+	auto const valid = nano::validate_message_batch (to_verify);
+	release_assert (valid.size () == checks.size ());
+
+	// Checks for the same block are adjacent, having been pushed together above
+	size_t invalid = 0;
+	for (size_t i = 0; i < checks.size ();)
+	{
+		auto const index = checks[i].index;
+		bool any_valid = false;
+		size_t next = i;
+		for (; next < checks.size () && checks[next].index == index; ++next)
+		{
+			batch[index].verified_signatures.add (checks[next].signer, valid[next]);
+			any_valid = any_valid || valid[next];
+		}
+		// A block is only bad if it failed against every signer the ledger could have chosen
+		invalid += any_valid ? 0 : 1;
+		i = next;
+	}
+
+	stats.add (nano::stat::type::block_processor, nano::stat::detail::signature_checked, checks.size ());
+	stats.add (nano::stat::type::block_processor, nano::stat::detail::signature_invalid, invalid);
+}
+
 void nano::block_processor::process_batch (nano::unique_lock<nano::mutex> & lock)
 {
 	debug_assert (lock.owns_lock ());
@@ -436,6 +516,10 @@ void nano::block_processor::process_batch (nano::unique_lock<nano::mutex> & lock
 	auto batch = next_batch (config.batch_size);
 
 	lock.unlock ();
+
+	// Verify signatures before taking the write transaction; the write lock is global (shared with cementing, pruning, ...)
+	// so every microsecond of ed25519 work done under it is a microsecond stolen from the other writers
+	verify_signatures (batch);
 
 	auto transaction = ledger.tx_begin_write (nano::store::writer::block_processor);
 
@@ -488,7 +572,7 @@ nano::block_status nano::block_processor::process_one (secure::write_transaction
 {
 	auto block = context.block;
 	auto const hash = block->hash ();
-	nano::block_status result = ledger.process (transaction_a, block);
+	nano::block_status result = ledger.process (transaction_a, block, context.verified_signatures);
 
 	stats.inc (nano::stat::type::block_processor_result, to_stat_detail (result));
 	stats.inc (nano::stat::type::block_processor_source, to_stat_detail (context.source));

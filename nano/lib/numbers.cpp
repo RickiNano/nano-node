@@ -550,6 +550,41 @@ bool nano::validate_message (nano::public_key const & public_key, nano::uint256_
 	return validate_message (public_key, message.bytes.data (), sizeof (message.bytes), signature);
 }
 
+std::vector<bool> nano::validate_message_batch (std::vector<nano::signature_check> const & checks)
+{
+	auto const count = checks.size ();
+	if (count == 0)
+	{
+		return {};
+	}
+
+	// ed25519_sign_open_batch takes the inputs as arrays of pointers
+	std::vector<unsigned char const *> messages (count);
+	std::vector<size_t> message_lengths (count);
+	std::vector<unsigned char const *> keys (count);
+	std::vector<unsigned char const *> signatures (count);
+	std::vector<int> results (count);
+
+	for (size_t i = 0; i < count; ++i)
+	{
+		auto const & check = checks[i];
+		messages[i] = check.message->bytes.data ();
+		message_lengths[i] = sizeof (check.message->bytes);
+		keys[i] = check.key->bytes.data ();
+		signatures[i] = check.signature->bytes.data ();
+	}
+
+	// Return value only tells us whether everything passed; `results` carries the per-entry verdict either way
+	ed25519_sign_open_batch (messages.data (), message_lengths.data (), keys.data (), signatures.data (), count, results.data ());
+
+	std::vector<bool> valid (count);
+	for (size_t i = 0; i < count; ++i)
+	{
+		valid[i] = results[i] != 0;
+	}
+	return valid;
+}
+
 /*
  * uint128_union
  */
