@@ -450,7 +450,6 @@ nano::tally_t nano::election::tally_impl () const
 			final_weights_l[info.hash] += rep_weight;
 		}
 	}
-	last_tally = block_weights;
 	nano::tally_t result;
 	for (auto const & [hash, amount] : block_weights)
 	{
@@ -460,6 +459,7 @@ nano::tally_t nano::election::tally_impl () const
 			result.emplace (amount, block->second);
 		}
 	}
+	last_tally = std::move (block_weights);
 	// Calculate final votes sum for winner
 	if (!final_weights_l.empty () && !result.empty ())
 	{
