@@ -297,10 +297,13 @@ void nano::election::broadcast_block (nano::confirmation_solicitor & solicitor_a
 	{
 		if (!solicitor_a.broadcast (*this))
 		{
+			// Check before updating, `last_block_hash` is only zero until the first broadcast
+			bool const initial = last_block_hash.is_zero ();
+
 			last_block = std::chrono::steady_clock::now ();
 			last_block_hash = status.winner->hash ();
 
-			node.stats.inc (nano::stat::type::election, last_block_hash.is_zero () ? nano::stat::detail::broadcast_block_initial : nano::stat::detail::broadcast_block_repeat);
+			node.stats.inc (nano::stat::type::election, initial ? nano::stat::detail::broadcast_block_initial : nano::stat::detail::broadcast_block_repeat);
 
 			node.logger.debug (nano::log::type::election, "Broadcasted current winner: {} for root: {} (behavior: {}, state: {}, voters: {}, blocks: {}, duration: {}ms)",
 			status.winner->hash (),
