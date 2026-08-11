@@ -439,20 +439,20 @@ nano::tally_t nano::election::tally () const
 
 nano::tally_t nano::election::tally_impl () const
 {
-	std::unordered_map<nano::block_hash, nano::uint128_t> block_weights;
+	// Tally is accumulated in place, reusing the storage allocated by previous calls
+	last_tally.clear ();
 	std::unordered_map<nano::block_hash, nano::uint128_t> final_weights_l;
 	for (auto const & [account, info] : last_votes)
 	{
 		auto rep_weight (node.ledger.weight (account));
-		block_weights[info.hash] += rep_weight;
+		last_tally[info.hash] += rep_weight;
 		if (info.timestamp == std::numeric_limits<uint64_t>::max ())
 		{
 			final_weights_l[info.hash] += rep_weight;
 		}
 	}
-	last_tally = block_weights;
 	nano::tally_t result;
-	for (auto const & [hash, amount] : block_weights)
+	for (auto const & [hash, amount] : last_tally)
 	{
 		auto block (last_blocks.find (hash));
 		if (block != last_blocks.end ())
