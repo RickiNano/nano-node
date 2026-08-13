@@ -77,17 +77,8 @@ number_of_processors() {
     esac
 }
 
-parallel_build_flag() {
-    case "$(uname -s)" in
-        CYGWIN*|MINGW32*|MSYS*|MINGW*)
-            echo "-- -m"
-            ;;
-        *)
-            echo "--parallel $(number_of_processors)"
-            ;;
-    esac
-}
-
-cmake --build ${PWD} ${BUILD_TARGET} $(parallel_build_flag)
+# Works for every generator: CMake forwards it as /m:N to MSBuild and -j N to
+# Ninja and Make.
+cmake --build ${PWD} ${BUILD_TARGET} --parallel $(number_of_processors)
 
 popd
