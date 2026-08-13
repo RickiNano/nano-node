@@ -80,13 +80,13 @@ public:
 	}
 
 protected:
-	bool send_impl (nano::messages::message const & message, nano::transport::traffic_type traffic_type, callback_t callback) override
+	bool send_impl (nano::messages::message const & message, nano::shared_const_buffer const * buffer, nano::transport::traffic_type traffic_type, callback_t callback) override
 	{
 		observers.notify (message, traffic_type);
 
 		if (callback)
 		{
-			callback (boost::system::errc::make_error_code (boost::system::errc::success), message.to_shared_const_buffer ().size ());
+			callback (boost::system::errc::make_error_code (boost::system::errc::success), resolve_buffer (message, buffer).size ());
 		}
 
 		return true;

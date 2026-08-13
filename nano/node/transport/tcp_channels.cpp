@@ -399,9 +399,15 @@ void nano::transport::tcp_channels::keepalive ()
 
 	lock.unlock ();
 
+	if (to_wakeup.empty ())
+	{
+		return;
+	}
+
+	auto const buffer = message.to_shared_const_buffer ();
 	for (auto & channel : to_wakeup)
 	{
-		channel->send (message, nano::transport::traffic_type::keepalive);
+		channel->send (message, buffer, nano::transport::traffic_type::keepalive);
 	}
 }
 

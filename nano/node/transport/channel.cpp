@@ -21,9 +21,21 @@ nano::transport::channel::channel (nano::node & node_a, nano::transport::peer_in
 
 bool nano::transport::channel::send (nano::messages::message const & message, nano::transport::traffic_type traffic_type, callback_t callback)
 {
-	bool sent = send_impl (message, traffic_type, std::move (callback));
+	bool sent = send_impl (message, nullptr, traffic_type, std::move (callback));
 	node.stats.inc (sent ? nano::stat::type::message : nano::stat::type::message_drop, to_stat_detail (message.type ()), nano::stat::dir::out, /* aggregate all */ true);
 	return sent;
+}
+
+bool nano::transport::channel::send (nano::messages::message const & message, nano::shared_const_buffer const & buffer, nano::transport::traffic_type traffic_type, callback_t callback)
+{
+	bool sent = send_impl (message, &buffer, traffic_type, std::move (callback));
+	node.stats.inc (sent ? nano::stat::type::message : nano::stat::type::message_drop, to_stat_detail (message.type ()), nano::stat::dir::out, /* aggregate all */ true);
+	return sent;
+}
+
+nano::shared_const_buffer nano::transport::channel::resolve_buffer (nano::messages::message const & message, nano::shared_const_buffer const * buffer)
+{
+	return buffer != nullptr ? *buffer : message.to_shared_const_buffer ();
 }
 
 void nano::transport::channel::set_peering_endpoint (nano::endpoint endpoint)

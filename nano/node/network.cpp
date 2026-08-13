@@ -411,11 +411,15 @@ size_t nano::network::flood_message (nano::messages::message const & message, na
 	auto channels = list (fanout (scale), [type] (auto const & channel) {
 		return !channel->max (type); // Only use channels that are not full for this traffic type
 	});
+	if (channels.empty ())
+	{
+		return 0;
+	}
+	auto const buffer = message.to_shared_const_buffer ();
 	size_t result = 0;
 	for (auto const & channel : channels)
 	{
-		// TODO: Serialize message only once
-		bool sent = channel->send (message, type);
+		bool sent = channel->send (message, buffer, type);
 		result += sent;
 	}
 	return result;
@@ -424,13 +428,17 @@ size_t nano::network::flood_message (nano::messages::message const & message, na
 size_t nano::network::flood_message_all (nano::messages::message const & message, nano::transport::traffic_type type) const
 {
 	auto channels = list (); // Get all peers
+	if (channels.empty ())
+	{
+		return 0;
+	}
+	auto const buffer = message.to_shared_const_buffer ();
 	size_t result = 0;
 	for (auto const & channel : channels)
 	{
 		if (!channel->max (type))
 		{
-			// TODO: Serialize message only once
-			result += channel->send (message, type);
+			result += channel->send (message, buffer, type);
 		}
 	}
 	return result;
@@ -469,11 +477,16 @@ size_t nano::network::flood_vote_non_pr (std::shared_ptr<nano::vote> const & vot
 	auto channels = list_non_pr (fanout (scale), [type] (auto const & channel) {
 		return !channel->max (type); // Only use channels that are not full for this traffic type
 	});
+	if (channels.empty ())
+	{
+		return 0;
+	}
 
+	auto const buffer = message.to_shared_const_buffer ();
 	size_t result = 0;
 	for (auto & channel : channels)
 	{
-		bool sent = channel->send (message, type);
+		bool sent = channel->send (message, buffer, type);
 		result += sent;
 	}
 	return result;
@@ -483,10 +496,17 @@ size_t nano::network::flood_vote_pr (std::shared_ptr<nano::vote> const & vote, n
 {
 	nano::messages::confirm_ack message{ node.network_params.network, vote };
 
-	size_t result = 0;
-	for (auto const & channel : node.rep_crawler.principal_representatives ())
+	auto const representatives = node.rep_crawler.principal_representatives ();
+	if (representatives.empty ())
 	{
-		bool sent = channel.channel->send (message, type);
+		return 0;
+	}
+
+	auto const buffer = message.to_shared_const_buffer ();
+	size_t result = 0;
+	for (auto const & channel : representatives)
+	{
+		bool sent = channel.channel->send (message, buffer, type);
 		result += sent;
 	}
 	return result;
@@ -501,16 +521,17 @@ size_t nano::network::flood_block (std::shared_ptr<nano::block> const & block, n
 size_t nano::network::flood_block_initial (std::shared_ptr<nano::block> const & block) const
 {
 	nano::messages::publish message{ node.network_params.network, block, /* is_originator */ true };
+	auto const buffer = message.to_shared_const_buffer ();
 
 	size_t result = 0;
 	for (auto const & rep : node.rep_crawler.principal_representatives ())
 	{
-		bool sent = rep.channel->send (message, nano::transport::traffic_type::block_broadcast_initial);
+		bool sent = rep.channel->send (message, buffer, nano::transport::traffic_type::block_broadcast_initial);
 		result += sent;
 	}
 	for (auto & peer : list_non_pr (fanout (1.0)))
 	{
-		bool sent = peer->send (message, nano::transport::traffic_type::block_broadcast_initial);
+		bool sent = peer->send (message, buffer, nano::transport::traffic_type::block_broadcast_initial);
 		result += sent;
 	}
 	return result;

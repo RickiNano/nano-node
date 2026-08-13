@@ -1,5 +1,6 @@
 #pragma once
 
+#include <nano/lib/asio.hpp>
 #include <nano/lib/fwd.hpp>
 #include <nano/lib/locks.hpp>
 #include <nano/lib/node_capabilities.hpp>
@@ -41,6 +42,9 @@ public:
 
 	/// @returns true if the message was sent (or queued to be sent), false if it was immediately dropped
 	bool send (nano::messages::message const &, nano::transport::traffic_type, callback_t = nullptr);
+
+	/// Same as `send`, but reuses a buffer already serialized from `message`
+	bool send (nano::messages::message const &, nano::shared_const_buffer const &, nano::transport::traffic_type, callback_t = nullptr);
 
 	virtual void close () = 0;
 
@@ -135,7 +139,10 @@ public:
 	std::shared_ptr<nano::node> owner () const;
 
 protected:
-	virtual bool send_impl (nano::messages::message const &, nano::transport::traffic_type, callback_t) = 0;
+	/// `buffer` is pre-serialized by the caller, or nullptr; implementations needing bytes must use `resolve_buffer`
+	virtual bool send_impl (nano::messages::message const &, nano::shared_const_buffer const * buffer, nano::transport::traffic_type, callback_t) = 0;
+
+	static nano::shared_const_buffer resolve_buffer (nano::messages::message const &, nano::shared_const_buffer const * buffer);
 
 protected:
 	nano::node & node;

@@ -5,6 +5,8 @@
 #include <nano/node/election.hpp>
 #include <nano/node/nodeconfig.hpp>
 
+#include <optional>
+
 using namespace std::chrono_literals;
 
 nano::confirmation_solicitor::confirmation_solicitor (nano::network & network_a, nano::node_config const & config_a) :
@@ -37,6 +39,7 @@ bool nano::confirmation_solicitor::broadcast (nano::election const & election_a)
 	{
 		auto const & hash (election_a.status.winner->hash ());
 		nano::messages::publish winner{ config.network_params.network, election_a.status.winner };
+		std::optional<nano::shared_const_buffer> buffer;
 		unsigned count = 0;
 		// Directed broadcasting to principal representatives
 		for (auto i (representatives_broadcasts.begin ()), n (representatives_broadcasts.end ()); i != n && count < max_election_broadcasts; ++i)
@@ -46,7 +49,11 @@ bool nano::confirmation_solicitor::broadcast (nano::election const & election_a)
 			bool const different (exists && existing->second.hash != hash);
 			if (!exists || different)
 			{
-				i->channel->send (winner, nano::transport::traffic_type::block_broadcast);
+				if (!buffer)
+				{
+					buffer = winner.to_shared_const_buffer ();
+				}
+				i->channel->send (winner, *buffer, nano::transport::traffic_type::block_broadcast);
 				count += different ? 0 : 1;
 			}
 		}
