@@ -41,6 +41,26 @@ if(MSVC)
   add_definitions(/MP)
   add_definitions(
     -D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING) # Suppress iterator warning
+
+  # RocksDB enables the generic ASM language, which otherwise claims the .asm
+  # extension ahead of MASM and leaves Boost.Context's sources without a compile
+  # rule, as CMake has no generic ASM support for MSVC. The Visual Studio
+  # generator hides this; Ninja fails to generate. Nothing here assembles .s
+  # files on Windows, so narrow the generic language to leave .asm to MASM.
+  set(CMAKE_ASM_SOURCE_FILE_EXTENSIONS s;S)
+
+  # Compiler caches cannot handle /Zi, which writes debug info to a PDB shared
+  # by every translation unit of a target. Embed the debug info in the object
+  # files instead so each compilation is a self-contained, cacheable artifact.
+  if(CMAKE_C_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER)
+    message(STATUS "Compiler launcher in use - embedding MSVC debug info (/Z7)")
+    foreach(flags_var
+            CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG
+            CMAKE_C_FLAGS_RELWITHDEBINFO CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+      string(REPLACE "/ZI" "/Z7" ${flags_var} "${${flags_var}}")
+      string(REPLACE "/Zi" "/Z7" ${flags_var} "${${flags_var}}")
+    endforeach()
+  endif()
 endif()
 
 set(CPACK_PACKAGE_VENDOR "Nano Currency")
@@ -519,6 +539,9 @@ else()
       1
       CACHE BOOL "" FORCE)
 endif()
+# Runs inside RocksDB's scope to drop MSVC flags that defeat compiler caching
+set(CMAKE_PROJECT_rocksdb_INCLUDE
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/RocksDBMsvcCache.cmake)
 add_subdirectory(submodules/rocksdb EXCLUDE_FROM_ALL)
 
 # cpptoml
