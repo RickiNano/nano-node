@@ -1,0 +1,59 @@
+name: "checkout-submodules"
+description: "Initialize submodules, restoring them from cache when possible"
+runs:
+  using: "composite"
+  steps:
+    # Gitlink SHAs pin the whole recursive submodule state; .gitmodules covers
+    # url/path changes that leave them untouched.
+    - name: Submodule cache key
+      id: key
+      shell: bash
+      run: |
+        hash=$({ git ls-tree HEAD submodules/; cat .gitmodules; } | git hash-object --stdin)
+        echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+    - name: Restore submodules
+      id: restore
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          submodules
+          .git/modules
+        key: submodules-${{ runner.os }}-${{ steps.key.outputs.hash }}
+        # A stale cache still helps: the update below only fetches what moved.
+        restore-keys: |
+          submodules-${{ runner.os }}-
+
+    # Always runs, repairing a missing, partial or stale cache rather than
+    # trusting it. `sync` only rewrites submodules already in .git/config, so
+    # `init` must precede it for a changed url to reach the cached .git/modules.
+    - name: Update submodules
+      shell: bash
+      run: |
+        git submodule init
+        git submodule sync --recursive
+        git submodule update --init --force --recursive --depth=1 --jobs 8
+
+    # A shallow `update` adds a new shallow point without dropping the old one,
+    # so the cache grows with every submodule bump. Only worth pruning on the
+    # runs that populate it, and never worth failing a good checkout over.
+    - name: Prune submodules
+      if: github.ref == 'refs/heads/develop' && steps.restore.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      run: |
+        git submodule foreach --recursive '
+          git reflog expire --expire=now --all
+          git gc --prune=now
+        '
+
+    # Caches are branch scoped and every branch can read develop's, so only
+    # develop populates them - same rule the sccache jobs follow.
+    - name: Save submodules
+      if: github.ref == 'refs/heads/develop' && steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          submodules
+          .git/modules
+        key: submodules-${{ runner.os }}-${{ steps.key.outputs.hash }}
