@@ -34,6 +34,20 @@ runs:
         git submodule sync --recursive
         git submodule update --init --force --recursive --depth=1 --jobs 8
 
+    # A shallow `update` onto an existing cached .git/modules only adds a new
+    # shallow point; it doesn't drop the previous one, and default auto-gc
+    # won't prune anything less than 2 weeks unreachable. Left alone, that
+    # makes the cache (and this job's disk usage) grow with every submodule
+    # bump on develop instead of staying near a fresh shallow-clone size -
+    # runners with a tight disk budget (macOS) can't absorb that.
+    - name: Prune submodules
+      shell: bash
+      run: |
+        git submodule foreach --recursive '
+          git reflog expire --expire=now --all
+          git gc --prune=now
+        '
+
     # Caches are branch scoped and every branch can read develop's, so only
     # develop populates them - same rule the sccache jobs follow.
     - name: Save submodules
