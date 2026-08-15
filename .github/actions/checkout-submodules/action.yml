@@ -37,7 +37,7 @@ runs:
     # Caches are branch scoped and every branch can read develop's, so only
     # develop populates them - same rule the sccache jobs follow.
     - name: Save submodules
-      if: steps.restore.outputs.cache-hit != 'true'
+      if: github.ref == 'refs/heads/develop' && steps.restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
         path: |
