@@ -152,8 +152,10 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       # Both backends compile identically, so they share a namespace.
       SCCACHE_GHA_VERSION: windows-${{ matrix.RELEASE }}
-      # Only the develop branch populates the cache.
-      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
+      # TEMPORARY - REVERT BEFORE MERGING TO DEVELOP.
+      # Forced READ_WRITE so this branch can populate and exercise the cache.
+      # Restore: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
+      SCCACHE_GHA_RW_MODE: READ_WRITE
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
