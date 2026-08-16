@@ -27,6 +27,9 @@ jobs:
       SCCACHE_GHA_VERSION: macos-${{ matrix.RELEASE }}
       # Only the develop branch populates the cache.
       SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
+      # Default idle timeout lets the server exit during the long post-build
+      # test steps, so the action's post-job summary reports 0 hits.
+      SCCACHE_IDLE_TIMEOUT: "0"
     runs-on: macos-14
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
@@ -39,7 +42,7 @@ jobs:
         run: ci/prepare/macos/prepare.sh
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build Tests
         id: build
@@ -90,6 +93,9 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_GHA_VERSION: linux-${{ matrix.COMPILER }}-${{ matrix.RELEASE }}
       SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
+      # Default idle timeout lets the server exit during the long post-build
+      # test steps, so the action's post-job summary reports 0 hits.
+      SCCACHE_IDLE_TIMEOUT: "0"
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
@@ -101,7 +107,7 @@ jobs:
         run: sudo -E ci/prepare/linux/prepare.sh
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build Tests
         id: build
