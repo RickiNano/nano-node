@@ -519,7 +519,21 @@ else()
       1
       CACHE BOOL "" FORCE)
 endif()
+set(NANO_SAVED_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+set(NANO_SAVED_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+if(MSVC)
+  set(OPTDBG
+      ON
+      CACHE BOOL "" FORCE)
+else()
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O2")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O2")
+endif()
+
 add_subdirectory(submodules/rocksdb EXCLUDE_FROM_ALL)
+
+set(CMAKE_C_FLAGS_DEBUG "${NANO_SAVED_C_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_DEBUG "${NANO_SAVED_CXX_FLAGS_DEBUG}")
 
 # cpptoml
 include_directories(submodules/cpptoml/include)
