@@ -16,7 +16,12 @@ if [[ ${QT_DIR:-} ]]; then
 fi
 
 CMAKE_SANITIZER=""
+CMAKE_DEBUG_FLAGS=""
 if [[ ${SANITIZER:-} ]]; then
+    if [[ "${BUILD_TYPE:-Debug}" == "Debug" ]]; then
+        CMAKE_DEBUG_FLAGS="-DCMAKE_C_FLAGS_DEBUG=-g1 -DCMAKE_CXX_FLAGS_DEBUG=-g1"
+    fi
+
     case "${SANITIZER}" in
         ASAN)
             CMAKE_SANITIZER="-DNANO_ASAN=ON"
@@ -56,6 +61,7 @@ cmake \
 -DCI_TAG=${CI_TAG:-OFF} \
 -DCI_VERSION_PRE_RELEASE=${CI_VERSION_PRE_RELEASE:-OFF} \
 ${CMAKE_SANITIZER:-} \
+${CMAKE_DEBUG_FLAGS:-} \
 ${CMAKE_QT_DIR:-} \
 ${SRC}
 
