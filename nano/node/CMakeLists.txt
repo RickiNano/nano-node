@@ -267,10 +267,6 @@ target_link_libraries(
   ${CMAKE_DL_LIBS}
   ${psapi_lib})
 
-target_compile_definitions(
-  node PRIVATE -DTAG_VERSION_STRING=${TAG_VERSION_STRING}
-               -DGIT_COMMIT_HASH=${GIT_COMMIT_HASH})
-
 # This ensures that any changes to Flatbuffers source files will cause a
 # regeneration of any C++ header files.
 add_dependencies(node ipc_flatbuffers_lib)
