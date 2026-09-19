@@ -68,7 +68,7 @@ nano::raw_key wallet_cipher::reseal (nano::raw_key const & new_password_key, nan
  * wallet_store
  */
 
-// Wallet version number
+// Wallet version numbers
 nano::account const wallet_store::version_special{};
 // Random number used to salt private key encryption
 nano::account const wallet_store::salt_special (1);
