@@ -40,6 +40,19 @@ if [[ ${SANITIZER:-} ]]; then
     esac
 fi
 
+# sccache cannot cache MSVC objects that share a PDB (/Zi), so embed debug info in them (/Z7)
+CMAKE_MSVC_DEBUG_INFO=""
+case "${OS}" in
+    CYGWIN*|MINGW32*|MSYS*|MINGW*)
+        if [[ ${CMAKE_CXX_COMPILER_LAUNCHER:-} ]]; then
+            MSVC_DEBUG_INFO_INCLUDE=$(cygpath -m "$(dirname "$BASH_SOURCE")/cmake/msvc-embedded-debug-info.cmake")
+            CMAKE_MSVC_DEBUG_INFO="-DCMAKE_POLICY_DEFAULT_CMP0141=NEW"
+            CMAKE_MSVC_DEBUG_INFO+=" -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=\$<\$<CONFIG:Debug,RelWithDebInfo>:Embedded>"
+            CMAKE_MSVC_DEBUG_INFO+=" -DCMAKE_PROJECT_INCLUDE=${MSVC_DEBUG_INFO_INCLUDE}"
+        fi
+        ;;
+esac
+
 BUILD_DIR="build"
 
 mkdir -p $BUILD_DIR
@@ -57,6 +70,7 @@ cmake \
 -DCI_VERSION_PRE_RELEASE=${CI_VERSION_PRE_RELEASE:-OFF} \
 ${CMAKE_SANITIZER:-} \
 ${CMAKE_QT_DIR:-} \
+${CMAKE_MSVC_DEBUG_INFO:-} \
 ${SRC}
 
 number_of_processors() {
@@ -77,17 +91,6 @@ number_of_processors() {
     esac
 }
 
-parallel_build_flag() {
-    case "$(uname -s)" in
-        CYGWIN*|MINGW32*|MSYS*|MINGW*)
-            echo "-- -m"
-            ;;
-        *)
-            echo "--parallel $(number_of_processors)"
-            ;;
-    esac
-}
-
-cmake --build ${PWD} ${BUILD_TARGET} $(parallel_build_flag)
+cmake --build ${PWD} ${BUILD_TARGET} --parallel $(number_of_processors)
 
 popd

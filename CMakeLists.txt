@@ -523,6 +523,12 @@ else()
       1
       CACHE BOOL "" FORCE)
 endif()
+if(MSVC)
+  # RocksDB enables the generic ASM language, which would otherwise claim the
+  # Boost.Context .asm sources from ASM_MASM and break single-config generators
+  # such as Ninja
+  set(CMAKE_ASM_SOURCE_FILE_EXTENSIONS s;S)
+endif()
 set(CMAKE_FOLDER "external/rocksdb")
 add_subdirectory(submodules/rocksdb EXCLUDE_FROM_ALL)
 unset(CMAKE_FOLDER)
