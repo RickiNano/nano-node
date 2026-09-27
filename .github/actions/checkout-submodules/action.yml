@@ -1,0 +1,33 @@
+name: "checkout-submodules"
+description: "Initialize submodules recursively, reusing their git object stores from the Actions cache"
+runs:
+  using: "composite"
+  steps:
+    # The pinned submodule commits (gitlinks) fully determine the recursive submodule tree.
+    - name: Compute submodules key
+      id: key
+      shell: bash
+      run: |
+        hash=$( { cat .gitmodules; git ls-tree -r HEAD submodules; } | git hash-object --stdin )
+        echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+    # Partial hits from restore-keys are fine: only missing commits are fetched afterwards.
+    - name: Restore submodules cache
+      id: restore
+      uses: actions/cache/restore@v4
+      with:
+        path: .git/modules
+        key: submodules-${{ runner.os }}-${{ steps.key.outputs.hash }}
+        restore-keys: submodules-${{ runner.os }}-
+
+    - name: Update submodules
+      shell: bash
+      run: git submodule update --init --recursive --force --depth 1 --jobs 8
+
+    # Save right away so the cache is populated even if later build or test steps fail.
+    - name: Save submodules cache
+      if: steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: .git/modules
+        key: submodules-${{ runner.os }}-${{ steps.key.outputs.hash }}
