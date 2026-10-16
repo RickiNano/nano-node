@@ -6,6 +6,9 @@ env:
   GIT_CONFIG_COUNT: 1
   GIT_CONFIG_KEY_0: submodule.fetchJobs
   GIT_CONFIG_VALUE_0: 8
+  # Temporary: debug logging to classify sccache read/write errors.
+  SCCACHE_LOG: debug
+  SCCACHE_ERROR_LOG: ${{ github.workspace }}/sccache.log
 
 jobs:
   linux_sanitizers:
@@ -65,6 +68,26 @@ jobs:
       - name: Build cache stats
         if: always()
         run: sccache --show-stats
+
+      - name: sccache log summary
+        if: always()
+        run: |
+          sccache --stop-server || true
+          log="$SCCACHE_ERROR_LOG"
+          for p in 'Cache miss in' 'Cache read error' 'Failed to decompress' 'Error executing cache write' 'RateLimited' 'Too Many Requests' 'AlreadyExists' 'storage is read-only'; do
+            printf '%-30s %s\n' "$p" "$(grep -c -- "$p" "$log" || true)"
+          done
+          echo "--- distinct error messages ---"
+          grep -oE '(Cache read error|Error executing cache write).*' "$log" \
+            | sed -E 's/[0-9a-f]{16,}/<key>/g' | cut -c1-200 | sort | uniq -c | sort -rn | head -30 || true
+
+      - name: Upload sccache log
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sccache-log-${{ github.job }}-${{ strategy.job-index }}
+          path: ${{ env.SCCACHE_ERROR_LOG }}
+          retention-days: 7
 
       - name: Core Tests
         if: steps.build.outcome == 'success' && (success() || failure())
@@ -135,6 +158,26 @@ jobs:
       - name: Build cache stats
         if: always()
         run: sccache --show-stats
+
+      - name: sccache log summary
+        if: always()
+        run: |
+          sccache --stop-server || true
+          log="$SCCACHE_ERROR_LOG"
+          for p in 'Cache miss in' 'Cache read error' 'Failed to decompress' 'Error executing cache write' 'RateLimited' 'Too Many Requests' 'AlreadyExists' 'storage is read-only'; do
+            printf '%-30s %s\n' "$p" "$(grep -c -- "$p" "$log" || true)"
+          done
+          echo "--- distinct error messages ---"
+          grep -oE '(Cache read error|Error executing cache write).*' "$log" \
+            | sed -E 's/[0-9a-f]{16,}/<key>/g' | cut -c1-200 | sort | uniq -c | sort -rn | head -30 || true
+
+      - name: Upload sccache log
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sccache-log-${{ github.job }}-${{ strategy.job-index }}
+          path: ${{ env.SCCACHE_ERROR_LOG }}
+          retention-days: 7
 
       - name: Core Tests
         if: steps.build.outcome == 'success' && (success() || failure())
