@@ -69,29 +69,29 @@ jobs:
         run: ../ci/tests/run-system-tests.sh
         working-directory: build
 
-  linux_test:
-    name: Linux [${{ matrix.BACKEND }} | ${{ matrix.COMPILER }}]
+  # The backend is only selected at test time, so each compiler is built once and the binaries are shared by the lmdb and rocksdb test jobs.
+  linux_build:
+    name: Linux build [${{ matrix.COMPILER }}]
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        BACKEND: [lmdb, rocksdb]
         COMPILER: [gcc, clang]
         RELEASE:
           - ${{ startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-24.04
     env:
       COMPILER: ${{ matrix.COMPILER }}
-      NANO_BACKEND: ${{ matrix.BACKEND }}
       BUILD_TYPE: ${{ matrix.RELEASE && 'RelWithDebInfo' || 'Debug' }}
-      TEST_USE_ROCKSDB: ${{ matrix.BACKEND == 'rocksdb' && '1' || '0' }}
-      DEADLINE_SCALE_FACTOR: ${{ matrix.BACKEND == 'rocksdb' && '2' || '1' }}
       CMAKE_C_COMPILER_LAUNCHER: sccache
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_GHA_VERSION: linux-${{ matrix.COMPILER }}-${{ matrix.RELEASE }}
-      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/develop' && 'READ_WRITE' || 'READ_ONLY' }}
+      SCCACHE_GHA_RW_MODE: READ_WRITE
       SCCACHE_IDLE_TIMEOUT: "0"
+      # sccache treats a throttled cache read as a miss and only reports it at warn level.
+      SCCACHE_LOG: warn
+      SCCACHE_ERROR_LOG: /tmp/sccache.log
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
       - name: Checkout
@@ -106,34 +106,79 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Build Tests
-        id: build
         run: ci/build-tests.sh
 
       - name: Build cache stats
         if: always()
-        run: sccache --show-stats
+        run: |
+          sccache --show-stats
+          echo "Failed cache reads (counted as misses): $(grep -c 'Got unexpected error' "$SCCACHE_ERROR_LOG" || true)"
+
+      # upload-artifact drops the executable bit, so the binaries are packed into a tar first
+      - name: Package Binaries
+        run: tar -cf binaries.tar -C build core_test rpc_test qt_test nano_node nano_rpc nano_wallet
+
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v6
+        with:
+          name: linux-${{ matrix.COMPILER }}-binaries
+          path: binaries.tar
+          retention-days: 1
+          if-no-files-found: error
+
+  linux_test:
+    name: Linux [${{ matrix.BACKEND }} | ${{ matrix.COMPILER }}]
+    needs: linux_build
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        BACKEND: [lmdb, rocksdb]
+        COMPILER: [gcc, clang]
+    runs-on: ubuntu-24.04
+    env:
+      COMPILER: ${{ matrix.COMPILER }}
+      NANO_BACKEND: ${{ matrix.BACKEND }}
+      TEST_USE_ROCKSDB: ${{ matrix.BACKEND == 'rocksdb' && '1' || '0' }}
+      DEADLINE_SCALE_FACTOR: ${{ matrix.BACKEND == 'rocksdb' && '2' || '1' }}
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Prepare
+        run: sudo -E ci/prepare/linux/prepare.sh
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v6
+        with:
+          name: linux-${{ matrix.COMPILER }}-binaries
+
+      - name: Unpack Binaries
+        id: unpack
+        run: mkdir -p build && tar -xf binaries.tar -C build
 
       - name: Setup Core Dumps
-        if: steps.build.outcome == 'success' && (success() || failure())
+        if: steps.unpack.outcome == 'success' && (success() || failure())
         run: ci/tests/setup-core-dumps.sh
 
       - name: Core Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
+        if: steps.unpack.outcome == 'success' && (success() || failure())
         run: ../ci/tests/run-core-tests.sh
         working-directory: build
 
       - name: RPC Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
+        if: steps.unpack.outcome == 'success' && (success() || failure())
         run: ../ci/tests/run-rpc-tests.sh
         working-directory: build
 
       - name: System Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
+        if: steps.unpack.outcome == 'success' && (success() || failure())
         run: ../ci/tests/run-system-tests.sh
         working-directory: build
 
       - name: QT Tests
-        if: steps.build.outcome == 'success' && (success() || failure())
+        if: steps.unpack.outcome == 'success' && (success() || failure())
         run: ../ci/tests/run-qt-tests.sh
         working-directory: build
 
