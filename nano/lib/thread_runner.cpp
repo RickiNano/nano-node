@@ -6,6 +6,17 @@
 #include <thread>
 
 /*
+ * thread_attributes
+ */
+
+boost::thread::attributes nano::thread_attributes::get_default ()
+{
+	boost::thread::attributes attrs;
+	attrs.set_stack_size (8000000); // 8MB
+	return attrs;
+}
+
+/*
  * thread_runner
  */
 

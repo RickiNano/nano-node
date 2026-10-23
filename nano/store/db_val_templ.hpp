@@ -5,6 +5,7 @@
 #include <nano/lib/stream.hpp>
 #include <nano/lib/vote.hpp>
 #include <nano/secure/account_info.hpp>
+#include <nano/secure/endpoint_key.hpp>
 #include <nano/secure/extended/account_block_by_height_key.hpp>
 #include <nano/secure/extended/account_delegator_by_weight_key.hpp>
 #include <nano/secure/extended/account_receivable_by_amount_info.hpp>

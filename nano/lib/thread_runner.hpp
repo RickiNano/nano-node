@@ -5,11 +5,16 @@
 #include <nano/lib/thread_roles.hpp>
 #include <nano/lib/threading.hpp>
 
-#include <boost/thread.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace nano
 {
 namespace asio = boost::asio;
+
+namespace thread_attributes
+{
+	boost::thread::attributes get_default ();
+} // namespace thread_attributes
 
 class thread_runner final
 {

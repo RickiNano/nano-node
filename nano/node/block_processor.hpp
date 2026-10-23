@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nano/lib/interval.hpp>
+#include <nano/lib/locks.hpp>
 #include <nano/node/block_context.hpp>
 #include <nano/node/block_source.hpp>
 #include <nano/node/fair_queue_traits.hpp>
